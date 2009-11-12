@@ -409,30 +409,35 @@ class BePorter:
 		self.lastTime = time.time()
 		os.chdir(self.downloadDir)
 		for src_uri in self.bepKeys['SRC_URI']:
-			print "Fetching " + src_uri
-			try:
-				file_uri = urllib2.urlopen(src_uri)
-				headers = file_uri.info()
-				remote_size = long(headers.getheader("Content-Length"))
-				src_uri = file_uri.geturl()
+			fp = self.downloadDir+'/'+src_uri[src_uri.rindex('/') + 1:]
+			if os.path.isfile(fp):
+				print 'Seems file already exist, checkout: ' + fp + '.\nSkip fetching file...'
 				self.src_local = src_uri[src_uri.rindex('/') + 1:]
-				if os.path.exists(self.src_local):
-					local_size = os.stat(self.src_local).st_size
-				else:
-					local_size = 0
-				# check if file was already downloaded
-				if local_size == remote_size:
-					print '  file was already downloaded... continuing'
-				else:
-					urllib.urlretrieve(src_uri, self.src_local, self.downloadProgressIndicator)
-					print ''
-				# succesfully downloaded source archive
 				return
-			except:
-				raise
-				print "  error... trying next location"
-				os.system("wget " + src_uri + " " + self.src_local) # python couldn't download it, try wget
-				continue
+			else:
+				print "Fetching " + src_uri
+				try:
+					file_uri = urllib2.urlopen(src_uri)
+					headers = file_uri.info()
+					remote_size = long(headers.getheader("Content-Length"))
+					src_uri = file_uri.geturl()
+					self.src_local = src_uri[src_uri.rindex('/') + 1:]
+					if os.path.exists(self.src_local):
+						local_size = os.stat(self.src_local).st_size
+					else:
+						local_size = 0
+					# check if file was already downloaded
+					if local_size == remote_size:
+						print '  file was already downloaded... continuing'
+					else:
+						urllib.urlretrieve(src_uri, self.src_local, self.downloadProgressIndicator)
+						print ''
+					# succesfully downloaded source archive
+					return
+				except:
+					raise
+					print "  error... trying next location"
+					continue
 		# failed to fetch source
 		print "Failed to fetch source package from all locations"
 		sys.exit()
