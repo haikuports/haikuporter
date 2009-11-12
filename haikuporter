@@ -431,6 +431,7 @@ class BePorter:
 			except:
 				raise
 				print "  error... trying next location"
+				os.system("wget " + src_uri + " " + self.src_local) # python couldn't download it, try wget
 				continue
 		# failed to fetch source
 		print "Failed to fetch source package from all locations"
@@ -489,9 +490,10 @@ class BePorter:
 		os.chdir(self.workDir)
 		print "Unpacking " + self.src_local
 		archiveFullPath = self.downloadDir + "/" + self.src_local
-		if tarfile.is_tarfile(archiveFullPath): # TODO: doesn't recognize .tar.bz2
-			# TODO: differentiate between .tar and .tar.gz
-			os.system("tar xzf " + self.downloadDir + "/" + self.src_local)
+		if tarfile.is_tarfile(archiveFullPath):
+			tar = tarfile.open(self.downloadDir + "/" + self.src_local)
+			tar.extractall()
+			tar.close()
 		elif zipfile.is_zipfile(archiveFullPath):
 			os.system("unzip " + self.downloadDir + "/" + self.src_local)
 		else:
