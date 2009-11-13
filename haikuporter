@@ -1,11 +1,11 @@
 #!/boot/common/bin/python
-#
+# -*- coding: utf8 -*-
 # copyright 2007-2009 Brecht Machiels
-# copyright 2009 HaikuBot
+# copyright 2009 HaikuBot (aka RISC)
 
 
 info = {}
-info['version'] = "0.30 alpha"
+info['version'] = "0.40"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -16,7 +16,8 @@ import urllib
 import urllib2
 import time
 import locale
-import tarfile, zipfile
+import tarfile
+import zipfile
 import types
 from optparse import OptionParser
 
@@ -68,6 +69,7 @@ paths = {}
 paths['work']		= "work"
 paths['patches']	= "patches"
 paths['download']	= "download"
+paths['distro']		= "distro"
 
 # -- downloadProgressIndicator properties ------------------------------------
 
@@ -94,7 +96,7 @@ locale.localeconv=_temp
 
 # -- Main Program ------------------------------------------------------------
 
-class BePorter:
+class HaikuPorter:
 	def __init__(self, options, args):
 		# read global settings
 		mainConfig = Config(haikuPortsConf)
@@ -126,6 +128,16 @@ class BePorter:
 				sys.exit()
 
 			self.searchPorts(args[0])
+			sys.exit()
+
+		# if requested, get ports tree
+		if options.get:
+			self.getTree()
+			sys.exit()
+
+		# if requested, update ports tree
+		if options.update:
+			self.updateTree()
 			sys.exit()
 
 		# if there is no argument given, exit
@@ -162,6 +174,7 @@ class BePorter:
 		self.downloadDir= self.portDir + '/' + paths['download']
 		self.workDir	= self.portDir + '/' + paths['work']
 		self.patchesDir	= self.portDir + '/' + paths['patches']
+		self.distroDir	= self.portDir + '/' + paths['distro']
 
 		# if the port version was not specified, list available versions
 		if self.portVersion == None:
@@ -176,12 +189,12 @@ class BePorter:
 			print "Following versions of " + self.portName + " are available:"
 			for version in versions:
 				print "  " + version[0]
-			print "Run beporter again, specifiying a port version"
+			print "Run haikuporter again, specifiying a port version"
 			sys.exit()
 
 		# show port description, if requested
-		if options.desc:
-			self.desc()
+		if options.about:
+			self.about()
 			sys.exit()
 		
 		# read data from the bep file
@@ -220,8 +233,10 @@ class BePorter:
 			self.build()	# build
 		if options.install:
 			self.install()	# install
+		if options.distro:
+			self.distro()	# distro
 
-	def desc(self):
+	def about(self):
 		"""Show port description"""
 		os.chdir(self.portDir)
 				
@@ -265,7 +280,18 @@ class BePorter:
 		print '*'*80
 		
 		fp.close()
-			
+	
+	def getTree(self):
+		""" Get port tree via svn"""
+		cd = 'cd $(finddir B_COMMON_DEVELOP_DIRECTORY);'
+		svn = 'svn co http://ports.haiku-files.org/svn/haikuports/trunk haikuports'
+		os.system(cd + svn)
+
+	def updateTree(self):
+		""" Update port tree via svn"""
+		cd = 'cd $(finddir B_COMMON_DEVELOP_DIRECTORY)/haikuports;'
+		svn = 'svn up'
+		os.system(cd + svn)
 
 	def parseBepFile(self):
 		"""Parse the BepFile of the specified port"""
@@ -316,7 +342,7 @@ class BePorter:
 		"""Detect the platform we're running on"""
 		name = getCommandOutput('uname -s')[0:-1]
 		if name == "Haiku":
-			return "HAIKU"
+			return name.upper()
 		# Support for R5, R5bone, dano, and Zeta has been dropped.
 		else:
 			return None
@@ -495,18 +521,20 @@ class BePorter:
 		os.chdir(self.workDir)
 		print "Unpacking " + self.src_local
 		archiveFullPath = self.downloadDir + "/" + self.src_local
-		if tarfile.is_tarfile(archiveFullPath):
-			tar = tarfile.open(self.downloadDir + "/" + self.src_local)
-			tar.extractall()
-			tar.close()
+		if tarfile.is_tarfile(archiveFullPath): 
+			tf = tarfile.open(self.downloadDir + "/" + self.src_local, 'r')
+			tf.extractall()
+			tf.close()
 		elif zipfile.is_zipfile(archiveFullPath):
-			os.system("unzip " + self.downloadDir + "/" + self.src_local)
+			zf = zipfile.ZipFile(self.downloadDir + "/" + self.src_local, 'r')
+			zf.extractall()
+			zf.close()
 		else:
 			print "Unrecognised archive type"
 			sys.exit()
 			
 	def patch(self):
-		"""Apply the BeOS patches to the source directory"""
+		"""Apply the Haiku patches to the source directory"""
 		os.chdir(self.workDir)
 		patchFilePath = self.patchesDir + '/' + self.portName + '-' + self.portVersion + '.patch'
 		if os.path.exists(patchFilePath):
@@ -524,7 +552,6 @@ class BePorter:
 			if buildCommands != '':
 				buildCommands = buildCommands + " && "
 			buildCommands = buildCommands + command
-		print buildCommands
 		os.system(buildCommands)
 			
 	def install(self):
@@ -536,8 +563,56 @@ class BePorter:
 			if installCommands != '':
 				installCommands = installCommands + " && "
 			installCommands = installCommands + command
-		print installCommands
 		os.system(installCommands)
+		
+	def distro(self):
+		# create distro dir
+		if not os.path.exists(self.distroDir):
+			os.mkdir(self.distroDir)
+			
+		os.chdir(self.workDir)
+		# TODO: if self.bepKeys['INSTALL'] = empty, warn user
+		installCommands = ''
+		for command in self.bepKeys['INSTALL']:
+			if 'make install' in command:
+				command = 'make install DESTDIR='+ self.distroDir
+			if installCommands != '':
+				installCommands = installCommands + " && "
+			installCommands = installCommands + command
+		os.system(installCommands)
+		
+		# get OptionalPackageDescription
+		os.chdir(self.portDir)
+		
+		opd = False
+		for f in os.listdir(self.portDir):
+			if 'OptionalPackageDescription' in f:
+				os.system('cp ' + self.portDir + '/' + f + ' ' + self.distroDir + '/.OptionalPackageDescription')				
+				opd = True
+		
+		# go to distro dir for making zip package
+		os.chdir(self.distroDir)
+		
+		package = self.portName + '-' + self.portVersion
+		
+		gcc = getCommandOutput('setgcc')
+		gcc = gcc.split(': ')[1].split('/')
+		arch = '-' + gcc[0]
+		gcc = '-' + gcc[1][:-1]
+
+		date = time.localtime()
+		date = '-' + str(date[0]) + '-' + str(date[1]) + '-' + str(date[2])
+		
+		os.system('mv ./boot/apps ./apps')
+		os.system('mv ./boot/common ./common')
+
+		if opd:
+			os.system('zip -ry9 ' + package + arch + gcc + date + '.zip ./common ./apps .OptionalPackageDescription')
+			os.system('rm -rf ./common ./apps .OptionalPackageDescription')
+		else:
+			os.system('zip -ry9 ' + package + arch + gcc + date + '.zip ./common ./apps')
+			os.system('rm -rf ./common ./apps')
+		
 
 # -- /etc/haikuports.conf and *.bep parser -----------------------------------
 
@@ -563,7 +638,13 @@ class Config:
 		self.options = {}
 
 		self.filename = filename
-		self.file = open(self.filename)
+		
+		try:
+			self.file = open(self.filename, 'rb')
+		except:
+			print "Can't find config file: " + self.filename
+			sys.exit()
+			
 		self.lineCount = 0
 		self.nextLine()
 		# TODO: store all options in a list?
@@ -676,9 +757,9 @@ parser.add_option("-l", "--list",
 	action="store_true", dest="list", default=False,
 	help="list available ports")
 
-parser.add_option("-d", "--desc",
-	action="store_true", dest="desc", default=False,
-	help="show port description")
+parser.add_option("-a", "--about",
+	action="store_true", dest="about", default=False,
+	help="show description of the specified port")
 		
 parser.add_option("-s", "--search",
 	action="store_true", dest="search", default=False,
@@ -695,12 +776,24 @@ parser.add_option("-b", "--nobuild",
 parser.add_option("-i", "--install",
 	action="store_true", dest="install", default=False,
 	help="also install the port (the default is to only build)")
+	
+parser.add_option("-d", "--distro",
+	action="store_true", dest="distro", default=False,
+	help="make distribution package of the specified port (include download, unpack, patch, build)")
 
 parser.add_option("-c", "--clean",
 	action="store_true", dest="clean", default=False,
 	help="clean the working directory of the specified port")
+	
+parser.add_option("-g", "--get",
+	action="store_true", dest="get", default=False,
+	help="get ports tree")
+
+parser.add_option("-u", "--update",
+	action="store_true", dest="update", default=False,
+	help="update ports tree (you should get it before)")
 
 (options, args) = parser.parse_args()
 
-beporter = BePorter(options, args)
+haikuporter = HaikuPorter(options, args)
 
