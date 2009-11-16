@@ -2,10 +2,10 @@
 # -*- coding: utf8 -*-
 # copyright 2007-2009 Brecht Machiels
 # copyright 2009 HaikuBot (aka RISC)
-
+# copyright 2009 Scott McCreary
 
 info = {}
-info['version'] = "0.40"
+info['version'] = "0.41"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -589,6 +589,11 @@ class HaikuPorter:
 			if 'OptionalPackageDescription' in f:
 				os.system('cp ' + self.portDir + '/' + f + ' ' + self.distroDir + '/.OptionalPackageDescription')				
 				opd = True
+
+		for f in os.listdir(self.portDir):
+			if 'licenses' in f:
+				os.system ('mkdir -p ' + self.portDir + '/common/data/license')
+				os.system ('cp ' + self.portDir + '/ + f + ' ' + self.distroDir + '/' + f)
 		
 		# go to distro dir for making zip package
 		os.chdir(self.distroDir)
