@@ -592,8 +592,8 @@ class HaikuPorter:
 
 		for f in os.listdir(self.portDir):
 			if 'licenses' in f:
-				os.system ('mkdir -p ' + self.portDir + '/common/data/license')
-				os.system ('cp ' + self.portDir + '/ + f + ' ' + self.distroDir + '/' + f)
+				os.system ('mkdir -p ' + self.portDir + '/common/data/licenses')
+				os.system ('cp ' + self.portDir + '/' + f + ' ' + self.distroDir + '/' + f)
 		
 		# go to distro dir for making zip package
 		os.chdir(self.distroDir)
