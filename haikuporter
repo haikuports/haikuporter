@@ -5,7 +5,7 @@
 # copyright 2009 Scott McCreary
 
 info = {}
-info['version'] = "0.41"
+info['version'] = "0.42"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ from optparse import OptionParser
 # -- HaikuPorts options -------------------------------------------------------
 
 # location of haikuports.conf
-haikuPortsConf = "/boot/common/etc/haikuports.conf"
+haikuPortsConf = '/boot/common/etc/haikuports.conf'
 
 # create new type 'ShellType' for identifying lists of shell commands
 class shell(list):
@@ -187,10 +187,12 @@ class HaikuPorter:
 				if m:
 					versions.append([m.group("version"), item])
 			print "Following versions of " + self.portName + " are available:"
-			for version in versions:
-				print "  " + version[0]
-			print "Run haikuporter again, specifiying a port version"
-			sys.exit()
+			if len(versions) > 1:
+				for version in versions:
+					print "  " + version[0]
+				print "Run haikuporter again, specifiying a port version"
+				sys.exit()
+			self.portVersion = versions[0][0]
 
 		# show port description, if requested
 		if options.about:
@@ -638,7 +640,7 @@ class Config:
 		reNoneType		= re.compile('^\s*$')
 		reIntType		= re.compile('^[0-9]+$')
 		reBooleanType	= re.compile('^yes$|^no$')
-		reStatusType	= re.compile('^untested$|^unstable$|^stable$')
+		reStatusType	= re.compile('^broken$|^untested$|^unstable$|^stable$')
 		
 		self.options = {}
 
