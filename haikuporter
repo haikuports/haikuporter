@@ -458,7 +458,8 @@ class HaikuPorter:
 					if local_size == remote_size:
 						print '  file was already downloaded... continuing'
 					else:
-						urllib.urlretrieve(src_uri, self.src_local, self.downloadProgressIndicator)
+						os.system('wget ' + src_uri)
+						# urllib.urlretrieve(src_uri, self.src_local, self.downloadProgressIndicator)
 						print ''
 					# succesfully downloaded source archive
 					return
