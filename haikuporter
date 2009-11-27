@@ -3,9 +3,10 @@
 # copyright 2007-2009 Brecht Machiels
 # copyright 2009 HaikuBot (aka RISC)
 # copyright 2009 Scott McCreary
+# copyright 2009 Alexander Deynichenko
 
 info = {}
-info['version'] = "0.42"
+info['version'] = "0.43"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -186,13 +187,17 @@ class HaikuPorter:
 				m = reBepFile.match(item)
 				if m:
 					versions.append([m.group("version"), item])
-			print "Following versions of " + self.portName + " are available:"
 			if len(versions) > 1:
+				print "Following versions of %s are available:" % (self.portName)
 				for version in versions:
 					print "  " + version[0]
 				print "Run haikuporter again, specifiying a port version"
 				sys.exit()
-			self.portVersion = versions[0][0]
+			elif len(versions) == 1:
+				self.portVersion = versions[0][0]
+			else:
+				print ".bep files for %s not found. Exiting." % (self.portName)
+				sys.exit()
 
 		# show port description, if requested
 		if options.about:
