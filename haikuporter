@@ -20,6 +20,7 @@ import locale
 import tarfile
 import zipfile
 import types
+import hashlib
 from optparse import OptionParser
 
 # -- HaikuPorts options -------------------------------------------------------
@@ -44,20 +45,22 @@ confTypes['PACKAGES_PATH'] = [types.StringType]
 
 # allowed types of the BepFile values
 bepTypes = {}
-bepTypes['DESCRIPTION']	= [types.StringType, types.ListType]
-bepTypes['HOMEPAGE']	= [types.StringType]
-bepTypes['SRC_URI']		= [types.StringType, types.ListType]
-bepTypes['REVISION']	= [types.IntType]
-bepTypes['STATUS_HAIKU']= [StatusType]
-bepTypes['DEPEND']		= [types.StringType, types.ListType, types.NoneType]
-bepTypes['BUILD']		= [ShellType]
-bepTypes['INSTALL']		= [ShellType]
+bepTypes['DESCRIPTION']	 = [types.StringType, types.ListType]
+bepTypes['HOMEPAGE']	 = [types.StringType]
+bepTypes['SRC_URI']		 = [types.StringType, types.ListType]
+bepTypes['CHECKSUM_MD5'] = [types.StringType]
+bepTypes['REVISION']	 = [types.IntType]
+bepTypes['STATUS_HAIKU'] = [StatusType]
+bepTypes['DEPEND']		 = [types.StringType, types.ListType, types.NoneType]
+bepTypes['BUILD']		 = [ShellType]
+bepTypes['INSTALL']		 = [ShellType]
 
 							# is field	 #	default
 bepDefaults = {}			# required?	 #	value
 bepDefaults['DESCRIPTION']	= [True,		None		]
 bepDefaults['HOMEPAGE']		= [True,		None		]
 bepDefaults['SRC_URI']		= [True,		None		]
+bepDefaults['CHECKSUM_MD5']	= [False,		None		]
 bepDefaults['REVISION']		= [True,		None		]
 bepDefaults['WORKING']		= [False,		True		]
 bepDefaults['STATUS_HAIKU']	= [False,		'untested'	]
@@ -233,6 +236,7 @@ class HaikuPorter:
 
 		self.checkDeps()	# check dependencies
 		self.fetch()		# fetch sources
+		self.checksum()		# calculate checksum
 		self.unpack()		# unpack source archive
 		if options.patch:
 			self.patch()	# apply patches
@@ -519,6 +523,27 @@ class HaikuPorter:
 						+ '    ' + 'ETA ' + str(self.timeLeft)
 		sys.stdout.write('\r' + progressInfo)
 		sys.stdout.flush()
+
+	def checksum(self): 
+		if self.bepKeys['CHECKSUM_MD5']:
+			sys.stdout.write('Calculating checksum -')
+			sys.stdout.flush()
+			h = hashlib.md5()
+			f = open(self.src_local, 'rb')
+			while True:
+				d = f.read(16384)
+				if not d:
+					break
+				h.update(d)
+			f.close()
+			if h.hexdigest() == self.bepKeys['CHECKSUM_MD5']:
+				sys.stdout.write(' OK\n')
+			else:
+				sys.stdout.write(' FAILED\n')
+				sys.exit()
+			sys.stdout.flush()
+		else:
+			print "CHECKSUM_MD5 not found"
 
 	def unpack(self):
 		"""Unpack the source archive (into the work directory)"""
