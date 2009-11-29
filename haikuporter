@@ -105,6 +105,7 @@ class HaikuPorter:
 		# read global settings
 		mainConfig = Config(haikuPortsConf)
 		self.confKeys = mainConfig.getKeys()
+		self.options = options
 
 		for key in self.confKeys:
 			try:
@@ -291,6 +292,16 @@ class HaikuPorter:
 		print '*'*80
 		
 		fp.close()
+
+	def setFlag(self, name):
+		f = open('%s/haikuports.%s' %(self.workDir, name), 'w')
+		f.close()
+		
+	def checkFlag(self, name):
+		if os.path.exists('%s/haikuports.%s' %(self.workDir, name)):
+			return True
+		else:
+			return False
 	
 	def getTree(self):
 		""" Get port tree via svn"""
@@ -550,6 +561,8 @@ class HaikuPorter:
 		# create work dir
 		if not os.path.exists(self.workDir):
 			os.mkdir(self.workDir)
+		if self.checkFlag('unpack') and not self.options.force:
+			return
 		# unpack source archive
 		os.chdir(self.workDir)
 		print "Unpacking " + self.src_local
@@ -565,9 +578,12 @@ class HaikuPorter:
 		else:
 			print "Unrecognised archive type"
 			sys.exit()
+		self.setFlag('unpack')	
 			
 	def patch(self):
 		"""Apply the Haiku patches to the source directory"""
+		if self.checkFlag('patch') and not self.options.force:
+			return
 		os.chdir(self.workDir)
 		patchFilePath = self.patchesDir + '/' + self.portName + '-' + self.portVersion + '.patch'
 		if os.path.exists(patchFilePath):
@@ -575,9 +591,12 @@ class HaikuPorter:
 			# TODO: check return code
 		else:
 			print "No patching required"
+		self.setFlag('patch')
 
 	def build(self):
 		"""Build the sources"""
+		if self.checkFlag('build') and not self.options.force:
+			return
 		os.chdir(self.workDir)
 		# TODO: if self.bepKeys['BUILD'] = empty, warn user
 		buildCommands = ''
@@ -586,9 +605,11 @@ class HaikuPorter:
 				buildCommands = buildCommands + " && "
 			buildCommands = buildCommands + command
 		os.system(buildCommands)
+		self.setFlag('build')
 			
 	def install(self):
 		"""Install the binaries onto the system"""
+		print "Installing ..."
 		os.chdir(self.workDir)
 		# TODO: if self.bepKeys['INSTALL'] = empty, warn user
 		installCommands = ''
@@ -830,6 +851,10 @@ parser.add_option("-g", "--get",
 parser.add_option("-u", "--update",
 	action="store_true", dest="update", default=False,
 	help="update ports tree (you should get it before)")
+
+parser.add_option("-f", "--force",
+	action="store_true", dest="force", default=False,
+	help="force to perform the steps (upack, patch, build)")
 
 (options, args) = parser.parse_args()
 
