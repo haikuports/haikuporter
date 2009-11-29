@@ -1,0 +1,34 @@
+# Simple bash completion rules for the haikuporter script
+#
+# To install: copy this file to the /etc/bash_completion.d directory
+#
+# Note: To increase speed, the list of packages is created when the shell starts
+# This means it won't notice changes to the ports tree until you restart the
+# shell or source this script again with a command like:
+# '. /etc/bash_completion.d/haikuporter_bash_completion'
+
+
+HAIKUPORTS_PATH=$(grep -F PACKAGES_PATH /boot/common/etc/haikuports.conf | cut -f2 -d= | sed -e 's/\"//g')
+
+for i in "${HAIKUPORTS_PATH}"/*/*/*.bep; do
+	i="${i##*/}"
+	HAIKUPORTS_PACKAGES="${i%.bep} ${HAIKUPORTS_PACKAGES}"
+done
+
+function _haikuporter()
+{
+	local cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ ${cur} == -* ]];then
+		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -u --update' -- ${cur}) )
+		return 0
+	fi
+
+	# TODO: This could use some more refinement.  If an option like --help is 
+	# specified we shouldn't provide a package list as completion options.
+
+	COMPREPLY=( $(compgen -W '${HAIKUPORTS_PACKAGES}' -- ${cur}) )
+
+	return 0
+}
+complete -F _haikuporter -o filenames haikuporter
