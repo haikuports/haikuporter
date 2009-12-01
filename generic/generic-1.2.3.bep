@@ -1,0 +1,17 @@
+DESCRIPTION="generic is just a placeholder." 
+HOMEPAGE="" 
+SRC_URI="tar.gz"
+REVISION="1"
+STATUS_HAIKU="broken"
+DEPEND=""
+CHECKSUM_MD5=""
+BUILD {
+	cd generic-1.2.3
+	./configure --prefix=/boot/common
+	make
+}
+
+INSTALL {
+	cd generic-1.2.3
+	make install
+}
