@@ -21,7 +21,7 @@ function _haikuporter()
 
 	# Stop offering completions when one of these is in the previous argument.
 	case ${COMP_WORDS[COMP_CWORD-1]} in
-		--version|-h|--help|-s|--search|--list|-g|--get|-u|--update)
+		--version|-h|--help|-s|--search|-l|--list|-g|--get|-u|--update)
 			return 0
 			;;
 	esac
