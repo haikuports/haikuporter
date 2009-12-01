@@ -20,7 +20,7 @@ function _haikuporter()
 	local cur=${COMP_WORDS[COMP_CWORD]}
 
 	if [[ ${cur} == -* ]];then
-		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -u --update' -- ${cur}) )
+		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -u --update -f --force' -- ${cur}) )
 		return 0
 	fi
 
