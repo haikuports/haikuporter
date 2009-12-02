@@ -140,11 +140,6 @@ class HaikuPorter:
 			self.getTree()
 			sys.exit()
 
-		# if requested, update ports tree
-		if options.update:
-			self.updateTree()
-			sys.exit()
-
 		# if there is no argument given, exit
 		if len(args) == 0:
 			print "You need to specifiy at least a port name."
@@ -304,16 +299,12 @@ class HaikuPorter:
 			return False
 	
 	def getTree(self):
-		""" Get port tree via svn"""
-		cd = 'cd $(finddir B_COMMON_DEVELOP_DIRECTORY);'
-		svn = 'svn co http://ports.haiku-files.org/svn/haikuports/trunk haikuports'
-		os.system(cd + svn)
-
-	def updateTree(self):
-		""" Update port tree via svn"""
-		cd = 'cd $(finddir B_COMMON_DEVELOP_DIRECTORY)/haikuports;'
-		svn = 'svn up'
-		os.system(cd + svn)
+		"""Get/Update the port tree via svn"""
+		print "Refreshing the port tree: " + self.packagesPath
+		if os.path.exists(self.packagesPath + "/.svn"):
+			os.system('svn update "' + self.packagesPath + '"')
+		else:
+			os.system('svn checkout http://ports.haiku-files.org/svn/haikuports/trunk "' + self.packagesPath + '"')
 
 	def parseBepFile(self):
 		"""Parse the BepFile of the specified port"""
@@ -846,15 +837,11 @@ parser.add_option("-c", "--clean",
 	
 parser.add_option("-g", "--get",
 	action="store_true", dest="get", default=False,
-	help="get ports tree")
-
-parser.add_option("-u", "--update",
-	action="store_true", dest="update", default=False,
-	help="update ports tree (you should get it before)")
+	help="get/update the ports tree")
 
 parser.add_option("-f", "--force",
 	action="store_true", dest="force", default=False,
-	help="force to perform the steps (upack, patch, build)")
+	help="force to perform the steps (unpack, patch, build)")
 
 (options, args) = parser.parse_args()
 
