@@ -1,4 +1,4 @@
-#!/boot/common/bin/python
+#!/bin/env python
 # -*- coding: utf8 -*-
 # copyright 2007-2009 Brecht Machiels
 # copyright 2009 HaikuBot (aka RISC)
@@ -21,6 +21,7 @@ import tarfile
 import zipfile
 import types
 import hashlib
+import shutil
 from optparse import OptionParser
 
 # -- HaikuPorts options -------------------------------------------------------
@@ -93,8 +94,8 @@ def getCommandOutput(command):
 
 # -- Set up locale for thousands seperators ----------------------------------
 def _temp(lc=locale.localeconv()):
-        lc.update({'thousands_sep':',','grouping':[3,3,0]})
-        return lc
+	lc.update({'thousands_sep':',','grouping':[3,3,0]})
+	return lc
 
 locale.localeconv=_temp
 
@@ -119,12 +120,12 @@ class HaikuPorter:
 		if self.packagesPath[-1] == '/':
 			# strip trailing '/'
 			self.packagesPath = self.packagesPath[:-1]
-		
+
 		# if requested, list all ports in the HaikuPorts tree
 		if options.list:
 			self.listPorts()
 			sys.exit()
-		
+
 		# if requested, search for a port
 		if options.search:
 			if len(args) == 0:
@@ -202,7 +203,7 @@ class HaikuPorter:
 		if options.about:
 			self.about()
 			sys.exit()
-		
+
 		# read data from the bep file
 		self.parseBepFile()
 
@@ -225,7 +226,7 @@ class HaikuPorter:
 		# clean the work directory, if requested
 		if options.clean:
 			self.clean()
-		
+
 		# don't build when not patching
 		if not options.patch:
 			options.build = False
@@ -246,26 +247,25 @@ class HaikuPorter:
 	def about(self):
 		"""Show port description"""
 		os.chdir(self.portDir)
-				
+
 		bepFilename = self.portName + '-' + self.portVersion + ".bep"
-		
+
 		reOptionValue	= re.compile('^(?P<key>[A-Z0-9_]*)\s*=\s*"(?P<value>.*)(?<!\\\\)"\s*$')
 		reComment		= re.compile('^\s*#.*$')
 		reEmptyLine		= re.compile('^\s*$')
-				
+
 		if not os.path.exists(bepFilename):
 			print self.portName + " version " + self.portVersion + " not found"
 			sys.exit()
-					
-				
+
 		fp = open(bepFilename)
 		lineCount = 0
-		
+
 		line = fp.readline()
 		lineCount += 1
-		
+
 		print '*'*80
-		
+
 		while line != "":
 			# empty line or comment
 			if reEmptyLine.match(line) or reComment.match(line):
@@ -280,24 +280,24 @@ class HaikuPorter:
 					print key.capitalize()+":",value
 				elif 'HOMEPAGE' in key:
 					print key.capitalize()+":",value
-				
+
 			line = fp.readline()
 			lineCount += 1
-			
+
 		print '*'*80
-		
+
 		fp.close()
 
 	def setFlag(self, name):
 		f = open('%s/haikuports.%s' %(self.workDir, name), 'w')
 		f.close()
-		
+
 	def checkFlag(self, name):
 		if os.path.exists('%s/haikuports.%s' %(self.workDir, name)):
 			return True
 		else:
 			return False
-	
+
 	def getTree(self):
 		"""Get/Update the port tree via svn"""
 		print "Refreshing the port tree: " + self.packagesPath
@@ -335,7 +335,7 @@ class HaikuPorter:
 		for key in bepDefaults:
 			if key not in self.bepKeys:
 				self.bepKeys[key] = bepDefaults[key][1]
-		
+
 		# convert each None/string value into a list (with respectively 0 or 1 element)
 		#	(simplifies implementation ahead)
 		for key in bepTypes:
@@ -349,7 +349,6 @@ class HaikuPorter:
 
 		#for key in self.bepKeys:
 		#	print key + " = " + str(self.bepKeys[key])
-
 
 	def detectOS(self):
 		"""Detect the platform we're running on"""
@@ -416,7 +415,7 @@ class HaikuPorter:
 		os.chdir(self.portDir)
 		if os.path.exists(paths['work']):
 			print "Cleaning work directory..."
-			os.system("rm -rf " + paths['work']) # TODO: replace with Python function
+			shutil.rmtree(paths['work'])
 
 	def checkDeps(self):
 		"""Print the list of ports this one depends on"""
@@ -435,7 +434,7 @@ class HaikuPorter:
 			pass
 		else:
 			sys.exit()
-		
+
 	def fetch(self):
 		"""Fetch the source archive"""
 		# create download dir
@@ -570,7 +569,7 @@ class HaikuPorter:
 			print "Unrecognised archive type"
 			sys.exit()
 		self.setFlag('unpack')	
-			
+
 	def patch(self):
 		"""Apply the Haiku patches to the source directory"""
 		if self.checkFlag('patch') and not self.options.force:
@@ -597,7 +596,7 @@ class HaikuPorter:
 			buildCommands = buildCommands + command
 		os.system(buildCommands)
 		self.setFlag('build')
-			
+
 	def install(self):
 		"""Install the binaries onto the system"""
 		print "Installing ..."
@@ -609,42 +608,43 @@ class HaikuPorter:
 				installCommands = installCommands + " && "
 			installCommands = installCommands + command
 		os.system(installCommands)
-		
+
 	def distro(self):
+		# if the distro dir still exists from a previous run then remove it
+		shutil.rmtree(self.distroDir, True)
+
 		# create distro dir
 		if not os.path.exists(self.distroDir):
 			os.mkdir(self.distroDir)
-			
+
 		os.chdir(self.workDir)
 		# TODO: if self.bepKeys['INSTALL'] = empty, warn user
 		installCommands = ''
 		for command in self.bepKeys['INSTALL']:
 			if 'make install' in command:
-				command = 'make install DESTDIR='+ self.distroDir
+				command = 'make install DESTDIR=' + self.distroDir
 			if installCommands != '':
 				installCommands = installCommands + " && "
 			installCommands = installCommands + command
 		os.system(installCommands)
-		
+
 		# get OptionalPackageDescription
 		os.chdir(self.portDir)
-		
+
 		opd = False
 		for f in os.listdir(self.portDir):
 			if 'OptionalPackageDescription' in f:
-				os.system('cp ' + self.portDir + '/' + f + ' ' + self.distroDir + '/.OptionalPackageDescription')				
+				shutil.copyfile(self.portDir + '/' + f, self.distroDir + '/.OptionalPackageDescription')
 				opd = True
 
-		for f in os.listdir(self.portDir):
 			if 'licenses' in f:
-				os.system ('mkdir -p ' + self.portDir + '/common/data/licenses')
-				os.system ('cp ' + self.portDir + '/' + f + ' ' + self.distroDir + '/' + f)
-		
+				shutil.copytree(self.portDir + '/' + f, self.distroDir + '/common/data/licenses')
+
 		# go to distro dir for making zip package
 		os.chdir(self.distroDir)
-		
+
 		package = self.portName + '-' + self.portVersion
-		
+
 		gcc = getCommandOutput('setgcc')
 		gcc = gcc.split(': ')[1].split('/')
 		arch = '-' + gcc[0]
@@ -652,17 +652,29 @@ class HaikuPorter:
 
 		date = time.localtime()
 		date = '-' + str(date[0]) + '-' + str(date[1]) + '-' + str(date[2])
-		
-		os.system('mv ./boot/apps ./apps')
-		os.system('mv ./boot/common ./common')
+
+		packageFiles = ""
+
+		if os.path.exists('./boot/apps'):
+			shutil.move('./boot/apps', './apps')
+			packageFiles = './apps'
+
+		if os.path.exists('./boot/common'):
+			shutil.move('./boot/common', './common')
+			packageFiles += ' ./common'
 
 		if opd:
-			os.system('zip -ry9 ' + package + arch + gcc + date + '.zip ./common ./apps .OptionalPackageDescription')
-			os.system('rm -rf ./common ./apps .OptionalPackageDescription')
-		else:
-			os.system('zip -ry9 ' + package + arch + gcc + date + '.zip ./common ./apps')
-			os.system('rm -rf ./common ./apps')
-		
+			packageFiles += ' .OptionalPackageDescription'
+
+		zipFile = self.portDir + '/' + package + arch + gcc + date + '.zip'
+
+		# Zip the package and save it in the root of the port dir
+		os.system('zip -9ry ' + zipFile + ' ' + packageFiles + ' -x *.svn*')
+
+		# Clean up after ourselves
+		shutil.rmtree(self.distroDir)
+
+		print 'Package saved to: ' + zipFile
 
 # -- /etc/haikuports.conf and *.bep parser -----------------------------------
 
@@ -679,22 +691,22 @@ class Config:
 
 		reComment		= re.compile('^\s*#.*$')
 		reEmptyLine		= re.compile('^\s*$')
-		
+
 		reNoneType		= re.compile('^\s*$')
 		reIntType		= re.compile('^[0-9]+$')
 		reBooleanType	= re.compile('^yes$|^no$')
 		reStatusType	= re.compile('^broken$|^untested$|^unstable$|^stable$')
-		
+
 		self.options = {}
 
 		self.filename = filename
-		
+
 		try:
 			self.file = open(self.filename, 'rb')
 		except:
 			print "Can't find config file: " + self.filename
 			sys.exit()
-			
+
 		self.lineCount = 0
 		self.nextLine()
 		# TODO: store all options in a list?
@@ -782,15 +794,15 @@ class Config:
 	def nextLine(self):
 		self.line = self.file.readline()
 		self.lineCount = self.lineCount + 1
-		
+
 	def illegalSyntax(self):
 		print "Illegal syntax in " + self.filename + " at line " + str(self.lineCount) + ":"
 		print "  " + self.line
 		sys.exit()
-		
+
 	def getKeys(self):
 		return self.options
-	
+
 	def valueOf(self, key):
 		try:
 			value = self.options[key]
@@ -810,7 +822,7 @@ parser.add_option("-l", "--list",
 parser.add_option("-a", "--about",
 	action="store_true", dest="about", default=False,
 	help="show description of the specified port")
-		
+
 parser.add_option("-s", "--search",
 	action="store_true", dest="search", default=False,
 	help="search for a port (regex)")
@@ -834,7 +846,7 @@ parser.add_option("-d", "--distro",
 parser.add_option("-c", "--clean",
 	action="store_true", dest="clean", default=False,
 	help="clean the working directory of the specified port")
-	
+
 parser.add_option("-g", "--get",
 	action="store_true", dest="get", default=False,
 	help="get/update the ports tree")
