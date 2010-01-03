@@ -218,6 +218,12 @@ class HaikuPorter:
 				else:
 					sys.exit(1)
 
+		# clean the work dir and don't build when making a source archive
+		if options.archive:
+			options.build = False
+			options.clean = True
+			options.patch = True
+
 		# clean the work directory, if requested
 		if options.clean:
 			self.clean()
@@ -238,6 +244,8 @@ class HaikuPorter:
 			self.install()	# install
 		if options.distro:
 			self.distro()	# distro
+		if options.archive:
+			self.archive()	# create patched source archive
 
 	def about(self):
 		"""Show port description"""
@@ -620,6 +628,8 @@ class HaikuPorter:
 	def distro(self):
 		"""Create a package suitable for distribution"""
 
+		print "Creating distribution package ..."
+
 		# Make sure the bep file for the package has an INSTALL section.
 		if (not 'INSTALL' in self.bepKeys) or (not self.bepKeys['INSTALL']):
 			sys.exit('Error: bep file has no INSTALL section.')
@@ -639,6 +649,7 @@ class HaikuPorter:
 			if installCommands != '':
 				installCommands = installCommands + " && "
 			installCommands = installCommands + command
+
 		os.system(installCommands)
 
 		# get OptionalPackageDescription
@@ -688,6 +699,37 @@ class HaikuPorter:
 		shutil.rmtree(self.distroDir)
 
 		print 'Package saved to: ' + zipFile
+
+	def archive(self):
+		"""Create a patched source archive"""
+
+		print "Creating patched source archive ..."
+
+		# Set the path and filename for the archive.
+		archiveFile = self.portDir + '/' + self.portName + '-' + self.portVersion + '_haiku.tar.xz'
+
+		sourceFiles = ""
+
+		# Build the list of dirs to archive.
+		# Since we don't know the name we have to iterate over the dir.
+		for f in os.listdir(self.workDir):
+			if os.path.isdir(f):
+				sourceFiles += ' ' + f
+
+		# Make sure we found something to archive
+		if not sourceFiles:
+			sys.exit("Error: No source directories found in work dir.")
+
+		# Change to the work dir where the patched sources are.
+		os.chdir(self.workDir)
+
+		# Archive the package and save it in the root of the port dir.
+		os.system('tar cJvf ' + archiveFile + ' ' + sourceFiles)
+
+		# Clean up after ourselves
+		shutil.rmtree(self.workDir)
+
+		print 'Archive saved to: ' + archiveFile
 
 # -- /etc/haikuports.conf and *.bep parser -----------------------------------
 
@@ -866,6 +908,10 @@ parser.add_option("-g", "--get",
 parser.add_option("-f", "--force",
 	action="store_true", dest="force", default=False,
 	help="force to perform the steps (unpack, patch, build)")
+
+parser.add_option("-z", "--archive",
+	action="store_true", dest="archive", default=False,
+	help="Create a patched source archive as <package>_haiku.tar.xz")
 
 (options, args) = parser.parse_args()
 
