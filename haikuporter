@@ -43,6 +43,7 @@ StatusType = status
 # allowed types of the /etc/haikuports.conf values
 confTypes = {}
 confTypes['PACKAGES_PATH'] = [types.StringType]
+confTypes['PATCH_OPTIONS'] = [types.StringType]
 
 # allowed types of the BepFile values
 bepTypes = {}
@@ -111,10 +112,9 @@ class HaikuPorter:
 		for key in self.confKeys:
 			try:
 				if type(self.confKeys[key]) not in confTypes[key]:
-					print "Invalid value type for " + key + ". Expecting " + str(confTypes[key])
-					sys.exit()
+					sys.exit("Error: Invalid value type for " + key + ". Expecting " + str(confTypes[key]))
 			except KeyError, e:
-				print "Unknown key label '" + key + "' in " + haikuPortsConf + ". Ignoring."
+				print "Warning: Unknown key label '" + key + "' in " + haikuPortsConf + ". Ignoring."
 
 		self.packagesPath = self.confKeys['PACKAGES_PATH']
 		if self.packagesPath[-1] == '/':
@@ -129,9 +129,9 @@ class HaikuPorter:
 		# if requested, search for a port
 		if options.search:
 			if len(args) == 0:
-				print "You need to specifiy a search string"
+				print "You need to specifiy a search string."
 				print "Invoke '" + sys.argv[0] + " -h' for usage information."
-				sys.exit()
+				sys.exit(1)
 
 			self.searchPorts(args[0])
 			sys.exit()
@@ -145,7 +145,7 @@ class HaikuPorter:
 		if len(args) == 0:
 			print "You need to specifiy at least a port name."
 			print "Invoke '" + sys.argv[0] + " -h' for usage information."
-			sys.exit()
+			sys.exit(1)
 		else:
 			port = args[0]
 
@@ -161,14 +161,12 @@ class HaikuPorter:
 			self.portName = m.group("name")
 			self.portVersion = None
 		else:								# invalid argument
-			print "Invalid port name: " + port
-			sys.exit()						
+			sys.exit("Error: Invalid port name " + port)						
 
 		# find the port in the HaikuPorts tree
 		self.portCategory = self.getCategory(self.portName)
 		if self.portCategory == None:
-			print "Port " + self.portName + " not found. Exiting."
-			sys.exit()
+			sys.exit("Error: Port " + self.portName + " not found.")
 
 		# create full paths for the directories
 		self.portDir	= self.packagesPath + '/' + self.portCategory + '/' + self.portName
@@ -191,13 +189,11 @@ class HaikuPorter:
 				print "Following versions of %s are available:" % (self.portName)
 				for version in versions:
 					print "  " + version[0]
-				print "Run haikuporter again, specifiying a port version"
-				sys.exit()
+				sys.exit("Run haikuporter again, specifiying a port version")
 			elif len(versions) == 1:
 				self.portVersion = versions[0][0]
 			else:
-				print ".bep files for %s not found. Exiting." % (self.portName)
-				sys.exit()
+				sys.exit("Error: .bep files for " + self.portName +" not found.")
 
 		# show port description, if requested
 		if options.about:
@@ -210,18 +206,17 @@ class HaikuPorter:
 		# warn when the port is not stable on this platform
 		self.platform = self.detectOS()
 		if self.platform == None:
-			print "Unknown OS platform!"
+			sys.exit("Error: Unknown OS platform!")
 		else:
 			if self.bepKeys['STATUS_' + self.platform] != "stable":
-				print "Warning: this port is " + self.bepKeys['STATUS_' + self.platform] + " on this platform.",
+				print "Warning: This port is " + self.bepKeys['STATUS_' + self.platform] + " on this platform.",
 				answer = raw_input("Continue (y/n + enter)? ")
 				if answer == '':
-					sys.exit()
+					sys.exit(1)
 				if answer[0].lower() == 'y':
 					print "ok"
-					pass
 				else:
-					sys.exit()
+					sys.exit(1)
 
 		# clean the work directory, if requested
 		if options.clean:
@@ -255,8 +250,7 @@ class HaikuPorter:
 		reEmptyLine		= re.compile('^\s*$')
 
 		if not os.path.exists(bepFilename):
-			print self.portName + " version " + self.portVersion + " not found"
-			sys.exit()
+			sys.exit("Error: " + self.portName + " version " + self.portVersion + " not found.")
 
 		fp = open(bepFilename)
 		lineCount = 0
@@ -311,25 +305,22 @@ class HaikuPorter:
 		os.chdir(self.portDir)
 		bepFilename = self.portName + "-" + self.portVersion + ".bep"
 		if not os.path.exists(bepFilename):
-			print self.portName + " version " + self.portVersion + " not found"
-			sys.exit()
+			sys.exit("Error: " + self.portName + " version " + self.portVersion + " not found.")
 		bepConfig = Config(bepFilename)
 		self.bepKeys = bepConfig.getKeys()
 
 		# check whether all required fields are present
 		for key in bepDefaults:
 			if key not in self.bepKeys and bepDefaults[key][0]:
-					print "Required field '" + key + "' not present in " + bepFilename
-					sys.exit()
+				sys.exit("Error: Required field '" + key + "' not present in " + bepFilename)
 
 		# check validity of BepFile values
 		for key in self.bepKeys:
 			try:
 				if type(self.bepKeys[key]) not in bepTypes[key]:
-					print "Invalid value type for " + key + ". Expecting " + str(bepTypes[key])
-					sys.exit()
+					sys.exit("Error: Invalid value type for " + key + ". Expecting " + str(bepTypes[key]))
 			except KeyError, e:
-				print "Unknown key label '" + key + "'. Ignoring."
+				print "Warning: Unknown key label '" + key + "'. Ignoring."
 
 		# set default values when not provided
 		for key in bepDefaults:
@@ -344,8 +335,6 @@ class HaikuPorter:
 					self.bepKeys[key] = []
 				elif type(self.bepKeys[key]) == types.StringType:
 					self.bepKeys[key] = [self.bepKeys[key]]
-				else:
-					pass
 
 		#for key in self.bepKeys:
 		#	print key + " = " + str(self.bepKeys[key])
@@ -428,12 +417,11 @@ class HaikuPorter:
 		print "Please verify that you have these installed.",
 		answer = raw_input("Continue (y/n + enter)? ")
 		if answer == '':
-			sys.exit()
+			sys.exit(1)
 		if answer[0].lower() == 'y':
 			print "ok"
-			pass
 		else:
-			sys.exit()
+			sys.exit(1)
 
 	def fetch(self):
 		"""Fetch the source archive"""
@@ -449,7 +437,7 @@ class HaikuPorter:
 		for src_uri in self.bepKeys['SRC_URI']:
 			fp = self.downloadDir+'/'+src_uri[src_uri.rindex('/') + 1:]
 			if os.path.isfile(fp):
-				print 'Seems file already exist, checkout: ' + fp + '.\nSkip fetching file...'
+				print 'Seems file already exists, checkout: ' + fp + '.\nSkip fetching file...'
 				self.src_local = src_uri[src_uri.rindex('/') + 1:]
 				return
 			else:
@@ -478,8 +466,7 @@ class HaikuPorter:
 					print "  error... trying next location"
 					continue
 		# failed to fetch source
-		print "Failed to fetch source package from all locations"
-		sys.exit()
+		sys.exit("Error: Failed to fetch source package from all locations.")
 
 	def downloadProgressIndicator(self, *a):
 		"""Show a progress bar, download speed and ETA"""
@@ -541,18 +528,21 @@ class HaikuPorter:
 				sys.stdout.write(' OK\n')
 			else:
 				sys.stdout.write(' FAILED\n')
-				sys.exit()
+				sys.exit(1)
 			sys.stdout.flush()
 		else:
-			print "CHECKSUM_MD5 not found"
+			print "Warning: CHECKSUM_MD5 key not found in bep file."
 
 	def unpack(self):
 		"""Unpack the source archive (into the work directory)"""
 		# create work dir
 		if not os.path.exists(self.workDir):
 			os.mkdir(self.workDir)
+
+		# Check to see if the source archive was already unpacked.
 		if self.checkFlag('unpack') and not self.options.force:
 			return
+
 		# unpack source archive
 		os.chdir(self.workDir)
 		print "Unpacking " + self.src_local
@@ -566,18 +556,25 @@ class HaikuPorter:
 			zf.extractall()
 			zf.close()
 		else:
-			print "Unrecognised archive type"
-			sys.exit()
+			sys.exit("Error: Unrecognized archive type.")
+
 		self.setFlag('unpack')	
 
 	def patch(self):
 		"""Apply the Haiku patches to the source directory"""
+
+		# Check to see if the patch was already applied to the source.
 		if self.checkFlag('patch') and not self.options.force:
 			return
+
 		os.chdir(self.workDir)
+
 		patchFilePath = self.patchesDir + '/' + self.portName + '-' + self.portVersion + '.patch'
 		if os.path.exists(patchFilePath):
-			os.system("patch -p0 -i " + patchFilePath)
+			patchOptions = ""
+			if 'PATCH_OPTIONS' in self.confKeys:
+				patchOptions += self.confKeys['PATCH_OPTIONS']
+			os.system('patch -p0 ' + patchOptions + ' -i ' + patchFilePath)
 			# TODO: check return code
 		else:
 			print "No patching required"
@@ -585,10 +582,17 @@ class HaikuPorter:
 
 	def build(self):
 		"""Build the sources"""
+
+		# Make sure the bep file for the package has a BUILD section.
+		if (not 'BUILD' in self.bepKeys) or (not self.bepKeys['BUILD']):
+			sys.exit('Error: Invalid bep file with no BUILD section.')
+
+		# Check to see if a previous build was already done.
 		if self.checkFlag('build') and not self.options.force:
 			return
+
 		os.chdir(self.workDir)
-		# TODO: if self.bepKeys['BUILD'] = empty, warn user
+
 		buildCommands = ''
 		for command in self.bepKeys['BUILD']:
 			if buildCommands != '':
@@ -599,9 +603,13 @@ class HaikuPorter:
 
 	def install(self):
 		"""Install the binaries onto the system"""
+
+		# Make sure the bep file for the package has an INSTALL section.
+		if (not 'INSTALL' in self.bepKeys) or (not self.bepKeys['INSTALL']):
+			sys.exit('Error: bep file has no INSTALL section.')
+
 		print "Installing ..."
 		os.chdir(self.workDir)
-		# TODO: if self.bepKeys['INSTALL'] = empty, warn user
 		installCommands = ''
 		for command in self.bepKeys['INSTALL']:
 			if installCommands != '':
@@ -610,6 +618,12 @@ class HaikuPorter:
 		os.system(installCommands)
 
 	def distro(self):
+		"""Create a package suitable for distribution"""
+
+		# Make sure the bep file for the package has an INSTALL section.
+		if (not 'INSTALL' in self.bepKeys) or (not self.bepKeys['INSTALL']):
+			sys.exit('Error: bep file has no INSTALL section.')
+
 		# if the distro dir still exists from a previous run then remove it
 		shutil.rmtree(self.distroDir, True)
 
@@ -618,7 +632,6 @@ class HaikuPorter:
 			os.mkdir(self.distroDir)
 
 		os.chdir(self.workDir)
-		# TODO: if self.bepKeys['INSTALL'] = empty, warn user
 		installCommands = ''
 		for command in self.bepKeys['INSTALL']:
 			if 'make install' in command:
@@ -704,8 +717,7 @@ class Config:
 		try:
 			self.file = open(self.filename, 'rb')
 		except:
-			print "Can't find config file: " + self.filename
-			sys.exit()
+			sys.exit("Error: Can't find config file: " + self.filename)
 
 		self.lineCount = 0
 		self.nextLine()
@@ -796,9 +808,9 @@ class Config:
 		self.lineCount = self.lineCount + 1
 
 	def illegalSyntax(self):
-		print "Illegal syntax in " + self.filename + " at line " + str(self.lineCount) + ":"
+		print "Error: Illegal syntax in " + self.filename + " at line " + str(self.lineCount) + ":"
 		print "  " + self.line
-		sys.exit()
+		sys.exit(1)
 
 	def getKeys(self):
 		return self.options
