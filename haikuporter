@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.50"
+info['version'] = "0.51"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -454,7 +454,7 @@ class HaikuPorter:
 				try:
 					file_uri = urllib2.urlopen(src_uri)
 					headers = file_uri.info()
-					remote_size = long(headers.getheader("Content-Length"))
+					remote_size = long(headers.getheader("Content-Length", -1))
 					src_uri = file_uri.geturl()
 					self.src_local = src_uri[src_uri.rindex('/') + 1:]
 					if os.path.exists(self.src_local):
