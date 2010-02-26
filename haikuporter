@@ -675,7 +675,7 @@ class HaikuPorter:
 		arch = '-' + gcc[0]
 		gcc = '-' + gcc[1][:-1]
 
-		date = time.strftime("-%m-%d-%Y", time.localtime())
+		date = time.strftime("-%Y-%m-%d", time.localtime())
 
 		packageFiles = ""
 
