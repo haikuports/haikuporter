@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.51"
+info['version'] = "0.52"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -675,8 +675,7 @@ class HaikuPorter:
 		arch = '-' + gcc[0]
 		gcc = '-' + gcc[1][:-1]
 
-		date = time.localtime()
-		date = '-' + str(date[0]) + '-' + str(date[1]) + '-' + str(date[2])
+		date = time.strftime("-%m-%d-%Y", time.localtime())
 
 		packageFiles = ""
 
