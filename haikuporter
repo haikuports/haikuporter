@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.52"
+info['version'] = "0.53"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -23,6 +23,7 @@ import zipfile
 import types
 import hashlib
 import shutil
+from subprocess import check_call
 from optparse import OptionParser
 
 # -- HaikuPorts options -------------------------------------------------------
@@ -180,8 +181,7 @@ class HaikuPorter:
 		if self.portVersion == None:
 			versions = []
 			reBepFile = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?\.bep$')
-			os.chdir(self.portDir)
-			dirList = os.listdir(".")
+			dirList = os.listdir(self.portDir)
 			for item in dirList:
 				m = reBepFile.match(item)
 				if m:
@@ -250,9 +250,8 @@ class HaikuPorter:
 
 	def about(self):
 		"""Show port description"""
-		os.chdir(self.portDir)
 
-		bepFilename = self.portName + '-' + self.portVersion + ".bep"
+		bepFilename = self.portDir + '/' + self.portName + '-' + self.portVersion + ".bep"
 
 		reOptionValue	= re.compile('^(?P<key>[A-Z0-9_]*)\s*=\s*"(?P<value>.*)(?<!\\\\)"\s*$')
 		reComment		= re.compile('^\s*#.*$')
@@ -305,14 +304,13 @@ class HaikuPorter:
 		"""Get/Update the port tree via svn"""
 		print "Refreshing the port tree: " + self.packagesPath
 		if os.path.exists(self.packagesPath + "/.svn"):
-			os.system('svn update "' + self.packagesPath + '"')
+			check_call(['svn', 'update', self.packagesPath])
 		else:
-			os.system('svn checkout http://ports.haiku-files.org/svn/haikuports/trunk "' + self.packagesPath + '"')
+			check_call(['svn', 'checkout', 'http://ports.haiku-files.org/svn/haikuports/trunk', self.packagesPath])
 
 	def parseBepFile(self):
 		"""Parse the BepFile of the specified port"""
-		os.chdir(self.portDir)
-		bepFilename = self.portName + "-" + self.portVersion + ".bep"
+		bepFilename = self.portDir + '/' + self.portName + "-" + self.portVersion + ".bep"
 		if not os.path.exists(bepFilename):
 			sys.exit("Error: " + self.portName + " version " + self.portVersion + " not found.")
 		bepConfig = Config(bepFilename)
@@ -410,10 +408,9 @@ class HaikuPorter:
 
 	def clean(self):
 		"""Clean the working directory"""
-		os.chdir(self.portDir)
-		if os.path.exists(paths['work']):
+		if os.path.exists(self.workDir):
 			print "Cleaning work directory..."
-			shutil.rmtree(paths['work'])
+			shutil.rmtree(self.workDir)
 
 	def checkDeps(self):
 		"""Print the list of ports this one depends on"""
@@ -465,7 +462,7 @@ class HaikuPorter:
 					if local_size == remote_size:
 						print '  file was already downloaded... continuing'
 					else:
-						os.system('wget ' + src_uri)
+						check_call(['wget', src_uri])
 						# urllib.urlretrieve(src_uri, self.src_local, self.downloadProgressIndicator)
 						print ''
 					# succesfully downloaded source archive
@@ -553,16 +550,15 @@ class HaikuPorter:
 			return
 
 		# unpack source archive
-		os.chdir(self.workDir)
 		print "Unpacking " + self.src_local
 		archiveFullPath = self.downloadDir + "/" + self.src_local
 		if tarfile.is_tarfile(archiveFullPath): 
 			tf = tarfile.open(self.downloadDir + "/" + self.src_local, 'r')
-			tf.extractall()
+			tf.extractall(self.workDir)
 			tf.close()
 		elif zipfile.is_zipfile(archiveFullPath):
 			zf = zipfile.ZipFile(self.downloadDir + "/" + self.src_local, 'r')
-			zf.extractall()
+			zf.extractall(self.workDir)
 			zf.close()
 		else:
 			sys.exit("Error: Unrecognized archive type.")
@@ -576,14 +572,12 @@ class HaikuPorter:
 		if self.checkFlag('patch') and not self.options.force:
 			return
 
-		os.chdir(self.workDir)
-
 		patchFilePath = self.patchesDir + '/' + self.portName + '-' + self.portVersion + '.patch'
 		if os.path.exists(patchFilePath):
 			patchOptions = ""
 			if 'PATCH_OPTIONS' in self.confKeys:
 				patchOptions += self.confKeys['PATCH_OPTIONS']
-			os.system('patch -p0 ' + patchOptions + ' -i ' + patchFilePath)
+			check_call('patch -p0 ' + patchOptions + ' -i ' + patchFilePath, shell=True, cwd=self.workDir)
 			# TODO: check return code
 		else:
 			print "No patching required"
@@ -600,14 +594,12 @@ class HaikuPorter:
 		if self.checkFlag('build') and not self.options.force:
 			return
 
-		os.chdir(self.workDir)
-
 		buildCommands = ''
 		for command in self.bepKeys['BUILD']:
 			if buildCommands != '':
 				buildCommands = buildCommands + " && "
 			buildCommands = buildCommands + command
-		os.system(buildCommands)
+		check_call(buildCommands, shell=True, cwd=self.workDir)
 		self.setFlag('build')
 
 	def install(self):
@@ -618,13 +610,12 @@ class HaikuPorter:
 			sys.exit('Error: bep file has no INSTALL section.')
 
 		print "Installing ..."
-		os.chdir(self.workDir)
 		installCommands = ''
 		for command in self.bepKeys['INSTALL']:
 			if installCommands != '':
 				installCommands = installCommands + " && "
 			installCommands = installCommands + command
-		os.system(installCommands)
+		check_call(installCommands, shell=True, cwd=self.workDir)
 
 	def distro(self):
 		"""Create a package suitable for distribution"""
@@ -642,7 +633,6 @@ class HaikuPorter:
 		if not os.path.exists(self.distroDir):
 			os.mkdir(self.distroDir)
 
-		os.chdir(self.workDir)
 		installCommands = ''
 		for command in self.bepKeys['INSTALL']:
 			if 'make install' in command:
@@ -651,10 +641,7 @@ class HaikuPorter:
 				installCommands = installCommands + " && "
 			installCommands = installCommands + command
 
-		os.system(installCommands)
-
-		# get OptionalPackageDescription
-		os.chdir(self.portDir)
+		check_call(installCommands, shell=True, cwd=self.workDir)
 
 		opd = False
 		for f in os.listdir(self.portDir):
@@ -693,7 +680,7 @@ class HaikuPorter:
 		zipFile = self.portDir + '/' + package + arch + gcc + date + '.zip'
 
 		# Zip the package and save it in the root of the port dir
-		os.system('zip -9ry ' + zipFile + ' ' + packageFiles + ' -x *.svn*')
+		check_call('zip -9ry ' + zipFile + ' ' + packageFiles + ' -x *.svn*', shell=True, cwd=self.distroDir)
 
 		# Clean up after ourselves
 		shutil.rmtree(self.distroDir)
@@ -720,11 +707,8 @@ class HaikuPorter:
 		if not sourceFiles:
 			sys.exit("Error: No source directories found in work dir.")
 
-		# Change to the work dir where the patched sources are.
-		os.chdir(self.workDir)
-
 		# Archive the package and save it in the root of the port dir.
-		os.system('tar cJvf ' + archiveFile + ' ' + sourceFiles)
+		check_call('tar cJvf ' + archiveFile + ' ' + sourceFiles, shell=True, cwd=self.workDir)
 
 		# Clean up after ourselves
 		shutil.rmtree(self.workDir)
