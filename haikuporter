@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.53"
+info['version'] = "0.54"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -597,8 +597,13 @@ class HaikuPorter:
 		buildCommands = ''
 		for command in self.bepKeys['BUILD']:
 			if buildCommands != '':
-				buildCommands = buildCommands + " && "
-			buildCommands = buildCommands + command
+				# If the previous line had a backslash, strip it off and skip
+				# adding the && operator since this is a line continuation
+				if buildCommands[-1] == '\\':
+					buildCommands = buildCommands[:-1]
+				else:
+					buildCommands += " && "
+			buildCommands += command
 		check_call(buildCommands, shell=True, cwd=self.workDir)
 		self.setFlag('build')
 
@@ -613,8 +618,13 @@ class HaikuPorter:
 		installCommands = ''
 		for command in self.bepKeys['INSTALL']:
 			if installCommands != '':
-				installCommands = installCommands + " && "
-			installCommands = installCommands + command
+				# If the previous line had a backslash, strip it off and skip
+				# adding the && operator since this is a line continuation
+				if installCommands[-1] == '\\':
+					installCommands = installCommands[:-1]
+				else:
+					installCommands += " && "
+			installCommands += command
 		check_call(installCommands, shell=True, cwd=self.workDir)
 
 	def distro(self):
