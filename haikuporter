@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.55"
+info['version'] = "0.56"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -648,8 +648,13 @@ class HaikuPorter:
 			if 'make install' in command:
 				command = 'make install DESTDIR=' + self.distroDir
 			if installCommands != '':
-				installCommands = installCommands + " && "
-			installCommands = installCommands + command
+				# If the previous line had a backslash, strip it off and skip
+				# adding the && operator since this is a line continuation
+				if installCommands[-1] == '\\':
+					installCommands = installCommands[:-1]
+				else:
+					installCommands += " && "
+			installCommands += command
 
 		check_call(installCommands, shell=True, cwd=self.workDir)
 
