@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.56"
+info['version'] = "0.57"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -23,6 +23,7 @@ import zipfile
 import types
 import hashlib
 import shutil
+import commands
 from subprocess import check_call
 from optparse import OptionParser
 
@@ -79,20 +80,12 @@ paths['patches']	= "patches"
 paths['download']	= "download"
 paths['distro']		= "distro"
 
-# -- downloadProgressIndicator properties ------------------------------------
-
-totalSteps = 35
-singleStep = 100.0/totalSteps
-
 # -- capture output of shell command -----------------------------------------
-#  from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52296
 
 def getCommandOutput(command):
-	child = os.popen(command)
-	data = child.read()
-	err = child.close()
-	if err:
-		raise RuntimeError, '%s failed w/ exit code %d' % (command, err)
+	status, data = commands.getstatusoutput(command)
+	if os.WEXITSTATUS(status) != 0:
+		sys.exit('\'%s\' failed with exit code %d' % (command, os.WEXITSTATUS(status)))
 	return data
 
 # -- Set up locale for thousands seperators ----------------------------------
@@ -140,7 +133,7 @@ class HaikuPorter:
 
 		# if requested, get ports tree
 		if options.get:
-			self.getTree()
+			self.updatePortsTree()
 			sys.exit()
 
 		# if there is no argument given, exit
@@ -198,7 +191,7 @@ class HaikuPorter:
 
 		# show port description, if requested
 		if options.about:
-			self.about()
+			self.printDescription()
 			sys.exit()
 
 		# read data from the bep file
@@ -227,28 +220,29 @@ class HaikuPorter:
 
 		# clean the work directory, if requested
 		if options.clean:
-			self.clean()
+			self.cleanWorkDirectory()
 
 		# don't build when not patching
 		if not options.patch:
 			options.build = False
 
-		self.checkDeps()	# check dependencies
-		self.fetch()		# fetch sources
-		self.checksum()		# calculate checksum
-		self.unpack()		# unpack source archive
+		self.checkDependencies()	# check dependencies
+		self.downloadSource()	# fetch sources
+		self.checksumSource()	# calculate checksum
+		self.unpackSource()		# unpack source archive
 		if options.patch:
-			self.patch()	# apply patches
+			self.patchSource()	# apply patches
 		if options.build:
-			self.build()	# build
+			self.buildPort()	# build
 		if options.install:
-			self.install()	# install
+			self.installPort()	# install
 		if options.distro:
-			self.distro()	# distro
+			self.makePackage()	# distro
 		if options.archive:
-			self.archive()	# create patched source archive
+			self.makePatchedArchive()	# create patched source archive
 
-	def about(self):
+
+	def printDescription(self):
 		"""Show port description"""
 
 		bepFilename = self.portDir + '/' + self.portName + '-' + self.portVersion + ".bep"
@@ -290,9 +284,10 @@ class HaikuPorter:
 
 		fp.close()
 
+
 	def setFlag(self, name):
-		f = open('%s/haikuports.%s' %(self.workDir, name), 'w')
-		f.close()
+		open('%s/haikuports.%s' %(self.workDir, name), 'w').close()
+
 
 	def checkFlag(self, name):
 		if os.path.exists('%s/haikuports.%s' %(self.workDir, name)):
@@ -300,13 +295,15 @@ class HaikuPorter:
 		else:
 			return False
 
-	def getTree(self):
+
+	def updatePortsTree(self):
 		"""Get/Update the port tree via svn"""
 		print "Refreshing the port tree: " + self.packagesPath
 		if os.path.exists(self.packagesPath + "/.svn"):
 			check_call(['svn', 'update', self.packagesPath])
 		else:
 			check_call(['svn', 'checkout', 'http://ports.haiku-files.org/svn/haikuports/trunk', self.packagesPath])
+
 
 	def parseBepFile(self):
 		"""Parse the BepFile of the specified port"""
@@ -346,14 +343,16 @@ class HaikuPorter:
 		#for key in self.bepKeys:
 		#	print key + " = " + str(self.bepKeys[key])
 
+
 	def detectOS(self):
 		"""Detect the platform we're running on"""
-		name = getCommandOutput('uname -s')[0:-1]
+		name = getCommandOutput('uname -s')
 		if name == "Haiku":
 			return name.upper()
 		# Support for R5, R5bone, dano, and Zeta has been dropped.
 		else:
 			return None
+
 
 	def listPorts(self):
 		"""List all of the ports in the HaikuPorts tree"""
@@ -369,6 +368,7 @@ class HaikuPorter:
 					if portName[0][0] != '.':
 						print category + "/" + portName
 
+
 	def searchPorts(self, regExp):
 		"""Search for a port in the HaikuPorts tree"""
 		reSearch = re.compile(regExp)
@@ -383,6 +383,7 @@ class HaikuPorter:
 				for portName in subdirList:
 					if portName[0][0] != '.' and reSearch.search(portName):
 						print category + "/" + portName
+
 
 	def getCategory(self, portName):
 		"""Find location of the specified port in the HaikuPorts tree"""
@@ -406,13 +407,15 @@ class HaikuPorter:
 				hierarchy.append([item, subdirList])
 		return None
 
-	def clean(self):
+
+	def cleanWorkDirectory(self):
 		"""Clean the working directory"""
 		if os.path.exists(self.workDir):
 			print "Cleaning work directory..."
 			shutil.rmtree(self.workDir)
 
-	def checkDeps(self):
+
+	def checkDependencies(self):
 		"""Print the list of ports this one depends on"""
 		if self.bepKeys['DEPEND'] == []:
 			print "No dependencies"
@@ -429,96 +432,33 @@ class HaikuPorter:
 		else:
 			sys.exit(1)
 
-	def fetch(self):
+
+	def downloadSource(self):
 		"""Fetch the source archive"""
 		# create download dir
 		if not os.path.exists(self.downloadDir):
 			os.mkdir(self.downloadDir)
 		# fetch source archive
-		self.lastBytes = 0
-		self.progressSpeed = 0
-		self.timeLeft = None
-		self.lastTime = time.time()
 		os.chdir(self.downloadDir)
 		for src_uri in self.bepKeys['SRC_URI']:
-			fp = self.downloadDir+'/'+src_uri[src_uri.rindex('/') + 1:]
+			self.src_local = src_uri[src_uri.rindex('/') + 1:]
+			fp = self.downloadDir + '/' + self.src_local
 			if os.path.isfile(fp):
-				print 'Seems file already exists, checkout: ' + fp + '.\nSkip fetching file...'
-				self.src_local = src_uri[src_uri.rindex('/') + 1:]
+				print 'File already exists: ' + fp + '\nSkipping download...'
 				return
 			else:
 				print "Fetching " + src_uri
 				try:
-					file_uri = urllib2.urlopen(src_uri)
-					headers = file_uri.info()
-					remote_size = long(headers.getheader("Content-Length", -1))
-					src_uri = file_uri.geturl()
-					self.src_local = src_uri[src_uri.rindex('/') + 1:]
-					if os.path.exists(self.src_local):
-						local_size = os.stat(self.src_local).st_size
-					else:
-						local_size = 0
-					# check if file was already downloaded
-					if local_size == remote_size:
-						print '  file was already downloaded... continuing'
-					else:
-						check_call(['wget', src_uri])
-						# urllib.urlretrieve(src_uri, self.src_local, self.downloadProgressIndicator)
-						print ''
+					check_call(['wget', '-c', '--tries=3', src_uri])
 					# succesfully downloaded source archive
 					return
 				except:
-					raise
-					print "  error... trying next location"
-					continue
+					print "Warning: download error, trying next location."
 		# failed to fetch source
-		sys.exit("Error: Failed to fetch source package from all locations.")
+		sys.exit("Error: Failed to download source package from all locations.")
 
-	def downloadProgressIndicator(self, *a):
-		"""Show a progress bar, download speed and ETA"""
-		current = float(a[0])
-		block = float(a[1])
-		total = float(a[2])
-		currentBytes = int(current * block)
-		if currentBytes > total:
-			currentBytes = total
-		percentComplete = 100 * currentBytes / (total)
-		currentStep = int(percentComplete / singleStep)
-		progressBar = '['
-		for step in range(totalSteps):
-			if step < currentStep:
-				progressBar = progressBar + '='
-			elif step == currentStep:
-				progressBar = progressBar + '>'
-			else:
-				progressBar = progressBar + ' '
-		progressBar = progressBar + ']'
-		currentTime = time.time()
-		deltaTime = currentTime - self.lastTime
-		if deltaTime > 0.5:
-			deltaBytes = currentBytes - self.lastBytes
-			self.progressSpeed = round(deltaBytes / deltaTime / 1000 , 2)
-			self.lastTime = currentTime
-			self.lastBytes = currentBytes
-			bytesLeft = total - currentBytes
-			if self.progressSpeed != 0:
-				secondsLeft = bytesLeft / self.progressSpeed / 1000
-				if secondsLeft > 3600:
-					self.timeLeft = time.strftime('%H:%M:%S', time.gmtime(secondsLeft))
-				else:
-					self.timeLeft = time.strftime('%M:%S', time.gmtime(secondsLeft))
-		
-		progressInfo = str(int(percentComplete)).rjust(3)  + '% ' \
-						+ progressBar \
-						+ ' ' + locale.format('%d', currentBytes, grouping=True).ljust(8) \
-						+ ' ' + str(self.progressSpeed).rjust(8) + 'K/s'
-		if self.timeLeft != None:
-			progressInfo = progressInfo \
-						+ '    ' + 'ETA ' + str(self.timeLeft)
-		sys.stdout.write('\r' + progressInfo)
-		sys.stdout.flush()
 
-	def checksum(self): 
+	def checksumSource(self): 
 		if self.bepKeys['CHECKSUM_MD5']:
 			sys.stdout.write('Calculating checksum -')
 			sys.stdout.flush()
@@ -539,7 +479,8 @@ class HaikuPorter:
 		else:
 			print "Warning: CHECKSUM_MD5 key not found in bep file."
 
-	def unpack(self):
+
+	def unpackSource(self):
 		"""Unpack the source archive (into the work directory)"""
 		# create work dir
 		if not os.path.exists(self.workDir):
@@ -565,7 +506,8 @@ class HaikuPorter:
 
 		self.setFlag('unpack')	
 
-	def patch(self):
+
+	def patchSource(self):
 		"""Apply the Haiku patches to the source directory"""
 
 		# Check to see if the patch was already applied to the source.
@@ -578,12 +520,12 @@ class HaikuPorter:
 			if 'PATCH_OPTIONS' in self.confKeys:
 				patchOptions += self.confKeys['PATCH_OPTIONS']
 			check_call('patch -p0 ' + patchOptions + ' -i ' + patchFilePath, shell=True, cwd=self.workDir)
-			# TODO: check return code
 		else:
 			print "No patching required"
 		self.setFlag('patch')
 
-	def build(self):
+
+	def buildPort(self):
 		"""Build the sources"""
 
 		# Make sure the bep file for the package has a BUILD section.
@@ -594,20 +536,12 @@ class HaikuPorter:
 		if self.checkFlag('build') and not self.options.force:
 			return
 
-		buildCommands = ''
-		for command in self.bepKeys['BUILD']:
-			if buildCommands != '':
-				# If the previous line had a backslash, strip it off and skip
-				# adding the && operator since this is a line continuation
-				if buildCommands[-1] == '\\':
-					buildCommands = buildCommands[:-1]
-				else:
-					buildCommands += " && "
-			buildCommands += command
-		check_call(buildCommands, shell=True, cwd=self.workDir)
+		self.runCommandSequence(self.bepKeys['BUILD'], self.workDir)
+
 		self.setFlag('build')
 
-	def install(self):
+
+	def installPort(self):
 		"""Install the binaries onto the system"""
 
 		# Make sure the bep file for the package has an INSTALL section.
@@ -615,19 +549,11 @@ class HaikuPorter:
 			sys.exit('Error: bep file has no INSTALL section.')
 
 		print "Installing ..."
-		installCommands = ''
-		for command in self.bepKeys['INSTALL']:
-			if installCommands != '':
-				# If the previous line had a backslash, strip it off and skip
-				# adding the && operator since this is a line continuation
-				if installCommands[-1] == '\\':
-					installCommands = installCommands[:-1]
-				else:
-					installCommands += " && "
-			installCommands += command
-		check_call(installCommands, shell=True, cwd=self.workDir)
 
-	def distro(self):
+		self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir)
+
+
+	def makePackage(self):
 		"""Create a package suitable for distribution"""
 
 		print "Creating distribution package ..."
@@ -643,20 +569,7 @@ class HaikuPorter:
 		if not os.path.exists(self.distroDir):
 			os.mkdir(self.distroDir)
 
-		installCommands = ''
-		for command in self.bepKeys['INSTALL']:
-			if 'make install' in command:
-				command = 'make install DESTDIR=' + self.distroDir
-			if installCommands != '':
-				# If the previous line had a backslash, strip it off and skip
-				# adding the && operator since this is a line continuation
-				if installCommands[-1] == '\\':
-					installCommands = installCommands[:-1]
-				else:
-					installCommands += " && "
-			installCommands += command
-
-		check_call(installCommands, shell=True, cwd=self.workDir)
+		self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir, True)
 
 		opd = False
 		for f in os.listdir(self.portDir):
@@ -675,7 +588,7 @@ class HaikuPorter:
 		gcc = getCommandOutput('setgcc')
 		gcc = gcc.split(': ')[1].split('/')
 		arch = '-' + gcc[0]
-		gcc = '-' + gcc[1][:-1]
+		gcc = '-' + gcc[1]
 
 		date = time.strftime("-%Y-%m-%d", time.localtime())
 
@@ -702,7 +615,8 @@ class HaikuPorter:
 
 		print 'Package saved to: ' + zipFile
 
-	def archive(self):
+
+	def makePatchedArchive(self):
 		"""Create a patched source archive"""
 
 		print "Creating patched source archive ..."
@@ -729,6 +643,25 @@ class HaikuPorter:
 		shutil.rmtree(self.workDir)
 
 		print 'Archive saved to: ' + archiveFile
+
+
+	def runCommandSequence(self, rawCommandList, dir, packageMode=False):
+		"""Run a sequence of shell commands from a bep file"""
+
+		commandString = ''
+		for command in rawCommandList:
+			if packageMode and 'make install' in command:
+				command = 'make install DESTDIR=' + self.distroDir
+
+			if commandString != '':
+				# If the previous line had a backslash, strip it off and skip
+				# adding the && operator since this is a line continuation
+				if commandString[-1] == '\\':
+					commandString = commandString[:-1]
+				else:
+					commandString += " && "
+			commandString += command
+		check_call(commandString, shell=True, cwd=dir)
 
 # -- /etc/haikuports.conf and *.bep parser -----------------------------------
 
