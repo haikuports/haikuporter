@@ -7,14 +7,13 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.57"
+info['version'] = "0.58"
 
 # -- Modules ------------------------------------------------------------------
 
 import sys
 import os
 import re
-import urllib
 import urllib2
 import time
 import locale
@@ -131,9 +130,14 @@ class HaikuPorter:
 			self.searchPorts(args[0])
 			sys.exit()
 
-		# if requested, get ports tree
+		# if requested, checkout or update ports tree
 		if options.get:
 			self.updatePortsTree()
+			sys.exit()
+
+		# if requested, print the location of the haikuports source tree
+		if options.tree:
+			print self.packagesPath
 			sys.exit()
 
 		# if there is no argument given, exit
@@ -435,27 +439,100 @@ class HaikuPorter:
 
 	def downloadSource(self):
 		"""Fetch the source archive"""
-		# create download dir
-		if not os.path.exists(self.downloadDir):
-			os.mkdir(self.downloadDir)
-		# fetch source archive
-		os.chdir(self.downloadDir)
+
 		for src_uri in self.bepKeys['SRC_URI']:
-			self.src_local = src_uri[src_uri.rindex('/') + 1:]
-			fp = self.downloadDir + '/' + self.src_local
-			if os.path.isfile(fp):
-				print 'File already exists: ' + fp + '\nSkipping download...'
+			# Examine the uri to determine if we need to perform a checkout instead of download
+			if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$', src_uri):
+				self.checkoutSource(src_uri)
 				return
-			else:
-				print "Fetching " + src_uri
-				try:
+
+			try:
+				# Need to make a request to get the actual uri in case it is an http redirect
+				uri_request = urllib2.urlopen(src_uri)
+				src_uri = uri_request.geturl()
+
+				self.src_local = src_uri[src_uri.rindex('/') + 1:]
+				fp = self.downloadDir + '/' + self.src_local
+				if os.path.isfile(fp):
+					print 'File already exists: ' + fp + '\nSkipping download ...'
+					return
+				else:
+					# create download dir and cd into it
+					if not os.path.exists(self.downloadDir):
+						os.mkdir(self.downloadDir)
+
+					os.chdir(self.downloadDir)
+
+					print "Downloading: " + src_uri
 					check_call(['wget', '-c', '--tries=3', src_uri])
 					# succesfully downloaded source archive
 					return
-				except:
-					print "Warning: download error, trying next location."
+			except:
+				print "Warning: download error, trying next location."
+
 		# failed to fetch source
 		sys.exit("Error: Failed to download source package from all locations.")
+
+
+	def checkoutSource(self, uri):
+		"""Parse the uri and execute the appropriate command to check the source out"""
+
+		if self.checkFlag('checkout') and not self.options.force:
+			print "Source already checked out. Skipping ..."
+			return
+
+		# If the work dir exists we need to clean it out
+		if os.path.exists(self.workDir):
+			shutil.rmtree(self.workDir)
+
+		print "Source checkout: " + uri
+
+		# Attempt to parse a uri with a + in it. ex: hg+http://blah
+		# Even if it doesn't find the 'type' it should extract the 'real_uri'
+		m = re.match('^((?P<type>\w*)\+)?(?P<real_uri>.*)$', uri)
+		if not m or not m.group("real_uri"):
+			sys.exit("Error: Couldn't parse repository URI")
+
+		type = m.group("type")
+		real_uri = m.group("real_uri")
+
+		# Attempt to parse a uri without a + in it. ex: svn://blah
+		# TODO improve the regex above to fallback to this pattern
+		if not type:
+			m = re.match("^(\w*).*$", uri)
+			if m:
+				type = m.group(1)
+
+		if not type:
+			sys.exit("Error: Couldn't determine repository type")
+
+		# Set the name of the directory to check out sources into
+		checkoutDir = self.portName + "-" + self.portVersion
+
+		# Start building the command to perform the checkout
+		if type == 'cvs':
+			# Chop off the leading cvs:// part of the uri
+			real_uri = real_uri[real_uri.index("cvs://") + 6:]
+			# Extract the cvs module from the uri and remove it from real_uri
+			module = real_uri[real_uri.rfind('/') + 1:]
+			real_uri = real_uri[:real_uri.rfind('/')]
+			checkoutCommand = "cvs -d:pserver:" + real_uri + " co -Pd " + checkoutDir + " " + module
+		elif type == 'svn':
+			checkoutCommand = "svn co --non-interactive --trust-server-cert " + real_uri + " " + checkoutDir
+		elif type == 'hg':
+			checkoutCommand = "hg clone " + real_uri + " " + checkoutDir
+		else:
+			checkoutCommand = "git clone --depth 1 " + real_uri + " " + checkoutDir
+
+		# create the work dir
+		if not os.path.exists(self.workDir):
+			os.mkdir(self.workDir)
+
+		check_call(checkoutCommand, shell=True, cwd=self.workDir)
+
+		# Set the 'checkout' flag to signal that the checkout is complete
+		# This also tells haikuporter not to attempt an unpack step
+		self.setFlag('checkout')
 
 
 	def checksumSource(self): 
@@ -463,7 +540,7 @@ class HaikuPorter:
 			sys.stdout.write('Calculating checksum -')
 			sys.stdout.flush()
 			h = hashlib.md5()
-			f = open(self.src_local, 'rb')
+			f = open(self.downloadDir + "/" + self.src_local, 'rb')
 			while True:
 				d = f.read(16384)
 				if not d:
@@ -477,11 +554,19 @@ class HaikuPorter:
 				sys.exit(1)
 			sys.stdout.flush()
 		else:
-			print "Warning: CHECKSUM_MD5 key not found in bep file."
+			# The checkout flag only gets set when a source checkout is performed
+			# If it exists we don't need to warn about the missing bep field
+			if not self.checkFlag('checkout'):
+				print "Warning: CHECKSUM_MD5 key not found in bep file."
 
 
 	def unpackSource(self):
 		"""Unpack the source archive (into the work directory)"""
+
+		# If the source came from a vcs there is no unpack step
+		if self.checkFlag('checkout'):
+			return
+
 		# create work dir
 		if not os.path.exists(self.workDir):
 			os.mkdir(self.workDir)
@@ -844,6 +929,10 @@ parser.add_option("-f", "--force",
 parser.add_option("-z", "--archive",
 	action="store_true", dest="archive", default=False,
 	help="Create a patched source archive as <package>_haiku.tar.xz")
+
+parser.add_option("-t", "--tree",
+	action="store_true", dest="tree", default=False,
+	help="Print out the location of the haikuports source tree")
 
 (options, args) = parser.parse_args()
 

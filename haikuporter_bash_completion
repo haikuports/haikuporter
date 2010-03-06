@@ -8,7 +8,7 @@
 # '. /etc/bash_completion.d/haikuporter_bash_completion'
 
 
-HAIKUPORTS_PATH=$(grep -F PACKAGES_PATH /boot/common/etc/haikuports.conf | cut -f2 -d= | sed -e 's/\"//g')
+HAIKUPORTS_PATH=$(haikuporter -t)
 
 for i in "${HAIKUPORTS_PATH}"/*/*/*.bep; do
 	i="${i##*/}"
