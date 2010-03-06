@@ -21,13 +21,13 @@ function _haikuporter()
 
 	# Stop offering completions when one of these is in the previous argument.
 	case ${COMP_WORDS[COMP_CWORD-1]} in
-		--version|-h|--help|-s|--search|-l|--list|-g|--get)
+		--version|-h|--help|-s|--search|-l|--list|-g|--get|-t|--tree)
 			return 0
 			;;
 	esac
 
 	if [[ ${cur} == -* ]];then
-		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -s --search -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -f --force -z --archive' -- ${cur}) )
+		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -s --search -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -f --force -z --archive -t --tree' -- ${cur}) )
 		return 0
 	fi
 
