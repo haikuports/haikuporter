@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.59"
+info['version'] = "0.60"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -488,18 +488,19 @@ class HaikuPorter:
 		print "Source checkout: " + uri
 
 		# Attempt to parse a uri with a + in it. ex: hg+http://blah
-		# Even if it doesn't find the 'type' it should extract the 'real_uri'
-		m = re.match('^((?P<type>\w*)\+)?(?P<real_uri>.*)$', uri)
+		# Even if it doesn't find the 'type' it should extract 'real_uri' and 'rev'
+		m = re.match('^((?P<type>\w*)\+)?(?P<real_uri>.+?)(#(?P<rev>.+))?$', uri)
 		if not m or not m.group("real_uri"):
 			sys.exit("Error: Couldn't parse repository URI")
 
 		type = m.group("type")
 		real_uri = m.group("real_uri")
+		rev = m.group("rev")
 
 		# Attempt to parse a uri without a + in it. ex: svn://blah
 		# TODO improve the regex above to fallback to this pattern
 		if not type:
-			m = re.match("^(\w*).*$", uri)
+			m = re.match("^(\w*).*$", real_uri)
 			if m:
 				type = m.group(1)
 
@@ -516,13 +517,29 @@ class HaikuPorter:
 			# Extract the cvs module from the uri and remove it from real_uri
 			module = real_uri[real_uri.rfind('/') + 1:]
 			real_uri = real_uri[:real_uri.rfind('/')]
-			checkoutCommand = "cvs -d:pserver:" + real_uri + " co -Pd " + checkoutDir + " " + module
+			checkoutCommand = "cvs -d" + real_uri + " co -P"
+			if rev:
+				# For CVS 'rev' specifies a date
+				checkoutCommand += " -D" + rev
+			checkoutCommand += " -d " + checkoutDir + " " + module
+
 		elif type == 'svn':
-			checkoutCommand = "svn co --non-interactive --trust-server-cert " + real_uri + " " + checkoutDir
+			checkoutCommand = "svn co --non-interactive --trust-server-cert"
+			if rev:
+				checkoutCommand += " -r " + rev
+			checkoutCommand += " " + real_uri + " " + checkoutDir
+
 		elif type == 'hg':
-			checkoutCommand = "hg clone " + real_uri + " " + checkoutDir
+			checkoutCommand = "hg clone"
+			if rev:
+				checkoutCommand += " -r " + rev
+			checkoutCommand += " " + real_uri + " " + checkoutDir
+
 		else:
-			checkoutCommand = "git clone --depth 1 " + real_uri + " " + checkoutDir
+			#TODO Skip the initial checkout if a rev is specified?
+			checkoutCommand = "git clone " + real_uri + " " + checkoutDir
+			if rev:
+				checkoutCommand += " && cd " + checkoutDir + " && git checkout " + rev
 
 		# create the work dir
 		if not os.path.exists(self.workDir):
