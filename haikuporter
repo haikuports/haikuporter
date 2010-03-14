@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.61"
+info['version'] = "0.62"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -744,17 +744,11 @@ class HaikuPorter:
 	def runCommandSequence(self, rawCommandList, dir, packageMode=False):
 		"""Run a sequence of shell commands from a bep file"""
 
-		commandString = ''
+		# Convert rawCommandList to a string with a newline after each entry
+		# Use 'set -e' as the first command so that the shell aborts immediately
+		commandString = 'set -e\n'
 		for command in rawCommandList:
-
-			if commandString != '':
-				# If the previous line had a backslash, strip it off and skip
-				# adding the && operator since this is a line continuation
-				if commandString[-1] == '\\':
-					commandString = commandString[:-1]
-				else:
-					commandString += " && "
-			commandString += command
+			commandString += command + '\n'
 
 		shellEnv = None
 
