@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.62"
+info['version'] = "0.63"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -725,7 +725,7 @@ class HaikuPorter:
 		# Build the list of dirs to archive.
 		# Since we don't know the name we have to iterate over the dir.
 		for f in os.listdir(self.workDir):
-			if os.path.isdir(f):
+			if os.path.isdir(self.workDir + '/' + f):
 				sourceFiles += ' ' + f
 
 		# Make sure we found something to archive
