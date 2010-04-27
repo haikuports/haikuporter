@@ -27,7 +27,7 @@ function _haikuporter()
 	esac
 
 	if [[ ${cur} == -* ]];then
-		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -s --search -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -f --force -z --archive -t --tree' -- ${cur}) )
+		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -s --search -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -f --force -z --archive -t --tree -y --yes' -- ${cur}) )
 		return 0
 	fi
 

@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.63"
+info['version'] = "0.64"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -58,6 +58,7 @@ bepTypes['STATUS_HAIKU'] = [StatusType]
 bepTypes['DEPEND']		 = [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD']		 = [ShellType]
 bepTypes['INSTALL']		 = [ShellType]
+bepTypes['MESSAGE']		 = [types.StringType]
 
 							# is field	 #	default
 bepDefaults = {}			# required?	 #	value
@@ -71,6 +72,7 @@ bepDefaults['STATUS_HAIKU']	= [False,		'untested'	]
 bepDefaults['DEPEND']		= [False,		None		]
 bepDefaults['BUILD']		= [False,		shell()		]
 bepDefaults['INSTALL']		= [False,		shell()		]
+bepDefaults['MESSAGE']		= [False,		None		]
 
 # names of directories
 paths = {}
@@ -207,7 +209,19 @@ class HaikuPorter:
 			sys.exit("Error: Unknown OS platform!")
 		else:
 			if self.bepKeys['STATUS_' + self.platform] != "stable":
-				print "Warning: This port is " + self.bepKeys['STATUS_' + self.platform] + " on this platform.",
+				print "Warning: This port is " + self.bepKeys['STATUS_' + self.platform] + " on this platform."
+				if not self.options.yes:
+					answer = raw_input("Continue (y/n + enter)? ")
+					if answer == '':
+						sys.exit(1)
+					if answer[0].lower() == 'y':
+						print "ok"
+					else:
+						sys.exit(1)
+
+		if self.bepKeys['MESSAGE']:
+			print self.bepKeys['MESSAGE']
+			if not self.options.yes:
 				answer = raw_input("Continue (y/n + enter)? ")
 				if answer == '':
 					sys.exit(1)
@@ -944,6 +958,10 @@ parser.add_option("-z", "--archive",
 parser.add_option("-t", "--tree",
 	action="store_true", dest="tree", default=False,
 	help="Print out the location of the haikuports source tree")
+
+parser.add_option("-y", "--yes",
+	action="store_true", dest="yes", default=False,
+	help="Answer yes to all questions")
 
 (options, args) = parser.parse_args()
 
