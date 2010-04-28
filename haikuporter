@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.64"
+info['version'] = "0.65"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -732,7 +732,8 @@ class HaikuPorter:
 		print "Creating patched source archive ..."
 
 		# Set the path and filename for the archive.
-		archiveFile = self.portDir + '/' + self.portName + '-' + self.portVersion + '_haiku.tar.xz'
+		date = time.strftime("-%Y-%m-%d", time.localtime())
+		archiveFile = self.portDir + '/' + self.portName + '-' + self.portVersion + '_haiku' + date + '.tar.xz'
 
 		sourceFiles = ""
 
