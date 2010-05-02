@@ -119,7 +119,7 @@ class HaikuPorter:
 
 		# if requested, list all ports in the HaikuPorts tree
 		if options.list:
-			self.listPorts()
+			self.searchPorts(None)
 			sys.exit()
 
 		# if requested, search for a port
@@ -140,6 +140,11 @@ class HaikuPorter:
 		# if requested, print the location of the haikuports source tree
 		if options.tree:
 			print self.packagesPath
+			sys.exit()
+
+		# if requested, scan the ports tree for problems
+		if options.lint:
+			self.checkSourceTree()
 			sys.exit()
 
 		# if there is no argument given, exit
@@ -323,6 +328,25 @@ class HaikuPorter:
 			check_call(['svn', 'checkout', 'http://ports.haiku-files.org/svn/haikuports/trunk', self.packagesPath])
 
 
+	def validateBepFile(self, bepFilePath):
+		"""Validate the keys/values in a bep file"""
+		bepConfig = Config(bepFilePath)
+		self.bepKeys = bepConfig.getKeys()
+
+		# check whether all required fields are present
+		for key in bepDefaults:
+			if key not in self.bepKeys and bepDefaults[key][0]:
+				print "Error: Required field '" + key + "' not present in " + bepFilename
+
+		# check validity of BepFile values
+		for key in self.bepKeys:
+			try:
+				if type(self.bepKeys[key]) not in bepTypes[key]:
+					print "Error: Invalid value type for " + key + ". Expecting " + str(bepTypes[key])
+			except KeyError, e:
+				print "Warning: Unknown key label '" + key
+
+
 	def parseBepFile(self):
 		"""Parse the BepFile of the specified port"""
 		bepFilename = self.portDir + '/' + self.portName + "-" + self.portVersion + ".bep"
@@ -342,7 +366,7 @@ class HaikuPorter:
 				if type(self.bepKeys[key]) not in bepTypes[key]:
 					sys.exit("Error: Invalid value type for " + key + ". Expecting " + str(bepTypes[key]))
 			except KeyError, e:
-				print "Warning: Unknown key label '" + key + "'. Ignoring."
+				print "Warning: Unknown key label '" + key
 
 		# set default values when not provided
 		for key in bepDefaults:
@@ -372,24 +396,10 @@ class HaikuPorter:
 			return None
 
 
-	def listPorts(self):
-		"""List all of the ports in the HaikuPorts tree"""
-		hierarchy = []
-		os.chdir(self.packagesPath)
-		dirList = os.listdir(self.packagesPath)
-		for category in dirList:
-			if os.path.isdir(category) and (category[0] != '.'):
-				subdirList = os.listdir(category)
-				# remove items starting with '.'
-				subdirList.sort()
-				for portName in subdirList:
-					if portName[0][0] != '.':
-						print category + "/" + portName
-
-
 	def searchPorts(self, regExp):
 		"""Search for a port in the HaikuPorts tree"""
-		reSearch = re.compile(regExp)
+		if regExp:
+			reSearch = re.compile(regExp)
 		hierarchy = []
 		os.chdir(self.packagesPath)
 		dirList = os.listdir(self.packagesPath)
@@ -399,7 +409,7 @@ class HaikuPorter:
 				# remove items starting with '.'
 				subdirList.sort()
 				for portName in subdirList:
-					if portName[0][0] != '.' and reSearch.search(portName):
+					if portName[0][0] != '.' and (not regExp or reSearch.search(portName)):
 						print category + "/" + portName
 
 
@@ -774,6 +784,28 @@ class HaikuPorter:
 		check_call(commandString, shell=True, cwd=dir, env=shellEnv)
 
 
+	def checkSourceTree(self):
+		print "Checking HaikuPorts tree at: " + self.packagesPath
+
+		for category in os.listdir(self.packagesPath):
+			categoryFullPath = self.packagesPath + '/' + category
+			if os.path.isdir(categoryFullPath) and (category[0] != '.'):
+				print "Category: " + category
+				for port in os.listdir(categoryFullPath):
+					portFullPath = categoryFullPath + '/' + port
+					if os.path.isdir(portFullPath) and (port[0] != '.'):
+						print "\tPort: " + port
+						for bep in os.listdir(portFullPath):
+							bepFullPath = portFullPath + '/' + bep
+							if os.path.isfile(bepFullPath) and bep[-4:] == ".bep":
+								reWithVersion = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?$')
+								m = reWithVersion.match(bep[:-4])
+								if m:		# with version
+									print "\t\tName/Version: " + m.group("name") + "\t" + m.group("version")
+									self.validateBepFile(bepFullPath)
+								else:								# invalid argument
+									print("Error: Couldn't parse port/version info: " + bep)	
+
 # -- /etc/haikuports.conf and *.bep parser -----------------------------------
 
 class Config:
@@ -963,6 +995,10 @@ parser.add_option("-t", "--tree",
 parser.add_option("-y", "--yes",
 	action="store_true", dest="yes", default=False,
 	help="Answer yes to all questions")
+
+parser.add_option("--lint",
+	action="store_true", dest="lint", default=False,
+	help="Scan the ports tree for problems")
 
 (options, args) = parser.parse_args()
 
