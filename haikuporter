@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.65"
+info['version'] = "0.66"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -80,6 +80,13 @@ paths['work']		= "work"
 paths['patches']	= "patches"
 paths['download']	= "download"
 paths['distro']		= "distro"
+
+# regex to split bep filenames into port / version
+regExp = {}
+regExp['portname']		= '^(?P<name>[\w\-]+?)'
+regExp['portversion']	= '(?P<version>[\w]*?[\d]+([\w\-\\.])*)'
+regExp['portfullname']	= regExp['portname'] + '-' + regExp['portversion']
+regExp['bepfilename']	= regExp['portfullname'] + '\.bep$'
 
 # -- capture output of shell command -----------------------------------------
 
@@ -156,8 +163,8 @@ class HaikuPorter:
 			port = args[0]
 
 		# split the argument into a port name and a version
-		reWithVersion = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?$')
-		reWithoutVersion = re.compile('^(?P<name>[a-z0-9\-_]*)$')
+		reWithVersion = re.compile(regExp['portfullname'])
+		reWithoutVersion = re.compile(regExp['portname'] + '$')
 		if reWithVersion.match(port):		# with version
 			m = reWithVersion.match(port)
 			self.portName = m.group("name")
@@ -184,7 +191,7 @@ class HaikuPorter:
 		# if the port version was not specified, list available versions
 		if self.portVersion == None:
 			versions = []
-			reBepFile = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?\.bep$')
+			reBepFile = re.compile(regExp['bepfilename'])
 			dirList = os.listdir(self.portDir)
 			for item in dirList:
 				m = reBepFile.match(item)
@@ -328,7 +335,7 @@ class HaikuPorter:
 			check_call(['svn', 'checkout', 'http://ports.haiku-files.org/svn/haikuports/trunk', self.packagesPath])
 
 
-	def validateBepFile(self, bepFilePath):
+	def validateBepFile(self, bepFilePath, exitOnError=True):
 		"""Validate the keys/values in a bep file"""
 		bepConfig = Config(bepFilePath)
 		self.bepKeys = bepConfig.getKeys()
@@ -337,12 +344,16 @@ class HaikuPorter:
 		for key in bepDefaults:
 			if key not in self.bepKeys and bepDefaults[key][0]:
 				print "Error: Required field '" + key + "' not present in " + bepFilename
+				if exitOnError:
+					sys.exit(1)
 
 		# check validity of BepFile values
 		for key in self.bepKeys:
 			try:
 				if type(self.bepKeys[key]) not in bepTypes[key]:
 					print "Error: Invalid value type for " + key + ". Expecting " + str(bepTypes[key])
+					if exitOnError:
+						sys.exit(1)
 			except KeyError, e:
 				print "Warning: Unknown key label '" + key
 
@@ -352,21 +363,8 @@ class HaikuPorter:
 		bepFilename = self.portDir + '/' + self.portName + "-" + self.portVersion + ".bep"
 		if not os.path.exists(bepFilename):
 			sys.exit("Error: " + self.portName + " version " + self.portVersion + " not found.")
-		bepConfig = Config(bepFilename)
-		self.bepKeys = bepConfig.getKeys()
-
-		# check whether all required fields are present
-		for key in bepDefaults:
-			if key not in self.bepKeys and bepDefaults[key][0]:
-				sys.exit("Error: Required field '" + key + "' not present in " + bepFilename)
-
-		# check validity of BepFile values
-		for key in self.bepKeys:
-			try:
-				if type(self.bepKeys[key]) not in bepTypes[key]:
-					sys.exit("Error: Invalid value type for " + key + ". Expecting " + str(bepTypes[key]))
-			except KeyError, e:
-				print "Warning: Unknown key label '" + key
+		
+		self.validateBepFile(bepFilename)
 
 		# set default values when not provided
 		for key in bepDefaults:
@@ -789,20 +787,26 @@ class HaikuPorter:
 
 		for category in os.listdir(self.packagesPath):
 			categoryFullPath = self.packagesPath + '/' + category
+
 			if os.path.isdir(categoryFullPath) and (category[0] != '.'):
 				print "Category: " + category
+
 				for port in os.listdir(categoryFullPath):
 					portFullPath = categoryFullPath + '/' + port
+
 					if os.path.isdir(portFullPath) and (port[0] != '.'):
 						print "\tPort: " + port
+
 						for bep in os.listdir(portFullPath):
 							bepFullPath = portFullPath + '/' + bep
+
 							if os.path.isfile(bepFullPath) and bep[-4:] == ".bep":
-								reWithVersion = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?$')
-								m = reWithVersion.match(bep[:-4])
-								if m:		# with version
+								reWithVersion = re.compile(regExp['bepfilename'])
+								#reWithVersion = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?$')
+								m = reWithVersion.match(bep)
+								if m and m.group("name") and m.group("version"):		# with version
 									print "\t\tName/Version: " + m.group("name") + "\t" + m.group("version")
-									self.validateBepFile(bepFullPath)
+									self.validateBepFile(bepFullPath, False)
 								else:								# invalid argument
 									print("Error: Couldn't parse port/version info: " + bep)	
 
