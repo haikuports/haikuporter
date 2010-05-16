@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.66"
+info['version'] = "0.68"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -59,6 +59,8 @@ bepTypes['DEPEND']		 = [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD']		 = [ShellType]
 bepTypes['INSTALL']		 = [ShellType]
 bepTypes['MESSAGE']		 = [types.StringType]
+bepTypes['LICENSE']		 = [types.StringType, types.ListType]
+bepTypes['COPYRIGHT']	 = [types.StringType, types.ListType]
 
 							# is field	 #	default
 bepDefaults = {}			# required?	 #	value
@@ -73,6 +75,8 @@ bepDefaults['DEPEND']		= [False,		None		]
 bepDefaults['BUILD']		= [False,		shell()		]
 bepDefaults['INSTALL']		= [False,		shell()		]
 bepDefaults['MESSAGE']		= [False,		None		]
+bepDefaults['LICENSE']		= [False,		None		]
+bepDefaults['COPYRIGHT']	= [False,		None		]
 
 # names of directories
 paths = {}
@@ -316,11 +320,11 @@ class HaikuPorter:
 
 
 	def setFlag(self, name):
-		open('%s/haikuports.%s' %(self.workDir, name), 'w').close()
+		open('%s/%s-%s.%s' %(self.workDir, self.portName, self.portVersion, name), 'w').close()
 
 
 	def checkFlag(self, name):
-		if os.path.exists('%s/haikuports.%s' %(self.workDir, name)):
+		if os.path.exists('%s/%s-%s.%s' %(self.workDir, self.portName, self.portVersion, name)):
 			return True
 		else:
 			return False
@@ -343,7 +347,7 @@ class HaikuPorter:
 		# check whether all required fields are present
 		for key in bepDefaults:
 			if key not in self.bepKeys and bepDefaults[key][0]:
-				print "Error: Required field '" + key + "' not present in " + bepFilename
+				print "Error: Required field '" + key + "' not present in " + bepFilePath
 				if exitOnError:
 					sys.exit(1)
 
@@ -356,6 +360,15 @@ class HaikuPorter:
 						sys.exit(1)
 			except KeyError, e:
 				print "Warning: Unknown key label '" + key
+
+		# TODO ensure valid license file
+
+		# TODO Remove these warnings after the keys have been made mandatory
+		if not 'LICENSE' in self.bepKeys or not self.bepKeys['LICENSE']:
+			print "Warning: No LICENSE found in bep file"
+
+		if not 'COPYRIGHT' in self.bepKeys or not self.bepKeys['COPYRIGHT']:
+			print "Warning: No COPYRIGHT found in bep file"
 
 
 	def parseBepFile(self):
@@ -677,6 +690,30 @@ class HaikuPorter:
 		self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir)
 
 
+	def generatePackageDescription(self, opdFile):
+		"""Create an OptionalPackageDescription file for inclusion in a package"""
+
+		print "Generating OptionalPackageDescription file ..."
+
+		opd = open(opdFile, 'w')
+
+		opd.write('Package:\t' + self.portName + '\n');
+		opd.write('Version:\t' + self.portVersion + '\n')
+		opd.write('URL:\t\t' + self.bepKeys['HOMEPAGE'] + '\n')
+
+		for license in self.bepKeys['LICENSE']:
+			opd.write('License:\t' + license + '\n')
+
+		copystring = ''
+		for copyright in self.bepKeys['COPYRIGHT']:
+			copystring += copyright + ', '
+
+		# Need to chop off the ending ', ' before writing
+		opd.write('Copyright:\t' + copystring[:-2] + '\n')
+
+		opd.close()
+
+
 	def makePackage(self):
 		"""Create a package suitable for distribution"""
 
@@ -695,11 +732,18 @@ class HaikuPorter:
 
 		self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir, True)
 
-		opd = False
-		for f in os.listdir(self.portDir):
-			if 'OptionalPackageDescription' in f:
-				shutil.copyfile(self.portDir + '/' + f, self.distroDir + '/boot/.OptionalPackageDescription')
+		if not os.path.exists(self.distroDir + '/boot'):
+			sys.exit('Error: No installed files detected in packaging directory. Check bep file for correctness')
 
+		if self.bepKeys['LICENSE'] and self.bepKeys['COPYRIGHT']:
+			self.generatePackageDescription(self.distroDir + '/boot/.OptionalPackageDescription')
+		else:
+			# TODO Remove this section after the keys have been made mandatory
+			for f in os.listdir(self.portDir):
+				if 'OptionalPackageDescription' in f:
+					shutil.copyfile(self.portDir + '/' + f, self.distroDir + '/boot/.OptionalPackageDescription')
+
+		for f in os.listdir(self.portDir):
 			if 'licenses' in f:
 				shutil.copytree(self.portDir + '/' + f, self.distroDir + '/boot/common/data/licenses')
 

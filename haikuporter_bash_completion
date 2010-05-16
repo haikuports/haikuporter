@@ -2,18 +2,24 @@
 #
 # To install: copy this file to the /etc/bash_completion.d directory
 #
-# Note: To increase speed, the list of packages is created when the shell starts
-# This means it won't notice changes to the ports tree until you restart the
-# shell or source this script again with a command like:
-# '. /etc/bash_completion.d/haikuporter_bash_completion'
 
+function _hp_options
+{
+local options="$(haikuporter -h | grep -- -- | cut -f3,4 -d' ' | sed -e 's/, / /')"
+COMPREPLY=(${COMPREPLY[@]:-} $(compgen -W '$options' -- "$cur"))
+}
 
-HAIKUPORTS_PATH=$(haikuporter -t)
+function _hp_beps
+{
+	local packages
 
-for i in "${HAIKUPORTS_PATH}"/*/*/*.bep; do
-	i="${i##*/}"
-	HAIKUPORTS_PACKAGES="${i%.bep} ${HAIKUPORTS_PACKAGES}"
-done
+	for i in "$(haikuporter -t)"/*/*/*.bep; do
+		i="${i##*/}"
+		packages="${i%.bep} ${packages}"
+	done
+
+	COMPREPLY=( $(compgen -W '${packages}' -- ${cur}) )
+}
 
 function _haikuporter()
 {
@@ -27,11 +33,11 @@ function _haikuporter()
 	esac
 
 	if [[ ${cur} == -* ]];then
-		COMPREPLY=( $(compgen -W '--version -h --help -l --list -a --about -s --search -p --nopatch -b --nobuild -i --install -d --distro -c --clean -g --get -f --force -z --archive -t --tree -y --yes' -- ${cur}) )
-		return 0
+		_hp_options
+		return
 	fi
 
-	COMPREPLY=( $(compgen -W '${HAIKUPORTS_PACKAGES}' -- ${cur}) )
+	_hp_beps
 
 	return 0
 }
