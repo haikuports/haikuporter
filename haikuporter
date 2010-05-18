@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.68"
+info['version'] = "0.69"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -363,7 +363,7 @@ class HaikuPorter:
 
 		# TODO ensure valid license file
 
-		# TODO Remove these warnings after the keys have been made mandatory
+		# TODO Disable warnings if an OPD file is found
 		if not 'LICENSE' in self.bepKeys or not self.bepKeys['LICENSE']:
 			print "Warning: No LICENSE found in bep file"
 
@@ -701,15 +701,14 @@ class HaikuPorter:
 		opd.write('Version:\t' + self.portVersion + '\n')
 		opd.write('URL:\t\t' + self.bepKeys['HOMEPAGE'] + '\n')
 
-		for license in self.bepKeys['LICENSE']:
-			opd.write('License:\t' + license + '\n')
+		# These keys aren't mandatory so we need to check if they exist
+		if self.bepKeys['LICENSE']:
+			for license in self.bepKeys['LICENSE']:
+				opd.write('License:\t' + license + '\n')
 
-		copystring = ''
-		for copyright in self.bepKeys['COPYRIGHT']:
-			copystring += copyright + ', '
-
-		# Need to chop off the ending ', ' before writing
-		opd.write('Copyright:\t' + copystring[:-2] + '\n')
+		if self.bepKeys['COPYRIGHT']:
+			for copyright in self.bepKeys['COPYRIGHT']:
+				opd.write('Copyright:\t' + copyright + '\n')
 
 		opd.close()
 
@@ -735,17 +734,18 @@ class HaikuPorter:
 		if not os.path.exists(self.distroDir + '/boot'):
 			sys.exit('Error: No installed files detected in packaging directory. Check bep file for correctness')
 
-		if self.bepKeys['LICENSE'] and self.bepKeys['COPYRIGHT']:
-			self.generatePackageDescription(self.distroDir + '/boot/.OptionalPackageDescription')
-		else:
-			# TODO Remove this section after the keys have been made mandatory
-			for f in os.listdir(self.portDir):
-				if 'OptionalPackageDescription' in f:
-					shutil.copyfile(self.portDir + '/' + f, self.distroDir + '/boot/.OptionalPackageDescription')
-
+		opdFound = False
 		for f in os.listdir(self.portDir):
 			if 'licenses' in f:
 				shutil.copytree(self.portDir + '/' + f, self.distroDir + '/boot/common/data/licenses')
+
+			if 'OptionalPackageDescription' in f:
+				opdFound = True
+				print "Copying OptionalPackageDescription to distro directory ..."
+				shutil.copyfile(self.portDir + '/' + f, self.distroDir + '/boot/.OptionalPackageDescription')
+
+		if not opdFound:
+			self.generatePackageDescription(self.distroDir + '/boot/.OptionalPackageDescription')
 
 		# go to distro dir for making zip package
 		os.chdir(self.distroDir)
