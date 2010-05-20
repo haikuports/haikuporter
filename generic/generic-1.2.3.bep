@@ -15,3 +15,6 @@ INSTALL {
 	cd generic-1.2.3
 	make install
 }
+
+LICENSE=""
+COPYRIGHT=""
