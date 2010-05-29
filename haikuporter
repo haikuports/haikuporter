@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.69"
+info['version'] = "0.70"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -87,8 +87,8 @@ paths['distro']		= "distro"
 
 # regex to split bep filenames into port / version
 regExp = {}
-regExp['portname']		= '^(?P<name>[\w\-]+?)'
-regExp['portversion']	= '(?P<version>[\w]*?[\d]+([\w\-\\.])*)'
+regExp['portname']		= '^(?P<name>[\w\-\+]+?)'
+regExp['portversion']	= '(?P<version>[\w]*?[\d]+([\w\-\\.\+])*)'
 regExp['portfullname']	= regExp['portname'] + '-' + regExp['portversion']
 regExp['bepfilename']	= regExp['portfullname'] + '\.bep$'
 
