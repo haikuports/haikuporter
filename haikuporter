@@ -463,13 +463,20 @@ class HaikuPorter:
 		for item in self.bepKeys['DEPEND']:
 			print "  " + item
 		print "Please verify that you have these installed.",
-		answer = raw_input("Continue (y/n + enter)? ")
-		if answer == '':
-			sys.exit(1)
-		if answer[0].lower() == 'y':
-			print "ok"
-		else:
-			sys.exit(1)
+		if not self.options.yes:
+			answer = raw_input("Continue (y/n + enter)? ")
+			if answer == '':
+				sys.exit(1)
+			if answer[0].lower() == 'y':
+				print "ok"
+			else:
+				sys.exit(1)
+			if answer == '':
+				sys.exit(1)
+			if answer[0].lower() == 'y':
+				print "ok"
+			else:
+				sys.exit(1)
 
 
 	def downloadSource(self):
