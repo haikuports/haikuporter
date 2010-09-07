@@ -1,5 +1,5 @@
 #!/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 # copyright 2007-2009 Brecht Machiels
 # copyright 2009 HaikuBot (aka RISC)
 # copyright 2009 Scott McCreary
@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.70"
+info['version'] = "0.71"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -465,12 +465,6 @@ class HaikuPorter:
 		print "Please verify that you have these installed.",
 		if not self.options.yes:
 			answer = raw_input("Continue (y/n + enter)? ")
-			if answer == '':
-				sys.exit(1)
-			if answer[0].lower() == 'y':
-				print "ok"
-			else:
-				sys.exit(1)
 			if answer == '':
 				sys.exit(1)
 			if answer[0].lower() == 'y':
