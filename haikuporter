@@ -499,7 +499,7 @@ class HaikuPorter:
 
 					os.chdir(self.downloadDir)
 
-					print "Downloading: " + src_uri
+					print "\nDownloading: " + src_uri
 					check_call(['wget', '-c', '--tries=3', src_uri])
 					# succesfully downloaded source archive
 					return

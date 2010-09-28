@@ -7,7 +7,7 @@ DEPEND=""
 CHECKSUM_MD5=""
 BUILD {
 	cd generic-1.2.3
-	./configure --prefix=/boot/common
+	./configure --prefix=`finddir B_COMMON_DIRECTORY`
 	make
 }
 
