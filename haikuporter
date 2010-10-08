@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # copyright 2007-2009 Brecht Machiels
 # copyright 2009 HaikuBot (aka RISC)
-# copyright 2009 Scott McCreary
+# copyright 2009-2010 Scott McCreary
 # copyright 2009 Alexander Deynichenko
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.71"
+info['version'] = "0.72"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -58,6 +58,7 @@ bepTypes['STATUS_HAIKU'] = [StatusType]
 bepTypes['DEPEND']		 = [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD']		 = [ShellType]
 bepTypes['INSTALL']		 = [ShellType]
+bepTypes['TEST']		 = [ShellType]
 bepTypes['MESSAGE']		 = [types.StringType]
 bepTypes['LICENSE']		 = [types.StringType, types.ListType]
 bepTypes['COPYRIGHT']	 = [types.StringType, types.ListType]
@@ -74,6 +75,7 @@ bepDefaults['STATUS_HAIKU']	= [False,		'untested'	]
 bepDefaults['DEPEND']		= [False,		None		]
 bepDefaults['BUILD']		= [False,		shell()		]
 bepDefaults['INSTALL']		= [False,		shell()		]
+bepDefaults['TEST']			= [False,		shell()		]
 bepDefaults['MESSAGE']		= [False,		None		]
 bepDefaults['LICENSE']		= [False,		None		]
 bepDefaults['COPYRIGHT']	= [False,		None		]
@@ -231,7 +233,7 @@ class HaikuPorter:
 					if answer == '':
 						sys.exit(1)
 					if answer[0].lower() == 'y':
-						print "ok"
+						print " ok"
 					else:
 						sys.exit(1)
 
@@ -242,7 +244,7 @@ class HaikuPorter:
 				if answer == '':
 					sys.exit(1)
 				if answer[0].lower() == 'y':
-					print "ok"
+					print " ok"
 				else:
 					sys.exit(1)
 
@@ -274,7 +276,8 @@ class HaikuPorter:
 			self.makePackage()	# distro
 		if options.archive:
 			self.makePatchedArchive()	# create patched source archive
-
+		if options.test:
+			self.testPort()		# run tests
 
 	def printDescription(self):
 		"""Show port description"""
@@ -468,7 +471,7 @@ class HaikuPorter:
 			if answer == '':
 				sys.exit(1)
 			if answer[0].lower() == 'y':
-				print "ok"
+				print " ok"
 			else:
 				sys.exit(1)
 
@@ -689,6 +692,18 @@ class HaikuPorter:
 		print "Installing ..."
 
 		self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir)
+
+
+	def testPort(self):
+		"""Test the resulting binaries"""
+
+		# Make sure the bep file for the package has a TEST section.
+		if (not 'TEST' in self.bepKeys) or (not self.bepKeys['TEST']):
+			sys.exit('Error: bep file has no TEST section.')
+
+		print "Testing ..."
+
+		self.runCommandSequence(self.bepKeys['TEST'], self.workDir)
 
 
 	def generatePackageDescription(self, opdFile):
@@ -1044,7 +1059,11 @@ parser.add_option("-t", "--tree",
 parser.add_option("-y", "--yes",
 	action="store_true", dest="yes", default=False,
 	help="Answer yes to all questions")
-
+	
+parser.add_option("--test",
+	action="store_true", dest="test", default=False,
+	help="Run tests on resulting binaries")
+	
 parser.add_option("--lint",
 	action="store_true", dest="lint", default=False,
 	help="Scan the ports tree for problems")
