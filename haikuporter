@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.72"
+info['version'] = "0.73"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -689,6 +689,9 @@ class HaikuPorter:
 		if (not 'INSTALL' in self.bepKeys) or (not self.bepKeys['INSTALL']):
 			sys.exit('Error: bep file has no INSTALL section.')
 
+		# Check if port is python or perl as installing them with haikuporter may break haikuporter
+		if ((self.portName == "python") or (self.portName == "perl")):
+			sys.exit('Error: cannot install ' + self.portName + ' using haikuporter.  Build to a package instead.')
 		print "Installing ..."
 
 		self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir)
