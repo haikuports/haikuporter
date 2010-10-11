@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.73"
+info['version'] = "0.74"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -770,6 +770,11 @@ class HaikuPorter:
 		os.chdir(self.distroDir)
 
 		package = self.portName + '-' + self.portVersion
+		
+		# set haikuversion to HAIKUVERSION, if it is empty then don't add a dash.
+		haikuversion = '-' + os.environ['HAIKUVERSION']
+		if haikuversion == '-':
+			haikuversion = ''
 
 		gcc = getCommandOutput('setgcc')
 		gcc = gcc.split(': ')[1].split('/')
@@ -778,7 +783,7 @@ class HaikuPorter:
 
 		date = time.strftime("-%Y-%m-%d", time.localtime())
 
-		zipFile = self.portDir + '/' + package + arch + gcc + date + '.zip'
+		zipFile = self.portDir + '/' + package + haikuversion + arch + gcc + date + '.zip'
 
 		zipRootDir = self.distroDir + '/boot'
 
