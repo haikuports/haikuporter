@@ -772,9 +772,9 @@ class HaikuPorter:
 		package = self.portName + '-' + self.portVersion
 		
 		# set haikuversion to HAIKUVERSION, if it is empty then don't add a dash.
-		haikuversion = '-' + os.environ['HAIKUVERSION']
-		if haikuversion == '-':
-			haikuversion = ''
+		haikuversion = ''
+		if os.environ.has_key('HAIKUVERSION'):
+			haikuversion = '-' + os.environ['HAIKUVERSION']
 
 		gcc = getCommandOutput('setgcc')
 		gcc = gcc.split(': ')[1].split('/')
