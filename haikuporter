@@ -7,7 +7,7 @@
 # copyright 2009-2010 Chris Roberts
 
 info = {}
-info['version'] = "0.74"
+info['version'] = "0.75"
 
 # -- Modules ------------------------------------------------------------------
 
@@ -86,6 +86,7 @@ paths['work']		= "work"
 paths['patches']	= "patches"
 paths['download']	= "download"
 paths['distro']		= "distro"
+paths['licenses']	= "licesnes"
 
 # regex to split bep filenames into port / version
 regExp = {}
@@ -106,6 +107,11 @@ def getCommandOutput(command):
 def _temp(lc=locale.localeconv()):
 	lc.update({'thousands_sep':',','grouping':[3,3,0]})
 	return lc
+
+def FindDirectory(aDir, subDirPath):
+	result = commands.getoutput('finddir %s' % aDir) + '/' + subDirPath
+	return result
+
 
 locale.localeconv=_temp
 
@@ -154,12 +160,12 @@ class HaikuPorter:
 		if options.tree:
 			print self.packagesPath
 			sys.exit()
-
+			
 		# if requested, scan the ports tree for problems
 		if options.lint:
 			self.checkSourceTree()
 			sys.exit()
-
+			
 		# if there is no argument given, exit
 		if len(args) == 0:
 			print "You need to specifiy at least a port name."
@@ -167,7 +173,7 @@ class HaikuPorter:
 			sys.exit(1)
 		else:
 			port = args[0]
-
+			
 		# split the argument into a port name and a version
 		reWithVersion = re.compile(regExp['portfullname'])
 		reWithoutVersion = re.compile(regExp['portname'] + '$')
@@ -364,8 +370,36 @@ class HaikuPorter:
 			except KeyError, e:
 				print "Warning: Unknown key label '" + key
 
-		# TODO ensure valid license file
-
+		# Check for a valid license file
+		if 'LICENSE' in self.bepKeys:
+			fileList = []
+			bepLicense = []
+			if type(self.bepKeys['LICENSE']) == type(str()):
+				bepLicense.append(self.bepKeys['LICENSE'])
+			else:
+				bepLicense = self.bepKeys['LICENSE']
+			for item in bepLicense:
+				dirname = FindDirectory('B_SYSTEM_DIRECTORY', 'data/licenses')
+				for filename in os.listdir(dirname):
+					fileList.append(filename)
+				haikuLicenseList = fileList
+				if item not in fileList:
+					fileList = []
+					dirname = os.path.dirname(bepFilePath) + "/licenses"
+					print "Try looking in " + dirname
+					if os.path.exists(dirname):
+						for filename in os.listdir(dirname):
+							fileList.append(filename)
+				if item not in fileList:
+					print "\n######## Error: No match found for License " + item + " ########\n"
+					print "Valid license filenames included with Haiku are: "
+					print haikuLicenseList
+					print "\n"
+					if exitOnError:
+						sys.exit(1)
+				else:
+					print "Matching License (" + item + ") found in " + dirname
+					  
 		# TODO Disable warnings if an OPD file is found
 		if not 'LICENSE' in self.bepKeys or not self.bepKeys['LICENSE']:
 			print "Warning: No LICENSE found in bep file"
