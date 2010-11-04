@@ -1,21 +1,26 @@
 #!/bin/sh
-cd $(finddir B_COMMON_DEVELOP_DIRECTORY)
-if [ ! -f $(finddir B_COMMON_DEVELOP_DIRECTORY)/haikuporter/haikuporter ] ; then
-svn co http://ports.haiku-files.org/svn/haikuports/trunk haikuports
-svn co http://ports.haiku-files.org/svn/haikuporter/trunk haikuporter
-fi
 
-alert --idea "Install haikuporter?" Yes No > /dev/null
-button=$?
-if [ $button -eq 0 ] ; then
-		cd /boot/develop/haikuporter
-  		cp haikuporter $(finddir B_COMMON_BIN_DIRECTORY)/haikuporter > /dev/null
-		echo "# HaikuPorts configuration" > haikuports.conf
-		echo "" >> haikuports.conf
-        echo "PACKAGES_PATH="\"$(finddir B_COMMON_DEVELOP_DIRECTORY)/haikuports\" >> haikuports.conf
-        cp haikuports.conf $(finddir B_COMMON_ETC_DIRECTORY)/haikuports.conf > /dev/null
-        haikuporter -g
-  		alert "haikuporter is ready." > /dev/null
-else
-		alert --stop "haikuporter is not installed." > /dev/null
-fi
+_progress () {
+	notify --type progress \
+		--app haikuporter \
+		--icon `finddir B_SYSTEM_APPS_DIRECTORY`/PackageInstaller \
+		--messageID $0_$$ \
+		--title "Install haikuporter..." \
+		--progress "$1" "$2" >/dev/null
+}
+
+_progress 0.0 "haikuporter"
+	cd `finddir B_COMMON_DEVELOP_DIRECTORY`
+	svn co http://ports.haiku-files.org/svn/haikuporter/trunk haikuporter
+
+_progress 0.2 "haikuporter setup"
+	cp haikuporter $(finddir B_COMMON_BIN_DIRECTORY)/haikuporter > /dev/null
+	echo "# HaikuPorts configuration" > haikuports.conf
+	echo "" >> haikuports.conf
+	echo "PACKAGES_PATH="\"$(finddir B_COMMON_DEVELOP_DIRECTORY)/haikuports\" >> haikuports.conf
+  	cp haikuports.conf $(finddir B_COMMON_ETC_DIRECTORY)/haikuports.conf > /dev/null
+
+_progress 0.6 "haikuports"
+	haikuporter -g
+
+_progress 1.0 ""
