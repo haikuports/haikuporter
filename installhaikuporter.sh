@@ -14,6 +14,7 @@ _progress 0.0 "haikuporter"
 	svn co http://ports.haiku-files.org/svn/haikuporter/trunk haikuporter
 
 _progress 0.2 "haikuporter setup"
+	cd `finddir B_COMMON_DEVELOP_DIRECTORY`/haikuporter
 	cp haikuporter $(finddir B_COMMON_BIN_DIRECTORY)/haikuporter > /dev/null
 	echo "# HaikuPorts configuration" > haikuports.conf
 	echo "" >> haikuports.conf
@@ -22,5 +23,6 @@ _progress 0.2 "haikuporter setup"
 
 _progress 0.6 "haikuports"
 	haikuporter -g
-
+-progress 0.9 "haikuports"
+	haikuporter -l
 _progress 1.0 ""
