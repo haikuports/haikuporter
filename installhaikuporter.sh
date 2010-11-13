@@ -23,6 +23,6 @@ _progress 0.2 "haikuporter setup"
 
 _progress 0.6 "haikuports"
 	haikuporter -g
--progress 0.9 "haikuports"
+_progress 0.9 "haikuports"
 	haikuporter -l
 _progress 1.0 ""
