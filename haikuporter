@@ -5,6 +5,7 @@
 # copyright 2009-2010 Scott McCreary
 # copyright 2009 Alexander Deynichenko
 # copyright 2009-2010 Chris Roberts
+# copyright 2010 Jack Laxson (Jrabbit)
 
 info = {}
 info['version'] = 'r' + '$Rev$'[6:-2]
@@ -515,7 +516,7 @@ class HaikuPorter:
 
 		for src_uri in self.bepKeys['SRC_URI']:
 			# Examine the uri to determine if we need to perform a checkout instead of download
-			if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$', src_uri):
+			if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$|^bzr.*$', src_uri):
 				self.checkoutSource(src_uri)
 				return
 
@@ -607,6 +608,13 @@ class HaikuPorter:
 			if rev:
 				checkoutCommand += " -r " + rev
 			checkoutCommand += " " + real_uri + " " + checkoutDir
+
+		elif type == 'bzr':
+			#http://doc.bazaar.canonical.com/bzr-0.10/bzr_man.htm#bzr-branch-from-location-to-location
+			checkoutCommand = "bzr checkout --lightweight"
+			if rev:
+				checkoutCommand += " -r " + rev
+			checkoutCommand += " " + real_uri + " " + checkoutDir	
 
 		else:
 			#TODO Skip the initial checkout if a rev is specified?
