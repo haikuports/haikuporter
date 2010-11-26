@@ -24,7 +24,7 @@ import types
 import hashlib
 import shutil
 import commands
-from subprocess import check_call
+from subprocess import check_call, Popen
 from optparse import OptionParser
 
 # -- HaikuPorts options -------------------------------------------------------
@@ -684,6 +684,13 @@ class HaikuPorter:
 			zf = zipfile.ZipFile(self.downloadDir + "/" + self.src_local, 'r')
 			zf.extractall(self.workDir)
 			zf.close()
+		elif archiveFullPath.split("/")[-1].split(".")[-1] == "xz":
+			Popen(['xz', '-d', '-k', archiveFullPath])
+			tar = archiveFullPath[:-3]
+			if tarfile.is_tarfile(tar): 
+				tf = tarfile.open(tar, 'r')
+				tf.extractall(self.workDir)
+				tf.close()
 		else:
 			sys.exit("Error: Unrecognized archive type.")
 
