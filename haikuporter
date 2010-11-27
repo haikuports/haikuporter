@@ -24,7 +24,7 @@ import types
 import hashlib
 import shutil
 import commands
-from subprocess import check_call, Popen
+from subprocess import check_call, Popen, CalledProcessError
 from optparse import OptionParser
 
 # -- HaikuPorts options -------------------------------------------------------
@@ -626,8 +626,14 @@ class HaikuPorter:
 		if not os.path.exists(self.workDir):
 			os.mkdir(self.workDir)
 
-		check_call(checkoutCommand, shell=True, cwd=self.workDir)
-
+		try:
+			check_call(checkoutCommand, shell=True, cwd=self.workDir)
+		except (OSError, CalledProcessError), e:
+			if self.prompt_installer(checkoutCommand.split()[0]):
+				check_call(checkoutCommand, shell=True, cwd=self.workDir)
+			else:
+				sys.exit()
+		
 		# Set the 'checkout' flag to signal that the checkout is complete
 		# This also tells haikuporter not to attempt an unpack step
 		self.setFlag('checkout')
@@ -685,7 +691,14 @@ class HaikuPorter:
 			zf.extractall(self.workDir)
 			zf.close()
 		elif archiveFullPath.split("/")[-1].split(".")[-1] == "xz":
-			Popen(['xz', '-d', '-k', archiveFullPath])
+			try:
+				Popen(['xz', '-d', '-k', archiveFullPath])
+			except (OSError, CalledProcessError), e:
+				#run the installoptionalsoftware prompt
+				if self.prompt_installer('xz'):
+					Popen(['xz', '-d', '-k', archiveFullPath])
+				else:
+					sys.exit()
 			tar = archiveFullPath[:-3]
 			if tarfile.is_tarfile(tar): 
 				tf = tarfile.open(tar, 'r')
@@ -880,6 +893,21 @@ class HaikuPorter:
 
 		print 'Archive saved to: ' + archiveFile
 
+	def prompt_installer(self, name):
+		apps = {'xz': 'XZ-Utils', 'git': 'Git', 'hg': 'mercurial',
+		'cvs': 'cvs', 'bzr' : 'bazaar'} #map command to package
+		if self.options.yes:
+			check_call('installoptionalpackage' + " " + str(apps[name]), shell=True)
+			return True
+		response =  raw_input("Do you want to install %s? [Y/n]" % name)
+		if response in ["y", "Y", "\n", "yes", '']:
+			check_call('installoptionalpackage' + " " + str(apps[name]), shell=True)
+			return True
+		else:
+			print "In order to install this package you need to run:"
+			print "installoptionalpackage %s" % apps[name]
+			print "later or let Haikuporter install it for you."
+			return False
 
 	def runCommandSequence(self, rawCommandList, dir, packageMode=False):
 		"""Run a sequence of shell commands from a bep file"""
