@@ -21,7 +21,12 @@ _progress 0.2 "haikuporter setup"
 	echo "PACKAGES_PATH="\"$(finddir B_COMMON_DEVELOP_DIRECTORY)/haikuports\" >> haikuports.conf
   	cp haikuports.conf $(finddir B_COMMON_ETC_DIRECTORY)/haikuports.conf > /dev/null
 
-_progress 0.6 "haikuports"
+_progress 0.6 "check for python"
+	if [ ! -e /boot/common/bin/python ]; then
+		_progress 0.7 "trying to install python"
+		installoptionalpackage python
+	fi
+_progress 0.8 "update haikuports"
 	haikuporter -g
 _progress 0.9 "haikuports"
 	haikuporter -l
