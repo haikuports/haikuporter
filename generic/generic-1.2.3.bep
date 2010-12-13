@@ -16,5 +16,11 @@ INSTALL {
 	make install
 }
 
+TEST {
+	cd generic-1.2.3
+#	make test
+#	make check
+}
+
 LICENSE=""
 COPYRIGHT=""
