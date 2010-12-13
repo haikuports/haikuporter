@@ -780,7 +780,9 @@ class HaikuPorter:
             if h.hexdigest() == self.bepKeys['CHECKSUM_MD5']:
                 sys.stdout.write(' OK\n')
             else:
-                sys.stdout.write(' FAILED\n')
+                sys.stdout.write(' FAILED\nExpected: '\
+                    + self.bepKeys['CHECKSUM_MD5'] +  '\nFound: '\
+                    + h.hexdigest() + '\n')
                 sys.exit(1)
             sys.stdout.flush()
         else:
