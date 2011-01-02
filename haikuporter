@@ -5,7 +5,7 @@
 # copyright 2009-2010 Scott McCreary
 # copyright 2009 Alexander Deynichenko
 # copyright 2009 HaikuBot (aka RISC)
-# copyright 2010 Jack Laxson (Jrabbit)
+# copyright 2010-2011 Jack Laxson (Jrabbit)
 
 info = {}
 info['version'] = 'r' + '$Rev$'[6:-2]
@@ -933,7 +933,32 @@ class HaikuPorter:
         if self.bepKeys['COPYRIGHT']:
             for copyright in self.bepKeys['COPYRIGHT']:
                 opd.write('Copyright:\t' + copyright + '\n')
-
+        
+        if ' '.join(self.bepKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 
+        'GNU LGPL']:
+            # 
+            # srcurl = self.bepKeys['SRC_URI'][0]
+            # if '+' in srcurl[:10]:
+            #     srcurl = srcurl.split('+', 1)[1]
+            date = time.strftime('-%Y-%m-%d', time.localtime())
+            if os.getenv('HAIKUVERSION'):
+                haiku_name = os.getenv('HAIKUVERSION')
+            else:
+                haiku_name = 'development'
+            srcurl= 'http://haiku-files.org/files/releases/%s/sources/%s-%s_haiku%s.tar.xz' % (haiku_name, self.portName, self.portVersion, date)
+            bepurl_base = 'http://ports.haiku-files.org/' + \
+            'browser/haikuports/trunk/' + self.portCategory
+            
+            bepurl = bepurl_base + '/' + self.portName+ '-'\
+            + self.portVersion + '.bep'
+            
+            opd.write('SourceURL:\t' + 'Download <' + srcurl + '>' +'\n')
+            opd.write('SourceURL:\t' + 'Bep-file <' + bepurl + '>' +'\n')
+            patchFilePath = self.patchesDir + '/' + self.portName + '-'\
+                 + self.portVersion + '.patch'
+            if os.path.exists(patchFilePath):
+                patchurl = bepurl_base + '/patches'
+                opd.write('SourceURL:\t' + 'Patches <' + patchurl + '>' +'\n')
         opd.close()
 
     def makePackage(self):
