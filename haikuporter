@@ -1054,10 +1054,15 @@ class HaikuPorter:
 
         print 'Package saved to: ' + zipFile
         
-        if self.confKeys['SFTP_TARGET']:
+        if self.options.upload:
             if paramiko:
-                print 'Uploading package to %s' % self.confKeys['SFTP_TARGET']
-                sendFile(zipfile)
+                if self.confKeys['SFTP_TARGET']:
+                    print 'Uploading package to %s' \
+                    % self.confKeys['SFTP_TARGET']
+                    sendFile(zipfile)
+                else:
+                    print 'Cannot read the SFTP options from ' + \
+                    'your haikuports.conf'
             else:
                 self.prompt_installer(paramiko)
 
@@ -1115,6 +1120,18 @@ class HaikuPorter:
         shutil.rmtree(self.workDir)
 
         print 'Archive saved to: ' + archiveFile
+        
+        if self.options.upload:
+            if paramiko:
+                if self.confKeys['SFTP_TARGET']:
+                    print 'Uploading archive to %s' \
+                    % self.confKeys['SFTP_TARGET']
+                    sendFile(zipfile)
+                else:
+                    print 'Cannot read the SFTP options from ' + \
+                    'your haikuports.conf'
+            else:
+                self.prompt_installer(paramiko)
 
     def prompt_installer(self, name):
         apps = {  # map command to package
@@ -1514,6 +1531,14 @@ parser.add_option(
     dest='yes',
     default=False,
     help='Answer yes to all questions',
+    )
+parser.add_option(
+    '-u',
+    '--upload',
+    action='store_true',
+    dest='upload',
+    default=False,
+    help='used with -d or -z to upload the resulting file to a SFTP site',
     )
 
 parser.add_option('--test', action='store_true', dest='test',
