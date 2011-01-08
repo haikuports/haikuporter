@@ -26,10 +26,6 @@ import shutil
 import commands
 from subprocess import check_call, Popen, CalledProcessError
 from optparse import OptionParser
-try:
-    import paramiko
-except ImportError:
-    pass
 
 # -- HaikuPorts options -------------------------------------------------------
 
@@ -63,11 +59,6 @@ StatusType = status
 confTypes = {}
 confTypes['PACKAGES_PATH'] = [types.StringType]
 confTypes['PATCH_OPTIONS'] = [types.StringType]
-confTypes['SSH_KEY'] = [types.StringType]
-confTypes['SSH_USER'] = [types.StringType]
-confTypes['SSH_PORT'] = [types.IntType]
-confTypes['SFTP_TARGET'] = [types.StringType]
-confTypes['SFTP_FOLDER'] = [types.StringType]
 
 # allowed types of the BepFile values
 
@@ -1053,37 +1044,6 @@ class HaikuPorter:
         shutil.rmtree(self.distroDir)
 
         print 'Package saved to: ' + zipFile
-        
-        if self.options.upload:
-            if paramiko:
-                if self.confKeys['SFTP_TARGET']:
-                    print 'Uploading package to %s' \
-                    % self.confKeys['SFTP_TARGET']
-                    sendFile(zipfile)
-                else:
-                    print 'Cannot read the SFTP options from ' + \
-                    'your haikuports.conf'
-            else:
-                self.prompt_installer(paramiko)
-
-    def sendFile(self, zipfile):
-        """upload file to SFTP server"""
-        
-        key = self.confKeys['SSH_KEY']
-        user = self.confKeys['SSH_USER']
-        port = self.confKeys['SSH_PORT']
-        host = self.confKeys['SFTP_TARGET']
-        dest_folder = self.confKeys['SFTP_FOLDER']
-
-        t = paramiko.Transport((host, port))
-        pkey = paramiko.RSAKey.from_private_key_file(key)
-        t.connect(username=user, pkey=pkey)
-        sftp = paramiko.SFTPClient.from_transport(t)
-        
-        stfp.put(zipfile, os.join(dest_folder,self.portCategory,
-    os.path.split(zipfile)[1]))
-        sftp.close()
-        t.close()
 
     def makePatchedArchive(self):
         """Create a patched source archive"""
@@ -1120,18 +1080,6 @@ class HaikuPorter:
         shutil.rmtree(self.workDir)
 
         print 'Archive saved to: ' + archiveFile
-        
-        if self.options.upload:
-            if paramiko:
-                if self.confKeys['SFTP_TARGET']:
-                    print 'Uploading archive to %s' \
-                    % self.confKeys['SFTP_TARGET']
-                    sendFile(zipfile)
-                else:
-                    print 'Cannot read the SFTP options from ' + \
-                    'your haikuports.conf'
-            else:
-                self.prompt_installer(paramiko)
 
     def prompt_installer(self, name):
         apps = {  # map command to package
@@ -1140,7 +1088,6 @@ class HaikuPorter:
             'hg': 'mercurial',
             'cvs': 'cvs',
             'bzr': 'bazaar',
-            'paramiko' : 'pycrypto paramiko'
             }
         if self.options.yes:
             check_call('installoptionalpackage' + ' '
@@ -1531,14 +1478,6 @@ parser.add_option(
     dest='yes',
     default=False,
     help='Answer yes to all questions',
-    )
-parser.add_option(
-    '-u',
-    '--upload',
-    action='store_true',
-    dest='upload',
-    default=False,
-    help='used with -d or -z to upload the resulting file to a SFTP site',
     )
 
 parser.add_option('--test', action='store_true', dest='test',
