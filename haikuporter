@@ -927,6 +927,30 @@ class HaikuPorter:
         # These keys aren't mandatory so we need to check if they exist
 
         if self.bepKeys['LICENSE']:
+            if ' '.join(self.bepKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 'GNU LGPL']:
+                # 
+                # srcurl = self.bepKeys['SRC_URI'][0]
+                # if '+' in srcurl[:10]:
+                #     srcurl = srcurl.split('+', 1)[1]
+                date = time.strftime('-%Y-%m-%d', time.localtime())
+                if os.getenv('HAIKUVERSION'):
+                    haiku_name = os.getenv('HAIKUVERSION')
+                else:
+                    haiku_name = 'development'
+                srcurl= 'http://haiku-files.org/files/releases/%s/sources/%s-%s_haiku%s.tar.xz' % (haiku_name, self.portName, self.portVersion, date)
+                bepurl_base = 'http://ports.haiku-files.org/' + \
+                'browser/haikuports/trunk/' + self.portCategory
+            
+                bepurl = bepurl_base + '/' + self.portName+ '-'\
+                + self.portVersion + '.bep'
+            
+                opd.write('SourceURL:\t' + 'Download <' + srcurl + '>' +'\n')
+                opd.write('SourceURL:\t' + 'Bep-file <' + bepurl + '>' +'\n')
+                patchFilePath = self.patchesDir + '/' + self.portName + '-'\
+                     + self.portVersion + '.patch'
+                if os.path.exists(patchFilePath):
+                    patchurl = bepurl_base + '/patches'
+                    opd.write('SourceURL:\t' + 'Patches <' + patchurl + '>' +'\n')
             for license in self.bepKeys['LICENSE']:
                 opd.write('License:\t' + license + '\n')
 
@@ -934,31 +958,6 @@ class HaikuPorter:
             for copyright in self.bepKeys['COPYRIGHT']:
                 opd.write('Copyright:\t' + copyright + '\n')
         
-        if ' '.join(self.bepKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 
-        'GNU LGPL']:
-            # 
-            # srcurl = self.bepKeys['SRC_URI'][0]
-            # if '+' in srcurl[:10]:
-            #     srcurl = srcurl.split('+', 1)[1]
-            date = time.strftime('-%Y-%m-%d', time.localtime())
-            if os.getenv('HAIKUVERSION'):
-                haiku_name = os.getenv('HAIKUVERSION')
-            else:
-                haiku_name = 'development'
-            srcurl= 'http://haiku-files.org/files/releases/%s/sources/%s-%s_haiku%s.tar.xz' % (haiku_name, self.portName, self.portVersion, date)
-            bepurl_base = 'http://ports.haiku-files.org/' + \
-            'browser/haikuports/trunk/' + self.portCategory
-            
-            bepurl = bepurl_base + '/' + self.portName+ '-'\
-            + self.portVersion + '.bep'
-            
-            opd.write('SourceURL:\t' + 'Download <' + srcurl + '>' +'\n')
-            opd.write('SourceURL:\t' + 'Bep-file <' + bepurl + '>' +'\n')
-            patchFilePath = self.patchesDir + '/' + self.portName + '-'\
-                 + self.portVersion + '.patch'
-            if os.path.exists(patchFilePath):
-                patchurl = bepurl_base + '/patches'
-                opd.write('SourceURL:\t' + 'Patches <' + patchurl + '>' +'\n')
         opd.close()
 
     def makePackage(self):
@@ -1044,6 +1043,10 @@ class HaikuPorter:
         shutil.rmtree(self.distroDir)
 
         print 'Package saved to: ' + zipFile
+        if self.bepKeys['LICENSE']:
+            if ' '.join(self.bepKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 'GNU LGPL']:
+                print 'To generate the matching source pacakge, run: haikuporter -z '\
+                    + package
 
     def makePatchedArchive(self):
         """Create a patched source archive"""
