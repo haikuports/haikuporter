@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # copyright 2007-2010 Brecht Machiels
 # copyright 2009-2010 Chris Roberts
-# copyright 2009-2010 Scott McCreary
+# copyright 2009-2011 Scott McCreary
 # copyright 2009 Alexander Deynichenko
 # copyright 2009 HaikuBot (aka RISC)
 # copyright 2010-2011 Jack Laxson (Jrabbit)
@@ -939,7 +939,7 @@ class HaikuPorter:
                     haiku_name = 'development'
                 srcurl= 'http://haiku-files.org/files/releases/%s/sources/%s-%s_haiku%s.tar.xz' % (haiku_name, self.portName, self.portVersion, date)
                 bepurl_base = 'http://ports.haiku-files.org/' + \
-                'browser/haikuports/trunk/' + self.portCategory
+                'browser/haikuports/trunk/' + self.portCategory + '/' + self.portName
             
                 bepurl = bepurl_base + '/' + self.portName+ '-'\
                 + self.portVersion + '.bep'
@@ -949,7 +949,7 @@ class HaikuPorter:
                 patchFilePath = self.patchesDir + '/' + self.portName + '-'\
                      + self.portVersion + '.patch'
                 if os.path.exists(patchFilePath):
-                    patchurl = bepurl_base + '/patches'
+                    patchurl = bepurl_base + '/patches/' + self.portName + '-' + self.portVersion + '.patch'
                     opd.write('SourceURL:\t' + 'Patches <' + patchurl + '>' +'\n')
             for license in self.bepKeys['LICENSE']:
                 opd.write('License:\t' + license + '\n')
@@ -958,6 +958,10 @@ class HaikuPorter:
             for copyright in self.bepKeys['COPYRIGHT']:
                 opd.write('Copyright:\t' + copyright + '\n')
         
+        opd.close()
+        opd = open(opdFile, 'r')
+        opddisplay = opd.read()
+        print opddisplay
         opd.close()
 
     def makePackage(self):
