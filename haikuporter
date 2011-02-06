@@ -928,7 +928,7 @@ class HaikuPorter:
 
         if self.bepKeys['LICENSE']:
             if ' '.join(self.bepKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 'GNU LGPL']:
-                # 
+                #
                 # srcurl = self.bepKeys['SRC_URI'][0]
                 # if '+' in srcurl[:10]:
                 #     srcurl = srcurl.split('+', 1)[1]
@@ -940,10 +940,10 @@ class HaikuPorter:
                 srcurl= 'http://haiku-files.org/files/releases/%s/sources/%s-%s_haiku%s.tar.xz' % (haiku_name, self.portName, self.portVersion, date)
                 bepurl_base = 'http://ports.haiku-files.org/' + \
                 'browser/haikuports/trunk/' + self.portCategory + '/' + self.portName
-            
+
                 bepurl = bepurl_base + '/' + self.portName+ '-'\
                 + self.portVersion + '.bep'
-            
+
                 opd.write('SourceURL:\t' + 'Download <' + srcurl + '>' +'\n')
                 opd.write('SourceURL:\t' + 'Bep-file <' + bepurl + '>' +'\n')
                 patchFilePath = self.patchesDir + '/' + self.portName + '-'\
@@ -957,7 +957,7 @@ class HaikuPorter:
         if self.bepKeys['COPYRIGHT']:
             for copyright in self.bepKeys['COPYRIGHT']:
                 opd.write('Copyright:\t' + copyright + '\n')
-        
+
         opd.close()
         opd = open(opdFile, 'r')
         opddisplay = opd.read()
