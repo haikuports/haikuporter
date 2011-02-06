@@ -102,7 +102,7 @@ paths['work'] = 'work'
 paths['patches'] = 'patches'
 paths['download'] = 'download'
 paths['distro'] = 'distro'
-paths['licenses'] = 'licesnes'
+paths['licenses'] = 'licenses'
 
 # regex to split bep filenames into port / version
 
