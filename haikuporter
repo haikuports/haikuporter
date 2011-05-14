@@ -476,6 +476,10 @@ class HaikuPorter:
         if os.path.exists(self.workDir):
             print 'Cleaning work directory...'
             shutil.rmtree(self.workDir)
+        for item in os.listdir(self.portDir):
+            if item[-4:] == '.zip':
+                os.remove(os.path.join(self.portDir, item))
+                
 
     def checkDependencies(self):
         """Print the list of ports this one depends on"""
