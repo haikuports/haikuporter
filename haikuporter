@@ -876,7 +876,7 @@ class HaikuPorter:
             packageFiles += f + ' '
 
         # Zip the package and save it in the root of the port dir
-        check_call('zip -9ry ' + zipFile + ' ' + packageFiles
+        check_call('zip -9Dry ' + zipFile + ' ' + packageFiles
                     + ' -x *.svn*', shell=True, cwd=zipRootDir)
 
         # Clean up after ourselves
