@@ -872,11 +872,11 @@ class HaikuPorter:
         for f in os.listdir(zipRootDir):
             packageFiles += f + ' '
 
-        # If -c, wipeout old zips
-        if self.options.clean:
-            for item in os.listdir(self.portDir):
-                if item[-4:] == '.zip':
-                    os.remove(os.path.join(self.portDir, item))
+        # # If -c, wipeout old zips
+        # if self.options.clean:
+        #     for item in os.listdir(self.portDir):
+        #         if item[-4:] == '.zip':
+        #             os.remove(os.path.join(self.portDir, item))
         
         # Test if zip already exists, and if so delete so that it will be the newest.
         if os.path.exists(zipFile):
