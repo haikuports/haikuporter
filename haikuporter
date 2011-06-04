@@ -476,9 +476,6 @@ class HaikuPorter:
         if os.path.exists(self.workDir):
             print 'Cleaning work directory...'
             shutil.rmtree(self.workDir)
-        for item in os.listdir(self.portDir):
-            if item[-4:] == '.zip':
-                os.remove(os.path.join(self.portDir, item))
                 
 
     def checkDependencies(self):
@@ -875,6 +872,16 @@ class HaikuPorter:
         for f in os.listdir(zipRootDir):
             packageFiles += f + ' '
 
+        # If -c, wipeout old zips
+        if self.options.clean:
+            for item in os.listdir(self.portDir):
+                if item[-4:] == '.zip':
+                    os.remove(os.path.join(self.portDir, item))
+        
+        # Test if zip already exists, and if so delete so that it will be the newest.
+        if os.path.exists(zipFile):
+            os.remove(zipFile)
+        
         # Zip the package and save it in the root of the port dir
         check_call('zip -9Dry ' + zipFile + ' ' + packageFiles
                     + ' -x *.svn*', shell=True, cwd=zipRootDir)
