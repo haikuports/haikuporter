@@ -22,7 +22,7 @@ _progress 0.2 "haikuporter setup"
   	cp haikuports.conf $(finddir B_COMMON_ETC_DIRECTORY)/haikuports.conf > /dev/null
 
 _progress 0.6 "check for python"
-	if [ ! -e /boot/common/bin/python ]; then
+	if [ ! -e `finddir B_COMMON_BIN_DIRECTORY`/python ]; then
 		_progress 0.7 "trying to install python"
 		installoptionalpackage python
 	fi
