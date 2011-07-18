@@ -811,7 +811,7 @@ class HaikuPorter:
 
         infoFile = open(packageInfoPath, 'w')
         infoFile.write('name\t\t\t' + self.portName + '\n')
-        infoFile.write('version\t\t\t' + self.portVersion + '\n')
+        infoFile.write('version\t\t\t' + self.portFullVersion + '\n')
         infoFile.write('architecture\t' + 'x86_gcc2' + '\n')
             # TODO: Correct architecture!
         infoFile.write('summary\t\t\t"' + self.bepKeys['SUMMARY'] + '"\n')
