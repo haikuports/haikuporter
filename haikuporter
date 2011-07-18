@@ -63,6 +63,7 @@ confDefaults['PACKAGER'] = [True, None]
 
 # allowed types of the BepFile values
 bepTypes = {}
+bepTypes['SUMMARY'] = [types.StringType]
 bepTypes['DESCRIPTION'] = [types.StringType, types.ListType]
 bepTypes['HOMEPAGE'] = [types.StringType]
 bepTypes['SRC_URI'] = [types.StringType, types.ListType]
@@ -78,6 +79,7 @@ bepTypes['LICENSE'] = [types.StringType, types.ListType]
 bepTypes['COPYRIGHT'] = [types.StringType, types.ListType]
 
 bepDefaults = {}  # [required, default]
+bepDefaults['SUMMARY'] = [True, None]
 bepDefaults['DESCRIPTION'] = [True, None]
 bepDefaults['HOMEPAGE'] = [True, None]
 bepDefaults['SRC_URI'] = [True, None]
@@ -321,8 +323,8 @@ class HaikuPorter:
         self.bepKeys = bepConfig.getKeys()
 
         print '*' * 80
-        if 'DESCRIPTION' in self.bepKeys:
-            print 'DESCRIPTION: %s' % self.bepKeys['DESCRIPTION']
+        if 'SUMMARY' in self.bepKeys:
+            print 'DESCRIPTION: %s' % self.bepKeys['SUMMARY']
         if 'HOMEPAGE' in self.bepKeys:
             print 'HOMEPAGE: %s' % self.bepKeys['HOMEPAGE']
         print '*' * 80
@@ -769,33 +771,56 @@ class HaikuPorter:
         print 'Testing ...'
         self.runCommandSequence(self.bepKeys['TEST'], self.workDir)
 
-    def generatePackageDescription(self, opdFile):
-        """Create an OptionalPackageDescription file for inclusion in a package"""
-        print 'Generating OptionalPackageDescription file ...'
+    def generatePackageInfo(self, opdFile):
+        """Create an .PackageInfo file for inclusion in a package"""
+        print 'Generating .PackageInfo file ...'
 
         opd = open(opdFile, 'w')
-        opd.write('Package:\t' + self.portName + '\n')
-        opd.write('Version:\t' + self.portVersion + '\n')
-        opd.write('URL:\t\t' + self.bepKeys['HOMEPAGE'] + '\n')
+        opd.write('name\t\t\t' + self.portName + '\n')
+        opd.write('version\t\t\t' + self.portVersion + '\n')
+        opd.write('architecture\t' + 'x86_gcc2' + '\n')
+            # TODO: Correct architecture!
+        opd.write('summary\t\t\t"' + self.bepKeys['SUMMARY'] + '"\n')
+
+        opd.write('description\t\t"')
+        lineNumber = 0
+        for line in self.bepKeys['DESCRIPTION']:
+            if lineNumber > 0:
+                opd.write('\n')
+            opd.write(line)
+            lineNumber += 1
+        opd.write('"\n')
+
+        opd.write('packager\t\t"' + self.confKeys['PACKAGER'] + '"\n')
+        opd.write('vendor\t\t\t"Haiku Project"\n')
 
         # These keys aren't mandatory so we need to check if they exist
         if self.bepKeys['LICENSE']:
+            opd.write('licenses {\n')
             for license in self.bepKeys['LICENSE']:
-                opd.write('License:\t' + license + '\n')
+                opd.write('\t"' + license + '"\n')
+            opd.write('}\n')
 
         if self.bepKeys['COPYRIGHT']:
+            opd.write('copyrights {\n')
             for copyright in self.bepKeys['COPYRIGHT']:
-                opd.write('Copyright:\t' + copyright + '\n')
+                opd.write('\t"' + copyright + '"\n')
+            opd.write('}\n')
+
+        # TODO: provides, requires,...
+
+        opd.write('urls\t\t\t"' + self.bepKeys['HOMEPAGE'] + '"\n')
 
         # Generate SourceURL lines for all ports, regardless of license.
         # Re-use the download URLs, as specified in the bep.
-        templine = ''
+        opd.write('source-urls {\n')
         uricount = 1
         for src_uri in self.bepKeys['SRC_URI']:
             if uricount < 2:
-                templine += 'SourceURL:\t' + 'Download <' + src_uri + '>' +'\n'
+                opd.write('\t"Download <' + src_uri + '>"\n')
             else:
-                templine += 'SourceURL:\t' + 'Location ' + str(uricount) + ' <' + src_uri + '>' +'\n'
+                opd.write('\t"Location ' + str(uricount) + ' <' + src_uri
+                    + '>"\n')
             uricount += 1
 
         # Point directly to the file in subversion.
@@ -805,13 +830,14 @@ class HaikuPorter:
         bepurl = bepurl_base + '/' + self.portName+ '-'\
             + self.portVersion + '.bep'
 
-        opd.write(templine)
-        opd.write('SourceURL:\t' + 'Bep-file <' + bepurl + '>' +'\n')
+        opd.write('\t"Bep-file <' + bepurl + '>"\n')
         patchFilePath = self.patchesDir + '/' + self.portName + '-'\
             + self.portVersion + '.patch'
         if os.path.exists(patchFilePath):
             patchurl = bepurl_base + '/patches/' + self.portName + '-' + self.portVersion + '.patch'
-            opd.write('SourceURL:\t' + 'Patches <' + patchurl + '>' +'\n')
+            opd.write('\t"Patches <' + patchurl + '>"\n')
+
+        opd.write('}\n')
 
         opd.close()
         opd = open(opdFile, 'r')
@@ -835,26 +861,11 @@ class HaikuPorter:
             os.mkdir(self.distroDir)
 
         self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir, True)
-        if not os.path.exists(self.distroDir + '/boot'):
-            sys.exit('Error: No installed files detected in packaging '
-                     'directory. Check bep file for correctness')
+#        if not os.path.exists(self.distroDir + '/boot'):
+#            sys.exit('Error: No installed files detected in packaging '
+#                     'directory. Check bep file for correctness')
 
-        opdFound = False
-        for f in os.listdir(self.portDir):
-            if 'licenses' in f:
-                shutil.copytree(self.portDir + '/' + f, self.distroDir +
-                                '/boot/common/data/licenses')
-
-            if 'OptionalPackageDescription' in f:
-                opdFound = True
-                print ('Copying OptionalPackageDescription to distro directory'
-                       ' ...')
-                shutil.copyfile(self.portDir + '/' + f, self.distroDir +
-                                '/boot/.OptionalPackageDescription')
-
-        if not opdFound:
-            self.generatePackageDescription(self.distroDir +
-                                            '/boot/.OptionalPackageDescription')
+        self.generatePackageInfo(self.distroDir + '/.PackageInfo')
 
         # go to distro dir for making zip package
         os.chdir(self.distroDir)
