@@ -805,55 +805,55 @@ class HaikuPorter:
         print 'Testing ...'
         self.runCommandSequence(self.bepKeys['TEST'], self.sourceDir)
 
-    def generatePackageInfo(self, opdFile):
+    def generatePackageInfo(self, packageInfoPath):
         """Create an .PackageInfo file for inclusion in a package"""
         print 'Generating .PackageInfo file ...'
 
-        opd = open(opdFile, 'w')
-        opd.write('name\t\t\t' + self.portName + '\n')
-        opd.write('version\t\t\t' + self.portVersion + '\n')
-        opd.write('architecture\t' + 'x86_gcc2' + '\n')
+        infoFile = open(packageInfoPath, 'w')
+        infoFile.write('name\t\t\t' + self.portName + '\n')
+        infoFile.write('version\t\t\t' + self.portVersion + '\n')
+        infoFile.write('architecture\t' + 'x86_gcc2' + '\n')
             # TODO: Correct architecture!
-        opd.write('summary\t\t\t"' + self.bepKeys['SUMMARY'] + '"\n')
+        infoFile.write('summary\t\t\t"' + self.bepKeys['SUMMARY'] + '"\n')
 
-        opd.write('description\t\t"')
+        infoFile.write('description\t\t"')
         lineNumber = 0
         for line in self.bepKeys['DESCRIPTION']:
             if lineNumber > 0:
-                opd.write('\n')
-            opd.write(line)
+                infoFile.write('\n')
+            infoFile.write(line)
             lineNumber += 1
-        opd.write('"\n')
+        infoFile.write('"\n')
 
-        opd.write('packager\t\t"' + self.confKeys['PACKAGER'] + '"\n')
-        opd.write('vendor\t\t\t"Haiku Project"\n')
+        infoFile.write('packager\t\t"' + self.confKeys['PACKAGER'] + '"\n')
+        infoFile.write('vendor\t\t\t"Haiku Project"\n')
 
         # These keys aren't mandatory so we need to check if they exist
         if self.bepKeys['LICENSE']:
-            opd.write('licenses {\n')
+            infoFile.write('licenses {\n')
             for license in self.bepKeys['LICENSE']:
-                opd.write('\t"' + license + '"\n')
-            opd.write('}\n')
+                infoFile.write('\t"' + license + '"\n')
+            infoFile.write('}\n')
 
         if self.bepKeys['COPYRIGHT']:
-            opd.write('copyrights {\n')
+            infoFile.write('copyrights {\n')
             for copyright in self.bepKeys['COPYRIGHT']:
-                opd.write('\t"' + copyright + '"\n')
-            opd.write('}\n')
+                infoFile.write('\t"' + copyright + '"\n')
+            infoFile.write('}\n')
 
         # TODO: provides, requires,...
 
-        opd.write('urls\t\t\t"' + self.bepKeys['HOMEPAGE'] + '"\n')
+        infoFile.write('urls\t\t\t"' + self.bepKeys['HOMEPAGE'] + '"\n')
 
         # Generate SourceURL lines for all ports, regardless of license.
         # Re-use the download URLs, as specified in the bep.
-        opd.write('source-urls {\n')
+        infoFile.write('source-urls {\n')
         uricount = 1
         for src_uri in self.bepKeys['SRC_URI']:
             if uricount < 2:
-                opd.write('\t"Download <' + src_uri + '>"\n')
+                infoFile.write('\t"Download <' + src_uri + '>"\n')
             else:
-                opd.write('\t"Location ' + str(uricount) + ' <' + src_uri
+                infoFile.write('\t"Location ' + str(uricount) + ' <' + src_uri
                     + '>"\n')
             uricount += 1
 
@@ -864,20 +864,20 @@ class HaikuPorter:
         bepurl = bepurl_base + '/' + self.portName+ '-'\
             + self.portVersion + '.bep'
 
-        opd.write('\t"Bep-file <' + bepurl + '>"\n')
+        infoFile.write('\t"Bep-file <' + bepurl + '>"\n')
         patchFilePath = self.patchesDir + '/' + self.portName + '-'\
             + self.portVersion + '.patch'
         if os.path.exists(patchFilePath):
             patchurl = bepurl_base + '/patches/' + self.portName + '-' + self.portVersion + '.patch'
-            opd.write('\t"Patches <' + patchurl + '>"\n')
+            infoFile.write('\t"Patches <' + patchurl + '>"\n')
 
-        opd.write('}\n')
+        infoFile.write('}\n')
 
-        opd.close()
-        opd = open(opdFile, 'r')
-        opddisplay = opd.read()
-        print opddisplay
-        opd.close()
+        infoFile.close()
+        infoFile = open(packageInfoPath, 'r')
+        infoFileDisplay = infoFile.read()
+        print infoFileDisplay
+        infoFile.close()
 
     def makePackage(self):
         """Create a package suitable for distribution"""
