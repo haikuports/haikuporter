@@ -26,6 +26,7 @@ import shutil
 import commands
 from subprocess import check_call, Popen, CalledProcessError
 from optparse import OptionParser
+from string import Template
 
 # -- HaikuPorts options -------------------------------------------------------
 
@@ -111,6 +112,17 @@ regExp['portname'] = '^(?P<name>[\w\-\+]+?)'
 regExp['portversion'] = '(?P<version>[\w]*?[\d]+([\w\-\\.\+])*)'
 regExp['portfullname'] = regExp['portname'] + '-' + regExp['portversion']
 regExp['bepfilename'] = regExp['portfullname'] + '\.bep$'
+
+# names of variables that shall be inherited into the shell performing build,
+# install, or test actions
+inheritShellVariables = [
+    'portVersion',
+    'portRevision',
+    'portFullVersion',
+    'portVersionedName',
+    'portRevisionedName'
+]
+
 
 # -- capture output of shell command -----------------------------------------
 def getCommandOutput(command):
@@ -260,10 +272,21 @@ class HaikuPorter:
         # read data from the bep file
         self.parseBepFile()
 
+        # set up the variables we'll inherit to the shell
+        self.portRevision = str(self.bepKeys['REVISION'])
+        self.portFullVersion = self.portVersion + '-' + self.portRevision
+        self.portVersionedName = self.portName + '-' + self.portVersion
+        self.portRevisionedName = self.portName + '-' + self.portFullVersion
+
+        self.shellVariableMapping = {}
+        for variable in inheritShellVariables:
+            self.shellVariableMapping[variable] = getattr(self, variable)
+
         # If a SOURCE_DIR was specified, make sure we cd into that for build,
         # install, and test actions.
         if self.bepKeys['SOURCE_DIR']:
-            self.sourceDir = self.workDir + '/' + self.bepKeys['SOURCE_DIR']
+            self.sourceDir = self.workDir + '/' +\
+                self.substituteVariables(self.bepKeys['SOURCE_DIR'])
 
         # warn when the port is not stable on this platform
         self.platform = self.detectOS()
@@ -322,6 +345,9 @@ class HaikuPorter:
             self.makePatchedArchive()
         if options.test:
             self.testPort()
+
+    def substituteVariables(self, string):
+        return Template(string).safe_substitute(self.shellVariableMapping)
 
     def printDescription(self):
         """Show port description"""
@@ -989,10 +1015,13 @@ class HaikuPorter:
         for command in rawCommandList:
             commandString += command + '\n'
 
-        shellEnv = None
+        # set up the shell environment -- we want it to inherit some of our
+        # variables
+        shellEnv = os.environ
+        for variable in inheritShellVariables:
+            shellEnv[variable] = getattr(self, variable)
 
         if packageMode:
-            shellEnv = os.environ
             shellEnv['DESTDIR'] = self.distroDir
 
         check_call(commandString, shell=True, cwd=dir, env=shellEnv)
