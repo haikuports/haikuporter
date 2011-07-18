@@ -894,7 +894,7 @@ class HaikuPorter:
         if not os.path.exists(self.distroDir):
             os.mkdir(self.distroDir)
 
-        self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir, True)
+        self.runCommandSequence(self.bepKeys['INSTALL'], self.sourceDir, True)
 #        if not os.path.exists(self.distroDir + '/boot'):
 #            sys.exit('Error: No installed files detected in packaging '
 #                     'directory. Check bep file for correctness')
