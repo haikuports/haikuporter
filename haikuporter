@@ -54,6 +54,12 @@ StatusType = status
 confTypes = {}
 confTypes['PACKAGES_PATH'] = [types.StringType]
 confTypes['PATCH_OPTIONS'] = [types.StringType]
+confTypes['PACKAGER'] = [types.StringType]
+
+confDefaults = {}  # [required, default]
+confDefaults['PACKAGES_PATH'] = [True, None]
+confDefaults['PATCH_OPTIONS'] = [False, None]
+confDefaults['PACKAGER'] = [True, None]
 
 # allowed types of the BepFile values
 bepTypes = {}
@@ -141,6 +147,13 @@ class HaikuPorter:
             except KeyError, e:
                 print "Warning: Unknown key label '" + key + "' in "\
                      + haikuPortsConf + '. Ignoring.'
+
+        # check whether all required fields are present
+        for key in confDefaults:
+            if key not in self.confKeys and confDefaults[key][0]:
+                print "Error: Required field '" + key\
+                     + "' not present in " + haikuPortsConf
+                sys.exit(1)
 
         self.packagesPath = self.confKeys['PACKAGES_PATH']
         if self.packagesPath[-1] == '/':
