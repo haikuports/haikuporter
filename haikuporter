@@ -77,6 +77,7 @@ bepTypes['TEST'] = [ShellType]
 bepTypes['MESSAGE'] = [types.StringType]
 bepTypes['LICENSE'] = [types.StringType, types.ListType]
 bepTypes['COPYRIGHT'] = [types.StringType, types.ListType]
+bepTypes['SOURCE_DIR'] = [types.StringType]
 
 bepDefaults = {}  # [required, default]
 bepDefaults['SUMMARY'] = [True, None]
@@ -94,6 +95,7 @@ bepDefaults['TEST'] = [False, shell()]
 bepDefaults['MESSAGE'] = [False, None]
 bepDefaults['LICENSE'] = [False, None]
 bepDefaults['COPYRIGHT'] = [False, None]
+bepDefaults['SOURCE_DIR'] = [False, None]
 
 # names of directories
 paths = {}
@@ -227,6 +229,7 @@ class HaikuPorter:
                         self.portName)
         self.downloadDir = self.portDir + '/' + paths['download']
         self.workDir = self.portDir + '/' + paths['work']
+        self.sourceDir = self.workDir
         self.patchesDir = self.portDir + '/' + paths['patches']
         self.distroDir = self.portDir + '/' + paths['distro']
 
@@ -256,6 +259,11 @@ class HaikuPorter:
 
         # read data from the bep file
         self.parseBepFile()
+
+        # If a SOURCE_DIR was specified, make sure we cd into that for build,
+        # install, and test actions.
+        if self.bepKeys['SOURCE_DIR']:
+            self.sourceDir = self.workDir + '/' + self.bepKeys['SOURCE_DIR']
 
         # warn when the port is not stable on this platform
         self.platform = self.detectOS()
@@ -745,7 +753,7 @@ class HaikuPorter:
         if self.checkFlag('build') and not self.options.force:
             return
 
-        self.runCommandSequence(self.bepKeys['BUILD'], self.workDir)
+        self.runCommandSequence(self.bepKeys['BUILD'], self.sourceDir)
         self.setFlag('build')
 
     def installPort(self):
@@ -760,7 +768,7 @@ class HaikuPorter:
                       + ' using haikuporter.  Build to a package instead.'
                      )
         print 'Installing ...'
-        self.runCommandSequence(self.bepKeys['INSTALL'], self.workDir)
+        self.runCommandSequence(self.bepKeys['INSTALL'], self.sourceDir)
 
     def testPort(self):
         """Test the resulting binaries"""
@@ -769,7 +777,7 @@ class HaikuPorter:
             sys.exit('Error: bep file has no TEST section.')
 
         print 'Testing ...'
-        self.runCommandSequence(self.bepKeys['TEST'], self.workDir)
+        self.runCommandSequence(self.bepKeys['TEST'], self.sourceDir)
 
     def generatePackageInfo(self, opdFile):
         """Create an .PackageInfo file for inclusion in a package"""
