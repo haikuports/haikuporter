@@ -30,7 +30,7 @@ from optparse import OptionParser
 # -- HaikuPorts options -------------------------------------------------------
 
 # location of haikuports.conf
-haikuPortsConf = '/boot/common/etc/haikuports.conf'
+haikuPortsConf = '/etc/haikuports.conf'
 
 svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
 
