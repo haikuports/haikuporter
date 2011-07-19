@@ -116,16 +116,6 @@ regExp['portversion'] = '(?P<version>[\w]*?[\d]+([\w\-\\.\+])*)'
 regExp['portfullname'] = regExp['portname'] + '-' + regExp['portversion']
 regExp['bepfilename'] = regExp['portfullname'] + '\.bep$'
 
-# names of variables that shall be inherited into the shell performing build,
-# install, or test actions
-inheritShellVariables = [
-    'portVersion',
-    'portRevision',
-    'portFullVersion',
-    'portVersionedName',
-    'portRevisionedName'
-]
-
 
 # -- capture output of shell command -----------------------------------------
 def getCommandOutput(command):
@@ -283,9 +273,13 @@ class HaikuPorter:
         self.portVersionedName = self.portName + '-' + self.portVersion
         self.portRevisionedName = self.portName + '-' + self.portFullVersion
 
-        self.shellVariableMapping = {}
-        for variable in inheritShellVariables:
-            self.shellVariableMapping[variable] = getattr(self, variable)
+        self.shellVariables = {
+            'portVersion': self.portVersion,
+            'portRevision': self.portRevision,
+            'portFullVersion': self.portFullVersion,
+            'portVersionedName': self.portVersionedName,
+            'portRevisionedName': self.portRevisionedName,
+        }
 
         # If a SOURCE_DIR was specified, make sure we cd into that for build,
         # install, and test actions.
@@ -363,7 +357,7 @@ class HaikuPorter:
                 newList.append(self.substituteVariables(element))
             return newList
         else:
-            return Template(string).safe_substitute(self.shellVariableMapping)
+            return Template(string).safe_substitute(self.shellVariables)
 
     def printDescription(self):
         """Show port description"""
@@ -1060,8 +1054,8 @@ class HaikuPorter:
         # set up the shell environment -- we want it to inherit some of our
         # variables
         shellEnv = os.environ
-        for variable in inheritShellVariables:
-            shellEnv[variable] = getattr(self, variable)
+        for item in self.shellVariables.items():
+            shellEnv[item[0]] = item[1]
 
         if packageMode:
             shellEnv['DESTDIR'] = self.distroDir
