@@ -6,6 +6,7 @@
 # copyright 2009 Alexander Deynichenko
 # copyright 2009 HaikuBot (aka RISC)
 # copyright 2010-2011 Jack Laxson (Jrabbit)
+# copyright 2011 Ingo Weinhold
 
 info = {}
 info['version'] = 'r' + '$Rev$'[6:-2]
@@ -71,6 +72,7 @@ bepTypes['SRC_URI'] = [types.StringType, types.ListType]
 bepTypes['CHECKSUM_MD5'] = [types.StringType]
 bepTypes['REVISION'] = [types.IntType]
 bepTypes['STATUS_HAIKU'] = [StatusType]
+bepTypes['PROVIDES'] = [types.StringType, types.ListType]
 bepTypes['DEPEND'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD'] = [ShellType]
 bepTypes['INSTALL'] = [ShellType]
@@ -89,6 +91,7 @@ bepDefaults['CHECKSUM_MD5'] = [False, None]
 bepDefaults['REVISION'] = [True, None]
 bepDefaults['WORKING'] = [False, True]
 bepDefaults['STATUS_HAIKU'] = [False, 'untested']
+bepDefaults['PROVIDES'] = [True, None]
 bepDefaults['DEPEND'] = [False, None]
 bepDefaults['BUILD'] = [False, shell()]
 bepDefaults['INSTALL'] = [False, shell()]
@@ -139,8 +142,10 @@ def _temp(lc=locale.localeconv()):
     return lc
 
 
-def findDirectory(aDir, subDirPath):
-    result = commands.getoutput('finddir %s' % aDir) + '/' + subDirPath
+def findDirectory(aDir, subDirPath = None):
+    result = commands.getoutput('finddir %s' % aDir)
+    if subDirPath != None:
+        result += '/' + subDirPath
     return result
 
 
@@ -288,6 +293,11 @@ class HaikuPorter:
             self.sourceDir = self.workDir + '/' +\
                 self.substituteVariables(self.bepKeys['SOURCE_DIR'])
 
+        self.bepKeys['PROVIDES'] = self.substituteVariables(
+            self.bepKeys['PROVIDES'])
+        self.bepKeys['DEPEND'] = self.substituteVariables(
+            self.bepKeys['DEPEND'])
+
         # warn when the port is not stable on this platform
         self.platform = self.detectOS()
         if self.platform == None:
@@ -347,7 +357,13 @@ class HaikuPorter:
             self.testPort()
 
     def substituteVariables(self, string):
-        return Template(string).safe_substitute(self.shellVariableMapping)
+        if type(string).__name__ == 'list':
+            newList = [];
+            for element in string:
+                newList.append(self.substituteVariables(element))
+            return newList
+        else:
+            return Template(string).safe_substitute(self.shellVariableMapping)
 
     def printDescription(self):
         """Show port description"""
@@ -779,6 +795,24 @@ class HaikuPorter:
         if self.checkFlag('build') and not self.options.force:
             return
 
+        # build a package info for a build package
+        buildPackageInfo = self.workDir + '/' + self.portRevisionedName +\
+            '-build-package-info'
+        self.generatePackageInfo(buildPackageInfo)
+
+        # build the build package
+        buildPackage = self.workDir + '/' + self.portRevisionedName +\
+            '-build.hpkg'
+        check_call(['package', 'create', '-bi', buildPackageInfo, '-I',
+            self.distroDir, buildPackage])
+
+        # activate the build package
+        packagesDir = findDirectory('B_COMMON_PACKAGES_DIRECTORY')
+        check_call(['rm', '-f',
+            packagesDir + '/' + os.path.basename(buildPackage)])
+        check_call(['ln', '-s', buildPackage, packagesDir])
+            # TODO: We need to deactivate the build package eventually!
+
         self.runCommandSequence(self.bepKeys['BUILD'], self.sourceDir)
         self.setFlag('build')
 
@@ -841,7 +875,18 @@ class HaikuPorter:
                 infoFile.write('\t"' + copyright + '"\n')
             infoFile.write('}\n')
 
-        # TODO: provides, requires,...
+        infoFile.write('provides {\n')
+        for resolvable in self.bepKeys['PROVIDES']:
+            infoFile.write('\t' + resolvable + '\n')
+        infoFile.write('}\n')
+
+        if self.bepKeys['DEPEND']:
+            infoFile.write('requires {\n')
+            for dependency in self.bepKeys['DEPEND']:
+                infoFile.write('\t' + dependency + '\n')
+            infoFile.write('}\n')
+
+        # TODO: replaces,...
 
         infoFile.write('urls\t\t\t"' + self.bepKeys['HOMEPAGE'] + '"\n')
 
@@ -894,14 +939,15 @@ class HaikuPorter:
         if not os.path.exists(self.distroDir):
             os.mkdir(self.distroDir)
 
-        self.runCommandSequence(self.bepKeys['INSTALL'], self.sourceDir, True)
+#        self.runCommandSequence(self.bepKeys['INSTALL'], self.sourceDir, True)
+        self.runCommandSequence(self.bepKeys['INSTALL'], self.sourceDir, False)
 #        if not os.path.exists(self.distroDir + '/boot'):
 #            sys.exit('Error: No installed files detected in packaging '
 #                     'directory. Check bep file for correctness')
 
         self.generatePackageInfo(self.distroDir + '/.PackageInfo')
 
-        # go to distro dir for making zip package
+        # go to distro dir for making the package
         os.chdir(self.distroDir)
 
         package = self.portName + '-' + self.portVersion
@@ -912,23 +958,19 @@ class HaikuPorter:
         if 'HAIKUVERSION' in os.environ:
             haikuversion = '-' + os.environ['HAIKUVERSION']
 
-        gcc = getCommandOutput('setgcc')
-        gcc = gcc.split(': ')[1].split('/')
-        arch = '-' + gcc[0]
-        gcc = '-' + gcc[1]
+#        gcc = getCommandOutput('setgcc')
+#        gcc = gcc.split(': ')[1].split('/')
+#        arch = '-' + gcc[0]
+#        gcc = '-' + gcc[1]
+        arch = 'gcc2_x86'
+            # TODO: Determine the correct architecture!
 
         date = time.strftime('-%Y-%m-%d', time.localtime())
 
-        zipFile = self.portDir + '/' + package + haikuversion + arch\
-             + gcc + date + '.zip'
-
-        zipRootDir = self.distroDir + '/boot'
+        packageFile = self.portDir + '/' + self.portRevisionedName + '-' + arch\
+             + '.hpkg'
 
         packageFiles = ''
-
-        # Add the files/dirs in self.distroDir/boot to the list of items to zip
-        for f in os.listdir(zipRootDir):
-            packageFiles += f + ' '
 
         # # If -c, wipeout old zips
         # if self.options.clean:
@@ -936,18 +978,18 @@ class HaikuPorter:
         #         if item[-4:] == '.zip':
         #             os.remove(os.path.join(self.portDir, item))
         
-        # Test if zip already exists, and if so delete so that it will be the newest.
-        if os.path.exists(zipFile):
-            os.remove(zipFile)
+        # Test if package already exists, and if so delete so that it will be
+        # the newest.
+        if os.path.exists(packageFile):
+            os.remove(packageFile)
         
-        # Zip the package and save it in the root of the port dir
-        check_call('zip -9Dry ' + zipFile + ' ' + packageFiles
-                    + ' -x *.svn*', shell=True, cwd=zipRootDir)
+        # Create the package and save it in the root of the port dir
+        check_call(['package', 'create', packageFile])
 
         # Clean up after ourselves
         shutil.rmtree(self.distroDir)
 
-        print 'Package saved to: ' + zipFile
+        print 'Package saved to: ' + packageFile
         if self.bepKeys['LICENSE']:
             if ' '.join(self.bepKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 'GNU LGPL']:
                 print ('To generate the matching source package, run: '
