@@ -348,6 +348,8 @@ class HaikuPorter:
         	self.portRevisionedName + '/.self')
 
         self.shellVariables = {
+        	'haikuVersion': 'r1-alpha3',
+        	    # TODO: Determine the actual Haiku version!
             'portVersion': self.portVersion,
             'portRevision': self.portRevision,
             'portFullVersion': self.portFullVersion,
