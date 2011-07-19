@@ -268,18 +268,7 @@ class HaikuPorter:
         self.parseBepFile()
 
         # set up the variables we'll inherit to the shell
-        self.portRevision = str(self.bepKeys['REVISION'])
-        self.portFullVersion = self.portVersion + '-' + self.portRevision
-        self.portVersionedName = self.portName + '-' + self.portVersion
-        self.portRevisionedName = self.portName + '-' + self.portFullVersion
-
-        self.shellVariables = {
-            'portVersion': self.portVersion,
-            'portRevision': self.portRevision,
-            'portFullVersion': self.portFullVersion,
-            'portVersionedName': self.portVersionedName,
-            'portRevisionedName': self.portRevisionedName,
-        }
+        self.initShellVariables()
 
         # If a SOURCE_DIR was specified, make sure we cd into that for build,
         # install, and test actions.
@@ -349,6 +338,39 @@ class HaikuPorter:
             self.makePatchedArchive()
         if options.test:
             self.testPort()
+
+    def initShellVariables(self):
+        self.portRevision = str(self.bepKeys['REVISION'])
+        self.portFullVersion = self.portVersion + '-' + self.portRevision
+        self.portVersionedName = self.portName + '-' + self.portVersion
+        self.portRevisionedName = self.portName + '-' + self.portFullVersion
+        prefix = findDirectory('B_PACKAGE_LINKS_DIRECTORY',
+        	self.portRevisionedName + '/.self')
+
+        self.shellVariables = {
+            'portVersion': self.portVersion,
+            'portRevision': self.portRevision,
+            'portFullVersion': self.portFullVersion,
+            'portVersionedName': self.portVersionedName,
+            'portRevisionedName': self.portRevisionedName,
+            'prefix': prefix,
+            'dataRootDir': prefix + '/data',
+            'sbinDir': prefix + '/bin',
+            'includeDir': prefix + '/develop/headers',
+            'sysconfDir': prefix + '/settings',
+            'docDir': prefix + '/documentation/packages/' + self.portName,
+            'infoDir': prefix + '/documentation/info',
+            'manDir': prefix + '/documentation/man',
+        }
+        self.shellVariables['configureDirArgs'] = self.substituteVariables(
+            '--prefix=$prefix '
+            '--datarootdir=$dataRootDir '
+            '--sbindir=$sbinDir '
+            '--includedir=$includeDir '
+            '--sysconfdir=$sysconfDir '
+            '--docdir=$docDir '
+            '--infodir=$infoDir '
+            '--mandir=$manDir')
 
     def substituteVariables(self, string):
         if type(string).__name__ == 'list':
