@@ -74,6 +74,10 @@ bepTypes['REVISION'] = [types.IntType]
 bepTypes['STATUS_HAIKU'] = [StatusType]
 bepTypes['PROVIDES'] = [types.StringType, types.ListType]
 bepTypes['DEPEND'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['SUPPLEMENTS'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['CONFLICTS'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['FRESHENS'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['REPLACES'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD'] = [ShellType]
 bepTypes['INSTALL'] = [ShellType]
 bepTypes['TEST'] = [ShellType]
@@ -93,6 +97,10 @@ bepDefaults['WORKING'] = [False, True]
 bepDefaults['STATUS_HAIKU'] = [False, 'untested']
 bepDefaults['PROVIDES'] = [True, None]
 bepDefaults['DEPEND'] = [False, None]
+bepDefaults['SUPPLEMENTS'] = [False, None]
+bepDefaults['CONFLICTS'] = [False, None]
+bepDefaults['FRESHENS'] = [False, None]
+bepDefaults['REPLACES'] = [False, None]
 bepDefaults['BUILD'] = [False, shell()]
 bepDefaults['INSTALL'] = [False, shell()]
 bepDefaults['TEST'] = [False, shell()]
@@ -893,18 +901,12 @@ class HaikuPorter:
                 infoFile.write('\t"' + copyright + '"\n')
             infoFile.write('}\n')
 
-        infoFile.write('provides {\n')
-        for resolvable in self.bepKeys['PROVIDES']:
-            infoFile.write('\t' + resolvable + '\n')
-        infoFile.write('}\n')
-
-        if self.bepKeys['DEPEND']:
-            infoFile.write('requires {\n')
-            for dependency in self.bepKeys['DEPEND']:
-                infoFile.write('\t' + dependency + '\n')
-            infoFile.write('}\n')
-
-        # TODO: replaces,...
+        self.writePackageInfoList(infoFile, 'PROVIDES', 'provides')
+        self.writePackageInfoList(infoFile, 'DEPEND', 'requires')
+        self.writePackageInfoList(infoFile, 'SUPPLEMENTS', 'supplements')
+        self.writePackageInfoList(infoFile, 'CONFLICTS', 'conflicts')
+        self.writePackageInfoList(infoFile, 'FRESHENS', 'freshens')
+        self.writePackageInfoList(infoFile, 'REPLACES', 'replaces')
 
         infoFile.write('urls\t\t\t"' + self.bepKeys['HOMEPAGE'] + '"\n')
 
@@ -941,6 +943,13 @@ class HaikuPorter:
         infoFileDisplay = infoFile.read()
         print infoFileDisplay
         infoFile.close()
+
+    def writePackageInfoList(self, infoFile, key, keyword):
+        if self.bepKeys[key]:
+            infoFile.write(keyword + ' {\n')
+            for item in self.bepKeys[key]:
+                infoFile.write('\t' + item + '\n')
+            infoFile.write('}\n')
 
     def makePackage(self):
         """Create a package suitable for distribution"""
