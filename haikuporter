@@ -78,6 +78,7 @@ bepTypes['SUPPLEMENTS'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['CONFLICTS'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['FRESHENS'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['REPLACES'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['BUILD_DEPEND'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD'] = [ShellType]
 bepTypes['INSTALL'] = [ShellType]
 bepTypes['TEST'] = [ShellType]
@@ -101,6 +102,7 @@ bepDefaults['SUPPLEMENTS'] = [False, None]
 bepDefaults['CONFLICTS'] = [False, None]
 bepDefaults['FRESHENS'] = [False, None]
 bepDefaults['REPLACES'] = [False, None]
+bepDefaults['BUILD_DEPEND'] = [False, None]
 bepDefaults['BUILD'] = [False, shell()]
 bepDefaults['INSTALL'] = [False, shell()]
 bepDefaults['TEST'] = [False, shell()]
@@ -288,6 +290,16 @@ class HaikuPorter:
             self.bepKeys['PROVIDES'])
         self.bepKeys['DEPEND'] = self.substituteVariables(
             self.bepKeys['DEPEND'])
+        self.bepKeys['SUPPLEMENTS'] = self.substituteVariables(
+            self.bepKeys['SUPPLEMENTS'])
+        self.bepKeys['CONFLICTS'] = self.substituteVariables(
+            self.bepKeys['CONFLICTS'])
+        self.bepKeys['FRESHENS'] = self.substituteVariables(
+            self.bepKeys['FRESHENS'])
+        self.bepKeys['REPLACES'] = self.substituteVariables(
+            self.bepKeys['REPLACES'])
+        self.bepKeys['BUILD_DEPEND'] = self.substituteVariables(
+            self.bepKeys['BUILD_DEPEND'])
 
         # warn when the port is not stable on this platform
         self.platform = self.detectOS()
@@ -824,7 +836,7 @@ class HaikuPorter:
         # build a package info for a build package
         buildPackageInfo = self.workDir + '/' + self.portRevisionedName +\
             '-build-package-info'
-        self.generatePackageInfo(buildPackageInfo)
+        self.generatePackageInfo(buildPackageInfo, True)
 
         # build the build package
         buildPackage = self.workDir + '/' + self.portRevisionedName +\
@@ -865,7 +877,7 @@ class HaikuPorter:
         print 'Testing ...'
         self.runCommandSequence(self.bepKeys['TEST'], self.sourceDir)
 
-    def generatePackageInfo(self, packageInfoPath):
+    def generatePackageInfo(self, packageInfoPath, isBuildPackage):
         """Create an .PackageInfo file for inclusion in a package"""
         print 'Generating .PackageInfo file ...'
 
@@ -901,12 +913,16 @@ class HaikuPorter:
                 infoFile.write('\t"' + copyright + '"\n')
             infoFile.write('}\n')
 
-        self.writePackageInfoList(infoFile, 'PROVIDES', 'provides')
-        self.writePackageInfoList(infoFile, 'DEPEND', 'requires')
-        self.writePackageInfoList(infoFile, 'SUPPLEMENTS', 'supplements')
-        self.writePackageInfoList(infoFile, 'CONFLICTS', 'conflicts')
-        self.writePackageInfoList(infoFile, 'FRESHENS', 'freshens')
-        self.writePackageInfoList(infoFile, 'REPLACES', 'replaces')
+        dependencies = self.bepKeys['DEPEND']
+        if isBuildPackage:
+            dependencies += self.bepKeys['BUILD_DEPEND']
+
+        self.writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
+        self.writePackageInfoList(infoFile, dependencies, 'requires')
+        self.writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 'supplements')
+        self.writePackageInfoListByKey(infoFile, 'CONFLICTS', 'conflicts')
+        self.writePackageInfoListByKey(infoFile, 'FRESHENS', 'freshens')
+        self.writePackageInfoListByKey(infoFile, 'REPLACES', 'replaces')
 
         infoFile.write('urls\t\t\t"' + self.bepKeys['HOMEPAGE'] + '"\n')
 
@@ -944,10 +960,13 @@ class HaikuPorter:
         print infoFileDisplay
         infoFile.close()
 
-    def writePackageInfoList(self, infoFile, key, keyword):
-        if self.bepKeys[key]:
+    def writePackageInfoListByKey(self, infoFile, key, keyword):
+        self.writePackageInfoList(infoFile, self.bepKeys[key], keyword)
+
+    def writePackageInfoList(self, infoFile, list, keyword):
+        if list:
             infoFile.write(keyword + ' {\n')
-            for item in self.bepKeys[key]:
+            for item in list:
                 infoFile.write('\t' + item + '\n')
             infoFile.write('}\n')
 
@@ -972,7 +991,7 @@ class HaikuPorter:
 #            sys.exit('Error: No installed files detected in packaging '
 #                     'directory. Check bep file for correctness')
 
-        self.generatePackageInfo(self.distroDir + '/.PackageInfo')
+        self.generatePackageInfo(self.distroDir + '/.PackageInfo', False)
 
         # go to distro dir for making the package
         os.chdir(self.distroDir)
