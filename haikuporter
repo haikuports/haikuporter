@@ -365,11 +365,27 @@ class HaikuPorter:
         self.portVersionedName = self.portName + '-' + self.portVersion
         self.portRevisionedName = self.portName + '-' + self.portFullVersion
         prefix = findDirectory('B_PACKAGE_LINKS_DIRECTORY',
-        	self.portRevisionedName + '/.self')
+            self.portRevisionedName + '/.self')
+
+        # extract the package info from the system package
+        output = getCommandOutput('package list /system/packages/haiku.hpkg'
+            + ' | grep -E "^[[:space:]]*[[:alpha:]]+:[[:space:]]+"')
+
+        # get the haiku version
+        match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output);
+        if not match:
+            sys.exit('Failed to get Haiku version!')
+        self.haikuVersion = match.group(1)
+
+        # get the architecture
+        match = re.search(r"architecture:\s*(\S+)", output);
+        if not match:
+            sys.exit('Failed to get Haiku architecture!')
+        self.architecture = match.group(1)
 
         self.shellVariables = {
-        	'haikuVersion': 'r1-alpha3',
-        	    # TODO: Determine the actual Haiku version!
+            'haikuVersion': self.haikuVersion,
+            'architecture': self.architecture,
             'portVersion': self.portVersion,
             'portRevision': self.portRevision,
             'portFullVersion': self.portFullVersion,
@@ -884,8 +900,7 @@ class HaikuPorter:
         infoFile = open(packageInfoPath, 'w')
         infoFile.write('name\t\t\t' + self.portName + '\n')
         infoFile.write('version\t\t\t' + self.portFullVersion + '\n')
-        infoFile.write('architecture\t' + 'x86_gcc2' + '\n')
-            # TODO: Correct architecture!
+        infoFile.write('architecture\t' + self.architecture + '\n')
         infoFile.write('summary\t\t\t"' + self.bepKeys['SUMMARY'] + '"\n')
 
         infoFile.write('description\t\t"')
@@ -1004,17 +1019,10 @@ class HaikuPorter:
         if 'HAIKUVERSION' in os.environ:
             haikuversion = '-' + os.environ['HAIKUVERSION']
 
-#        gcc = getCommandOutput('setgcc')
-#        gcc = gcc.split(': ')[1].split('/')
-#        arch = '-' + gcc[0]
-#        gcc = '-' + gcc[1]
-        arch = 'gcc2_x86'
-            # TODO: Determine the correct architecture!
-
         date = time.strftime('-%Y-%m-%d', time.localtime())
 
-        packageFile = self.portDir + '/' + self.portRevisionedName + '-' + arch\
-             + '.hpkg'
+        packageFile = self.portDir + '/' + self.portRevisionedName + '-'\
+             + self.architecture + '.hpkg'
 
         packageFiles = ''
 
