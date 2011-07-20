@@ -393,12 +393,15 @@ class HaikuPorter:
             'portRevisionedName': self.portRevisionedName,
             'prefix': prefix,
             'dataRootDir': prefix + '/data',
+            'binDir': prefix + '/bin',
             'sbinDir': prefix + '/bin',
+            'libDir': prefix + '/lib',
             'includeDir': prefix + '/develop/headers',
             'sysconfDir': prefix + '/settings',
             'docDir': prefix + '/documentation/packages/' + self.portName,
             'infoDir': prefix + '/documentation/info',
             'manDir': prefix + '/documentation/man',
+            'jobs': str(self.options.jobs),
         }
         self.shellVariables['configureDirArgs'] = self.substituteVariables(
             '--prefix=$prefix '
@@ -1318,6 +1321,8 @@ parser.add_option('-t', '--tree', action='store_true', dest='tree',
                                       "haikuports source tree")
 parser.add_option('-y', '--yes', action='store_true', dest='yes',
                   default=False, help="answer yes to all questions")
+parser.add_option('-j', action='store', type="int", dest='jobs',
+                  default=1, help="the number of concurrent jobs to build with")
 
 parser.add_option('--test', action='store_true', dest='test',
                   default=False, help="run tests on resulting binaries")
