@@ -931,9 +931,10 @@ class HaikuPorter:
                 infoFile.write('\t"' + copyright + '"\n')
             infoFile.write('}\n')
 
-        dependencies = self.bepKeys['DEPEND']
         if isBuildPackage:
-            dependencies += self.bepKeys['BUILD_DEPEND']
+            dependencies = self.bepKeys['DEPEND'] + self.bepKeys['BUILD_DEPEND']
+        else:
+	        dependencies = self.bepKeys['DEPEND']
 
         self.writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
         self.writePackageInfoList(infoFile, dependencies, 'requires')
