@@ -196,6 +196,16 @@ class HaikuPorter:
 
             self.searchPorts(args[0])
             sys.exit()
+        
+        if options.location:
+            if len(args) == 0:
+                print 'You need to specifiy a search string.'
+                print "Invoke '" + sys.argv[0]\
+                     + " -h' for usage information."
+                sys.exit(1)
+            # Provide the installed location of a bepfile (for quick editing)
+            print os.join(self.packagesPath, searchPorts(args[0]))
+            sys.exit()
 
         # if requested, checkout or update ports tree
         if options.get:
@@ -1324,7 +1334,8 @@ parser.add_option('-y', '--yes', action='store_true', dest='yes',
                   default=False, help="answer yes to all questions")
 parser.add_option('-j', action='store', type="int", dest='jobs',
                   default=1, help="the number of concurrent jobs to build with")
-
+parser.add_option('-o','--location', action='store_true', dest='location',
+                default=False, help="print out the location of a bepfile (via search) (for scripted editing)")
 parser.add_option('--test', action='store_true', dest='test',
                   default=False, help="run tests on resulting binaries")
 parser.add_option('--lint', action='store_true', dest='lint',
