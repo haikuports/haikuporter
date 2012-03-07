@@ -707,17 +707,26 @@ class HaikuPorter:
         # Check to see if the patch was already applied to the source.
         if self.checkFlag('patch') and not self.options.force:
             return
+            
+        patchOptions = ''
+        if 'PATCH_OPTIONS' in self.confKeys:
+            patchOptions += self.confKeys['PATCH_OPTIONS'] 
 
         patchFilePath = self.patchesDir + '/' + self.portName + '-'\
              + self.portVersion + '.patch'
         if os.path.exists(patchFilePath):
-            patchOptions = ''
-            if 'PATCH_OPTIONS' in self.confKeys:
-                patchOptions += self.confKeys['PATCH_OPTIONS']
             check_call('patch -p0 ' + patchOptions + ' -i '
                         + patchFilePath, shell=True, cwd=self.workDir)
         else:
-            print 'No patching required'
+            gcc = getCommandOutput('setgcc')
+            gcc = gcc.split(': ')[1].split('/')
+            patchFilePath = self.patchesDir + '/' + self.portName + '-'\
+                + self.portVersion + '-' + gcc[1] + '.patch'
+            if os.path.exists(patchFilePath):
+                check_call('patch -p0 ' + patchOptions + ' -i '
+                        + patchFilePath, shell=True, cwd=self.workDir)
+            else:
+                print 'No patching required'
         self.setFlag('patch')
 
     def buildPort(self):
