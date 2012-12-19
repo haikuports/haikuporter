@@ -476,7 +476,7 @@ class HaikuPorter:
         if os.path.exists(self.workDir):
             print 'Cleaning work directory...'
             shutil.rmtree(self.workDir)
-                
+
 
     def checkDependencies(self):
         """Print the list of ports this one depends on"""
@@ -539,7 +539,7 @@ class HaikuPorter:
     def checkoutSource(self, uri):
         """Parse the URI and execute the appropriate command to check out the
          source.
-                 
+
         """
         if self.checkFlag('checkout') and not self.options.force:
             print 'Source already checked out. Skipping ...'
@@ -696,14 +696,16 @@ class HaikuPorter:
             zf.extractall(self.workDir)
             zf.close()
         elif archiveFullPath.split('/')[-1].split('.')[-1] == 'xz':
+            xz = 0
             try:
-                Popen(['xz', '-d', '-k', archiveFullPath])
+                xz = Popen(['xz', '-d', '-k', archiveFullPath])
             except (OSError, CalledProcessError), e:
                 # run the installoptionalsoftware prompt
                 if self.prompt_installer('xz'):
-                    Popen(['xz', '-d', '-k', archiveFullPath])
+                    xz = Popen(['xz', '-d', '-k', archiveFullPath])
                 else:
                     sys.exit()
+            xz.wait()
             tar = archiveFullPath[:-3]
             if tarfile.is_tarfile(tar):
                 tf = tarfile.open(tar, 'r')
@@ -719,10 +721,10 @@ class HaikuPorter:
         # Check to see if the patch was already applied to the source.
         if self.checkFlag('patch') and not self.options.force:
             return
-            
+
         patchOptions = ''
         if 'PATCH_OPTIONS' in self.confKeys:
-            patchOptions += self.confKeys['PATCH_OPTIONS'] 
+            patchOptions += self.confKeys['PATCH_OPTIONS']
 
         patchFilePath = self.patchesDir + '/' + self.portName + '-'\
              + self.portVersion + '.patch'
@@ -900,11 +902,11 @@ class HaikuPorter:
         #     for item in os.listdir(self.portDir):
         #         if item[-4:] == '.zip':
         #             os.remove(os.path.join(self.portDir, item))
-        
+
         # Test if zip already exists, and if so delete so that it will be the newest.
         if os.path.exists(zipFile):
             os.remove(zipFile)
-        
+
         # Zip the package and save it in the root of the port dir
         check_call('zip -9Dry ' + zipFile + ' ' + packageFiles
                     + ' -x *.svn*', shell=True, cwd=zipRootDir)
