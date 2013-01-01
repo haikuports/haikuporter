@@ -6,6 +6,7 @@
 # copyright 2009 Alexander Deynichenko
 # copyright 2009 HaikuBot (aka RISC)
 # copyright 2010-2011 Jack Laxson (Jrabbit)
+# copyright 2012 Theodore Kokkoris
 
 info = {}
 info['version'] = 'r' + '$Rev$'[6:-2]
@@ -483,7 +484,17 @@ class HaikuPorter:
         if self.bepKeys['DEPEND'] == []:
             print 'No dependencies'
             return
-        print 'This port depends on the following ports:'
+	for command in self.bepKeys['BUILD']:
+	    if command[:5]=='cmake':
+		try:
+            		check_call('cmake&>/dev/null', shell=True)
+		except (OSError, CalledProcessError), e:
+			self.prompt_installer('cmake')
+		break
+	if self.bepKeys['DEPEND'] == []:
+		print 'No dependencies'
+		return
+	print 'This port depends on the following ports:'
         for item in self.bepKeys['DEPEND']:
             print '  ' + item
         print 'Please verify that you have these installed.',
@@ -957,12 +968,13 @@ class HaikuPorter:
             'hg': 'mercurial',
             'cvs': 'cvs',
             'bzr': 'bazaar',
+            'cmake': 'cmake'
             }
         if self.options.yes:
             check_call('installoptionalpackage' + ' '
                         + str(apps[name]), shell=True)
             return True
-        response = raw_input('Do you want to install %s? [Y/n]' % name)
+        response = raw_input('Do you want to install %s? [Y/n] ' % name)
         if response in ['y', 'Y', '\n', 'yes', '']:
             check_call('installoptionalpackage' + ' '
                         + str(apps[name]), shell=True)
