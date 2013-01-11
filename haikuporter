@@ -358,6 +358,13 @@ class HaikuPorter:
             except KeyError, e:
                 print "Warning: Unknown key label '" + key
 
+        # Check for presence of <cr><lf>
+        buildText=self.bepKeys['BUILD']
+        firstItem = buildText[0]
+        if firstItem[-1] == '\r':
+            print 'ERROR: Invalid bep file format, <cr><lf> detected at end of line'
+            sys.exit(1)   
+	            
         # Check for a valid license file
         if 'LICENSE' in self.bepKeys:
             fileList = []
