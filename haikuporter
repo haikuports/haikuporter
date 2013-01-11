@@ -396,6 +396,18 @@ class HaikuPorter:
         if 'COPYRIGHT' not in self.bepKeys or not self.bepKeys['COPYRIGHT']:
             print 'Warning: No COPYRIGHT found in bep file'
 
+        if 'COPYRIGHT' in self.bepKeys:
+            copyrightsList = []
+            bepCopyright = []
+            if type(self.bepKeys['COPYRIGHT']) == type(str()):
+                bepCopyright.append(self.bepKeys['COPYRIGHT'])
+            else:
+                bepCopyright = self.bepKeys['COPYRIGHT']
+            for copyrightitem in bepCopyright:
+                if copyrightitem[:2] != '19':
+        	        if copyrightitem[:2] != '20':
+        	            print 'Warning: COPYRIGHT should start wth a year'
+            
     def parseBepFile(self):
         """Parse the BepFile of the specified port"""
         bepFilename = (self.portDir + '/' + self.portName + '-' +
