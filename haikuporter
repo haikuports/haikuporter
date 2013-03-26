@@ -13,21 +13,21 @@ info['version'] = 'r' + '$Rev$'[6:-2]
 
 # -- Modules ------------------------------------------------------------------
 
-import sys
+import commands # todo: this is deprecated, replace with subprocess
+import hashlib
+import locale
+from optparse import OptionParser # todo: this is deprecated, use argparse instead
 import os
 import re
-import urllib2
-import time
-import locale
-import tarfile
-import zipfile
-import types
-import hashlib
 import shutil
-import commands
+import string
 from subprocess import check_call, Popen, CalledProcessError
-from optparse import OptionParser
-from string import Template
+import sys
+import tarfile
+import time
+import types
+import urllib2
+import zipfile
 
 # -- HaikuPorts options -------------------------------------------------------
 
@@ -137,7 +137,7 @@ def getCommandOutput(command):
 
 
 # -- Set up locale for thousands seperators ----------------------------------
-def _temp(lc=locale.localeconv()):
+def _ourLocaleconv(lc=locale.localeconv()):
     lc.update({'thousands_sep': ',', 'grouping': [3, 3, 0]})
     return lc
 
@@ -149,7 +149,7 @@ def findDirectory(aDir, subDirPath = None):
     return result
 
 
-locale.localeconv = _temp
+locale.localeconv = _ourLocaleconv
 
 # -- Main Program ------------------------------------------------------------
 class HaikuPorter:
@@ -165,7 +165,7 @@ class HaikuPorter:
                 if type(self.confKeys[key]) not in confTypes[key]:
                     sys.exit('Error: Invalid value type for ' + key
                               + '. Expecting ' + str(confTypes[key]))
-            except KeyError, e:
+            except KeyError:
                 print "Warning: Unknown key label '" + key + "' in "\
                      + haikuPortsConf + '. Ignoring.'
 
@@ -204,7 +204,7 @@ class HaikuPorter:
                      + " -h' for usage information."
                 sys.exit(1)
             # Provide the installed location of a bepfile (for quick editing)
-            print os.join(self.packagesPath, searchPorts(args[0]))
+            print os.path.join(self.packagesPath, self.searchPorts(args[0]))
             sys.exit()
 
         # if requested, checkout or update ports tree
@@ -423,14 +423,15 @@ class HaikuPorter:
             '--infodir=$infoDir '
             '--mandir=$manDir')
 
-    def substituteVariables(self, string):
-        if type(string).__name__ == 'list':
+    def substituteVariables(self, stringOrList):
+        if type(stringOrList).__name__ == 'list':
             newList = [];
-            for element in string:
+            for element in stringOrList:
                 newList.append(self.substituteVariables(element))
             return newList
         else:
-            return Template(string).safe_substitute(self.shellVariables)
+            return string.Template(stringOrList).safe_substitute(
+                self.shellVariables)
 
     def printDescription(self):
         """Show port description"""
@@ -486,8 +487,8 @@ class HaikuPorter:
                            '. Expecting ' + str(bepTypes[key]))
                     if exitOnError:
                         sys.exit(1)
-            except KeyError, e:
-                print "Warning: Unknown key label '" + key
+            except KeyError:
+                print "Warning: Unknown key label '" + key + "'"
 
         # Check for a valid license file
         if 'LICENSE' in self.bepKeys:
@@ -750,7 +751,7 @@ class HaikuPorter:
 
         try:
             check_call(checkoutCommand, shell=True, cwd=self.workDir)
-        except (OSError, CalledProcessError), e:
+        except (OSError, CalledProcessError):
             if self.prompt_installer(checkoutCommand.split()[0]):
                 check_call(checkoutCommand, shell=True,
                            cwd=self.workDir)
@@ -818,7 +819,7 @@ class HaikuPorter:
         elif archiveFullPath.split('/')[-1].split('.')[-1] == 'xz':
             try:
                 Popen(['xz', '-d', '-k', archiveFullPath])
-            except (OSError, CalledProcessError), e:
+            except (OSError, CalledProcessError):
                 # run the installoptionalsoftware prompt
                 if self.prompt_installer('xz'):
                     Popen(['xz', '-d', '-k', archiveFullPath])
@@ -944,7 +945,7 @@ class HaikuPorter:
         if isBuildPackage:
             dependencies = self.bepKeys['DEPEND'] + self.bepKeys['BUILD_DEPEND']
         else:
-	        dependencies = self.bepKeys['DEPEND']
+            dependencies = self.bepKeys['DEPEND']
 
         self.writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
         self.writePackageInfoList(infoFile, dependencies, 'requires')
@@ -1289,7 +1290,7 @@ class Config:
             value = self.options[key]
             return value
         except KeyError:
-             # an unspecified option is the same as an empty one
+            # an unspecified option is the same as an empty one
             return ''
 
 
