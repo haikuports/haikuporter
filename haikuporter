@@ -1014,6 +1014,11 @@ class HaikuPorter:
         if not os.path.exists(self.distroDir):
             os.mkdir(self.distroDir)
 
+		for f in os.listdir(self.portDir):
+			if f == 'licenses':
+				shutil.copytree(self.portDir + '/' + f,
+					self.distroDir + '/data/licenses')
+
         self.runCommandSequence(self.bepKeys['INSTALL'], self.sourceDir, False)
 
         self.generatePackageInfo(self.distroDir + '/.PackageInfo', False)
