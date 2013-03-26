@@ -73,12 +73,14 @@ bepTypes['CHECKSUM_MD5'] = [types.StringType]
 bepTypes['REVISION'] = [types.IntType]
 bepTypes['STATUS_HAIKU'] = [StatusType]
 bepTypes['PROVIDES'] = [types.StringType, types.ListType]
-bepTypes['DEPEND'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['REQUIRES'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['SUPPLEMENTS'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['CONFLICTS'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['FRESHENS'] = [types.StringType, types.ListType, types.NoneType]
 bepTypes['REPLACES'] = [types.StringType, types.ListType, types.NoneType]
-bepTypes['BUILD_DEPEND'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['BUILD_REQUIRES'] = [types.StringType, types.ListType, types.NoneType]
+bepTypes['BUILD_PREREQUIRES'] \
+	= [types.StringType, types.ListType, types.NoneType]
 bepTypes['BUILD'] = [ShellType]
 bepTypes['INSTALL'] = [ShellType]
 bepTypes['TEST'] = [ShellType]
@@ -97,12 +99,13 @@ bepDefaults['REVISION'] = [True, None]
 bepDefaults['WORKING'] = [False, True]
 bepDefaults['STATUS_HAIKU'] = [False, 'untested']
 bepDefaults['PROVIDES'] = [True, None]
-bepDefaults['DEPEND'] = [False, None]
+bepDefaults['REQUIRES'] = [False, None]
 bepDefaults['SUPPLEMENTS'] = [False, None]
 bepDefaults['CONFLICTS'] = [False, None]
 bepDefaults['FRESHENS'] = [False, None]
 bepDefaults['REPLACES'] = [False, None]
-bepDefaults['BUILD_DEPEND'] = [False, None]
+bepDefaults['BUILD_REQUIRES'] = [False, None]
+bepDefaults['BUILD_PREREQUIRES'] = [False, None]
 bepDefaults['BUILD'] = [False, shell()]
 bepDefaults['INSTALL'] = [False, shell()]
 bepDefaults['TEST'] = [False, shell()]
@@ -298,8 +301,8 @@ class HaikuPorter:
 
         self.bepKeys['PROVIDES'] = self.substituteVariables(
             self.bepKeys['PROVIDES'])
-        self.bepKeys['DEPEND'] = self.substituteVariables(
-            self.bepKeys['DEPEND'])
+        self.bepKeys['REQUIRES'] = self.substituteVariables(
+            self.bepKeys['REQUIRES'])
         self.bepKeys['SUPPLEMENTS'] = self.substituteVariables(
             self.bepKeys['SUPPLEMENTS'])
         self.bepKeys['CONFLICTS'] = self.substituteVariables(
@@ -308,8 +311,10 @@ class HaikuPorter:
             self.bepKeys['FRESHENS'])
         self.bepKeys['REPLACES'] = self.substituteVariables(
             self.bepKeys['REPLACES'])
-        self.bepKeys['BUILD_DEPEND'] = self.substituteVariables(
-            self.bepKeys['BUILD_DEPEND'])
+        self.bepKeys['BUILD_REQUIRES'] = self.substituteVariables(
+            self.bepKeys['BUILD_REQUIRES'])
+        self.bepKeys['BUILD_PREREQUIRES'] = self.substituteVariables(
+            self.bepKeys['BUILD_PREREQUIRES'])
 
         # warn when the port is not stable on this platform
         self.platform = self.detectOS()
@@ -613,11 +618,11 @@ class HaikuPorter:
 
     def checkDependencies(self):
         """Print the list of ports this one depends on"""
-        if self.bepKeys['DEPEND'] == []:
+        if self.bepKeys['REQUIRES'] == []:
             print 'No dependencies'
             return
         print 'This port depends on the following ports:'
-        for item in self.bepKeys['DEPEND']:
+        for item in self.bepKeys['REQUIRES']:
             print '  ' + item
         print 'Please verify that you have these installed.',
         if not self.options.yes:
@@ -949,9 +954,11 @@ class HaikuPorter:
             infoFile.write('}\n')
 
         if isBuildPackage:
-            dependencies = self.bepKeys['DEPEND'] + self.bepKeys['BUILD_DEPEND']
+            dependencies = self.bepKeys['REQUIRES'] \
+            	+ self.bepKeys['BUILD_REQUIRES'] \
+            	+ self.bepKeys['BUILD_PREREQUIRES']
         else:
-            dependencies = self.bepKeys['DEPEND']
+            dependencies = self.bepKeys['REQUIRES']
 
         self.writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
         self.writePackageInfoList(infoFile, dependencies, 'requires')
