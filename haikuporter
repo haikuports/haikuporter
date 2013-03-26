@@ -881,6 +881,12 @@ class HaikuPorter:
         check_call(['ln', '-s', buildPackage, packagesDir])
             # TODO: We need to deactivate the build package eventually!
 
+        # Delete and re-create the distro dir -- the port's build may need to
+        # use it.
+        shutil.rmtree(self.distroDir, True)
+        if not os.path.exists(self.distroDir):
+            os.mkdir(self.distroDir)
+
         self.runCommandSequence(self.bepKeys['BUILD'], self.sourceDir)
         self.setFlag('build')
 
