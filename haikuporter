@@ -189,7 +189,7 @@ class HaikuPorter:
         # if requested, search for a port
         if options.search:
             if len(args) == 0:
-                print 'You need to specifiy a search string.'
+                print 'You need to specify a search string.'
                 print "Invoke '" + sys.argv[0]\
                      + " -h' for usage information."
                 sys.exit(1)
@@ -199,7 +199,7 @@ class HaikuPorter:
         
         if options.location:
             if len(args) == 0:
-                print 'You need to specifiy a search string.'
+                print 'You need to specify a search string.'
                 print "Invoke '" + sys.argv[0]\
                      + " -h' for usage information."
                 sys.exit(1)
@@ -224,7 +224,7 @@ class HaikuPorter:
 
         # if there is no argument given, exit
         if len(args) == 0:
-            print 'You need to specifiy at least a port name.'
+            print 'You need to specify at least a port name.'
             print "Invoke '" + sys.argv[0]\
                  + " -h' for usage information."
             sys.exit(1)
@@ -273,7 +273,7 @@ class HaikuPorter:
                 print 'Following versions of %s are available:' % self.portName
                 for version in versions:
                     print '  ' + version[0]
-                sys.exit('Run haikuporter again, specifiying a port version')
+                sys.exit('Run haikuporter again, specifying a port version')
             elif len(versions) == 1:
                 self.portVersion = versions[0][0]
             else:
