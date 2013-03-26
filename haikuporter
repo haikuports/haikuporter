@@ -13,10 +13,10 @@ info['version'] = 'r' + '$Rev$'[6:-2]
 
 # -- Modules ------------------------------------------------------------------
 
-import commands # todo: this is deprecated, replace with subprocess
+import commands
 import hashlib
 import locale
-from optparse import OptionParser # todo: this is deprecated, use argparse instead
+from optparse import OptionParser
 import os
 import re
 import shutil
