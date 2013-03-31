@@ -1000,20 +1000,6 @@ class HaikuPorter:
                     else:
                         sys.exit(1)
     
-            if port.recipeKeys['REQUIRES']:
-                print 'This port depends on the following ports:'
-                for item in port.recipeKeys['REQUIRES']:
-                    print '  ' + item
-                print 'Please verify that you have these installed.',
-                if not self.options.yes:
-                    answer = raw_input('Continue (y/n + enter)? ')
-                    if answer == '':
-                        sys.exit(1)
-                    if answer[0].lower() == 'y':
-                        print ' ok'
-                    else:
-                        sys.exit(1)
-                    
             # clean the work dir and don't build when making a source archive
             if self.options.archive:
                 self.options.build = False
