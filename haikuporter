@@ -580,11 +580,11 @@ class Port:
             zf.close()
         elif archiveFullPath.split('/')[-1].split('.')[-1] == 'xz':
             try:
-                Popen(['xz', '-d', '-k', archiveFullPath])
+                Popen(['xz', '-d', '-k', archiveFullPath]).wait()
             except (OSError, CalledProcessError) as e:
                 # run the installoptionalsoftware prompt
                 if self.prompt_installer('xz'):
-                    Popen(['xz', '-d', '-k', archiveFullPath])
+                    Popen(['xz', '-d', '-k', archiveFullPath]).wait()
                 else:
                     sys.exit(e)
             tar = archiveFullPath[:-3]
