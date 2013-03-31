@@ -513,14 +513,7 @@ class Port:
         if not os.path.exists(self.workDir):
             os.mkdir(self.workDir)
 
-        try:
-            check_call(checkoutCommand, shell=True, cwd=self.workDir)
-        except (OSError, CalledProcessError) as e:
-            if self.prompt_installer(checkoutCommand.split()[0]):
-                check_call(checkoutCommand, shell=True,
-                           cwd=self.workDir)
-            else:
-                sys.exit(e)
+        check_call(checkoutCommand, shell=True, cwd=self.workDir)
 
         # Set the 'checkout' flag to signal that the checkout is complete
         # This also tells haikuporter not to attempt an unpack step
@@ -569,24 +562,15 @@ class Port:
         print 'Unpacking ' + self.src_local
         archiveFullPath = self.downloadDir + '/' + self.src_local
         if tarfile.is_tarfile(archiveFullPath):
-            tf = tarfile.open(self.downloadDir + '/' + self.src_local,
-                              'r')
+            tf = tarfile.open(self.downloadDir + '/' + self.src_local, 'r')
             tf.extractall(self.workDir)
             tf.close()
         elif zipfile.is_zipfile(archiveFullPath):
-            zf = zipfile.ZipFile(self.downloadDir + '/'
-                                  + self.src_local, 'r')
+            zf = zipfile.ZipFile(self.downloadDir + '/' + self.src_local, 'r')
             zf.extractall(self.workDir)
             zf.close()
         elif archiveFullPath.split('/')[-1].split('.')[-1] == 'xz':
-            try:
-                Popen(['xz', '-d', '-k', archiveFullPath]).wait()
-            except (OSError, CalledProcessError) as e:
-                # run the installoptionalsoftware prompt
-                if self.prompt_installer('xz'):
-                    Popen(['xz', '-d', '-k', archiveFullPath]).wait()
-                else:
-                    sys.exit(e)
+            Popen(['xz', '-d', '-k', archiveFullPath]).wait()
             tar = archiveFullPath[:-3]
             if tarfile.is_tarfile(tar):
                 tf = tarfile.open(tar, 'r')
@@ -1130,29 +1114,6 @@ class HaikuPorter:
                     pass
                 hierarchy.append([item, subdirList])
         return None
-
-    def prompt_installer(self, name):
-        apps = {  # map command to package
-            'xz': 'XZ-Utils',
-            'git': 'Git',
-            'hg': 'mercurial',
-            'cvs': 'cvs',
-            'bzr': 'bazaar',
-            }
-        if options.yes:
-            check_call('installoptionalpackage' + ' '
-                        + str(apps[name]), shell=True)
-            return True
-        response = raw_input('Do you want to install %s? [Y/n]' % name)
-        if response in ['y', 'Y', '\n', 'yes', '']:
-            check_call('installoptionalpackage' + ' '
-                        + str(apps[name]), shell=True)
-            return True
-        else:
-            print ('In order to install this package you need to run '
-                   'installoptionalpackage %s later or let Haikuporter install '
-                   'it for you.' % apps[name])
-            return False
 
     def checkSourceTree(self):
         print 'Checking HaikuPorts tree at: ' + self.packagesPath
