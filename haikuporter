@@ -20,7 +20,6 @@ from optparse import OptionParser
 import os
 import re
 import shutil
-import string
 from subprocess import check_call, PIPE, Popen, CalledProcessError
 import sys
 import tarfile
@@ -32,7 +31,7 @@ import zipfile
 # -- HaikuPorts options -------------------------------------------------------
 
 # location of haikuports.conf
-haikuPortsConf = '/etc/haikuports.conf'
+haikuportsConf = '/etc/haikuports.conf'
 
 svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
 
@@ -55,15 +54,15 @@ PhaseType = phase
 
 
 # allowed types of the /etc/haikuports.conf values
-confTypes = {}
-confTypes['PACKAGES_PATH'] = types.StringType
-confTypes['PATCH_OPTIONS'] = types.StringType
-confTypes['PACKAGER'] = types.StringType
+haikuportsConfigTypes = {}
+haikuportsConfigTypes['PACKAGES_PATH'] = types.StringType
+haikuportsConfigTypes['PATCH_OPTIONS'] = types.StringType
+haikuportsConfigTypes['PACKAGER'] = types.StringType
 
-confDefaults = {}  # [required, default]
-confDefaults['PACKAGES_PATH'] = [True, None]
-confDefaults['PATCH_OPTIONS'] = [False, None]
-confDefaults['PACKAGER'] = [True, None]
+haikuportsConfigDefaults = {}  # [required, default]
+haikuportsConfigDefaults['PACKAGES_PATH'] = [True, None]
+haikuportsConfigDefaults['PATCH_OPTIONS'] = [False, None]
+haikuportsConfigDefaults['PACKAGER'] = [True, None]
 
 # allowed types of the recipe-file values
 recipeTypes = {}
@@ -184,6 +183,13 @@ echo $PWD
 %s
 '''
 
+# -- global options dictionary -----------------------------------------------
+options = {}
+
+
+# -- global configuration ----------------------------------------------------
+haikuportsConfig = {}
+
 
 # -- capture output of shell command -----------------------------------------
 def check_output(*popenargs, **kwargs):
@@ -215,290 +221,64 @@ def findDirectory(aDir, subDirPath = None):
 
 locale.localeconv = _ourLocaleconv
 
-# -- Main Program ------------------------------------------------------------
-class HaikuPorter:
-    def __init__(self, options, args):
-
-        # read global settings
-        mainConfig = Config(haikuPortsConf, confTypes)
-        self.confKeys = mainConfig.getKeys()
-        self.options = options
-
-        # check whether all required fields are present
-        for key in confDefaults:
-            if key not in self.confKeys and confDefaults[key][0]:
-                sys.exit("Error: Required field '" + key + "' not present in " 
-                         + haikuPortsConf)
-
-        self.packagesPath = self.confKeys['PACKAGES_PATH']
-        if self.packagesPath[-1] == '/':
-            # strip trailing '/'
-            self.packagesPath = self.packagesPath[:-1]
-
-        # if requested, list all ports in the HaikuPorts tree
-        if options.list:
-            self.searchPorts(None)
-            sys.exit()
-
-        # if requested, search for a port
-        if options.search:
-            if not args:
-                sys.exit('You need to specify a search string.\n'
-                         "Invoke '" + sys.argv[0] + " -h' for usage "
-                         "information.")
-            self.searchPorts(args[0])
-            sys.exit()
-        
-        if options.location:
-            if not args:
-                sys.exit('You need to specify a search string.\n'
-                         "Invoke '" + sys.argv[0] + " -h' for usage "
-                         "information.")
-            # Provide the installed location of a recipe (for quick editing)
-            print os.path.join(self.packagesPath, self.searchPorts(args[0]))
-            sys.exit()
-
-        # if requested, checkout or update ports tree
-        if options.get:
-            self.updatePortsTree()
-            sys.exit()
-
-        # if requested, print the location of the haikuports source tree
-        if options.tree:
-            print self.packagesPath
-            sys.exit()
-
-        # if requested, scan the ports tree for problems
-        if options.lint:
-            self.checkSourceTree()
-            sys.exit()
-
-        # if there is no argument given, exit
-        if not args:
-            sys.exit('You need to specify a search string.\n'
-                     "Invoke '" + sys.argv[0] + " -h' for usage information.")
-        else:
-            port = args[0]
-
-        # split the argument into a port name and a version
-        reWithVersion = re.compile(regExp['portfullname'])
-        reWithoutVersion = re.compile(regExp['portname'] + '$')
-        if reWithVersion.match(port):  # with version
-            m = reWithVersion.match(port)
-            self.portName = m.group('name')
-            self.portVersion = m.group('version')
-        elif reWithoutVersion.match(port):
-            m = reWithoutVersion.match(port)
-            self.portName = m.group('name')
-            self.portVersion = None
-        else:
-            # invalid argument
-            sys.exit('Error: Invalid port name ' + port)
-            
-        # find the port in the HaikuPorts tree
-        self.portCategory = self.getCategory(self.portName)
-        if self.portCategory == None:
-            sys.exit('Error: Port ' + self.portName + ' not found.')
+# -- A single port with its recipe, allows to execute actions ----------------
+class Port:
+    def __init__(self, name, version, category, baseDir, globalShellVariables):
+        self.name = name
+        self.version = version
+        self.category = category            
+        self.baseDir = baseDir
+        self.shellVariables = globalShellVariables
 
         # create full paths for the directories
-        self.portDir = (self.packagesPath + '/' + self.portCategory + '/' +
-                        self.portName)
-        self.downloadDir = self.portDir + '/' + paths['download']
-        self.workDir = self.portDir + '/' + paths['work']
+        self.downloadDir = self.baseDir + '/' + paths['download']
+        self.workDir = self.baseDir + '/' + paths['work']
         self.sourceDir = self.workDir
-        self.patchesDir = self.portDir + '/' + paths['patches']
-        self.packageDir = self.portDir + '/' + paths['package']
+        self.patchesDir = self.baseDir + '/' + paths['patches']
+        self.packageDir = self.baseDir + '/' + paths['package']
+        
+    def __enter__(self):
+        self.activeBuildPackage = None
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        self.deactivateBuildPackage()
+        
+    def parseRecipeFile(self):
+        """Parse the recipe-file of the specified port"""
+        recipeFilePath = (self.baseDir + '/' + self.name + '-' +
+                          self.version + '.recipe')
+        if not os.path.exists(recipeFilePath):
+            sys.exit('Error: ' + self.name + ' version '
+                      + self.version + ' not found.')
 
-        # if the port version was not specified, list available versions
-        if self.portVersion == None:
-            versions = []
-            reRecipeFile = re.compile(regExp['recipefilename'])
-            dirList = os.listdir(self.portDir)
-            for item in dirList:
-                m = reRecipeFile.match(item)
-                if m:
-                    versions.append([m.group('version'), item])
-            if len(versions) > 1:
-                print 'Following versions of %s are available:' % self.portName
-                for version in versions:
-                    print '  ' + version[0]
-                sys.exit('Run haikuporter again, specifying a port version')
-            elif len(versions) == 1:
-                self.portVersion = versions[0][0]
-            else:
-                sys.exit('Error: .recipe files for %s not found.' % self.portName)
+        self.validateRecipeFile(recipeFilePath)
 
-        # show port description, if requested
-        if options.about:
-            self.printDescription()
-            sys.exit()
-
-        # set up the variables we'll inherit to the shell
-        self.portVersionedName = self.portName + '-' + self.portVersion
-        self.initGlobalShellVariables()
-
-        # read data from the recipe file
-        self.parseRecipeFile()
-
+        # set default values when not provided
+        for key in recipeDefaults:
+            if key not in self.recipeKeys:
+                self.recipeKeys[key] = recipeDefaults[key][1]
+                
         # If a SOURCE_DIR was specified, make it absolute.
         if self.recipeKeys['SOURCE_DIR']:
             self.sourceDir = self.workDir + '/' + self.recipeKeys['SOURCE_DIR']
 
-        # set up the variables we'll inherit to the shell
+        # set up the complete list of variables we'll inherit to the shell
+        # when executing a recipe action
         self.initShellVariablesFromRecipe()
 
-        # warn when the port is not stable on this platform
-        self.platform = self.detectOS()
-        if self.platform == None:
-            sys.exit('Error: Unknown OS platform!')
-        elif self.recipeKeys['STATUS_' + self.platform] != 'stable':
-            print ('Warning: This port is %s on this platform.' %
-                   self.recipeKeys['STATUS_' + self.platform])
-            if not self.options.yes:
-                answer = raw_input('Continue (y/n + enter)? ')
-                if answer == '':
-                    sys.exit(1)
-                if answer[0].lower() == 'y':
-                    print ' ok'
-                else:
-                    sys.exit(1)
-
-        if self.recipeKeys['MESSAGE']:
-            print self.recipeKeys['MESSAGE']
-            if not self.options.yes:
-                answer = raw_input('Continue (y/n + enter)? ')
-                if answer == '':
-                    sys.exit(1)
-                if answer[0].lower() == 'y':
-                    print ' ok'
-                else:
-                    sys.exit(1)
-
-        # clean the work dir and don't build when making a source archive
-        if options.archive:
-            options.build = False
-            options.clean = True
-            options.patch = True
-
-        # clean the work directory, if requested
-        if options.clean:
-            self.cleanWorkDirectory()
-
-        # don't build when not patching
-        if not options.patch:
-            options.build = False
-
-        try:
-            self.activeBuildPackage = None
-            self.checkDependencies()
-            self.downloadSource()
-            self.checksumSource()
-            self.unpackSource()
-            if options.patch:
-                self.patchSource()
-            if options.build:
-                self.buildPort()
-            if options.package:
-                self.makePackage()
-            if options.archive:
-                self.makePatchedArchive()
-            if options.test:
-                self.testPort()
-        finally:
-            self.deactivateBuildPackage()
-
-    def initGlobalShellVariables(self):
-        # extract the package info from the system package
-        output = check_output('package list /system/packages/haiku.hpkg'
-            + ' | grep -E "^[[:space:]]*[[:alpha:]]+:[[:space:]]+"', shell=True)
-
-        # get the haiku version
-        match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output);
-        if not match:
-            sys.exit('Failed to get Haiku version!')
-        self.haikuVersion = match.group(1)
-
-        # get the architecture
-        match = re.search(r"architecture:\s*(\S+)", output);
-        if not match:
-            sys.exit('Failed to get Haiku architecture!')
-        self.architecture = match.group(1)
-
-        self.shellVariables = {
-            'haikuVersion': self.haikuVersion,
-            'architecture': self.architecture,
-            'portVersion': self.portVersion,
-            'portVersionedName': self.portVersionedName,
-        }
-
-    def initShellVariablesFromRecipe(self):
-        self.portRevision = str(self.recipeKeys['REVISION'])
-        self.portFullVersion = self.portVersion + '-' + self.portRevision
-        self.portRevisionedName = self.portName + '-' + self.portFullVersion
-        prefix = findDirectory('B_PACKAGE_LINKS_DIRECTORY',
-            self.portRevisionedName + '/.self')
-
-        self.shellVariables.update({
-            'portRevision': self.portRevision,
-            'portFullVersion': self.portFullVersion,
-            'portRevisionedName': self.portRevisionedName,
-            'prefix': prefix,
-            'dataRootDir': prefix + '/data',
-            'binDir': prefix + '/bin',
-            'sbinDir': prefix + '/bin',
-            'libDir': prefix + '/lib',
-            'includeDir': prefix + '/develop/headers',
-            'sysconfDir': prefix + '/settings',
-            'docDir': prefix + '/documentation/packages/' + self.portName,
-            'infoDir': prefix + '/documentation/info',
-            'manDir': prefix + '/documentation/man',
-            'sourceDir': self.sourceDir,
-            'jobs': str(self.options.jobs),
-        })
-        self.shellVariables['configureDirArgs'] = \
-            '--prefix=$prefix '                   \
-            '--datarootdir=$dataRootDir '         \
-            '--sbindir=$sbinDir '                 \
-            '--includedir=$includeDir '           \
-            '--sysconfdir=$sysconfDir '           \
-            '--docdir=$docDir '                   \
-            '--infodir=$infoDir '                 \
-            '--mandir=$manDir'
-
-    def printDescription(self):
-        """Show port description"""
-        recipeFilePath = (self.portDir + '/' + self.portName + '-' +
-                          self.portVersion + '.recipe')
-        recipeConfig = Config(recipeFilePath, recipeTypes, self.shellVariables)
-        self.recipeKeys = recipeConfig.getKeys()
-
-        print '*' * 80
-        if 'SUMMARY' in self.recipeKeys:
-            print 'DESCRIPTION: %s' % self.recipeKeys['SUMMARY']
-        if 'HOMEPAGE' in self.recipeKeys:
-            print 'HOMEPAGE: %s' % self.recipeKeys['HOMEPAGE']
-        print '*' * 80
-
-    def setFlag(self, name):
-        open('%s/%s-%s.%s' % (self.workDir, self.portName,
-             self.portVersion, name), 'w').close()
-
-    def checkFlag(self, name):
-        if os.path.exists('%s/%s-%s.%s' % (self.workDir, self.portName,
-                                           self.portVersion, name)):
-            return True
-        else:
-            return False
-
-    def updatePortsTree(self):
-        """Get/Update the port tree via svn"""
-        print 'Refreshing the port tree: %s' % self.packagesPath
-        if os.path.exists(self.packagesPath + '/.svn'):
-            check_call(['svn', 'update', self.packagesPath])
-        else:
-            check_call(['svn', 'checkout', svnPath, self.packagesPath])
+        # for key in self.recipeKeys:
+        #     print key + " = " + str(self.recipeKeys[key])
 
     def validateRecipeFile(self, recipeFilePath):
+        # initialize basic port-specific shell variables            
+        self.versionedName = self.name + '-' + self.version
+        self.shellVariables.update({
+            'portName': self.name,
+            'portVersion': self.version,
+            'portVersionedName': self.versionedName,
+        })
+        
         """Validate the keys/values in a recipe file"""
         recipeConfig = Config(recipeFilePath, recipeTypes, self.shellVariables)
         self.recipeFilePath = recipeFilePath
@@ -539,67 +319,61 @@ class HaikuPorter:
         if 'COPYRIGHT' not in self.recipeKeys or not self.recipeKeys['COPYRIGHT']:
             print 'Warning: No COPYRIGHT found in recipe file'
 
-    def parseRecipeFile(self):
-        """Parse the recipe-file of the specified port"""
-        recipeFilename = (self.portDir + '/' + self.portName + '-' +
-                          self.portVersion + '.recipe')
-        if not os.path.exists(recipeFilename):
-            sys.exit('Error: ' + self.portName + ' version '
-                      + self.portVersion + ' not found.')
+    def initShellVariablesFromRecipe(self):
+        self.portRevision = str(self.recipeKeys['REVISION'])
+        self.portFullVersion = self.version + '-' + self.portRevision
+        self.portRevisionedName = self.name + '-' + self.portFullVersion
+        prefix = findDirectory('B_PACKAGE_LINKS_DIRECTORY',
+            self.portRevisionedName + '/.self')
 
-        self.validateRecipeFile(recipeFilename)
+        self.shellVariables.update({
+            'portRevision': self.portRevision,
+            'portFullVersion': self.portFullVersion,
+            'portRevisionedName': self.portRevisionedName,
+            'prefix': prefix,
+            'dataRootDir': prefix + '/data',
+            'binDir': prefix + '/bin',
+            'sbinDir': prefix + '/bin',
+            'libDir': prefix + '/lib',
+            'includeDir': prefix + '/develop/headers',
+            'sysconfDir': prefix + '/settings',
+            'docDir': prefix + '/documentation/packages/' + self.name,
+            'infoDir': prefix + '/documentation/info',
+            'manDir': prefix + '/documentation/man',
+            'sourceDir': self.sourceDir,
+            'jobs': str(options.jobs),
+        })
+        self.shellVariables['configureDirArgs'] = \
+            '--prefix=$prefix '                   \
+            '--datarootdir=$dataRootDir '         \
+            '--sbindir=$sbinDir '                 \
+            '--includedir=$includeDir '           \
+            '--sysconfdir=$sysconfDir '           \
+            '--docdir=$docDir '                   \
+            '--infodir=$infoDir '                 \
+            '--mandir=$manDir'
 
-        # set default values when not provided
-        for key in recipeDefaults:
-            if key not in self.recipeKeys:
-                self.recipeKeys[key] = recipeDefaults[key][1]
+    def printDescription(self):
+        """Show port description"""
+        print '*' * 80
+        if 'SUMMARY' in self.recipeKeys:
+            print 'SUMMARY: %s' % self.recipeKeys['SUMMARY']
+        if 'SUMMARY' in self.recipeKeys:
+            print 'DESCRIPTION: %s' % self.recipeKeys['DESCRIPTION']
+        if 'HOMEPAGE' in self.recipeKeys:
+            print 'HOMEPAGE: %s' % self.recipeKeys['HOMEPAGE']
+        print '*' * 80
 
-        # for key in self.recipeKeys:
-        #     print key + " = " + str(self.recipeKeys[key])
+    def setFlag(self, name):
+        open('%s/%s-%s.%s' % (self.workDir, self.name,
+             self.version, name), 'w').close()
 
-    def detectOS(self):
-        """Detect the platform we're running on"""
-        return 'HAIKU'
-
-    def searchPorts(self, regExp):
-        """Search for a port in the HaikuPorts tree"""
-        if regExp:
-            reSearch = re.compile(regExp)
-        hierarchy = []
-        os.chdir(self.packagesPath)
-        dirList = os.listdir(self.packagesPath)
-        for category in dirList:
-            if os.path.isdir(category) and category[0] != '.':
-                subdirList = os.listdir(category)
-                # remove items starting with '.'
-                subdirList.sort()
-                for portName in subdirList:
-                    if (portName[0][0] != '.' and (not regExp or
-                                                   reSearch.search(portName))):
-                        print category + '/' + portName
-
-    def getCategory(self, portName):
-        """Find location of the specified port in the HaikuPorts tree"""
-        hierarchy = []
-        os.chdir(self.packagesPath)
-        dirList = os.listdir(self.packagesPath)
-        for item in dirList:
-            if os.path.isdir(item) and item[0] != '.':
-                subdirList = os.listdir(item)
-                # remove items starting with '.'
-                subdirList.sort()
-                while subdirList[0][0] == '.':
-                    del subdirList[0]
-
-                # locate port
-                try:
-                    if subdirList.index(portName) >= 0:
-                        # port was found in the category specified by 'item'
-                        return item
-                except ValueError:
-                    pass
-                hierarchy.append([item, subdirList])
-        return None
+    def checkFlag(self, name):
+        if os.path.exists('%s/%s-%s.%s' % (self.workDir, self.name,
+                                           self.version, name)):
+            return True
+        else:
+            return False
 
     def cleanWorkDirectory(self):
         """Clean the working directory"""
@@ -607,25 +381,6 @@ class HaikuPorter:
             print 'Cleaning work directory...'
             shutil.rmtree(self.workDir)
                 
-
-    def checkDependencies(self):
-        """Print the list of ports this one depends on"""
-        if self.recipeKeys['REQUIRES'] == []:
-            print 'No dependencies'
-            return
-        print 'This port depends on the following ports:'
-        for item in self.recipeKeys['REQUIRES']:
-            print '  ' + item
-        print 'Please verify that you have these installed.',
-        if not self.options.yes:
-            answer = raw_input('Continue (y/n + enter)? ')
-            if answer == '':
-                sys.exit(1)
-            if answer[0].lower() == 'y':
-                print ' ok'
-            else:
-                sys.exit(1)
-
     def downloadSource(self):
         """Fetch the source archive"""
         for src_uri in self.recipeKeys['SRC_URI']:
@@ -671,7 +426,7 @@ class HaikuPorter:
          source.
                  
         """
-        if self.checkFlag('checkout') and not self.options.force:
+        if self.checkFlag('checkout') and not options.force:
             print 'Source already checked out. Skipping ...'
             return
 
@@ -703,7 +458,7 @@ class HaikuPorter:
             sys.exit("Error: Couldn't determine repository type")
 
         # Set the name of the directory to check out sources into
-        checkoutDir = self.portName + '-' + self.portVersion
+        checkoutDir = self.name + '-' + self.version
 
         # Start building the command to perform the checkout
         if type == 'cvs':
@@ -795,7 +550,7 @@ class HaikuPorter:
             os.mkdir(self.workDir)
 
         # Check to see if the source archive was already unpacked.
-        if self.checkFlag('unpack') and not self.options.force:
+        if self.checkFlag('unpack') and not options.force:
             return
 
         # unpack source archive
@@ -833,20 +588,69 @@ class HaikuPorter:
     def patchSource(self):
         """Apply the Haiku patches to the source directory"""
         # Check to see if the patch was already applied to the source.
-        if self.checkFlag('patch') and not self.options.force:
+        if self.checkFlag('patch') and not options.force:
             return
 
-        patchFilePath = self.patchesDir + '/' + self.portName + '-'\
-             + self.portVersion + '.patch'
+        patchFilePath = self.patchesDir + '/' + self.name + '-'\
+             + self.version + '.patch'
         if os.path.exists(patchFilePath):
             patchOptions = ''
-            if 'PATCH_OPTIONS' in self.confKeys:
-                patchOptions += self.confKeys['PATCH_OPTIONS']
+            if 'PATCH_OPTIONS' in haikuportsConfig:
+                patchOptions += haikuportsConfig['PATCH_OPTIONS']
             check_call('patch -p0 ' + patchOptions + ' -i '
                         + patchFilePath, shell=True, cwd=self.workDir)
         else:
             print 'No patching required'
         self.setFlag('patch')
+
+    def build(self):
+        """Build the sources"""
+        # Check to see if a previous build was already done.
+        if self.checkFlag('build') and not options.force:
+            return
+
+        # activate build package if required at this stage
+        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'BUILD':
+            self.activateBuildPackage()
+            
+        # Delete and re-create the package dir -- the port's build may need to
+        # use it.
+        shutil.rmtree(self.packageDir, True)
+        if not os.path.exists(self.packageDir):
+            os.mkdir(self.packageDir)
+
+        self.doRecipeAction('BUILD', self.sourceDir)
+        self.setFlag('build')
+
+    def install(self):
+        """Install the files resulting from the build into the package folder"""
+        # activate build package if required at this stage
+        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'INSTALL':
+            self.activateBuildPackage()
+            
+        print 'Installing ...'
+        self.doRecipeAction('INSTALL', self.sourceDir)
+
+    def test(self):
+        """Test the build results"""
+        # activate build package if required at this stage
+        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'TEST':
+            self.activateBuildPackage()
+            
+        print 'Testing ...'
+        self.doRecipeAction('TEST', self.sourceDir)
+
+    def doRecipeAction(self, action, dir):
+        """Run the specified action, as defined in the recipe file"""
+
+        # set up the shell environment -- we want it to inherit some of our
+        # variables
+        shellEnv = os.environ
+        shellEnv.update(self.shellVariables)
+
+        # execute the requested action via a shell ....
+        wrapperScript = recipeActionScript % (self.recipeFilePath, action)
+        check_call(['/bin/bash', '-c', wrapperScript], cwd=dir, env=shellEnv)
 
     def activateBuildPackage(self):
         """Create and activate the build package"""
@@ -876,56 +680,19 @@ class HaikuPorter:
         """Deactivate the build package, if it has been activated"""
         if self.activeBuildPackage:
             try:
-	            os.remove(self.activeBuildPackage)
+                os.remove(self.activeBuildPackage)
             except OSError:
                 pass
-	        self.activeBuildPackage = None
-
-    def buildPort(self):
-        """Build the sources"""
-        # Check to see if a previous build was already done.
-        if self.checkFlag('build') and not self.options.force:
-            return
-
-        # activate build package if required at this stage
-        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'BUILD':
-            self.activateBuildPackage()
-            
-        # Delete and re-create the package dir -- the port's build may need to
-        # use it.
-        shutil.rmtree(self.packageDir, True)
-        if not os.path.exists(self.packageDir):
-            os.mkdir(self.packageDir)
-
-        self.doRecipeAction('BUILD', self.sourceDir)
-        self.setFlag('build')
-
-    def installPort(self):
-        """Install the binaries onto the system"""
-        # activate build package if required at this stage
-        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'INSTALL':
-            self.activateBuildPackage()
-            
-        print 'Installing ...'
-        self.doRecipeAction('INSTALL', self.sourceDir)
-
-    def testPort(self):
-        """Test the resulting binaries"""
-        # activate build package if required at this stage
-        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'TEST':
-            self.activateBuildPackage()
-            
-        print 'Testing ...'
-        self.doRecipeAction('TEST', self.sourceDir)
+            self.activeBuildPackage = None
 
     def generatePackageInfo(self, packageInfoPath, isBuildPackage):
         """Create an .PackageInfo file for inclusion in a package"""
         print 'Generating .PackageInfo file ...'
 
         infoFile = open(packageInfoPath, 'w')
-        infoFile.write('name\t\t\t' + self.portName + '\n')
+        infoFile.write('name\t\t\t' + self.name + '\n')
         infoFile.write('version\t\t\t' + self.portFullVersion + '\n')
-        infoFile.write('architecture\t\t' + self.architecture + '\n')
+        infoFile.write('architecture\t\t' + self.shellVariables['architecture'] + '\n')
         infoFile.write('summary\t\t\t"' + self.recipeKeys['SUMMARY'] + '"\n')
 
         infoFile.write('description\t\t"')
@@ -937,7 +704,7 @@ class HaikuPorter:
             lineNumber += 1
         infoFile.write('"\n')
 
-        infoFile.write('packager\t\t"' + self.confKeys['PACKAGER'] + '"\n')
+        infoFile.write('packager\t\t"' + haikuportsConfig['PACKAGER'] + '"\n')
         infoFile.write('vendor\t\t\t"Haiku Project"\n')
 
         # These keys aren't mandatory so we need to check if they exist
@@ -955,8 +722,8 @@ class HaikuPorter:
 
         if isBuildPackage:
             dependencies = self.recipeKeys['REQUIRES'] \
-            	+ self.recipeKeys['BUILD_REQUIRES'] \
-            	+ self.recipeKeys['BUILD_PREREQUIRES']
+                + self.recipeKeys['BUILD_REQUIRES'] \
+                + self.recipeKeys['BUILD_PREREQUIRES']
         else:
             dependencies = self.recipeKeys['REQUIRES']
 
@@ -983,16 +750,16 @@ class HaikuPorter:
 
         # Point directly to the file in subversion.
         recipeurl_base = 'http://ports.haiku-files.org/' + \
-            'svn/haikuports/trunk/' + self.portCategory + '/' + self.portName
+            'svn/haikuports/trunk/' + self.category + '/' + self.name
 
-        recipeurl = recipeurl_base + '/' + self.portName+ '-'\
-            + self.portVersion + '.recipe'
+        recipeurl = recipeurl_base + '/' + self.name+ '-'\
+            + self.version + '.recipe'
 
-        infoFile.write('\t"Recipe-file <' + recipeurl + '>"\n')
-        patchFilePath = self.patchesDir + '/' + self.portName + '-'\
-            + self.portVersion + '.patch'
+        infoFile.write('\t"Port-file <' + recipeurl + '>"\n')
+        patchFilePath = self.patchesDir + '/' + self.name + '-'\
+            + self.version + '.patch'
         if os.path.exists(patchFilePath):
-            patchurl = recipeurl_base + '/patches/' + self.portName + '-' + self.portVersion + '.patch'
+            patchurl = recipeurl_base + '/patches/' + self.name + '-' + self.version + '.patch'
             infoFile.write('\t"Patches <' + patchurl + '>"\n')
 
         infoFile.write('}\n')
@@ -1024,39 +791,23 @@ class HaikuPorter:
         if not os.path.exists(self.packageDir):
             os.mkdir(self.packageDir)
 
-        for f in os.listdir(self.portDir):
+        for f in os.listdir(self.baseDir):
             if f == 'licenses':
-                shutil.copytree(self.portDir + '/' + f,
+                shutil.copytree(self.baseDir + '/' + f,
                     self.packageDir + '/data/licenses')
 
-        self.installPort()
+        self.install()
 
         self.generatePackageInfo(self.packageDir + '/.PackageInfo', False)
 
         # go to package dir for making the package
         os.chdir(self.packageDir)
 
-        package = self.portName + '-' + self.portVersion
+        package = self.name + '-' + self.version
 
-        # set haikuversion to HAIKUVERSION, if it is empty then don't add a
-        # dash.
-        haikuversion = ''
-        if 'HAIKUVERSION' in os.environ:
-            haikuversion = '-' + os.environ['HAIKUVERSION']
+        packageFile = self.baseDir + '/' + self.portRevisionedName + '-'\
+             + self.shellVariables['architecture'] + '.hpkg'
 
-        date = time.strftime('-%Y-%m-%d', time.localtime())
-
-        packageFile = self.portDir + '/' + self.portRevisionedName + '-'\
-             + self.architecture + '.hpkg'
-
-        packageFiles = ''
-
-        # # If -c, wipeout old zips
-        # if self.options.clean:
-        #     for item in os.listdir(self.portDir):
-        #         if item[-4:] == '.zip':
-        #             os.remove(os.path.join(self.portDir, item))
-        
         # Test if package already exists, and if so delete so that it will be
         # the newest.
         if os.path.exists(packageFile):
@@ -1069,10 +820,12 @@ class HaikuPorter:
         shutil.rmtree(self.packageDir)
 
         print 'Package saved to: ' + packageFile
-        if self.recipeKeys['LICENSE']:
-            if ' '.join(self.recipeKeys['LICENSE'][0].split()[:2]) in ['GNU GPL', 'GNU LGPL']:
-                print ('To generate the matching source package, run: '
-                       'haikuporter -z ' + package)
+        
+        # give hint about source package for ports using (L)GPL license
+        if 'GNU GPL' in self.recipeKeys['LICENSE'] \
+            or 'GNU LGPL' in self.recipeKeys['LICENSE']:
+            print ('To generate the matching source package, run: '
+                   'haikuporter -z ' + package)
 
     def makePatchedArchive(self):
         """Create a patched source archive"""
@@ -1080,8 +833,8 @@ class HaikuPorter:
 
         # Set the path and filename for the archive.
         date = time.strftime('-%Y-%m-%d', time.localtime())
-        archiveFile = self.portDir + '/' + self.portName + '-'\
-             + self.portVersion + '_haiku' + date + '.tar.xz'
+        archiveFile = self.baseDir + '/' + self.name + '-'\
+             + self.version + '_haiku' + date + '.tar.xz'
 
         sourceFiles = ''
 
@@ -1104,6 +857,268 @@ class HaikuPorter:
 
         print 'Archive saved to: ' + archiveFile
 
+
+# -- Main Class --------------------------------------------------------------
+class HaikuPorter:
+    def __init__(self, args):
+        # read global settings
+        global haikuportsConfig
+        haikuportsConfig = Config(haikuportsConf, 
+                                  haikuportsConfigTypes).getKeys()
+
+        # check whether all required fields are present
+        for key in haikuportsConfigDefaults:
+            if key not in haikuportsConfig and haikuportsConfigDefaults[key][0]:
+                sys.exit("Error: Required field '" + key + "' not present in " 
+                         + haikuportsConf)
+
+        # set up the global variables we'll inherit to the shell
+        self.initGlobalShellVariables()
+    
+        self.packagesPath = haikuportsConfig['PACKAGES_PATH']
+        if self.packagesPath[-1] == '/':
+            # strip trailing '/'
+            self.packagesPath = self.packagesPath[:-1]
+
+        # if requested, list all ports in the HaikuPorts tree
+        if options.list:
+            self.searchPorts(None)
+            sys.exit()
+
+        # if requested, search for a port
+        if options.search:
+            if not args:
+                sys.exit('You need to specify a search string.\n'
+                         "Invoke '" + sys.argv[0] + " -h' for usage "
+                         "information.")
+            self.searchPorts(args[0])
+            sys.exit()
+        
+        if options.location:
+            if not args:
+                sys.exit('You need to specify a search string.\n'
+                         "Invoke '" + sys.argv[0] + " -h' for usage "
+                         "information.")
+            # Provide the installed location of a port (for quick editing)
+            print os.path.join(self.packagesPath, self.searchPorts(args[0]))
+            sys.exit()
+
+        # if requested, checkout or update ports tree
+        if options.get:
+            self.updatePortsTree()
+            sys.exit()
+
+        # if requested, print the location of the haikuports source tree
+        if options.tree:
+            print self.packagesPath
+            sys.exit()
+
+        # if requested, scan the ports tree for problems
+        if options.lint:
+            self.checkSourceTree()
+            sys.exit()
+
+        # if there is no argument given, exit
+        if not args:
+            sys.exit('You need to specify a search string.\n'
+                     "Invoke '" + sys.argv[0] + " -h' for usage information.")
+        else:
+            port = args[0]
+
+        # split the argument into a port name and a version
+        name, version = self.splitPortSpecIntoNameAndVersion(port)
+
+        # find the port in the HaikuPorts tree
+        category = self.getCategory(name)
+        if category == None:
+            sys.exit('Error: Port ' + name + ' not found in tree.')
+
+        baseDir = self.packagesPath + '/' + category + '/' + name
+        with Port(name, version, category, baseDir, 
+                  self.shellVariables) as port:
+            # if the port version was not specified, list available versions
+            if port.version == None:
+                versions = []
+                reRecipeFile = re.compile(regExp['recipefilename'])
+                dirList = os.listdir(baseDir)
+                for item in dirList:
+                    m = reRecipeFile.match(item)
+                    if m:
+                        versions.append([m.group('version'), item])
+                if len(versions) > 1:
+                    print 'Following versions of %s are available:' % name
+                    for version in versions:
+                        print '  ' + version[0]
+                    sys.exit('Run haikuporter again, specifying a port version')
+                elif len(versions) == 1:
+                    # there is just one version, silently pick that
+                    port.version = versions[0][0]
+                else:
+                    sys.exit('Error: no recipe files for %s found.' % name)
+    
+            # read data from the port file
+            port.parseRecipeFile()
+    
+            # show port description, if requested
+            if options.about:
+                port.printDescription()
+                sys.exit()
+    
+            # warn when the port is not stable on this platform
+            self.platform = self.detectOS()
+            if self.platform == None:
+                sys.exit('Error: Unknown OS platform!')
+            elif port.recipeKeys['STATUS_' + self.platform] != 'stable':
+                print ('Warning: This port is %s on this platform.' %
+                       port.recipeKeys['STATUS_' + self.platform])
+                if not options.yes:
+                    answer = raw_input('Continue (y/n + enter)? ')
+                    if answer == '':
+                        sys.exit(1)
+                    if answer[0].lower() == 'y':
+                        print ' ok'
+                    else:
+                        sys.exit(1)
+    
+            if port.recipeKeys['MESSAGE']:
+                print port.recipeKeys['MESSAGE']
+                if not options.yes:
+                    answer = raw_input('Continue (y/n + enter)? ')
+                    if answer == '':
+                        sys.exit(1)
+                    if answer[0].lower() == 'y':
+                        print ' ok'
+                    else:
+                        sys.exit(1)
+    
+            if port.recipeKeys['REQUIRES']:
+                print 'This port depends on the following ports:'
+                for item in port.recipeKeys['REQUIRES']:
+                    print '  ' + item
+                print 'Please verify that you have these installed.',
+                if not options.yes:
+                    answer = raw_input('Continue (y/n + enter)? ')
+                    if answer == '':
+                        sys.exit(1)
+                    if answer[0].lower() == 'y':
+                        print ' ok'
+                    else:
+                        sys.exit(1)
+                    
+            # clean the work dir and don't build when making a source archive
+            if options.archive:
+                options.build = False
+                options.clean = True
+                options.patch = True
+    
+            # clean the work directory, if requested
+            if options.clean:
+                port.cleanWorkDirectory()
+    
+            # don't build when not patching
+            if not options.patch:
+                options.build = False
+    
+            port.downloadSource()
+            port.checksumSource()
+            port.unpackSource()
+            if options.patch:
+                port.patchSource()
+            if options.build:
+                port.build()
+            if options.package:
+                port.makePackage()
+            if options.archive:
+                port.makePatchedArchive()
+            if options.test:
+                port.test()
+
+    def initGlobalShellVariables(self):
+        # extract the package info from the system package
+        output = check_output('package list /system/packages/haiku.hpkg'
+            + ' | grep -E "^[[:space:]]*[[:alpha:]]+:[[:space:]]+"', shell=True)
+
+        # get the haiku version
+        match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output);
+        if not match:
+            sys.exit('Failed to get Haiku version!')
+        self.haikuVersion = match.group(1)
+
+        # get the architecture
+        match = re.search(r"architecture:\s*(\S+)", output);
+        if not match:
+            sys.exit('Failed to get Haiku architecture!')
+        self.architecture = match.group(1)
+
+        self.shellVariables = {
+            'haikuVersion': self.haikuVersion,
+            'architecture': self.architecture,
+        }
+
+    def updatePortsTree(self):
+        """Get/Update the port tree via svn"""
+        print 'Refreshing the port tree: %s' % self.packagesPath
+        if os.path.exists(self.packagesPath + '/.svn'):
+            check_call(['svn', 'update', self.packagesPath])
+        else:
+            check_call(['svn', 'checkout', svnPath, self.packagesPath])
+
+    def detectOS(self):
+        """Detect the platform we're running on"""
+        return 'HAIKU'
+
+    def searchPorts(self, regExp):
+        """Search for a port in the HaikuPorts tree"""
+        if regExp:
+            reSearch = re.compile(regExp)
+        os.chdir(self.packagesPath)
+        dirList = os.listdir(self.packagesPath)
+        for category in dirList:
+            if os.path.isdir(category) and category[0] != '.':
+                subdirList = os.listdir(category)
+                # remove items starting with '.'
+                subdirList.sort()
+                for portName in subdirList:
+                    if (portName[0][0] != '.' and (not regExp or
+                                                   reSearch.search(portName))):
+                        print category + '/' + portName
+
+    def splitPortSpecIntoNameAndVersion(self, portSpec):
+        reWithVersion = re.compile(regExp['portfullname'])
+        reWithoutVersion = re.compile(regExp['portname'] + '$')
+        if reWithVersion.match(portSpec):  # with version
+            m = reWithVersion.match(portSpec)
+            return m.group('name'), m.group('version')
+        elif reWithoutVersion.match(portSpec):
+            m = reWithoutVersion.match(portSpec)
+            return m.group('name'), None
+        else:
+            # invalid argument
+            sys.exit('Error: Invalid port name ' + portSpec)
+
+    def getCategory(self, portName):
+        """Find location of the specified port in the HaikuPorts tree"""
+        hierarchy = []
+        os.chdir(self.packagesPath)
+        dirList = os.listdir(self.packagesPath)
+        for item in dirList:
+            if os.path.isdir(item) and item[0] != '.':
+                subdirList = os.listdir(item)
+                # remove items starting with '.'
+                subdirList.sort()
+                while subdirList[0][0] == '.':
+                    del subdirList[0]
+
+                # locate port
+                try:
+                    if subdirList.index(portName) >= 0:
+                        # port was found in the category specified by 'item'
+                        return item
+                except ValueError:
+                    pass
+                hierarchy.append([item, subdirList])
+        return None
+
     def prompt_installer(self, name):
         apps = {  # map command to package
             'xz': 'XZ-Utils',
@@ -1112,7 +1127,7 @@ class HaikuPorter:
             'cvs': 'cvs',
             'bzr': 'bazaar',
             }
-        if self.options.yes:
+        if options.yes:
             check_call('installoptionalpackage' + ' '
                         + str(apps[name]), shell=True)
             return True
@@ -1126,18 +1141,6 @@ class HaikuPorter:
                    'installoptionalpackage %s later or let Haikuporter install '
                    'it for you.' % apps[name])
             return False
-
-    def doRecipeAction(self, action, dir):
-        """Run the specified action, as defined in the recipe file"""
-
-        # set up the shell environment -- we want it to inherit some of our
-        # variables
-        shellEnv = os.environ
-        shellEnv.update(self.shellVariables)
-
-        # execute the requested action via a shell ....
-        wrapperScript = recipeActionScript % (self.recipeFilePath, action)
-        check_call(['/bin/bash', '-c', wrapperScript], cwd=dir, env=shellEnv)
 
     def checkSourceTree(self):
         print 'Checking HaikuPorts tree at: ' + self.packagesPath
@@ -1160,19 +1163,25 @@ class HaikuPorter:
                                 m = reWithVersion.match(recipe)
                                 if (m and m.group('name') and
                                     m.group('version')):  # with version
-                                    print('\t\tName/Version: %s\t%s' %
-                                          (m.group('name'), m.group('version')))
+                                    name = m.group('name')
+                                    version = m.group('version')
+                                    print '\t\tName/Version: %s\t%s' % (name, 
+                                                                        version)
                                     try:
-                                        self.validateRecipeFile(recipeFullPath)
-                                    except SystemExit:
-                                        pass
+                                        with Port(name, version, category, 
+                                                  portFullPath, 
+                                                  self.shellVariables) as port:
+                                            port.validateRecipeFile(
+                                                recipeFullPath)
+                                    except SystemExit as e:
+                                        print e.code
                                 else:
                                     # invalid argument
                                     print("Error: Couldn't parse port/version "
                                           "info: " + recipe)
 
 
-# -- /etc/haikuports.conf and *.recipe parser -----------------------------------
+# -- /etc/haikuports.conf and *.recipe parser --------------------------------
 
 class Config:
     def __init__(self, filename, keysAndTypes, shellVariables={}):
@@ -1300,4 +1309,4 @@ parser.add_option('--lint', action='store_true', dest='lint',
                   default=False, help="scan the ports tree for problems")
 
 (options, args) = parser.parse_args()
-haikuporter = HaikuPorter(options, args)
+haikuporter = HaikuPorter(args)
