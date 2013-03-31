@@ -386,7 +386,7 @@ class Port:
         for src_uri in self.recipeKeys['SRC_URI']:
             # Examine the URI to determine if we need to perform a checkout
             # instead of download
-            if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$|^bzr.*$',
+            if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$|^bzr.*$|^fossil.*$',
                         src_uri):
                 self.checkoutSource(src_uri)
                 return
@@ -490,6 +490,18 @@ class Port:
             if rev:
                 checkoutCommand += ' -r ' + rev
             checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
+        elif type == 'fossil':
+            # http://fossil-scm.org/index.html/doc/trunk/www/quickstart.wiki
+            if os.path.exists(checkoutDir + '.fossil'):
+                shutil.rmtree(checkoutDir + '.fossil')
+            checkoutCommand = 'fossil clone ' + real_uri
+            checkoutCommand += ' ' + checkoutDir + '.fossil'
+            checkoutCommand += ' && '
+            checkoutCommand += 'mkdir -p ' + checkoutDir
+            checkoutCommand += ' && '
+            checkoutCommand += 'fossil open ' + checkoutDir + '.fossil'
+            if rev:
+                checkoutCommand += ' ' + rev
         else:
             # TODO Skip the initial checkout if a rev is specified?
             checkoutCommand = 'git clone %s %s' % (real_uri, checkoutDir)
