@@ -37,20 +37,31 @@ svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
 
 # -----------------------------------------------------------------------------
 
-# create new type 'StatusType' for identifying the port's status on a platform
-#  the possible states are defined in the 'Config' class (reStatusType)
-class status(str):
-    pass
+# Create new type 'ArchitecturesType' for identifying the port's status on each 
+# of the supported architectures.
+# Within the string, support for an architecture can be specified like this:
+#  'x86'  -> this port is known to work on the 'x86' architecture
+#  '?x86' -> this port has not been built/tested on the 'x86' architecture yet,
+#            it is expected to work, but that has not been verified
+#  '-x86' -> this port is known to have problems on the 'x86' architecture
+# An architecture missing from the status specification indicates that nothing 
+# is known about the status of the port on this architecture.
+class ArchitecturesType(str):
+    @staticmethod
+    def getArchitectures():
+        # TODO: fetch this from PackageKit?
+        return [
+            'any',
+            'x86',
+            'x86_gcc2',
+        ]
 
-StatusType = status
 
-# create new type 'PhaseType' for identifying a port phase
-class phase(str):
+# Create new type 'PhaseType' for identifying a port phase.
+class PhaseType(str):
     @staticmethod
     def getAllowedValues():
         return [ 'BUILD', 'TEST', 'INSTALL' ]
-
-PhaseType = phase
 
 
 # allowed types of the /etc/haikuports.conf values
@@ -64,8 +75,10 @@ haikuportsConfigDefaults['PACKAGES_PATH'] = [True, None]
 haikuportsConfigDefaults['PATCH_OPTIONS'] = [False, None]
 haikuportsConfigDefaults['PACKAGER'] = [True, None]
 
+
 # allowed types of the recipe-file values
 recipeTypes = {}
+recipeTypes['ARCHITECTURES'] = ArchitecturesType
 recipeTypes['BUILD_PACKAGE_ACTIVATION_PHASE'] = PhaseType
 recipeTypes['BUILD_PREREQUIRES'] = types.ListType
 recipeTypes['BUILD_REQUIRES'] = types.ListType
@@ -83,12 +96,12 @@ recipeTypes['REQUIRES'] = types.ListType
 recipeTypes['REVISION'] = types.IntType
 recipeTypes['SOURCE_DIR'] = types.StringType
 recipeTypes['SRC_URI'] = types.ListType
-recipeTypes['STATUS_HAIKU'] = StatusType
 recipeTypes['SUMMARY'] = types.StringType
 recipeTypes['SUPPLEMENTS'] = types.ListType
 
 recipeDefaults = {}  # [required, default]
-recipeDefaults['BUILD_PACKAGE_ACTIVATION_PHASE'] = [False, phase('BUILD')]
+recipeDefaults['ARCHITECTURES'] = [True, None]
+recipeDefaults['BUILD_PACKAGE_ACTIVATION_PHASE'] = [False, PhaseType('BUILD')]
 recipeDefaults['BUILD_PREREQUIRES'] = [False, []]
 recipeDefaults['BUILD_REQUIRES'] = [False, []]
 recipeDefaults['CHECKSUM_MD5'] = [False, None]
@@ -105,10 +118,10 @@ recipeDefaults['REQUIRES'] = [False, []]
 recipeDefaults['REVISION'] = [True, 1]
 recipeDefaults['SOURCE_DIR'] = [False, None]
 recipeDefaults['SRC_URI'] = [True, []]
-recipeDefaults['STATUS_HAIKU'] = [False, 'untested']
 recipeDefaults['SUMMARY'] = [True, None]
 recipeDefaults['SUPPLEMENTS'] = [False, []]
 recipeDefaults['WORKING'] = [False, True]
+
 
 # names of directories
 paths = {}
@@ -117,6 +130,7 @@ paths['patches'] = 'patches'
 paths['download'] = 'download'
 paths['package'] = 'package'
 paths['licenses'] = 'licenses'
+
 
 # regex to split recipe filenames into port / version
 regExp = {}
@@ -229,6 +243,7 @@ class Port:
         self.category = category            
         self.baseDir = baseDir
         self.shellVariables = globalShellVariables
+        self.architecture = globalShellVariables['architecture']
         self.forceOverride = False
         self.beQuiet = False
 
@@ -373,6 +388,11 @@ class Port:
         else:
             return False
 
+    def getStatusOnCurrentArchitecture(self):
+        if self.architecture in self.recipeKeys['ARCHITECTURES']:
+            return self.recipeKeys['ARCHITECTURES'][self.architecture]
+        return 'unsupported'
+    
     def cleanWorkDirectory(self):
         """Clean the working directory"""
         if os.path.exists(self.workDir):
@@ -692,7 +712,7 @@ class Port:
         infoFile = open(packageInfoPath, 'w')
         infoFile.write('name\t\t\t' + self.name + '\n')
         infoFile.write('version\t\t\t' + self.fullVersion + '\n')
-        infoFile.write('architecture\t\t' + self.shellVariables['architecture'] + '\n')
+        infoFile.write('architecture\t\t' + self.architecture + '\n')
         infoFile.write('summary\t\t\t"' + self.recipeKeys['SUMMARY'] + '"\n')
 
         infoFile.write('description\t\t"')
@@ -807,7 +827,7 @@ class Port:
         package = self.name + '-' + self.version
 
         packageFile = self.baseDir + '/' + self.revisionedName + '-'\
-             + self.shellVariables['architecture'] + '.hpkg'
+             + self.architecture + '.hpkg'
 
         # Test if package already exists, and if so delete so that it will be
         # the newest.
@@ -973,13 +993,10 @@ class HaikuPorter:
                 port.printDescription()
                 sys.exit()
     
-            # warn when the port is not stable on this platform
-            self.platform = self.detectOS()
-            if self.platform == None:
-                sys.exit('Error: Unknown OS platform!')
-            elif port.recipeKeys['STATUS_' + self.platform] != 'stable':
-                print ('Warning: This port is %s on this platform.' %
-                       port.recipeKeys['STATUS_' + self.platform])
+            # warn when the port is not stable on this architecture
+            status = port.getStatusOnCurrentArchitecture();
+            if status != 'stable':
+                print 'Warning: This port is %s on this architecture.' % status
                 if not self.options.yes:
                     answer = raw_input('Continue (y/n + enter)? ')
                     if answer == '':
@@ -1060,10 +1077,6 @@ class HaikuPorter:
             check_call(['svn', 'update', self.packagesPath])
         else:
             check_call(['svn', 'checkout', svnPath, self.packagesPath])
-
-    def detectOS(self):
-        """Detect the platform we're running on"""
-        return 'HAIKU'
 
     def searchPorts(self, regExp):
         """Search for a port in the HaikuPorts tree"""
@@ -1216,9 +1229,29 @@ class Config:
                              % (filename, key, valueString, 
                                 ','.join(PhaseType.getAllowedValues())))
                 self.entries[key] = valueString.upper()
-            elif type == StatusType:
-                # treat as string for now
-                self.entries[key] = valueString.lower()
+            elif type == ArchitecturesType:
+                self.entries[key] = {}
+                for value in [v.lower() for v in valueString.split()]:
+                    status = ''
+                    architecture = ''
+                    if value.startswith('?'):
+                        status = 'untested'
+                        architecture = value[1:]
+                    elif value.startswith('-'):
+                        status = 'broken'
+                        architecture = value[1:]
+                    else:
+                        status = 'stable'
+                        architecture = value
+                    if architecture not in ArchitecturesType.getArchitectures():
+                        sys.exit('Error: %s refers to unknown architecture %s\n'
+                                 'known architectures: %s'
+                                 % (filename, architecture,
+                                    ','.join(ArchitecturesType.getArchitectures())))
+                    self.entries[key][architecture] = status
+                if 'any' in self.entries[key] and len(self.entries[key]) > 1:
+                    sys.exit("Error: %s specifies both 'any' and other "
+                             'architectures' % (filename))
             else:
                 sys.exit('Error: type of key %s in file %s is unsupported'
                          % (key, filename))
