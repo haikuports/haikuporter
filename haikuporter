@@ -14,6 +14,7 @@ info['version'] = 'r' + '$Rev$'[6:-2]
 
 # -- Modules ------------------------------------------------------------------
 
+import glob
 import hashlib
 import locale
 from optparse import OptionParser
@@ -45,14 +46,14 @@ svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
 
 # -----------------------------------------------------------------------------
 
-# Create new type 'ArchitecturesType' for identifying the port's status on each 
+# Create new type 'ArchitecturesType' for identifying the port's status on each
 # of the supported architectures.
 # Within the string, support for an architecture can be specified like this:
 #  'x86'  -> this port is known to work on the 'x86' architecture
 #  '?x86' -> this port has not been built/tested on the 'x86' architecture yet,
 #            it is expected to work, but that has not been verified
 #  '-x86' -> this port is known to have problems on the 'x86' architecture
-# An architecture missing from the status specification indicates that nothing 
+# An architecture missing from the status specification indicates that nothing
 # is known about the status of the port on this architecture.
 class ArchitecturesType(str):
     @staticmethod
@@ -65,12 +66,16 @@ class ArchitecturesType(str):
         ]
 
 
+# -----------------------------------------------------------------------------
+
 # Create new type 'PhaseType' for identifying a port phase.
 class PhaseType(str):
     @staticmethod
     def getAllowedValues():
         return [ 'BUILD', 'TEST', 'INSTALL' ]
 
+
+# -----------------------------------------------------------------------------
 
 # allowed types of the /etc/haikuports.conf values
 haikuportsConfigTypes = {}
@@ -83,6 +88,8 @@ haikuportsConfigDefaults['PACKAGER'] = [True, None]
 haikuportsConfigDefaults['PATCH_OPTIONS'] = [False, None]
 haikuportsConfigDefaults['TREE_PATH'] = [True, None]
 
+
+# -----------------------------------------------------------------------------
 
 # allowed types of the recipe-file values
 recipeTypes = {}
@@ -131,6 +138,8 @@ recipeDefaults['SUPPLEMENTS'] = [False, []]
 recipeDefaults['WORKING'] = [False, True]
 
 
+# -----------------------------------------------------------------------------
+
 # regex to split recipe filenames into port / version
 regExp = {}
 regExp['portname'] = '^(?P<name>[\w\-\+]+?)'
@@ -139,11 +148,7 @@ regExp['portfullname'] = regExp['portname'] + '-' + regExp['portversion']
 regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 
 
-# Data directories at top level, these do not contain recipes.
-dataDirs = [
-    'packages',
-    'repository',
-]
+# -----------------------------------------------------------------------------
 
 # Shell scriptlet that is used to execute a config file and output all the 
 # configuration values (in the form of environment variables) which have been
@@ -152,6 +157,7 @@ dataDirs = [
 # supported configuration keys.
 # Note: this script requires bash, it won't work with any other shells
 configFileEvaluatorScript = r'''# wrapper script for evaluating config/recipe
+
 # stop on every error
 set -e
 
@@ -171,10 +177,14 @@ do
 done
 '''
 
+
+# -----------------------------------------------------------------------------
+
 # Shell scriptlet that is used to trigger one of the actions defined in a build
 # recipe.The first placeholder is substituted with the configuration file, the 
 # second one with the action to be invoked.
 recipeActionScript = r'''# wrapper scriptlet for running an action
+
 # stop on every error
 set -e
 
@@ -194,6 +204,8 @@ TEST()
     true
 }
 
+echo $PATH
+
 # source the configuration file
 . %s >/dev/null
 
@@ -207,11 +219,15 @@ fi
 '''
 
 
+# -----------------------------------------------------------------------------
+
 # Shell scriptlet that prepares a chroot environment for entering.
 # Invoked with $packages filled with the list of packages that should
 # be activated (via common/packages) and $recipeFilePath pointing to the
 # recipe file.
 setupChrootScript = r'''
+
+# stop on every error
 set -e
 
 mkdir -p \
@@ -257,10 +273,13 @@ mount -t packagefs -p "packages $PWD/boot/common/packages; type common" \
 '''
 
 
+# -----------------------------------------------------------------------------
+
 # Shell scriptlet that cleans up a chroot environment after it has been exited.
 # Invoked with $buildOk indicating if the build has worked and thus all paths 
 # required for building only should be wiped.
 cleanupChrootScript = r'''
+
 # try to make sure we really are in a work directory
 if ! echo $(basename $PWD) | grep -qE '^work-'; then 
     echo "cleanupChroot invoked in $PWD, which doesn't seem to be a work dir!"
@@ -273,12 +292,6 @@ unmount dev
 
 # wipe files and directories if it is ok to do so
 if [[ $buildOk ]]; then
-    # grab any packages
-    for pkg in *.hpkg; do
-        echo "grabbing $pkg"
-        mv -f $pkg ../../../packages/
-    done
-
     echo "cleaning chroot folder"
     rmdir dev
     rm -rf \
@@ -297,6 +310,7 @@ else
     echo "keeping chroot folder $PWD intact for inspection"
 fi
 '''
+
 
 # -- global configuration ----------------------------------------------------
 haikuportsConfig = {}
@@ -364,15 +378,33 @@ class ChrootSetup:
 class Port:
     def __init__(self, name, version, category, baseDir, globalShellVariables):
         self.name = name
-        self.version = version or ''
+        self.version = version
+        self.versionedName = name + '-' + version
         self.category = category            
         self.baseDir = baseDir
-        self.shellVariables = globalShellVariables
         self.architecture = globalShellVariables['architecture']
+        self.shellVariables = globalShellVariables
+        self.shellVariables.update({
+            'portName': self.name,
+            'portVersion': self.version,
+            'portVersionedName': self.versionedName,
+        })
+        
         self.forceOverride = False
         self.beQuiet = False
+        self.avoidChroot = False
+
         self.buildPackage = None
         self.activeBuildPackage = None
+
+        # Each port creates at least one package (which will share its name).
+        # If additional packages are declared in the recipe, they will be 
+        # added here, later.
+        self.packages = [
+            {
+        		'name': name,
+            }
+        ]
 
         # create full paths for the directories
         self.downloadDir = self.baseDir + '/download'
@@ -389,13 +421,7 @@ class Port:
 
     def parseRecipeFile(self):
         """Parse the recipe-file of the specified port"""
-        recipeFilePath = (self.baseDir + '/' + self.name + '-' +
-                          self.version + '.recipe')
-        if not os.path.exists(recipeFilePath):
-            sys.exit('Error: ' + self.name + ' version '
-                      + self.version + ' not found.')
-
-        self.validateRecipeFile(recipeFilePath)
+        self.validateRecipeFile()
 
         # set default values when not provided
         for key in recipeDefaults:
@@ -407,6 +433,15 @@ class Port:
             self.sourceDir = (self.sourceDir + '/' + 
                               self.recipeKeys['SOURCE_DIR'])
 
+        # initialize variables that depend on the recipe revision
+        self.revision = str(self.recipeKeys['REVISION'])
+        self.fullVersion = self.version + '-' + self.revision
+        self.revisionedName = self.name + '-' + self.fullVersion
+        self.packages[0]['filename'] \
+            = self.revisionedName + '-' + self.architecture + '.hpkg'
+        self.packages[0]['fullPath'] \
+            = self.workDir + '/' + self.packages[0]['filename']
+
         # set up the complete list of variables we'll inherit to the shell
         # when executing a recipe action
         self._initShellVariablesFromRecipe()
@@ -414,17 +449,15 @@ class Port:
         # for key in self.recipeKeys:
         #     print key + " = " + str(self.recipeKeys[key])
 
-    def validateRecipeFile(self, recipeFilePath):
+    def validateRecipeFile(self):
         """Validate the syntax and contents of the recipe file"""
-        # initialize basic port-specific shell variables            
-        self.versionedName = self.name + '-' + self.version
-        self.shellVariables.update({
-            'portName': self.name,
-            'portVersion': self.version,
-            'portVersionedName': self.versionedName,
-        })
         
-        """Validate the keys/values in a recipe file"""
+        recipeFilePath = (self.baseDir + '/' + self.name + '-' + self.version 
+                          + '.recipe')
+        if not os.path.exists(recipeFilePath):
+            sys.exit('Error: ' + self.name + ' version ' + self.version 
+                     + ' not found.')
+
         recipeConfig = Config(recipeFilePath, recipeTypes, self.shellVariables)
         self.recipeFilePath = recipeFilePath
         self.recipeKeys = recipeConfig.getEntries()
@@ -458,7 +491,8 @@ class Port:
         if 'LICENSE' not in self.recipeKeys or not self.recipeKeys['LICENSE']:
             print 'Warning: No LICENSE found in recipe file'
 
-        if 'COPYRIGHT' not in self.recipeKeys or not self.recipeKeys['COPYRIGHT']:
+        if ('COPYRIGHT' not in self.recipeKeys 
+            or not self.recipeKeys['COPYRIGHT']):
             print 'Warning: No COPYRIGHT found in recipe file'
 
     def printDescription(self):
@@ -478,6 +512,12 @@ class Port:
             return self.recipeKeys['ARCHITECTURES'][self.architecture]
         return 'unsupported'
     
+    def generatePackageInfo(self, path):
+        """Create a corresponding .PackageInfo"""
+        
+        packageInfoFile = path + '/' + self.revisionedName + '.PackageInfo'
+        self._generatePackageInfo(packageInfoFile, False, True)
+        
     def cleanWorkDirectory(self):
         """Clean the working directory"""
         if os.path.exists(self.workDir):
@@ -517,7 +557,7 @@ class Port:
 
                     # succesfully downloaded source archive
                     return
-            except:
+            except Exception:
                 print 'Warning: download error, trying next location.'
 
         # failed to fetch source
@@ -575,8 +615,8 @@ class Port:
                 checkoutCommand += ' -D' + rev
             checkoutCommand += ' -d ' + checkoutDir + ' ' + module
         elif type == 'svn':
-            checkoutCommand = \
-                'svn co --non-interactive --trust-server-cert'
+            checkoutCommand \
+                = 'svn co --non-interactive --trust-server-cert'
             if rev:
                 checkoutCommand += ' -r ' + rev
             checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
@@ -639,8 +679,9 @@ class Port:
                          +  '\nFound: ' + h.hexdigest() + '\n')
             sys.stdout.flush()
         else:
-            # The checkout flag only gets set when a source checkout is performed
-            # If it exists we don't need to warn about the missing recipe field
+            # The checkout flag only gets set when a source checkout is 
+            # performed. If it exists we don't need to warn about the missing 
+            # recipe field
             if not self._checkFlag('checkout'):
                 print 'Warning: CHECKSUM_MD5 key not found in recipe file.'
 
@@ -708,35 +749,47 @@ class Port:
             '/boot/common/packages/autoconf-2.68-2-x86_gcc2.hpkg',
             '/boot/common/packages/automake-1.11.1-2-x86_gcc2.hpkg',
             '/boot/common/packages/gcc-2.95.3_110711-2-x86_gcc2.hpkg',
+            '/boot/common/packages/libiconv-1.13.1-2-x86_gcc2.hpkg',
+            '/boot/common/packages/libtool-2.4-2-x86_gcc2.hpkg',
+            '/boot/common/packages/libxml2-2.7.8-2-x86_gcc2.hpkg',
             '/boot/common/packages/m4-1.4.16-2-x86_gcc2.hpkg',
             '/boot/common/packages/make-3.82-2-x86_gcc2.hpkg',
+            '/boot/common/packages/openssl-1.0.0d-2-x86_gcc2.hpkg',
             '/boot/common/packages/perl-5.10.1-2-x86_gcc2.hpkg',
             '/boot/common/packages/sed-4.2.1-1-x86_gcc2.hpkg',
+            '/boot/common/packages/tar-1.25-1-x86_gcc2.hpkg',
         ]    # TODO: get these from pkgman!
 
-        # create the build package before entering chroot
-        self._createBuildPackage()
+        if self.avoidChroot:
+            self._executeBuild(makePackage)
+        else:
+            # setup chroot and keep it while executing the actions
+            with ChrootSetup(self.workDir, requiredPackages, 
+                             self.recipeFilePath) as chrootSetup:
+                pid = os.fork()
+                if pid == 0:
+                    # child, enter chroot and execute the build
+                    try:
+                        os.chroot(self.workDir)
+                        self._adjustToChroot()
+                        self._executeBuild(makePackage)
+                    except:
+                        traceback.print_exc()
+                        os._exit(1)
+                    os._exit(0)
 
-        # setup chroot and keep it while executing the actions
-        with ChrootSetup(self.workDir, requiredPackages, 
-                         self.recipeFilePath) as chrootSetup:
-            pid = os.fork()
-            if pid == 0:
-                # child, enter chroot and execute the build
-                try:
-                    os.chroot(self.workDir)
-                    self._adjustToChroot()
-                    self._doBuildStage()
-                    if makePackage:
-                        self._makePackage()
-                except BaseException as e:
-                    traceback.print_exc()
-                    os._exit(1)
-                os._exit(0)
+                # parent, wait on child
+                if os.waitpid(pid, 0)[1] == 0:
+                    chrootSetup.buildOk = True
 
-            # parent, wait on child
-            if os.waitpid(pid, 0)[1] == 0:
-                chrootSetup.buildOk = True
+        if makePackage:                    
+            # move all created packages into repository
+            packagesDir = self.baseDir + '/../../packages/'
+            for package in self.packages:
+                if os.path.exists(package['fullPath']):
+                    print 'grabbing ' + package['filename']
+                    os.rename(package['fullPath'], 
+                              packagesDir + package['filename'])
 
     def test(self, makePackage):
         """Test the port"""
@@ -777,9 +830,6 @@ class Port:
         """Fill dictionary with variables that will be inherited to the shell
            when executing recipe actions
         """
-        self.revision = str(self.recipeKeys['REVISION'])
-        self.fullVersion = self.version + '-' + self.revision
-        self.revisionedName = self.name + '-' + self.fullVersion
         prefix = findDirectory('B_PACKAGE_LINKS_DIRECTORY',
             self.revisionedName + '/.self')
 
@@ -789,7 +839,7 @@ class Port:
             'portRevisionedName': self.revisionedName,
             'sourceDir': self.sourceDir,
         })
-        
+
         configureDirs = {
             'prefix': prefix,
             'dataRootDir': prefix + '/data',
@@ -805,9 +855,21 @@ class Port:
         self.shellVariables.update(configureDirs)
 
         # add one more variable containing all the dir args for configure:
-        self.shellVariables['configureDirArgs'] = \
-            ' '.join(['--%s=%s' % (k.lower(), v) 
-                      for k, v in configureDirs.iteritems()])
+        self.shellVariables['configureDirArgs'] \
+            = ' '.join(['--%s=%s' % (k.lower(), v) 
+                       for k, v in configureDirs.iteritems()])
+
+    def _executeBuild(self, makePackage):
+        """Executes the build stage and creates all declared packages"""
+        self._createBuildPackage()
+        self._doBuildStage()
+        if makePackage:
+            for package in self.packages:
+                self._makePackage(package)
+        if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
+            os.remove(self.activeBuildPackage)
+        if self.buildPackage and os.path.exists(self.buildPackage):
+            os.remove(self.buildPackage)
 
     def _adjustToChroot(self):
         """Adjust directories to chroot()-ed environment"""
@@ -824,12 +886,19 @@ class Port:
         self.sourceDir = self.sourceDir[pathLengthToCut:]
         self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
         self.packagingDir = self.packagingDir[pathLengthToCut:]
-        self.buildPackage = self.buildPackage[pathLengthToCut:]
-        self.workDir = '/'
+        self.workDir = ''
         self.patchesDir = '/patches'
+
+        # adjust all package file paths
+        for package in self.packages:
+            package['fullPath'] = package['fullPath'][pathLengthToCut:]
                 
     def _doBuildStage(self):
         """Run the actual build"""
+        # activate build package if required at this stage
+        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'BUILD':
+            self._activateBuildPackage()
+            
         # Check to see if a previous build was already done.
         if self._checkFlag('build') and not self.forceOverride:
             print 'Skipping build ...'
@@ -845,61 +914,29 @@ class Port:
         self._doRecipeAction('BUILD', self.sourceDir)
         self._setFlag('build')
 
-    def _doInstallStage(self):
-        """Install the files resulting from the build into the packaging 
-           folder"""
-        print 'Collecting files to be packaged ...'
-        self._doRecipeAction('INSTALL', self.sourceDir)
-
-    def _doTestStage(self):
-        """Test the build results"""
-        print 'Testing ...'
-        self._doRecipeAction('TEST', self.sourceDir)
-
-    def _makePackage(self):
+    def _makePackage(self, package):
         """Create a package suitable for distribution"""
-        print 'Creating distribution package ...'
+        print 'Creating distribution package ' + package['name'] + ' ...'
 
-        # if the package dir still exists from a previous run then remove it
+        # recreate empty packaging directory
         shutil.rmtree(self.packagingDir, True)
-
-        # create package dir
-        if not os.path.exists(self.packagingDir):
-            os.mkdir(self.packagingDir)
+        os.mkdir(self.packagingDir)
 
         if os.path.exists('/licenses'):
             shutil.copytree('/licenses', self.packagingDir + '/data/licenses')
 
         self._doInstallStage()
         
-        if self.activeBuildPackage:
-            try:
-                os.remove(self.activeBuildPackage)
-            except OSError:
-                pass
-        if self.buildPackage:
-            try:
-                os.remove(self.buildPackage)
-            except OSError:
-                pass
+        self._generatePackageInfo(self.packagingDir + '/.PackageInfo', False,
+                                  self.beQuiet)
 
-        self._generatePackageInfo(self.packagingDir + '/.PackageInfo', False)
-
-        # go to package dir for making the package
-        os.chdir(self.packagingDir)
-
-        package = self.name + '-' + self.version
-        packageFile = '/' + self.revisionedName + '-' \
-             + self.architecture + '.hpkg'
-
-        # Test if package already exists, and if so delete so that it will be
-        # the newest.
-        if os.path.exists(packageFile):
-            os.remove(packageFile)
+        if os.path.exists(package['fullPath']):
+            os.remove(package['fullPath'])
         
         # Create the package
-        print 'creating package ' + packageFile + ' ...'
-        check_call(['package', 'create', packageFile])
+        print 'creating package ' + package['filename'] + ' ...'
+        os.chdir(self.packagingDir)
+        check_call(['package', 'create', package['fullPath']])
 
         # Clean up after ourselves
         shutil.rmtree(self.packagingDir)
@@ -908,7 +945,22 @@ class Port:
         if 'GNU GPL' in self.recipeKeys['LICENSE'] \
             or 'GNU LGPL' in self.recipeKeys['LICENSE']:
             print ('To generate the matching source package, run: '
-                   'haikuporter -z ' + package)
+                   'haikuporter -z ' + self.name + '-' + self.version)
+
+    def _doInstallStage(self):
+        """Install the files resulting from the build into the packaging 
+           folder"""
+        # activate build package if required at this stage
+        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == 'INSTALL':
+            self._activateBuildPackage()
+            
+        print 'Collecting files to be packaged ...'
+        self._doRecipeAction('INSTALL', self.sourceDir)
+
+    def _doTestStage(self):
+        """Test the build results"""
+        print 'Testing ...'
+        self._doRecipeAction('TEST', self.sourceDir)
 
     def _doRecipeAction(self, action, dir):
         """Run the specified action, as defined in the recipe file"""
@@ -917,14 +969,6 @@ class Port:
         shellEnv = os.environ
         shellEnv.update(self.shellVariables)
 
-        print "*** SE ***"        
-        for key in sorted(shellEnv):
-            print key + " = " + str(shellEnv[key])
-
-        # activate build package if required at this stage
-        if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == action:
-            self._activateBuildPackage()
-            
         # execute the requested action via a shell ....
         wrapperScript = recipeActionScript % (self.recipeFilePath, action)
         check_call(['/bin/bash', '-c', wrapperScript], cwd=dir, env=shellEnv)
@@ -938,15 +982,15 @@ class Port:
     def _createBuildPackage(self):
         """Create and activate the build package"""
         # create a package info for a build package
-        buildPackageInfo = self.workDir + '/' + self.revisionedName + \
-            '-build-package-info'
-        self._generatePackageInfo(buildPackageInfo, True)
+        buildPackageInfo \
+            = self.workDir + '/' + self.revisionedName + '-build-package-info'
+        self._generatePackageInfo(buildPackageInfo, True, self.beQuiet)
 
         # create the build package
-        buildPackage = self.workDir + '/' + self.revisionedName + \
-            '-build.hpkg'
+        buildPackage \
+            = self.workDir + '/' + self.revisionedName + '-build.hpkg'
         cmdlineArgs = ['package', 'create', '-bi', buildPackageInfo, '-I',
-            '/packaging', buildPackage]
+                       self.packagingDir, buildPackage]
         if self.beQuiet:
             cmdlineArgs.insert(2, '-q')
         check_call(cmdlineArgs)
@@ -961,23 +1005,31 @@ class Port:
             = packagesDir + '/' + os.path.basename(self.buildPackage)
         if os.path.exists(activeBuildPackage):
             os.remove(activeBuildPackage)
-        os.rename(self.buildPackage, activeBuildPackage)
+            
+        if self.avoidChroot:
+            # may have to cross devices, so better use a symlink
+            os.symlink(self.buildPackage, activeBuildPackage)
+        else:
+            # symlinking a package won't work in chroot, but in this
+            # case we are sure that the move won't cross devices
+            os.rename(self.buildPackage, activeBuildPackage)
         self.activeBuildPackage = activeBuildPackage
 
-    def _generatePackageInfo(self, packageInfoPath, isBuildPackage):
+    def _generatePackageInfo(self, packageInfoPath, isBuildPackage, quiet):
         """Create a .PackageInfo file for inclusion in a package"""
         with open(packageInfoPath, 'w') as infoFile:
             infoFile.write('name\t\t\t' + self.name + '\n')
             infoFile.write('version\t\t\t' + self.fullVersion + '\n')
             infoFile.write('architecture\t\t' + self.architecture + '\n')
-            infoFile.write('summary\t\t\t"' + self.recipeKeys['SUMMARY'] + '"\n')
+            infoFile.write('summary\t\t\t"' + self.recipeKeys['SUMMARY'] 
+                           + '"\n')
     
             infoFile.write('description\t\t"')
-            lineNumber = 0
             infoFile.write('\n'.join(self.recipeKeys['DESCRIPTION']))
             infoFile.write('"\n')
     
-            infoFile.write('packager\t\t"' + haikuportsConfig['PACKAGER'] + '"\n')
+            infoFile.write('packager\t\t"' + haikuportsConfig['PACKAGER'] 
+                           + '"\n')
             infoFile.write('vendor\t\t\t"Haiku Project"\n')
     
             # These keys aren't mandatory so we need to check if they exist
@@ -1002,7 +1054,8 @@ class Port:
     
             self._writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
             self._writePackageInfoList(infoFile, dependencies, 'requires')
-            self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 'supplements')
+            self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 
+                                            'supplements')
             self._writePackageInfoListByKey(infoFile, 'CONFLICTS', 'conflicts')
             self._writePackageInfoListByKey(infoFile, 'FRESHENS', 'freshens')
             self._writePackageInfoListByKey(infoFile, 'REPLACES', 'replaces')
@@ -1017,28 +1070,29 @@ class Port:
                 if uricount < 2:
                     infoFile.write('\t"Download <' + src_uri + '>"\n')
                 else:
-                    infoFile.write('\t"Location ' + str(uricount) + ' <' + src_uri
-                        + '>"\n')
+                    infoFile.write('\t"Location ' + str(uricount) + ' <' 
+                                   + src_uri + '>"\n')
                 uricount += 1
     
             # Point directly to the file in subversion.
-            recipeurl_base = 'http://ports.haiku-files.org/' + \
-                'svn/haikuports/trunk/' + self.category + '/' + self.name
+            recipeurl_base = ('http://ports.haiku-files.org/'
+                              + 'svn/haikuports/trunk/' + self.category + '/' 
+                              + self.name)
     
-            recipeurl = recipeurl_base + '/' + self.name+ '-'\
-                + self.version + '.recipe'
+            recipeurl = (recipeurl_base + '/' + self.name+ '-' + self.version 
+                         + '.recipe')
     
             infoFile.write('\t"Port-file <' + recipeurl + '>"\n')
-            patchFilePath = self.patchesDir + '/' + self.name + '-'\
-                + self.version + '.patch'
+            patchFilePath = (self.patchesDir + '/' + self.name + '-' 
+                             + self.version + '.patch')
             if os.path.exists(patchFilePath):
-                patchurl = recipeurl_base + '/patches/' + self.name + '-' + \
-                           self.version + '.patch'
+                patchurl = (recipeurl_base + '/patches/' + self.name + '-'
+                            + self.version + '.patch')
                 infoFile.write('\t"Patches <' + patchurl + '>"\n')
     
             infoFile.write('}\n')
         
-        if not isBuildPackage and not self.beQuiet:
+        if not isBuildPackage and not quiet:
             with open(packageInfoPath, 'r') as infoFile:
                 infoFileDisplay = infoFile.read()
                 print infoFileDisplay
@@ -1066,7 +1120,8 @@ class HaikuPorter:
 
         # check whether all required fields are present
         for key in haikuportsConfigDefaults:
-            if key not in haikuportsConfig and haikuportsConfigDefaults[key][0]:
+            if (key not in haikuportsConfig 
+                    and haikuportsConfigDefaults[key][0]):
                 sys.exit("Error: Required field '" + key + "' not present in " 
                          + haikuportsConf)
 
@@ -1080,10 +1135,8 @@ class HaikuPorter:
         if not os.path.exists(self.packagesPath):
             os.mkdir(self.packagesPath)
 
-        # create path where repository will be built
+        # the path where repository will be built
         self.repositoryPath = self.treePath + '/repository'
-        if not os.path.exists(self.repositoryPath):
-            os.mkdir(self.repositoryPath)
 
         # if requested, list all ports in the HaikuPorts tree
         if self.options.list:
@@ -1157,6 +1210,10 @@ class HaikuPorter:
             else:
                 sys.exit('Error: no recipe files for %s found.' % name)
     
+        # populate repository unless already done
+        if not os.path.exists(self.repositoryPath + '/.populated'):
+            self._populateRepository()
+
         with Port(name, version, category, baseDir, 
                   self.shellVariables) as port:
             # pass on options if needed
@@ -1164,6 +1221,8 @@ class HaikuPorter:
                 port.forceOverride = True
             if self.options.quiet:
                 port.beQuiet = True
+            if not self.options.chroot:
+                port.avoidChroot = True
 
             # read data from the port file
             port.parseRecipeFile()
@@ -1229,7 +1288,8 @@ class HaikuPorter:
     def _initGlobalShellVariables(self):
         # extract the package info from the system package
         output = check_output('package list /system/packages/haiku.hpkg'
-            + ' | grep -E "^[[:space:]]*[[:alpha:]]+:[[:space:]]+"', shell=True)
+            + ' | grep -E "^[[:space:]]*[[:alpha:]]+:[[:space:]]+"', 
+            shell=True)
 
         # get the haiku version
         match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output);
@@ -1271,8 +1331,8 @@ class HaikuPorter:
                 # remove items starting with '.'
                 subdirList.sort()
                 for portName in subdirList:
-                    if (portName[0][0] != '.' and (not regExp or
-                                                   reSearch.search(portName))):
+                    if (portName[0][0] != '.' 
+                        and (not regExp or reSearch.search(portName))):
                         print category + '/' + portName
 
     def _splitPortSpecIntoNameAndVersion(self, portSpec):
@@ -1294,7 +1354,7 @@ class HaikuPorter:
         os.chdir(self.treePath)
         dirList = os.listdir(self.treePath)
         for item in dirList:
-            if os.path.isdir(item) and item[0] != '.' and item not in dataDirs:
+            if os.path.isdir(item) and item[0] != '.' and '-' in item:
                 subdirList = os.listdir(item)
                 # remove items starting with '.'
                 subdirList.sort()
@@ -1314,40 +1374,68 @@ class HaikuPorter:
     def _checkSourceTree(self):
         print 'Checking HaikuPorts tree at: ' + self.treePath
 
-        for category in os.listdir(self.treePath):
-            categoryFullPath = self.treePath + '/' + category
-            if os.path.isdir(categoryFullPath) and category[0] != '.':
-                print 'Category: ' + category
-                for port in os.listdir(categoryFullPath):
-                    portFullPath = categoryFullPath + '/' + port
-                    if os.path.isdir(portFullPath) and port[0] != '.':
-                        print '\tPort: ' + port
-                        for recipe in os.listdir(portFullPath):
-                            recipeFullPath = portFullPath + '/' + recipe
-                            if os.path.isfile(recipeFullPath) and \
-                                recipe.endswith('.recipe'):
-                                reWithVersion = re.compile(regExp['recipefilename'])
-                                # reWithVersion = re.compile('^(?P<name>[a-z0-9\-_]*)-(?P<version>([\d]+[a-z\\.])*[\d]*)?$')
+        for (recipePath, port) in self._allPorts().iteritems():
+            print '%s::%s-%s' % (port.category, port.version, port.name)
+            try:
+                port.validateRecipeFile()
+            except SystemExit as e:
+                print e.code
 
-                                m = reWithVersion.match(recipe)
-                                if (m and m.group('name') and
-                                    m.group('version')):  # with version
-                                    name = m.group('name')
-                                    version = m.group('version')
-                                    print '\t\tName/Version: %s\t%s' % (name, 
-                                                                        version)
-                                    try:
-                                        with Port(name, version, category, 
-                                                  portFullPath, 
-                                                  self.shellVariables) as port:
-                                            port.validateRecipeFile(
-                                                recipeFullPath)
-                                    except SystemExit as e:
-                                        print e.code
-                                else:
-                                    # invalid argument
-                                    print("Error: Couldn't parse port/version "
-                                          "info: " + recipe)
+    def _populateRepository(self):
+        if os.path.exists(self.repositoryPath):
+            shutil.rmtree(self.repositoryPath)
+        os.mkdir(self.repositoryPath)
+        print 'Populating repository ...'
+
+        currentCategory = ''
+        validatedPorts = []
+        allPorts = self._allPorts()
+        for recipePath in sorted(allPorts.keys()):
+            port = allPorts[recipePath]
+            if currentCategory != port.category:
+                print port.category
+                currentCategory = port.category
+            try:
+                port.parseRecipeFile()
+                validatedPorts.append(port)
+                print '\t%s' % port.versionedName
+                port.generatePackageInfo(self.repositoryPath)
+            except SystemExit:
+                pass
+        open(self.repositoryPath + '/.populated', 'w').close()
+
+    def _allPorts(self):
+        if hasattr(self, 'allPorts'):
+            return self.allPorts
+
+        self.allPorts = {}
+        for category in sorted(os.listdir(self.treePath)):
+            categoryPath = self.treePath + '/' + category
+            if (not os.path.isdir(categoryPath) or category[0] == '.'
+                or '-' not in category):
+                continue
+            for port in sorted(os.listdir(categoryPath)):
+                portPath = categoryPath + '/' + port
+                if not os.path.isdir(portPath) or port[0] == '.':
+                    continue
+                for recipe in os.listdir(portPath):
+                    recipePath = portPath + '/' + recipe
+                    if (not os.path.isfile(recipePath) 
+                        or not recipe.endswith('.recipe')):
+                        continue
+                    reWithVersion = re.compile(regExp['recipefilename'])
+                    m = reWithVersion.match(recipe)
+                    if (m and m.group('name') and m.group('version')):
+                        name = m.group('name')
+                        version = m.group('version')
+                        self.allPorts[recipePath] = Port(name, version, 
+                                                         category, portPath, 
+                                                         self.shellVariables)
+                    else:
+                        # invalid argument
+                        print("Error: Couldn't parse port/version info: " 
+                              + recipe)
+        return self.allPorts
 
 
 # -- /etc/haikuports.conf and *.recipe parser --------------------------------
@@ -1367,7 +1455,7 @@ class Config:
                                                      supportedKeysString)
         try:
             output = check_output(['/bin/bash', '-c', wrapperScript], 
-                                      env=shellEnv)
+                                  env=shellEnv)
         except (OSError, CalledProcessError):
             sys.exit("Error: Can't evaluate config file: " + filename)
 
@@ -1378,13 +1466,13 @@ class Config:
             if not separator:
                 sys.exit('Error: evaluating file %s produced illegal '
                          'key-values line:\n  %s\nexpected "<key>=<value>"\n'
-                         'output of configuration script was:\n' 
+                         'output of configuration script was: %s\n' 
                          % (filename, line, output))
                 
             if key not in keysAndTypes:
                 # skip unsupported key, just in case
-                print 'Warning: key %s in file %s is unsupported, ignoring it' \
-                    % (key, filename)
+                print('Warning: key %s in file %s is unsupported, ignoring it'
+                      % (key, filename))
                 continue
             
             valueString = valueString.replace(r'\n', '\n')
@@ -1405,8 +1493,8 @@ class Config:
                 self.entries[key] = values
             elif type == PhaseType:
                 if valueString.upper() not in PhaseType.getAllowedValues():
-                    sys.exit('Error: evaluating file %s\nproduced illegal value '
-                             '"%s" for key %s\nexpected one of: %s'
+                    sys.exit('Error: evaluating file %s\nproduced illegal '
+                             'value "%s" for key %s\nexpected one of: %s'
                              % (filename, key, valueString, 
                                 ','.join(PhaseType.getAllowedValues())))
                 self.entries[key] = valueString.upper()
@@ -1425,10 +1513,11 @@ class Config:
                         status = 'stable'
                         architecture = value
                     if architecture not in ArchitecturesType.getArchitectures():
+                        architectures \
+                            = ','.join(ArchitecturesType.getArchitectures())
                         sys.exit('Error: %s refers to unknown architecture %s\n'
                                  'known architectures: %s'
-                                 % (filename, architecture,
-                                    ','.join(ArchitecturesType.getArchitectures())))
+                                 % (filename, architecture, architectures))
                     self.entries[key][architecture] = status
                 if 'any' in self.entries[key] and len(self.entries[key]) > 1:
                     sys.exit("Error: %s specifies both 'any' and other "
@@ -1470,6 +1559,8 @@ parser.add_option('-b', '--nobuild', action='store_false', dest='build',
                                      "unpack and patch")
 parser.add_option('-p', '--nopackage', action='store_false', dest='package',
                   default=True, help="don't create package, stop after build")
+parser.add_option('-C', '--nochroot', action='store_false', dest='chroot',
+                  default=True, help="don't use a chroot()-environment")
 parser.add_option('-c', '--clean', action='store_true', dest='clean',
                   default=False, help="clean the working directory of the "
                                       "specified port")
@@ -1491,7 +1582,8 @@ parser.add_option('-y', '--yes', action='store_true', dest='yes',
 parser.add_option('-j', action='store', type="int", dest='jobs',
                   default=1, help="the number of concurrent jobs to build with")
 parser.add_option('-o','--location', action='store_true', dest='location',
-                default=False, help="print out the location of a recipe (via search) (for scripted editing)")
+                default=False, help="print out the location of a recipe "
+                                    "(via search) (for scripted editing)")
 parser.add_option('--test', action='store_true', dest='test',
                   default=False, help="run tests on resulting binaries")
 parser.add_option('--lint', action='store_true', dest='lint',
