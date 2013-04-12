@@ -52,7 +52,7 @@ svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
 #  'x86'  -> this port is known to work on the 'x86' architecture
 #  '?x86' -> this port has not been built/tested on the 'x86' architecture yet,
 #            it is expected to work, but that has not been verified
-#  '-x86' -> this port is known to have problems on the 'x86' architecture
+#  '!x86' -> this port is known to have problems on the 'x86' architecture
 # An architecture missing from the status specification indicates that nothing
 # is known about the status of the port on this architecture.
 class ArchitecturesType(str):
@@ -64,6 +64,16 @@ class ArchitecturesType(str):
             'x86',
             'x86_gcc2',
         ]
+
+
+# -----------------------------------------------------------------------------
+
+# Allowed status for a port on a specific architecure
+class Status(str):
+    BROKEN = 'broken'
+    STABLE = 'stable'
+    UNSUPPORTED = 'unsupported'
+    UNTESTED = 'untested'
 
 
 # -----------------------------------------------------------------------------
@@ -263,11 +273,21 @@ if [ -d ../patches ]; then
     cp -r ../patches .
 fi    
 
+# silently unmount if needed, just to be one the safe side
+if [ -e dev/null ]; then
+    unmount dev
+fi
+if [ -e boot/system/bin ]; then
+    unmount boot/system
+fi
+if [ -e boot/common/bin ]; then
+    unmount boot/common
+fi
+
+# mount dev, system-packagefs and common-packagefs
 mount -t bindfs -p "source /dev" dev
-mount -t packagefs -p "packages $PWD/boot/system/packages; type system" \
-      boot/system
-mount -t packagefs -p "packages $PWD/boot/common/packages; type common" \
-      boot/common
+mount -t packagefs -p "type system" boot/system
+mount -t packagefs -p "type common" boot/common
 '''
 
 
@@ -284,9 +304,9 @@ if ! echo $(basename $PWD) | grep -qE '^work-'; then
     exit 1
 fi
 
+unmount dev
 unmount boot/system
 unmount boot/common
-unmount dev
 
 # wipe files and directories if it is ok to do so
 if [[ $buildOk ]]; then
@@ -296,9 +316,10 @@ if [[ $buildOk ]]; then
         boot \
         licenses \
         packages \
-        licenses \
+        repository \
         system
-    rm \
+    rm -f \
+        .PackageInfo \
         bin \
         etc \
         port.recipe \
@@ -383,6 +404,29 @@ class ChrootSetup:
         check_call(['/bin/bash', '-c', cleanupChrootScript], env=shellEnv)
 
 
+# -- Scoped resource for a temporarily renamed file --------------------------
+class TemporarilyRenamedFile:
+    def __init__(self, file):
+        self.file = file
+        self.fileName = os.path.basename(file)
+        self.subDir = None
+
+    def __enter__(self):
+        # rename the file
+        self.subDir = os.path.dirname(self.file) + '/deactivated'
+        print self.subDir
+        if not os.path.exists(self.subDir):
+            os.mkdir(self.subDir)
+        os.rename(self.file, self.subDir + '/' + self.fileName)
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        # restore the original file
+        if self.subDir:
+            os.rename(self.subDir + '/' + self.fileName, self.file)
+            os.rmdir(self.subDir)
+
+
 # -- A package which can be created from a port ------------------------------
 class Package:
     def __init__(self, name, fileName, fullPath):
@@ -392,6 +436,7 @@ class Package:
         self.baseDir = baseDir
         self.architecture = globalShellVariables['architecture']
         
+
 # -- A single port with its recipe, allows to execute actions ----------------
 class Port:
     def __init__(self, name, version, category, baseDir, globalShellVariables):
@@ -404,10 +449,15 @@ class Port:
         self.recipeFilePath \
             = self.baseDir + '/' + self.name + '-' + self.version + '.recipe'
         
+        self.packageInfoName = self.versionedName + '.PackageInfo'
+        
         self.forceOverride = False
         self.beQuiet = False
         self.avoidChroot = False
 
+        self.revision = None
+        self.fullVersion = None
+        self.revisionedName = None
         self.buildPackage = None
         self.activeBuildPackage = None
 
@@ -450,11 +500,6 @@ class Port:
             if key not in self.recipeKeys:
                 self.recipeKeys[key] = recipeDefaults[key][1]
                 
-        # If a SOURCE_DIR was specified, adjust the default
-        if self.recipeKeys['SOURCE_DIR']:
-            self.sourceDir = (self.sourceDir + '/' + 
-                              self.recipeKeys['SOURCE_DIR'])
-
         # initialize variables that depend on the recipe revision
         self.revision = str(self.recipeKeys['REVISION'])
         self.fullVersion = self.version + '-' + self.revision
@@ -463,6 +508,11 @@ class Port:
             = self.revisionedName + '-' + self.architecture + '.hpkg'
         self.packages[0]['fullPath'] \
             = self.workDir + '/' + self.packages[0]['filename']
+
+        # If a SOURCE_DIR was specified, adjust the default
+        if self.recipeKeys['SOURCE_DIR']:
+            self.sourceDir = (self.sourceBaseDir + '/' + 
+                              self.recipeKeys['SOURCE_DIR'])
 
         # set up the complete list of variables we'll inherit to the shell
         # when executing a recipe action
@@ -531,31 +581,58 @@ class Port:
         """Return the status of this port on the current architecture"""
         if self.architecture in self.recipeKeys['ARCHITECTURES']:
             return self.recipeKeys['ARCHITECTURES'][self.architecture]
-        return 'unsupported'
+        return Status.UNSUPPORTED
     
-    def resolveBuildDependencies(self, repositoryPath, packagesPath):
+    def resolveDependencies(self, repositoryPath, packagesPath):
         """Resolve any other ports that need to be built before this one"""
-        
-        packageInfoFile \
-            = repositoryPath + '/' + self.revisionedName + '.PackageInfo'
 
-        output = check_output(['/bin/pkgman', 'resolve-dependencies', 
-            packageInfoFile, packagesPath, repositoryPath,
-            systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
-            systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
-            
-        return output.splitlines();
+        packageInfoFile = repositoryPath + '/' + self.packageInfoName
+        try:
+            output = check_output([
+                '/bin/pkgman', 'resolve-dependencies', 
+                packageInfoFile, packagesPath, repositoryPath,
+                systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
+                systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
+            return output.splitlines();
+        except CalledProcessError as e:
+            sys.exit('*** unable to resolve dependencies!\n')
 
-    def updatePackageInfoInRepository(self, repositoryPath):
-        """Update the PackageInfo-file in the repository if needed"""
+    def resolveBuildDependencies(self, repositoryPath, packagesPath):
+        """Resolve any other ports that need to be built before this one,
+           in this case strictly using build-requires only"""
 
-        packageInfoFile \
-            = repositoryPath + '/' + self.revisionedName + '.PackageInfo'
-        if (not os.path.exists(packageInfoFile)
-            or (os.path.getmtime(self.recipeFilePath) 
-                > os.path.getmtime(packageInfoFile))):
+        # create work dir if needed
+        if not os.path.exists(self.workDir):
+            os.makedirs(self.workDir)
+
+        shadowedPackageInfo = repositoryPath + '/' + self.packageInfoName
+        with TemporarilyRenamedFile(shadowedPackageInfo):
+            # Generate a PackageInfo-file containing only the immediate 
+            # requirements for building this port:
+            packageInfoFile = self.workDir + '/.PackageInfo'
             self._generatePackageInfo(packageInfoFile, 
-					                  [ 'BUILD_REQUIRES', 'REQUIRES' ], True)
+                                      [ 'BUILD_REQUIRES' ], 
+                                      True)
+
+            try:
+                output = check_output([
+                    '/bin/pkgman', 'resolve-dependencies', 
+                    packageInfoFile, packagesPath, repositoryPath,
+                    systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
+                    systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
+                return output.splitlines();
+            except CalledProcessError as e:
+                sys.exit('*** unable to resolve dependencies!\n')
+
+    def writePackageInfoIntoRepository(self, repositoryPath):
+        """Write the PackageInfo-file into the repository"""
+
+        if not self.revision:
+            self.parseRecipeFile()
+            
+        packageInfoFile = repositoryPath + '/' + self.packageInfoName
+        self._generatePackageInfo(packageInfoFile, 
+                                  [ 'BUILD_REQUIRES', 'REQUIRES' ], True)
                     
     def cleanWorkDirectory(self):
         """Clean the working directory"""
@@ -606,7 +683,7 @@ class Port:
         """Parse the URI and execute the appropriate command to check out the
            source.
         """
-        if self._checkFlag('checkout') and not self.forceOverride:
+        if self.checkFlag('checkout') and not self.forceOverride:
             print 'Source already checked out. Skipping ...'
             return
 
@@ -697,7 +774,7 @@ class Port:
 
         # Set the 'checkout' flag to signal that the checkout is complete
         # This also tells haikuporter not to attempt an unpack step
-        self._setFlag('checkout')
+        self.setFlag('checkout')
 
     def checksumSource(self):
         if self.recipeKeys['CHECKSUM_MD5']:
@@ -721,14 +798,14 @@ class Port:
             # The checkout flag only gets set when a source checkout is 
             # performed. If it exists we don't need to warn about the missing 
             # recipe field
-            if not self._checkFlag('checkout'):
+            if not self.checkFlag('checkout'):
                 print 'Warning: CHECKSUM_MD5 key not found in recipe file.'
 
     def unpackSource(self):
         """Unpack the source archive (into the work directory)"""
 
         # If the source came from a vcs there is no unpack step
-        if self._checkFlag('checkout'):
+        if self.checkFlag('checkout'):
             return
 
         # create source-base dir
@@ -736,7 +813,7 @@ class Port:
             os.makedirs(self.sourceBaseDir)
 
         # Check to see if the source archive was already unpacked.
-        if self._checkFlag('unpack') and not self.forceOverride:
+        if self.checkFlag('unpack') and not self.forceOverride:
             print 'Skipping unpack ...'
             return
 
@@ -761,12 +838,12 @@ class Port:
         else:
             sys.exit('Error: Unrecognized archive type.')
 
-        self._setFlag('unpack')
+        self.setFlag('unpack')
 
     def patchSource(self):
         """Apply the Haiku patches to the source directory"""
         # Check to see if the patch was already applied to the source.
-        if self._checkFlag('patch') and not self.forceOverride:
+        if self.checkFlag('patch') and not self.forceOverride:
             return
 
         patchFilePath = self.patchesDir + '/' + self.name + '-'\
@@ -780,24 +857,18 @@ class Port:
                         + patchFilePath, shell=True, cwd=self.sourceBaseDir)
         else:
             print 'No patching required'
-        self._setFlag('patch')
+        self.setFlag('patch')
 
-    def build(self, makePackages):
-        """Build the port"""
-        requiredPackages = [
-            '/boot/common/packages/autoconf-2.68-2-x86_gcc2.hpkg',
-            '/boot/common/packages/automake-1.11.1-2-x86_gcc2.hpkg',
-            '/boot/common/packages/gcc-2.95.3_110711-2-x86_gcc2.hpkg',
-            '/boot/common/packages/libiconv-1.13.1-3-x86_gcc2.hpkg',
-            '/boot/common/packages/libtool-2.4-2-x86_gcc2.hpkg',
-            '/boot/common/packages/libxml2-2.7.8-2-x86_gcc2.hpkg',
-            '/boot/common/packages/m4-1.4.16-2-x86_gcc2.hpkg',
-            '/boot/common/packages/make-3.82-2-x86_gcc2.hpkg',
-            '/boot/common/packages/openssl-1.0.0d-2-x86_gcc2.hpkg',
-            '/boot/common/packages/perl-5.10.1-2-x86_gcc2.hpkg',
-            '/boot/common/packages/sed-4.2.1-1-x86_gcc2.hpkg',
-            '/boot/common/packages/tar-1.25-1-x86_gcc2.hpkg',
-        ]    # TODO: get these from pkgman!
+    def build(self, packagesPath, makePackages):
+        """Build the port and collect the resulting package"""
+
+        packageInfoFile = self.workDir + '/.PackageInfo'
+        self._generatePackageInfo(packageInfoFile, 
+                                  [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES' ], 
+                                  True, True)
+
+        requiredPackages = self._getPackagesRequiredForBuild(packageInfoFile, 
+                                                             packagesPath)
 
         if self.avoidChroot:
             self._executeBuild(makePackages)
@@ -818,17 +889,30 @@ class Port:
                     os._exit(0)
 
                 # parent, wait on child
-                if os.waitpid(pid, 0)[1] == 0:
-                    chrootSetup.buildOk = True
+                if os.waitpid(pid, 0)[1] != 0:
+                    sys.exit('*** Build has failed - stopping.')
+                
+                # tell the shell scriptlets that the build has succeeded
+                chrootSetup.buildOk = True
 
         if makePackages:                    
-            # move all created packages into repository
-            packagesDir = self.baseDir + '/../../packages/'
+            # move all created packages into packages folder
             for package in self.packages:
                 if os.path.exists(package['fullPath']):
                     print 'grabbing ' + package['filename']
                     os.rename(package['fullPath'], 
-                              packagesDir + package['filename'])
+                              packagesPath + '/' + package['filename'])
+
+    def setFlag(self, name):
+        open('%s/flag.%s' % (self.workDir, name), 'w').close()
+
+    def unsetFlag(self, name):
+        flagFile = '%s/flag.%s' % (self.workDir, name)
+        if os.path.exists(flagFile):
+            os.remove(flagFile)
+
+    def checkFlag(self, name):
+        return os.path.exists('%s/flag.%s' % (self.workDir, name))
 
     def test(self):
         """Test the port"""
@@ -898,6 +982,24 @@ class Port:
             = ' '.join(['--%s=%s' % (k.lower(), v) 
                        for k, v in configureDirs.iteritems()])
 
+    def _getPackagesRequiredForBuild(self, packageInfoFile, packagesPath):
+        """Determine the set of packages that must be linked into the 
+           build environment (chroot) for the build stage"""
+        
+        try:
+            args = ['/bin/pkgman', 'resolve-dependencies', 
+                    packageInfoFile, packagesPath,
+                    systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
+                    systemDir['B_SYSTEM_PACKAGES_DIRECTORY']]
+            output = check_output(args)
+            return output.splitlines();
+        except CalledProcessError as e:
+            try:
+                output = check_call(args)
+            except:
+                pass
+            sys.exit('*** unable to resolve dependencies!\n')
+
     def _executeBuild(self, makePackages):
         """Executes the build stage and creates all declared packages"""
         self._createBuildPackage()
@@ -939,7 +1041,7 @@ class Port:
             self._activateBuildPackage()
             
         # Check to see if a previous build was already done.
-        if self._checkFlag('build') and not self.forceOverride:
+        if self.checkFlag('build') and not self.forceOverride:
             print 'Skipping build ...'
             return
 
@@ -951,7 +1053,7 @@ class Port:
 
         print 'Building ...'
         self._doRecipeAction('BUILD', self.sourceDir)
-        self._setFlag('build')
+        self.setFlag('build')
 
     def _makePackage(self, package):
         """Create a package suitable for distribution"""
@@ -1012,12 +1114,6 @@ class Port:
         wrapperScript = recipeActionScript % (self.recipeFilePath, action)
         check_call(['/bin/bash', '-c', wrapperScript], cwd=dir, env=shellEnv)
 
-    def _setFlag(self, name):
-        open('%s/flag.%s' % (self.workDir, name), 'w').close()
-
-    def _checkFlag(self, name):
-        return os.path.exists('%s/flag.%s' % (self.workDir, name))
-
     def _createBuildPackage(self):
         """Create and activate the build package"""
         # create a package info for a build package
@@ -1056,10 +1152,15 @@ class Port:
             os.rename(self.buildPackage, activeBuildPackage)
         self.activeBuildPackage = activeBuildPackage
 
-    def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
+    def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
+                             fakeEmptyProvides=False):
         """Create a .PackageInfo file for inclusion in a package"""
+        
         with open(packageInfoPath, 'w') as infoFile:
-            infoFile.write('name\t\t\t' + self.name + '\n')
+            if fakeEmptyProvides:
+                infoFile.write('name\t\t\tfaked_' + self.name + '\n')
+            else:
+                infoFile.write('name\t\t\t' + self.name + '\n')
             infoFile.write('version\t\t\t' + self.fullVersion + '\n')
             infoFile.write('architecture\t\t' + self.architecture + '\n')
             infoFile.write('summary\t\t\t"' + self.recipeKeys['SUMMARY'] 
@@ -1090,7 +1191,12 @@ class Port:
             for requiresKey in requiresToUse:
                 requires += self.recipeKeys[requiresKey]
     
-            self._writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
+            if fakeEmptyProvides:
+                infoFile.write('provides {\n\tfaked_' + self.name + ' = ' 
+                               + self.version + '\n}\n')
+            else:
+                self._writePackageInfoListByKey(infoFile, 'PROVIDES', 
+                                                'provides')
             self._writePackageInfoList(infoFile, requires, 'requires')
             self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 
                                             'supplements')
@@ -1214,11 +1320,6 @@ class HaikuPorter:
             self._checkSourceTree()
             sys.exit()
 
-        # if requested, update the PackageInfo-repository
-        if self.options.updateRepo:
-            self._populateRepository()
-            sys.exit()
-            
         # if there is no argument given, exit
         if not args:
             sys.exit('You need to specify a search string.\n'
@@ -1265,19 +1366,23 @@ class HaikuPorter:
             self.options.build = False
             self.options.package = False
 
-        # populate repository unless already done
-        if not os.path.isdir(self.repositoryPath):
+        # update repository if it exists and isn't empty, populate it otherwise
+        if (os.path.isdir(self.repositoryPath) 
+            and os.listdir(self.repositoryPath)):
+            self._updateRepository()
+        else:
             self._populateRepository()
             
         # do whatever's needed to the main port
-        self._doMainPort(name, version, category, baseDir)
+        allPorts = self._getAllPorts();
+        self._doMainPort(allPorts[name + '-' + version])
 
-    def _doMainPort(self, name, version, category, baseDir):
+    def _doMainPort(self, port):
         """Build/Unpack/... the port requested on the cmdline"""
-        port = Port(name, version, category, baseDir, self.shellVariables)
             
         # read data from the recipe file
-        port.parseRecipeFile()
+        if not port.revision:
+            port.parseRecipeFile()
 
         # show port description, if requested
         if self.options.about:
@@ -1286,7 +1391,7 @@ class HaikuPorter:
 
         # warn when the port is not stable on this architecture
         status = port.getStatusOnCurrentArchitecture();
-        if status != 'stable':
+        if status != Status.STABLE:
             print 'Warning: This port is %s on this architecture.' % status
             if not self.options.yes:
                 answer = raw_input('Continue (y/n + enter)? ')
@@ -1319,34 +1424,51 @@ class HaikuPorter:
 
     def _buildMainPort(self, port):
         """Build the port given on cmdline"""
-        
-        # Update PackageInfo-file if needed
-        port.updatePackageInfoInRepository(self.repositoryPath)
-        
+
+        packageInfo = self.repositoryPath + '/' + port.packageInfoName
+        if not os.path.exists(packageInfo):
+            port.writePackageInfoIntoRepository(self.repositoryPath)
+                    
         buildDependencies = port.resolveBuildDependencies(self.repositoryPath,
                                                           self.packagesPath)
         allPorts = self._getAllPorts()
+        requiredPortsToBuild = []
         for dependency in buildDependencies:
             if dependency.startswith(self.repositoryPath):
-                dependencyFileName = os.path.basename(dependency)
-                dependencyPortID \
-                    = dependencyFileName[:dependencyFileName.rindex('-')]
-                print dependencyPortID
-                print 'building dependency ' + dependencyPortID + ' ...'
-                dependentPort = allPorts[dependencyPortID]
-                self._buildPort(dependentPort)
+                packageInfoFileName = os.path.basename(dependency)
+                requiredPortID \
+                    = packageInfoFileName[:packageInfoFileName.rindex('.')]
+                try:
+                    requiredPort = allPorts[requiredPortID]
+                    requiredPortsToBuild.append(requiredPort)
+                except KeyError:
+                    sys.exit('*** Inconsistency: ' + port.versionedName
+                             + ' requires ' + requiredPortID 
+                             + ' but that does not exist!')
+
+        if requiredPortsToBuild:
+            print 'The following required ports will be built first:'
+            for requiredPort in requiredPortsToBuild:            
+                print('\t' + requiredPort.category + '::' 
+                      + requiredPort.versionedName)
+            for requiredPort in requiredPortsToBuild:            
+                self._buildPort(requiredPort, True)
                 
         self._buildPort(port, False)
 
-    def _buildPort(self, port, parse=True):
+    def _buildPort(self, port, parseRecipe):
         """Build a single port"""
+
+        print '-' * 70
+        print port.versionedName
+        print '-' * 70
         
         # pass-on options to port
         port.forceOverride = options.force
         port.beQuiet = options.quiet
         port.avoidChroot = not options.chroot
         
-        if parse:
+        if parseRecipe:
             port.parseRecipeFile()
 
         # clean the work directory, if requested
@@ -1359,7 +1481,7 @@ class HaikuPorter:
         if self.options.patch:
             port.patchSource()
             
-        port.build(self.options.package)
+        port.build(self.packagesPath, self.options.package)
     
 
     def _initGlobalShellVariables(self):
@@ -1461,6 +1583,9 @@ class HaikuPorter:
                 print e.code
 
     def _populateRepository(self):
+        """Remove and refill the repository with all PackageInfo-files from
+           parseable recipes"""
+           
         if os.path.exists(self.repositoryPath):
             shutil.rmtree(self.repositoryPath)
         tempRepositoryPath = self.repositoryPath + '.new'
@@ -1474,11 +1599,37 @@ class HaikuPorter:
             port = allPorts[portID]
             try:
                 port.parseRecipeFile()
-                print '\t%s' % port.versionedName
-                port.updatePackageInfoInRepository(tempRepositoryPath)
+                if port.getStatusOnCurrentArchitecture() == Status.STABLE:
+                    print '\t%s' % port.versionedName
+                    port.writePackageInfoIntoRepository(tempRepositoryPath)
+                    port.unsetFlag('build')
+                else:
+                    print('\t%s is skipped, as it is unstable' 
+                          % port.versionedName)
             except SystemExit:
                 pass
         os.rename(tempRepositoryPath, self.repositoryPath)
+
+    def _updateRepository(self):
+        """Update all PackageInfo-files in the repository as needed"""
+        
+        print 'Checking if any recipes have changed ...'
+        allPorts = self._getAllPorts()
+        packageInfos = glob.glob(self.repositoryPath + '/*.PackageInfo')
+        for packageInfo in packageInfos:
+            packageInfoFileName = os.path.basename(packageInfo)
+            portID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+            if portID in allPorts:
+                port = allPorts[portID]
+                if (not os.path.exists(packageInfo)
+                    or (os.path.getmtime(port.recipeFilePath) 
+                        > os.path.getmtime(packageInfo))):
+                    print '\tupdating ' + packageInfoFileName
+                    port.writePackageInfoIntoRepository(self.repositoryPath)
+                    port.unsetFlag('build')
+            else:
+                print '\tremoving ' + packageInfoFileName
+                os.remove(packageInfo)
 
     def _getAllPorts(self):
         if hasattr(self, '_allPorts'):
@@ -1577,16 +1728,15 @@ class Config:
             elif type == ArchitecturesType:
                 self.entries[key] = {}
                 for value in [v.lower() for v in valueString.split()]:
-                    status = ''
                     architecture = ''
                     if value.startswith('?'):
-                        status = 'untested'
+                        status = Status.UNTESTED
                         architecture = value[1:]
-                    elif value.startswith('-'):
-                        status = 'broken'
+                    elif value.startswith('!'):
+                        status = Status.BROKEN
                         architecture = value[1:]
                     else:
-                        status = 'stable'
+                        status = Status.STABLE
                         architecture = value
                     if architecture not in ArchitecturesType.getArchitectures():
                         architectures \
@@ -1642,8 +1792,6 @@ parser.add_option('-c', '--clean', action='store_true', dest='clean',
                                       "specified port")
 parser.add_option('-g', '--get', action='store_true', dest='get',
                   default=False, help="get/update the ports tree")
-parser.add_option('--update-repo', action='store_true', dest='updateRepo',
-                  default=False, help="update the (PackageInfo-)repository")
 parser.add_option('-f', '--force', action='store_true', dest='force',
                   default=False, help="force to perform the steps (unpack, "
                                       "patch, build)")
@@ -1657,7 +1805,7 @@ parser.add_option('-t', '--tree', action='store_true', dest='tree',
                                       "haikuports source tree")
 parser.add_option('-y', '--yes', action='store_true', dest='yes',
                   default=False, help="answer yes to all questions")
-parser.add_option('-j', action='store', type="int", dest='jobs',
+parser.add_option('-j', '--jobs', action='store', type="int", dest='jobs',
                   default=1, help="the number of concurrent jobs to build with")
 parser.add_option('-o','--location', action='store_true', dest='location',
                 default=False, help="print out the location of a recipe "
