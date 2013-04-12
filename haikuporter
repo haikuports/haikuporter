@@ -204,8 +204,6 @@ TEST()
     true
 }
 
-echo $PATH
-
 # source the configuration file
 . %s >/dev/null
 
