@@ -616,7 +616,7 @@ class Port:
                 packageInfoFile, packagesPath, repositoryPath,
                 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
                 systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
-            return output.splitlines();
+            return output.splitlines()
         except CalledProcessError as e:
             sysExit('unable to resolve dependencies for ' + self.versionedName)
 
@@ -643,7 +643,7 @@ class Port:
                     packageInfoFile, packagesPath, repositoryPath,
                     systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
                     systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
-                return output.splitlines();
+                return output.splitlines()
             except CalledProcessError as e:
 	            sysExit('unable to resolve dependencies for ' 
 	                    + self.versionedName)
@@ -896,6 +896,11 @@ class Port:
             # setup chroot and keep it while executing the actions
             with ChrootSetup(self.workDir, requiredPackages, 
                              self.recipeFilePath) as chrootSetup:
+                if not self.beQuiet:
+                    print 'chroot has these packages active:'
+                    for package in sorted(requiredPackages):
+                        print '\t' + package
+                        
                 pid = os.fork()
                 if pid == 0:
                     # child, enter chroot and execute the build
@@ -1012,7 +1017,12 @@ class Port:
                     systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
                     systemDir['B_SYSTEM_PACKAGES_DIRECTORY']]
             output = check_output(args)
-            return output.splitlines();
+            packages = output.splitlines()
+            return [ 
+                package for package in packages 
+                if not package.startswith(
+                    systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
+            ]
         except CalledProcessError as e:
             try:
                 output = check_call(args)
@@ -1395,7 +1405,7 @@ class HaikuPorter:
             self._populateRepository()
             
         # do whatever's needed to the main port
-        allPorts = self._getAllPorts();
+        allPorts = self._getAllPorts()
         self._doMainPort(allPorts[name + '-' + version])
 
     def _doMainPort(self, port):
@@ -1411,7 +1421,7 @@ class HaikuPorter:
             sys.exit()
 
         # warn when the port is not stable on this architecture
-        status = port.getStatusOnCurrentArchitecture();
+        status = port.getStatusOnCurrentArchitecture()
         if status != Status.STABLE:
             warn('This port is %s on this architecture.' % status)
             if not self.options.yes:
@@ -1451,12 +1461,12 @@ class HaikuPorter:
             port.writePackageInfoIntoRepository(self.repositoryPath)
         
         # TODO: decide which of these we really want.
-        #buildDependencies \
-        #    = port.resolveBuildDependencies(self.repositoryPath,
-        #                                    self.packagesPath)
         buildDependencies \
-            = port.resolveStrictBuildDependencies(self.repositoryPath,
-                                                  self.packagesPath)
+            = port.resolveBuildDependencies(self.repositoryPath,
+                                            self.packagesPath)
+        #buildDependencies \
+        #    = port.resolveStrictBuildDependencies(self.repositoryPath,
+        #                                          self.packagesPath)
         allPorts = self._getAllPorts()
         requiredPortsToBuild = []
         for dependency in buildDependencies:
@@ -1517,13 +1527,13 @@ class HaikuPorter:
             shell=True)
 
         # get the haiku version
-        match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output);
+        match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output)
         if not match:
             sysExit('Failed to get Haiku version!')
         self.haikuVersion = match.group(1)
 
         # get the architecture
-        match = re.search(r"architecture:\s*(\S+)", output);
+        match = re.search(r"architecture:\s*(\S+)", output)
         if not match:
             sysExit('Failed to get Haiku architecture!')
         self.architecture = match.group(1)
