@@ -87,6 +87,13 @@ class PhaseType(str):
 
 # -----------------------------------------------------------------------------
 
+# Create new type 'LinesOfText', used to handle the description in a recipe
+class LinesOfText(list):
+    pass
+
+
+# -----------------------------------------------------------------------------
+
 # allowed types of the /etc/haikuports.conf values
 haikuportsConfigTypes = {}
 haikuportsConfigTypes['PACKAGER'] = types.StringType
@@ -110,7 +117,7 @@ recipeTypes['BUILD_REQUIRES'] = types.ListType
 recipeTypes['CHECKSUM_MD5'] = types.StringType
 recipeTypes['CONFLICTS'] = types.ListType
 recipeTypes['COPYRIGHT'] = types.ListType
-recipeTypes['DESCRIPTION'] = types.ListType
+recipeTypes['DESCRIPTION'] = LinesOfText
 recipeTypes['FRESHENS'] = types.ListType
 recipeTypes['HOMEPAGE'] = types.StringType
 recipeTypes['LICENSE'] = types.ListType
@@ -358,6 +365,18 @@ def _ourLocaleconv(lc=locale.localeconv()):
 locale.localeconv = _ourLocaleconv
 
 
+# -- wraps invocation of sys.exit() ------------------------------------------
+def sysExit(message):
+    message = '\n'.join(['*** ' + line for line in message.split('\n') ])
+    sys.exit(message)
+
+
+# -- prints a warning --------------------------------------------------------
+def warn(message):
+    message = '\n'.join(['* ' + line for line in message.split('\n') ])
+    print(message)
+
+
 # -- wraps invocation of 'finddir' -------------------------------------------
 def findDirectory(aDir):
     return check_output(['/bin/finddir', aDir]).rstrip()  # drop newline
@@ -414,7 +433,6 @@ class TemporarilyRenamedFile:
     def __enter__(self):
         # rename the file
         self.subDir = os.path.dirname(self.file) + '/deactivated'
-        print self.subDir
         if not os.path.exists(self.subDir):
             os.mkdir(self.subDir)
         os.rename(self.file, self.subDir + '/' + self.fileName)
@@ -525,8 +543,7 @@ class Port:
         """Validate the syntax and contents of the recipe file"""
         
         if not os.path.exists(self.recipeFilePath):
-            sys.exit('Error: ' + self.name + ' version ' + self.version 
-                     + ' not found.')
+            sysExit(self.name + ' version ' + self.version + ' not found.')
 
         recipeConfig = Config(self.recipeFilePath, recipeTypes, 
                               self.shellVariables)
@@ -535,8 +552,16 @@ class Port:
         # check whether all required fields are present
         for key in recipeDefaults:
             if key not in self.recipeKeys and recipeDefaults[key][0]:
-                sys.exit("Error: Required field '" + key\
-                         + "' not present in " + self.recipeFilePath)
+                sysExit("Required field '" + key + "' not present (in %s)" 
+                        % self.recipeFilePath)
+
+        # The summary must be a single line of text, preferably not exceeding
+        # 70 characters in length
+        if '\n' in self.recipeKeys['SUMMARY']:
+            sysExit('SUMMARY must be a single line of text (%s).' 
+                    % self.recipeFilePath)
+        if len(self.recipeKeys['SUMMARY']) > 70:
+            warn('SUMMARY exceeds 70 chars (in %s)' % self.recipeFilePath)
 
         # Check for a valid license file
         if 'LICENSE' in self.recipeKeys:
@@ -554,27 +579,23 @@ class Port:
                             fileList.append(filename)
                 if item not in fileList:
                     haikuLicenseList.sort()
-                    sys.exit(('\n######## Error: No match found for License %s '
-                              '########\n' % item) + '\n'
-                              + 'Valid license filenames included with Haiku '
-                              + 'are:\n\n' + '\n'.join(haikuLicenseList) + '\n')
+                    sysExit(('No match found for License %s \n' % item) + '\n'
+                            + 'Valid license filenames included with Haiku '
+                            + 'are:\n\n' + '\n'.join(haikuLicenseList))
 
         if 'LICENSE' not in self.recipeKeys or not self.recipeKeys['LICENSE']:
-            print 'Warning: No LICENSE found in recipe file'
+            warn('No LICENSE found (in %s)' % self.recipeFileName)
 
         if ('COPYRIGHT' not in self.recipeKeys 
             or not self.recipeKeys['COPYRIGHT']):
-            print 'Warning: No COPYRIGHT found in recipe file'
+            warn('No COPYRIGHT found (in %s)' % self.recipeFileName)
 
     def printDescription(self):
         """Show port description"""
         print '*' * 80
-        if 'SUMMARY' in self.recipeKeys:
-            print 'SUMMARY: %s' % self.recipeKeys['SUMMARY']
-        if 'SUMMARY' in self.recipeKeys:
-            print 'DESCRIPTION: %s' % self.recipeKeys['DESCRIPTION']
-        if 'HOMEPAGE' in self.recipeKeys:
-            print 'HOMEPAGE: %s' % self.recipeKeys['HOMEPAGE']
+        print 'SUMMARY: %s' % self.recipeKeys['SUMMARY']
+        print 'DESCRIPTION: %s' % self.recipeKeys['DESCRIPTION']
+        print 'HOMEPAGE: %s' % self.recipeKeys['HOMEPAGE']
         print '*' * 80
 
     def getStatusOnCurrentArchitecture(self):
@@ -583,8 +604,10 @@ class Port:
             return self.recipeKeys['ARCHITECTURES'][self.architecture]
         return Status.UNSUPPORTED
     
-    def resolveDependencies(self, repositoryPath, packagesPath):
-        """Resolve any other ports that need to be built before this one"""
+    def resolveBuildDependencies(self, repositoryPath, packagesPath):
+        """Resolve any other ports that need to be built before this one,
+           in this case including the build_requires as well as the requires.
+        """
 
         packageInfoFile = repositoryPath + '/' + self.packageInfoName
         try:
@@ -595,9 +618,9 @@ class Port:
                 systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
             return output.splitlines();
         except CalledProcessError as e:
-            sys.exit('*** unable to resolve dependencies!\n')
+            sysExit('unable to resolve dependencies for ' + self.versionedName)
 
-    def resolveBuildDependencies(self, repositoryPath, packagesPath):
+    def resolveStrictBuildDependencies(self, repositoryPath, packagesPath):
         """Resolve any other ports that need to be built before this one,
            in this case strictly using build-requires only"""
 
@@ -622,7 +645,8 @@ class Port:
                     systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
                 return output.splitlines();
             except CalledProcessError as e:
-                sys.exit('*** unable to resolve dependencies!\n')
+	            sysExit('unable to resolve dependencies for ' 
+	                    + self.versionedName)
 
     def writePackageInfoIntoRepository(self, repositoryPath):
         """Write the PackageInfo-file into the repository"""
@@ -674,10 +698,10 @@ class Port:
                     # succesfully downloaded source archive
                     return
             except Exception:
-                print 'Warning: download error, trying next location.'
+                warn('Download error, trying next location.')
 
         # failed to fetch source
-        sys.exit('Error: Failed to download source package from all locations.')
+        sysExit('Failed to download source package from all locations.')
 
     def checkoutSource(self, uri):
         """Parse the URI and execute the appropriate command to check out the
@@ -698,7 +722,7 @@ class Port:
         m = re.match('^((?P<type>\w*)\+)?(?P<real_uri>.+?)(#(?P<rev>.+))?$',
                      uri)
         if not m or not m.group('real_uri'):
-            sys.exit("Error: Couldn't parse repository URI")
+            sysExit("Couldn't parse repository URI " + uri)
 
         type = m.group('type')
         real_uri = m.group('real_uri')
@@ -712,7 +736,7 @@ class Port:
                 type = m.group(1)
 
         if not type:
-            sys.exit("Error: Couldn't determine repository type")
+            sysExit("Couldn't parse repository type from URI " + real_uri)
 
         # Set the name of the directory to check out sources into
         checkoutDir = self.name + '-' + self.version
@@ -778,8 +802,7 @@ class Port:
 
     def checksumSource(self):
         if self.recipeKeys['CHECKSUM_MD5']:
-            sys.stdout.write('Calculating checksum -')
-            sys.stdout.flush()
+            print 'Checking MD5 checksum of download ...'
             h = hashlib.md5()
             f = open(self.downloadDir + '/' + self.src_local, 'rb')
             while True:
@@ -788,18 +811,15 @@ class Port:
                     break
                 h.update(d)
             f.close()
-            if h.hexdigest() == self.recipeKeys['CHECKSUM_MD5']:
-                sys.stdout.write(' OK\n')
-            else:
-                sys.exit(' FAILED\nExpected: ' + self.recipeKeys['CHECKSUM_MD5'] 
-                         +  '\nFound: ' + h.hexdigest() + '\n')
-            sys.stdout.flush()
+            if h.hexdigest() != self.recipeKeys['CHECKSUM_MD5']:
+                sysExit('Expected: ' + self.recipeKeys['CHECKSUM_MD5'] + '\n'
+                        + 'Found: ' + h.hexdigest())
         else:
             # The checkout flag only gets set when a source checkout is 
             # performed. If it exists we don't need to warn about the missing 
             # recipe field
             if not self.checkFlag('checkout'):
-                print 'Warning: CHECKSUM_MD5 key not found in recipe file.'
+                warn('CHECKSUM_MD5 key not found in recipe file.')
 
     def unpackSource(self):
         """Unpack the source archive (into the work directory)"""
@@ -836,7 +856,7 @@ class Port:
                 tf.extractall(self.sourceBaseDir)
                 tf.close()
         else:
-            sys.exit('Error: Unrecognized archive type.')
+            sysExit('Unrecognized archive type in file ' + self.src_local)
 
         self.setFlag('unpack')
 
@@ -890,7 +910,7 @@ class Port:
 
                 # parent, wait on child
                 if os.waitpid(pid, 0)[1] != 0:
-                    sys.exit('*** Build has failed - stopping.')
+                    sysExit('Build has failed - stopping.')
                 
                 # tell the shell scriptlets that the build has succeeded
                 chrootSetup.buildOk = True
@@ -938,7 +958,7 @@ class Port:
 
         # Make sure we found something to archive
         if not sourceFiles:
-            sys.exit('Error: No source directories found in work dir.')
+            sysExit('No source directories found in work dir.')
 
         # Archive the package and save it in the root of the port dir.
         check_call('tar cJvf ' + archiveFile + ' ' + sourceFiles,
@@ -998,7 +1018,7 @@ class Port:
                 output = check_call(args)
             except:
                 pass
-            sys.exit('*** unable to resolve dependencies!\n')
+            sysExit('unable to resolve dependencies for ' + self.versionedName)
 
     def _executeBuild(self, makePackages):
         """Executes the build stage and creates all declared packages"""
@@ -1266,8 +1286,8 @@ class HaikuPorter:
         for key in haikuportsConfigDefaults:
             if (key not in haikuportsConfig 
                     and haikuportsConfigDefaults[key][0]):
-                sys.exit("Error: Required field '" + key + "' not present in " 
-                         + haikuportsConf)
+                sysExit("Required field '" + key + "' not present in " 
+                        + haikuportsConf)
 
         # set up the global variables we'll inherit to the shell
         self._initGlobalShellVariables()
@@ -1290,17 +1310,17 @@ class HaikuPorter:
         # if requested, search for a port
         if self.options.search:
             if not args:
-                sys.exit('You need to specify a search string.\n'
-                         "Invoke '" + sys.argv[0] + " -h' for usage "
-                         "information.")
+                sysExit('You need to specify a search string.\n'
+                        "Invoke '" + sys.argv[0] + " -h' for usage "
+                        "information.")
             self._searchPorts(args[0])
             sys.exit()
         
         if self.options.location:
             if not args:
-                sys.exit('You need to specify a search string.\n'
-                         "Invoke '" + sys.argv[0] + " -h' for usage "
-                         "information.")
+                sysExit('You need to specify a search string.\n'
+                        "Invoke '" + sys.argv[0] + " -h' for usage "
+                        "information.")
             # Provide the installed location of a port (for quick editing)
             print os.path.join(self.treePath, self.searchPorts(args[0]))
             sys.exit()
@@ -1322,8 +1342,8 @@ class HaikuPorter:
 
         # if there is no argument given, exit
         if not args:
-            sys.exit('You need to specify a search string.\n'
-                     "Invoke '" + sys.argv[0] + " -h' for usage information.")
+            sysExit('You need to specify a search string.\n'
+                    "Invoke '" + sys.argv[0] + " -h' for usage information.")
         else:
             port = args[0]
 
@@ -1333,7 +1353,7 @@ class HaikuPorter:
         # find the port in the HaikuPorts tree
         category = self._getCategory(name)
         if category == None:
-            sys.exit('Error: Port ' + name + ' not found in tree.')
+            sysExit('Port ' + name + ' not found in tree.')
 
         baseDir = self.treePath + '/' + category + '/' + name
 
@@ -1350,9 +1370,10 @@ class HaikuPorter:
                 print 'Following versions of %s are available:' % name
                 for version in versions:
                     print '  ' + version[0]
-                sys.exit('Run haikuporter again, specifying a port version')
+                sysExit('Please run haikuporter again, specifying a port '
+                        + 'version')
             else:
-                sys.exit('Error: no recipe files for %s found.' % name)
+                sysExit('No recipe files for %s found.' % name)
     
         # clean the work dir and don't build when making a source archive
         if self.options.archive:
@@ -1392,7 +1413,7 @@ class HaikuPorter:
         # warn when the port is not stable on this architecture
         status = port.getStatusOnCurrentArchitecture();
         if status != Status.STABLE:
-            print 'Warning: This port is %s on this architecture.' % status
+            warn('This port is %s on this architecture.' % status)
             if not self.options.yes:
                 answer = raw_input('Continue (y/n + enter)? ')
                 if answer == '':
@@ -1428,9 +1449,14 @@ class HaikuPorter:
         packageInfo = self.repositoryPath + '/' + port.packageInfoName
         if not os.path.exists(packageInfo):
             port.writePackageInfoIntoRepository(self.repositoryPath)
-                    
-        buildDependencies = port.resolveBuildDependencies(self.repositoryPath,
-                                                          self.packagesPath)
+        
+        # TODO: decide which of these we really want.
+        #buildDependencies \
+        #    = port.resolveBuildDependencies(self.repositoryPath,
+        #                                    self.packagesPath)
+        buildDependencies \
+            = port.resolveStrictBuildDependencies(self.repositoryPath,
+                                                  self.packagesPath)
         allPorts = self._getAllPorts()
         requiredPortsToBuild = []
         for dependency in buildDependencies:
@@ -1442,7 +1468,7 @@ class HaikuPorter:
                     requiredPort = allPorts[requiredPortID]
                     requiredPortsToBuild.append(requiredPort)
                 except KeyError:
-                    sys.exit('*** Inconsistency: ' + port.versionedName
+                    sysExit('Inconsistency: ' + port.versionedName
                              + ' requires ' + requiredPortID 
                              + ' but that does not exist!')
 
@@ -1451,10 +1477,10 @@ class HaikuPorter:
             for requiredPort in requiredPortsToBuild:            
                 print('\t' + requiredPort.category + '::' 
                       + requiredPort.versionedName)
-            for requiredPort in requiredPortsToBuild:            
-                self._buildPort(requiredPort, True)
+            #for requiredPort in requiredPortsToBuild:            
+            #    self._buildPort(requiredPort, True)
                 
-        self._buildPort(port, False)
+        #self._buildPort(port, False)
 
     def _buildPort(self, port, parseRecipe):
         """Build a single port"""
@@ -1493,13 +1519,13 @@ class HaikuPorter:
         # get the haiku version
         match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output);
         if not match:
-            sys.exit('Failed to get Haiku version!')
+            sysExit('Failed to get Haiku version!')
         self.haikuVersion = match.group(1)
 
         # get the architecture
         match = re.search(r"architecture:\s*(\S+)", output);
         if not match:
-            sys.exit('Failed to get Haiku architecture!')
+            sysExit('Failed to get Haiku architecture!')
         self.architecture = match.group(1)
 
         self.shellVariables = {
@@ -1545,7 +1571,7 @@ class HaikuPorter:
             return m.group('name'), None
         else:
             # invalid argument
-            sys.exit('Error: Invalid port name ' + portSpec)
+            sysExit('Invalid port name ' + portSpec)
 
     def _getCategory(self, portName):
         """Find location of the specified port in the HaikuPorts tree"""
@@ -1599,13 +1625,14 @@ class HaikuPorter:
             port = allPorts[portID]
             try:
                 port.parseRecipeFile()
-                if port.getStatusOnCurrentArchitecture() == Status.STABLE:
+                status = port.getStatusOnCurrentArchitecture()
+                if status == Status.STABLE:
                     print '\t%s' % port.versionedName
                     port.writePackageInfoIntoRepository(tempRepositoryPath)
                     port.unsetFlag('build')
                 else:
-                    print('\t%s is skipped, as it is unstable' 
-                          % port.versionedName)
+                    print('\t%s is skipped, as it is %s on this architecture'
+                          % (port.versionedName, status))
             except SystemExit:
                 pass
         os.rename(tempRepositoryPath, self.repositoryPath)
@@ -1684,22 +1711,22 @@ class Config:
             output = check_output(['/bin/bash', '-c', wrapperScript], 
                                   env=shellEnv)
         except (OSError, CalledProcessError):
-            sys.exit("Error: Can't evaluate config file: " + filename)
+            sysExit("Can't evaluate config file: " + filename)
 
         # ... and collect the resulting configurations (one per line)
         lines = output.splitlines()
         for line in lines:
             key, separator, valueString = line.partition('=')
             if not separator:
-                sys.exit('Error: evaluating file %s produced illegal '
-                         'key-values line:\n  %s\nexpected "<key>=<value>"\n'
-                         'output of configuration script was: %s\n' 
-                         % (filename, line, output))
+                sysExit('evaluating file %s produced illegal '
+                        'key-values line:\n  %s\nexpected "<key>=<value>"\n'
+                        'output of configuration script was: %s\n' 
+                        % (filename, line, output))
                 
             if key not in keysAndTypes:
                 # skip unsupported key, just in case
-                print('Warning: key %s in file %s is unsupported, ignoring it'
-                      % (key, filename))
+                warn('Key %s in file %s is unsupported, ignoring it'
+                     % (key, filename))
                 continue
             
             valueString = valueString.replace(r'\n', '\n')
@@ -1712,18 +1739,27 @@ class Config:
                 try:
                     self.entries[key] = int(valueString)
                 except ValueError:
-                    sys.exit('Error: evaluating file %s produced illegal value '
-                             '"%s" for key %s, expected an <integer> value'
-                             % (filename, key, valueString))
+                    sysExit('evaluating file %s produced illegal value '
+                            '"%s" for key %s, expected an <integer> value'
+                            % (filename, key, valueString))
             elif type == types.ListType:
                 values = [v.strip() for v in valueString.splitlines()]
+                self.entries[key] = [v for v in values if len(v) > 0]
+            elif type == LinesOfText:
+                # like a list, but only strip empty lines in front of and
+                # after the text
+                values = [v.strip() for v in valueString.splitlines()]
+                while values and len(values[0]) == 0:
+                    values.pop(0)
+                while values and len(values[-1]) == 0:
+                    values.pop()
                 self.entries[key] = values
             elif type == PhaseType:
                 if valueString.upper() not in PhaseType.getAllowedValues():
-                    sys.exit('Error: evaluating file %s\nproduced illegal '
-                             'value "%s" for key %s\nexpected one of: %s'
-                             % (filename, key, valueString, 
-                                ','.join(PhaseType.getAllowedValues())))
+                    sysExit('evaluating file %s\nproduced illegal value "%s" '
+                            'for key %s\nexpected one of: %s'
+                            % (filename, key, valueString, 
+                               ','.join(PhaseType.getAllowedValues())))
                 self.entries[key] = valueString.upper()
             elif type == ArchitecturesType:
                 self.entries[key] = {}
@@ -1738,19 +1774,19 @@ class Config:
                     else:
                         status = Status.STABLE
                         architecture = value
-                    if architecture not in ArchitecturesType.getArchitectures():
-                        architectures \
-                            = ','.join(ArchitecturesType.getArchitectures())
-                        sys.exit('Error: %s refers to unknown architecture %s\n'
-                                 'known architectures: %s'
-                                 % (filename, architecture, architectures))
+                    knownArchitectures = ArchitecturesType.getArchitectures()
+                    if architecture not in knownArchitectures:
+                        architectures = ','.join(knownArchitectures)
+                        sysExit('%s refers to unknown architecture %s\n'
+                                'known architectures: %s'
+                                % (filename, architecture, architectures))
                     self.entries[key][architecture] = status
                 if 'any' in self.entries[key] and len(self.entries[key]) > 1:
-                    sys.exit("Error: %s specifies both 'any' and other "
-                             'architectures' % (filename))
+                    sysExit("%s specifies both 'any' and other architectures" 
+                            % (filename))
             else:
-                sys.exit('Error: type of key %s in file %s is unsupported'
-                         % (key, filename))
+                sysExit('type of key %s in file %s is unsupported'
+                        % (key, filename))
         # for key in self.entries:
         #    print key + " = " + str(self.entries[key])
 
