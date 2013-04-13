@@ -1477,10 +1477,10 @@ class HaikuPorter:
             for requiredPort in requiredPortsToBuild:            
                 print('\t' + requiredPort.category + '::' 
                       + requiredPort.versionedName)
-            #for requiredPort in requiredPortsToBuild:            
-            #    self._buildPort(requiredPort, True)
+            for requiredPort in requiredPortsToBuild:            
+                self._buildPort(requiredPort, True)
                 
-        #self._buildPort(port, False)
+        self._buildPort(port, False)
 
     def _buildPort(self, port, parseRecipe):
         """Build a single port"""
