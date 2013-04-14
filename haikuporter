@@ -920,10 +920,14 @@ class Port:
                 # tell the shell scriptlets that the build has succeeded
                 chrootSetup.buildOk = True
 
-        if makePackages:                    
+        if makePackages:
             # move all created packages into packages folder
             for package in self.packages:
                 if os.path.exists(package['fullPath']):
+                    if self.avoidChroot:
+                        warn('not grabbing ' + package['filename'] 
+                             + ', as it has not been built in a chroot.')
+                        continue
                     print 'grabbing ' + package['filename']
                     os.rename(package['fullPath'], 
                               packagesPath + '/' + package['filename'])
@@ -1637,9 +1641,13 @@ class HaikuPorter:
                 port.parseRecipeFile()
                 status = port.getStatusOnCurrentArchitecture()
                 if status == Status.STABLE:
-                    print '\t%s' % port.versionedName
+                    if (port.checkFlag('build') 
+                        and not self.options.preserveFlags):
+                        print '\t%s   [build-flag reset]' % port.versionedName
+                        port.unsetFlag('build')
+                    else:
+                        print '\t%s' % port.versionedName
                     port.writePackageInfoIntoRepository(tempRepositoryPath)
-                    port.unsetFlag('build')
                 else:
                     print('\t%s is skipped, as it is %s on this architecture'
                           % (port.versionedName, status))
@@ -1661,9 +1669,14 @@ class HaikuPorter:
                 if (not os.path.exists(packageInfo)
                     or (os.path.getmtime(port.recipeFilePath) 
                         > os.path.getmtime(packageInfo))):
-                    print '\tupdating ' + packageInfoFileName
+                    if (port.checkFlag('build') 
+                        and not self.options.preserveFlags):
+                        port.unsetFlag('build')
+                        print('\tupdating ' + packageInfoFileName 
+                              + '   [build-flag has been reset]')
+                    else:
+                        print '\tupdating ' + packageInfoFileName
                     port.writePackageInfoIntoRepository(self.repositoryPath)
-                    port.unsetFlag('build')
             else:
                 print '\tremoving ' + packageInfoFileName
                 os.remove(packageInfo)
@@ -1817,49 +1830,71 @@ class Config:
 parser =  OptionParser(usage='usage: %prog [options] portname[-portversion]',
                        version='%prog ' + info['version'])
 
-parser.add_option('-l', '--list', action='store_true', dest='list',
-                  default=False, help='list available ports')
-parser.add_option('-a', '--about', action='store_true', dest='about',
-                  default=False, help='show description of the specified port')
-parser.add_option('-s', '--search', action='store_true', dest='search',
-                  default=False, help='search for a port (regex)')
-parser.add_option('-n', '--nopatch', action='store_false', dest='patch',
-                  default=True, help="don't patch the sources, just download "
-                                     "and unpack")
-parser.add_option('-b', '--nobuild', action='store_false', dest='build',
-                  default=True, help="don't build the port, just download, "
-                                     "unpack and patch")
-parser.add_option('-p', '--nopackage', action='store_false', dest='package',
-                  default=True, help="don't create package, stop after build")
-parser.add_option('-C', '--nochroot', action='store_false', dest='chroot',
-                  default=True, help="don't use a chroot()-environment")
-parser.add_option('-c', '--clean', action='store_true', dest='clean',
-                  default=False, help="clean the working directory of the "
-                                      "specified port")
-parser.add_option('-g', '--get', action='store_true', dest='get',
-                  default=False, help="get/update the ports tree")
-parser.add_option('-f', '--force', action='store_true', dest='force',
-                  default=False, help="force to perform the steps (unpack, "
-                                      "patch, build)")
-parser.add_option('-q', '--quiet', action='store_true', dest='quiet',
-                  default=False, help="suppress output from build actions")
-parser.add_option('-z', '--archive', action='store_true', dest='archive',
-                  default=False, help="Create a patched source archive as "
-                                      "<package>_haiku.tar.xz")
-parser.add_option('-t', '--tree', action='store_true', dest='tree',
-                  default=False, help="print out the location of the "
-                                      "haikuports source tree")
-parser.add_option('-y', '--yes', action='store_true', dest='yes',
-                  default=False, help="answer yes to all questions")
-parser.add_option('-j', '--jobs', action='store', type="int", dest='jobs',
-                  default=1, help="the number of concurrent jobs to build with")
-parser.add_option('-o','--location', action='store_true', dest='location',
-                default=False, help="print out the location of a recipe "
-                                    "(via search) (for scripted editing)")
-parser.add_option('--test', action='store_true', dest='test',
-                  default=False, help="run tests on resulting binaries")
-parser.add_option('--lint', action='store_true', dest='lint',
-                  default=False, help="scan the ports tree for problems")
+parser.add_option('-l', '--list', 
+                  action='store_true', dest='list', default=False, 
+                  help='list available ports')
+parser.add_option('-a', '--about', 
+                  action='store_true', dest='about', default=False, 
+                  help='show description of the specified port')
+parser.add_option('-s', '--search', 
+                  action='store_true', dest='search', default=False, 
+                  help='search for a port (regex)')
+parser.add_option('-o','--location', 
+                  action='store_true', dest='location', default=False, 
+                  help="print out the location of a recipe (via search, "
+                       "for scripted editing)")
+
+parser.add_option('-q', '--quiet', 
+                  action='store_true', dest='quiet', default=False, 
+                  help="suppress output from build actions")
+parser.add_option('-y', '--yes', 
+                  action='store_true', dest='yes', default=False, 
+                  help="answer yes to all questions")
+parser.add_option('-j', '--jobs', 
+                  action='store', type="int", dest='jobs', default=1, 
+                  help="the number of concurrent jobs to build with")
+
+parser.add_option('-n', '--nopatch', 
+                  action='store_false', dest='patch', default=True, 
+                  help="don't patch the sources, just download and unpack")
+parser.add_option('-b', '--nobuild', 
+                  action='store_false', dest='build', default=True, 
+                  help="don't build the port, just download, unpack and patch")
+parser.add_option('-p', '--nopackage', 
+                  action='store_false', dest='package', default=True, 
+                  help="don't create package, stop after build")
+parser.add_option('--test', 
+                  action='store_true', dest='test', default=False, 
+                  help="run tests on resulting binaries")
+parser.add_option('-C', '--nochroot', 
+                  action='store_false', dest='chroot', default=True, 
+                  help="build without a chroot()-environment - meant "
+                       "for debugging the build/install process")
+parser.add_option('-f', '--force', 
+                  action='store_true', dest='force', default=False, 
+                  help="force to perform the steps (unpack, patch, build)")
+parser.add_option('-F', '--preserve-flags', 
+                  action='store_true', dest='preserveFlags', default=False, 
+                  help="don't clear any flags when a changed recipe file "
+                       "is detected")
+
+parser.add_option('-c', '--clean', 
+                  action='store_true', dest='clean', default=False, 
+                  help="clean the working directory of the specified port")
+
+parser.add_option('-g', '--get', 
+                  action='store_true', dest='get', default=False, 
+                  help="get/update the ports tree")
+parser.add_option('-z', '--archive', 
+                  action='store_true', dest='archive', default=False, 
+                  help="Create a patched source archive as "
+                       "<package>_haiku.tar.xz")
+parser.add_option('-t', '--tree', 
+                  action='store_true', dest='tree', default=False, 
+                  help="print out the location of the haikuports source tree")
+parser.add_option('--lint', 
+                  action='store_true', dest='lint', default=False, 
+                  help="scan the ports tree for problems")
 
 (options, args) = parser.parse_args()
 haikuporter = HaikuPorter(options, args)
