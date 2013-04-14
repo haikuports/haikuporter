@@ -605,24 +605,7 @@ class Port:
         return Status.UNSUPPORTED
     
     def resolveBuildDependencies(self, repositoryPath, packagesPath):
-        """Resolve any other ports that need to be built before this one,
-           in this case including the build_requires as well as the requires.
-        """
-
-        packageInfoFile = repositoryPath + '/' + self.packageInfoName
-        try:
-            output = check_output([
-                '/bin/pkgman', 'resolve-dependencies', 
-                packageInfoFile, packagesPath, repositoryPath,
-                systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
-                systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
-            return output.splitlines()
-        except CalledProcessError as e:
-            sysExit('unable to resolve dependencies for ' + self.versionedName)
-
-    def resolveStrictBuildDependencies(self, repositoryPath, packagesPath):
-        """Resolve any other ports that need to be built before this one,
-           in this case strictly using build-requires only"""
+        """Resolve any other ports that need to be built before this one"""
 
         # create work dir if needed
         if not os.path.exists(self.workDir):
@@ -1466,13 +1449,9 @@ class HaikuPorter:
         if not os.path.exists(packageInfo):
             port.writePackageInfoIntoRepository(self.repositoryPath)
         
-        # TODO: decide which of these we really want.
         buildDependencies \
             = port.resolveBuildDependencies(self.repositoryPath,
                                             self.packagesPath)
-        #buildDependencies \
-        #    = port.resolveStrictBuildDependencies(self.repositoryPath,
-        #                                          self.packagesPath)
         allPorts = self._getAllPorts()
         requiredPortsToBuild = []
         for dependency in buildDependencies:
