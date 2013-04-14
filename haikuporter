@@ -386,11 +386,11 @@ def findDirectory(aDir):
 
 # Frequently used directories
 systemDir = {
-	'B_COMMON_DIRECTORY': None,
-	'B_COMMON_PACKAGES_DIRECTORY': None,
-	'B_PACKAGE_LINKS_DIRECTORY': None,
-	'B_SYSTEM_DIRECTORY': None,
-	'B_SYSTEM_PACKAGES_DIRECTORY': None,
+    'B_COMMON_DIRECTORY': None,
+    'B_COMMON_PACKAGES_DIRECTORY': None,
+    'B_PACKAGE_LINKS_DIRECTORY': None,
+    'B_SYSTEM_DIRECTORY': None,
+    'B_SYSTEM_PACKAGES_DIRECTORY': None,
 }
 for key in systemDir.keys():
     systemDir[key] = findDirectory(key)
@@ -447,12 +447,9 @@ class TemporarilyRenamedFile:
 
 # -- A package which can be created from a port ------------------------------
 class Package:
-    def __init__(self, name, fileName, fullPath):
+    def __init__(self, name, fileName):
         self.name = name
-        self.version = version
-        self.versionedName = name + '-' + version
-        self.baseDir = baseDir
-        self.architecture = globalShellVariables['architecture']
+        self.fileName = fileName
         
 
 # -- A single port with its recipe, allows to execute actions ----------------
@@ -487,14 +484,11 @@ class Port:
         }
         self.shellVariables.update(globalShellVariables)
         
-        # Each port creates at least one package (which will share its name).
+        # Each port creates at least two packages: the main package, which will 
+        # share its name with the port), and a source package.
         # If additional packages are declared in the recipe, they will be 
         # added here, later.
-        self.packages = [
-            {
-        		'name': name,
-            }
-        ]
+        self.packages = {}
 
         # create full paths for the directories
         self.downloadDir = self.baseDir + '/download'
@@ -502,6 +496,7 @@ class Port:
         self.workDir = self.baseDir + '/work-' + self.version
         self.sourceDir = self.sourceBaseDir = self.workDir + '/sources'
         self.packagingDir = self.workDir + '/packaging'
+        self.hpkgDir = self.workDir + '/hpkg'
 
     def __enter__(self):
         return self
@@ -522,10 +517,12 @@ class Port:
         self.revision = str(self.recipeKeys['REVISION'])
         self.fullVersion = self.version + '-' + self.revision
         self.revisionedName = self.name + '-' + self.fullVersion
-        self.packages[0]['filename'] \
-            = self.revisionedName + '-' + self.architecture + '.hpkg'
-        self.packages[0]['fullPath'] \
-            = self.workDir + '/' + self.packages[0]['filename']
+
+        self.packages[''] = Package(self.name, 
+                                    self.revisionedName + '-' 
+                                    + self.architecture + '.hpkg')
+        #self.packages['source'] = Package(self.name, 
+        #                                  self.revisionedName + '-source.hpkg')
 
         # If a SOURCE_DIR was specified, adjust the default
         if self.recipeKeys['SOURCE_DIR']:
@@ -627,9 +624,9 @@ class Port:
                     systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
                     systemDir['B_SYSTEM_PACKAGES_DIRECTORY']])
                 return output.splitlines()
-            except CalledProcessError as e:
-	            sysExit('unable to resolve dependencies for ' 
-	                    + self.versionedName)
+            except CalledProcessError:
+                sysExit('unable to resolve dependencies for ' 
+                        + self.versionedName)
 
     def writePackageInfoIntoRepository(self, repositoryPath):
         """Write the PackageInfo-file into the repository"""
@@ -905,15 +902,17 @@ class Port:
 
         if makePackages:
             # move all created packages into packages folder
-            for package in self.packages:
-                if os.path.exists(package['fullPath']):
+            for key in sorted(self.packages.keys()):
+                package = self.packages[key]
+                packageFile = self.hpkgDir + '/' + package.fileName
+                if os.path.exists(packageFile):
                     if self.avoidChroot:
-                        warn('not grabbing ' + package['filename'] 
+                        warn('not grabbing ' + package.fileName
                              + ', as it has not been built in a chroot.')
                         continue
-                    print 'grabbing ' + package['filename']
-                    os.rename(package['fullPath'], 
-                              packagesPath + '/' + package['filename'])
+                    print 'grabbing ' + package.fileName
+                    os.rename(packageFile,
+                              packagesPath + '/' + package.fileName)
 
     def setFlag(self, name):
         open('%s/flag.%s' % (self.workDir, name), 'w').close()
@@ -1009,7 +1008,7 @@ class Port:
                 if not package.startswith(
                     systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
             ]
-        except CalledProcessError as e:
+        except CalledProcessError:
             try:
                 output = check_call(args)
             except:
@@ -1021,7 +1020,7 @@ class Port:
         self._createBuildPackage()
         self._doBuildStage()
         if makePackages:
-            for package in self.packages:
+            for (key, package) in self.packages.iteritems():
                 self._makePackage(package)
         if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
             os.remove(self.activeBuildPackage)
@@ -1043,13 +1042,10 @@ class Port:
         self.sourceDir = self.sourceDir[pathLengthToCut:]
         self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
         self.packagingDir = self.packagingDir[pathLengthToCut:]
+        self.hpkgDir = self.hpkgDir[pathLengthToCut:]
         self.workDir = ''
         self.patchesDir = '/patches'
 
-        # adjust all package file paths
-        for package in self.packages:
-            package['fullPath'] = package['fullPath'][pathLengthToCut:]
-            
         # update shell variables, too
         self._updateShellVariablesFromRecipe()
                 
@@ -1076,11 +1072,15 @@ class Port:
 
     def _makePackage(self, package):
         """Create a package suitable for distribution"""
-        print 'Creating distribution package ' + package['name'] + ' ...'
+        print 'Creating distribution package ' + package.fileName + ' ...'
 
         # recreate empty packaging directory
         shutil.rmtree(self.packagingDir, True)
         os.mkdir(self.packagingDir)
+        
+        # create hpkg-directory if needed
+        if not os.path.exists(self.hpkgDir):
+            os.mkdir(self.hpkgDir)
 
         if os.path.exists('/licenses'):
             shutil.copytree('/licenses', self.packagingDir + '/data/licenses')
@@ -1090,22 +1090,17 @@ class Port:
         self._generatePackageInfo(self.packagingDir + '/.PackageInfo', 
                                   ['REQUIRES'], self.beQuiet)
 
-        if os.path.exists(package['fullPath']):
-            os.remove(package['fullPath'])
+        packageFile = self.hpkgDir + '/' + package.fileName
+        if os.path.exists(packageFile):
+            os.remove(packageFile)
         
         # Create the package
-        print 'creating package ' + package['filename'] + ' ...'
+        print 'creating package ' + package.fileName + ' ...'
         os.chdir(self.packagingDir)
-        check_call(['package', 'create', package['fullPath']])
+        check_call(['package', 'create', packageFile])
 
         # Clean up after ourselves
         shutil.rmtree(self.packagingDir)
-
-        # give hint about source package for ports using (L)GPL license
-        if 'GNU GPL' in self.recipeKeys['LICENSE'] \
-            or 'GNU LGPL' in self.recipeKeys['LICENSE']:
-            print ('To generate the matching source package, run: '
-                   'haikuporter -z ' + self.name + '-' + self.version)
 
     def _doInstallStage(self):
         """Install the files resulting from the build into the packaging 
@@ -1455,6 +1450,7 @@ class HaikuPorter:
         allPorts = self._getAllPorts()
         requiredPortsToBuild = []
         for dependency in buildDependencies:
+            print dependency
             if dependency.startswith(self.repositoryPath):
                 packageInfoFileName = os.path.basename(dependency)
                 requiredPortID \
@@ -1606,7 +1602,7 @@ class HaikuPorter:
     def _populateRepository(self):
         """Remove and refill the repository with all PackageInfo-files from
            parseable recipes"""
-           
+
         if os.path.exists(self.repositoryPath):
             shutil.rmtree(self.repositoryPath)
         tempRepositoryPath = self.repositoryPath + '.new'
