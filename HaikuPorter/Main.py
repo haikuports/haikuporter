@@ -34,6 +34,11 @@ regExp['portfullname'] = regExp['portname'] + '-' + regExp['portversion']
 regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 
 
+# -- path to haikuports-tree --------------------------------------------------
+
+svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
+
+
 # -- Main Class ---------------------------------------------------------------
 class Main:
 	def __init__(self, options, args):
