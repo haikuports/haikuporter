@@ -95,64 +95,139 @@ class LinesOfText(list):
 # -----------------------------------------------------------------------------
 
 # allowed types of the /etc/haikuports.conf values
-haikuportsConfigTypes = {}
-haikuportsConfigTypes['PACKAGER'] = types.StringType
-haikuportsConfigTypes['PATCH_OPTIONS'] = types.StringType
-haikuportsConfigTypes['TREE_PATH'] = types.StringType
-
-haikuportsConfigDefaults = {}  # [required, default]
-haikuportsConfigDefaults['PACKAGER'] = [True, None]
-haikuportsConfigDefaults['PATCH_OPTIONS'] = [False, None]
-haikuportsConfigDefaults['TREE_PATH'] = [True, None]
-
+haikuportsAttributes = {
+	'PACKAGER': {
+		'type': types.StringType,
+		'required': True,
+		'default': None,
+	},
+	'PATCH_OPTIONS': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+	},
+	'TREE_PATH': {
+		'type': types.StringType,
+		'required': True,
+		'default': None,
+	},
+}
 
 # -----------------------------------------------------------------------------
 
-# allowed types of the recipe-file values
-recipeTypes = {}
-recipeTypes['ARCHITECTURES'] = ArchitecturesType
-recipeTypes['BUILD_PACKAGE_ACTIVATION_PHASE'] = PhaseType
-recipeTypes['BUILD_PREREQUIRES'] = types.ListType
-recipeTypes['BUILD_REQUIRES'] = types.ListType
-recipeTypes['CHECKSUM_MD5'] = types.StringType
-recipeTypes['CONFLICTS'] = types.ListType
-recipeTypes['COPYRIGHT'] = types.ListType
-recipeTypes['DESCRIPTION'] = LinesOfText
-recipeTypes['FRESHENS'] = types.ListType
-recipeTypes['HOMEPAGE'] = types.StringType
-recipeTypes['LICENSE'] = types.ListType
-recipeTypes['MESSAGE'] = types.StringType
-recipeTypes['PROVIDES'] = types.ListType
-recipeTypes['REPLACES'] = types.ListType
-recipeTypes['REQUIRES'] = types.ListType
-recipeTypes['REVISION'] = types.IntType
-recipeTypes['SOURCE_DIR'] = types.StringType
-recipeTypes['SRC_URI'] = types.ListType
-recipeTypes['SUMMARY'] = types.StringType
-recipeTypes['SUPPLEMENTS'] = types.ListType
-
-recipeDefaults = {}  # [required, default]
-recipeDefaults['ARCHITECTURES'] = [True, None]
-recipeDefaults['BUILD_PACKAGE_ACTIVATION_PHASE'] = [False, PhaseType('BUILD')]
-recipeDefaults['BUILD_PREREQUIRES'] = [False, []]
-recipeDefaults['BUILD_REQUIRES'] = [False, []]
-recipeDefaults['CHECKSUM_MD5'] = [False, None]
-recipeDefaults['CONFLICTS'] = [False, []]
-recipeDefaults['COPYRIGHT'] = [False, []]
-recipeDefaults['DESCRIPTION'] = [True, None]
-recipeDefaults['FRESHENS'] = [False, []]
-recipeDefaults['HOMEPAGE'] = [True, None]
-recipeDefaults['LICENSE'] = [False, []]
-recipeDefaults['MESSAGE'] = [False, None]
-recipeDefaults['PROVIDES'] = [True, None]
-recipeDefaults['REPLACES'] = [False, []]
-recipeDefaults['REQUIRES'] = [False, []]
-recipeDefaults['REVISION'] = [True, 1]
-recipeDefaults['SOURCE_DIR'] = [False, None]
-recipeDefaults['SRC_URI'] = [True, []]
-recipeDefaults['SUMMARY'] = [True, None]
-recipeDefaults['SUPPLEMENTS'] = [False, []]
-recipeDefaults['WORKING'] = [False, True]
+# recipe keys and their attributes
+recipeAttributes = {
+	'ARCHITECTURES': {
+		'type': ArchitecturesType,
+		'required': True,
+		'default': None,
+	},
+	'BUILD_PACKAGE_ACTIVATION_PHASE': {
+		'type': PhaseType,
+		'required': False,
+		'default': PhaseType('BUILD'),
+	},
+	'BUILD_PREREQUIRES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+	'BUILD_REQUIRES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+	'CHECKSUM_MD5': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+	},
+	'CONFLICTS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+	'COPYRIGHT': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+	},
+	'DESCRIPTION': {
+		'type': LinesOfText,
+		'required': True,
+		'default': None,
+		'perPackage': True,
+	},
+	'FRESHENS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+	'HOMEPAGE': {
+		'type': types.StringType,
+		'required': True,
+		'default': None,
+	},
+	'LICENSE': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+	},
+	'MESSAGE': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+	},
+	'PROVIDES': {
+		'type': types.ListType,
+		'required': True,
+		'default': None,
+		'perPackage': True,
+	},
+	'REPLACES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+	'REQUIRES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+	'REVISION': {
+		'type': types.IntType,
+		'required': True,
+		'default': 1,
+	},
+	'SOURCE_DIR': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+	},
+	'SRC_URI': {
+		'type': types.ListType,
+		'required': True,
+		'default': [],
+	},
+	'SUMMARY': {
+		'type': types.StringType,
+		'required': True,
+		'default': None,
+		'perPackage': True,
+	},
+	'SUPPLEMENTS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'perPackage': True,
+	},
+}
 
 
 # -----------------------------------------------------------------------------
@@ -170,7 +245,7 @@ regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 # Shell scriptlet that is used to execute a config file and output all the 
 # configuration values (in the form of environment variables) which have been
 # set explicitly in the configuration file. The first placeholder is substituted 
-# with the configuration file, the second with a space separated list of 
+# with the configuration file, the second with a '|'-separated list of 
 # supported configuration keys.
 # Note: this script requires bash, it won't work with any other shells
 configFileEvaluatorScript = r'''# wrapper script for evaluating config/recipe
@@ -181,10 +256,14 @@ set -e
 # source the configuration file
 . %s >/dev/null
 
-# output all environment vars we are interested in and which have been set, 
-# quoting any newlines in their values
+# select all environment vars we are interested in, which are all vars that
+# match the given keys plus the ones that extend a given key by '_<something>'
+supportedKeys=$(set | grep -E -o '^(%s)(_[0-9a-zA-Z_]+)?=' | cut -d= -f1)
+
+# output the supported environment vars which have been set, quoting any 
+# newlines in their values
 NL=$'\n'
-for key in %s 
+for key in $supportedKeys
 do
 	if [[ -n ${!key+dummy} ]]
 	then
@@ -509,9 +588,9 @@ class Port:
 		self.validateRecipeFile()
 
 		# set default values when not provided
-		for key in recipeDefaults:
+		for key in recipeAttributes.keys():
 			if key not in self.recipeKeys:
-				self.recipeKeys[key] = recipeDefaults[key][1]
+				self.recipeKeys[key] = recipeAttributes[key]['default']
 				
 		# initialize variables that depend on the recipe revision
 		self.revision = str(self.recipeKeys['REVISION'])
@@ -542,14 +621,14 @@ class Port:
 		if not os.path.exists(self.recipeFilePath):
 			sysExit(self.name + ' version ' + self.version + ' not found.')
 
-		recipeConfig = Config(self.recipeFilePath, recipeTypes, 
+		recipeConfig = Config(self.recipeFilePath, recipeAttributes, 
 							  self.shellVariables)
 		self.recipeKeys = recipeConfig.getEntries()
 
-		# check whether all required fields are present
-		for key in recipeDefaults:
-			if key not in self.recipeKeys and recipeDefaults[key][0]:
-				sysExit("Required field '" + key + "' not present (in %s)" 
+		# check whether all required values are present
+		for key in recipeAttributes.keys():
+			if key not in self.recipeKeys and recipeAttributes[key]['required']:
+				sysExit("Required value '" + key + "' not present (in %s)" 
 						% self.recipeFilePath)
 
 		# The summary must be a single line of text, preferably not exceeding
@@ -1274,13 +1353,13 @@ class HaikuPorter:
 		# read global settings
 		global haikuportsConfig
 		haikuportsConfig = Config(haikuportsConf, 
-								  haikuportsConfigTypes).getEntries()
+								  haikuportsAttributes).getEntries()
 
-		# check whether all required fields are present
-		for key in haikuportsConfigDefaults:
+		# check whether all required values are present
+		for key in haikuportsAttributes.keys():
 			if (key not in haikuportsConfig 
-					and haikuportsConfigDefaults[key][0]):
-				sysExit("Required field '" + key + "' not present in " 
+					and haikuportsAttributes[key]['required']):
+				sysExit("Required value '" + key + "' not present in " 
 						+ haikuportsConf)
 
 		# set up the global variables we'll inherit to the shell
@@ -1428,8 +1507,8 @@ class HaikuPorter:
 				else:
 					sys.exit(1)
 
-		if self.options.build:
-			self._buildMainPort(port)
+		#if self.options.build:
+		#	self._buildMainPort(port)
 
 		# TODO: reactivate these!
 		# if self.options.archive:
@@ -1695,7 +1774,7 @@ class HaikuPorter:
 # -- /etc/haikuports.conf and *.recipe parser --------------------------------
 
 class Config:
-	def __init__(self, filename, keysAndTypes, shellVariables={}):
+	def __init__(self, filename, attributes, shellVariables={}):
 		self.entries = {}
 
 		# set up the shell environment -- we want it to inherit some of our
@@ -1704,7 +1783,7 @@ class Config:
 		shellEnv.update(shellVariables)
 
 		# execute the config file via the shell ....
-		supportedKeysString = ' '.join(keysAndTypes.keys())
+		supportedKeysString = '|'.join(attributes.keys())
 		wrapperScript = configFileEvaluatorScript % (filename, 
 													 supportedKeysString)
 		try:
@@ -1722,17 +1801,26 @@ class Config:
 						'key-values line:\n  %s\nexpected "<key>=<value>"\n'
 						'output of configuration script was: %s\n' 
 						% (filename, line, output))
-				
-			if key not in keysAndTypes:
-				# skip unsupported key, just in case
-				warn('Key %s in file %s is unsupported, ignoring it'
-					 % (key, filename))
-				continue
+
+			# some keys may have package-specific extension, check:
+			if key in attributes:
+				baseKey = key
+			else:
+				baseKey = ''
+				for subKey in key.split('_'):
+					baseKey += ('_' if baseKey else '') + subKey
+					if baseKey in attributes:
+						break;
+				else:
+					# skip unsupported key, just in case
+					warn('Key %s in file %s is unsupported, ignoring it'
+						 % (key, filename))
+					continue
 			
 			valueString = valueString.replace(r'\n', '\n')
 				# replace quoted newlines by real newlines
 				
-			type = keysAndTypes[key]
+			type = attributes[baseKey]['type']
 			if type == types.StringType:
 				self.entries[key] = valueString
 			elif type == types.IntType:
