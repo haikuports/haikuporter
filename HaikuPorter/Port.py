@@ -562,36 +562,6 @@ class Port:
 		
 		# TODO!
 
-	def makePatchedArchive(self):
-		"""Create a patched source archive"""
-		print 'Creating patched source archive ...'
-
-		# Set the path and filename for the archive.
-		date = time.strftime('-%Y-%m-%d', time.localtime())
-		archiveFile = self.baseDir + '/' + self.name + '-'\
-			 + self.version + '_haiku' + date + '.tar.xz'
-
-		sourceFiles = ''
-
-		# Build the list of dirs to archive.
-		# Since we don't know the name we have to iterate over the dir.
-		for f in os.listdir(self.sourceBaseDir):
-			if os.path.isdir(self.sourceBaseDir + '/' + f):
-				sourceFiles += ' ' + f
-
-		# Make sure we found something to archive
-		if not sourceFiles:
-			sysExit('No source directories found in work dir.')
-
-		# Archive the package and save it in the root of the port dir.
-		check_call('tar cJvf ' + archiveFile + ' ' + sourceFiles,
-				   shell=True, cwd=self.sourceBaseDir)
-
-		# Clean up after ourselves
-		shutil.rmtree(self.workDir)
-
-		print 'Archive saved to: ' + archiveFile
-
 	def _updateShellVariablesFromRecipe(self):
 		"""Fill dictionary with variables that will be inherited to the shell
 		   when executing recipe actions

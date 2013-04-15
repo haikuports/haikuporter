@@ -20,6 +20,7 @@ import glob
 import os
 import re
 import shutil
+from subprocess import check_call
 import sys
 
 
@@ -190,8 +191,6 @@ class Main:
 			self._buildMainPort(port)
 
 		# TODO: reactivate these!
-		# if self.options.archive:
-		#	port.makePatchedArchive()
 		# if self.options.test:
 		#	port.test()
 
@@ -284,6 +283,14 @@ class Main:
 		}
 		if self.options.quiet:
 			self.shellVariables['quiet'] = '1'
+
+	def _updatePortsTree(self):
+		"""Get/Update the port tree via svn"""
+		print 'Refreshing the port tree: %s' % self.treePath
+		if os.path.exists(self.treePath + '/.svn'):
+			check_call(['svn', 'update', self.treePath])
+		else:
+			check_call(['svn', 'checkout', svnPath, self.treePath])
 
 	def _searchPorts(self, regExp):
 		"""Search for a port in the HaikuPorts tree"""

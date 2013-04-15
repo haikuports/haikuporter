@@ -77,10 +77,6 @@ parser.add_option('-c', '--clean',
 parser.add_option('-g', '--get', 
 				  action='store_true', dest='get', default=False, 
 				  help="get/update the ports tree")
-parser.add_option('-z', '--archive', 
-				  action='store_true', dest='archive', default=False, 
-				  help="Create a patched source archive as "
-					   "<package>_haiku.tar.xz")
 parser.add_option('-t', '--tree', 
 				  action='store_true', dest='tree', default=False, 
 				  help="print out the location of the haikuports source tree")
