@@ -133,13 +133,6 @@ class Main:
 			else:
 				sysExit('No recipe files for %s found.' % name)
 	
-		# clean the work dir and don't build when making a source archive
-		if self.options.archive:
-			self.options.package = False
-			self.options.build = False
-			self.options.clean = True
-			self.options.patch = True
-	
 		# don't build or package when not patching
 		if not self.options.patch:
 			self.options.build = False
