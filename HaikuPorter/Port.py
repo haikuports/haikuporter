@@ -485,7 +485,7 @@ class Port:
 			 + self.version + '.patch'
 		if os.path.exists(patchFilePath):
 			print 'Patching ...'
-			check_call(['patch', '-p0', '-i ', patchFilePath], 
+			check_call(['patch', '-p0', '-i', patchFilePath], 
 					   cwd=self.sourceBaseDir)
 		else:
 			print 'No patching required'
