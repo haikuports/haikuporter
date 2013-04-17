@@ -22,21 +22,33 @@ def check_output(*popenargs, **kwargs):
 	return output
 
 
-# -- wraps invocation of sys.exit() ------------------------------------------
+# -- sysExit ------------------------------------------------------------------
 def sysExit(message):
+	"""wrap invocation of sys.exit()"""
+	
 	message = '\n'.join(['*** ' + line for line in message.split('\n') ])
 	sys.exit(message)
 
 
-# -- prints a warning --------------------------------------------------------
+# -- warn ---------------------------------------------------------------------
 def warn(message):
+	"""print a warning"""
+	
 	message = '\n'.join(['* ' + line for line in message.split('\n') ])
 	print(message)
 
 
-# -- wraps invocation of 'finddir' -------------------------------------------
+# -- findDirectory ------------------------------------------------------------
 def findDirectory(aDir):
+	"""wraps invocation of 'finddir'"""
+	
 	return check_output(['/bin/finddir', aDir]).rstrip()  # drop newline
+
+# -- quote --------------------------------------------------------------------
+def escapeForPackageInfo(string):
+	"""escapes string to be used within "" quotes in a .PackageInfo file"""
+	
+	return string.replace('\\', '\\\\').replace('"', '\\"')
 
 
 # ----------------------------------------------------------------------------

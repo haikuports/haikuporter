@@ -23,16 +23,19 @@ haikuportsAttributes = {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
+		'extendable': False,
 	},
 	'PATCH_OPTIONS': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
+		'extendable': False,
 	},
 	'TREE_PATH': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
+		'extendable': False,
 	},
 }
 
@@ -44,8 +47,8 @@ globalConfiguration = {}
 # -- read global configuration ------------------------------------------------
 def readGlobalConfiguration():
 		
-	globalConfiguration.update(ConfigParser(haikuportsConf, 
-											haikuportsAttributes).getEntries())
+	configParser = ConfigParser(haikuportsConf, haikuportsAttributes)
+	globalConfiguration.update(configParser.getEntriesForExtension(''))
 
 	# check whether all required values are present
 	for key in haikuportsAttributes.keys():

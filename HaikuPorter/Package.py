@@ -1,11 +1,299 @@
 # -*- coding: utf-8 -*-
+# copyright 2007-2011 Brecht Machiels
+# copyright 2009-2010 Chris Roberts
+# copyright 2009-2011 Scott McCreary
+# copyright 2009 Alexander Deynichenko
+# copyright 2009 HaikuBot (aka RISC)
+# copyright 2010-2011 Jack Laxson (Jrabbit)
+# copyright 2011 Ingo Weinhold
 # copyright 2013 Oliver Tappe
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.GlobalConfig import globalConfiguration
+from HaikuPorter.Options import getOption
+from HaikuPorter.RecipeTypes import Architectures, Status
+from HaikuPorter.Utils import escapeForPackageInfo, sysExit, systemDir
 
-# -- A package which can be created from a port ------------------------------
+import os
+import shutil
+from subprocess import check_call
+
+
+# -- The supported package types ----------------------------------------------
+
+class PackageType(str):
+	DEBUG = 'debug'
+	DEVELOPMENT = 'development'
+	DOCUMENTATION = 'documentation'
+	GENERAL = 'general'
+	SOURCE = 'source'
+
+	@staticmethod	
+	def byName(name):
+		"""Lookup the type by name"""
+		
+		if name == PackageType.DEBUG:
+			return PackageType.DEBUG
+		elif name == PackageType.DEVELOPMENT:
+			return PackageType.DEVELOPMENT
+		elif name == PackageType.DOCUMENTATION:
+			return PackageType.DOCUMENTATION
+		elif name == PackageType.SOURCE:
+			return PackageType.SOURCE
+		else:
+			return PackageType.GENERAL
+
+
+# -- A package which can be created from a port -------------------------------
+
 class Package:
-	def __init__(self, name, fileName):
+	def __init__(self, type, name, version, revision, currentArchitecture, 
+				 workDir, packageInfoDir, buildPackageDir, packagingBaseDir, 
+				 hpkgDir, recipeKeys):
+		self.type = type
 		self.name = name
-		self.fileName = fileName
+		self.version = version
+		self.revision = revision
+		
+		self.workDir = workDir
+		self.packageInfoDir = packageInfoDir
+		self.buildPackageDir = buildPackageDir
+		self.packagingDir = packagingBaseDir + '/' + self.name
+		self.hpkgDir = hpkgDir
+		self.recipeKeys = recipeKeys
+		
+		self.versionedName = self.name + '-' + self.version
+		self.fullVersion = self.version + '-' + self.revision
+		self.revisionedName = self.name + '-' + self.fullVersion
+
+		self.packageInfoName = self.versionedName + '.PackageInfo'
+
+		if currentArchitecture in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = currentArchitecture
+		elif (self.recipeKeys['ARCHITECTURES'][0] == Architectures.ANY
+			  or self.recipeKeys['ARCHITECTURES'][0] == Architectures.SOURCE):
+			self.architecture = self.recipeKeys['ARCHITECTURES'][0]
+		else:
+			sysExit('package %s can not be built on architecture %s'
+					% (self.versionedName, currentArchitecture))
+
+		self.fullVersionedName = self.versionedName + '-' + self.architecture
+		self.fullRevisionedName = self.revisionedName + '-' + self.architecture
+		self.hpkgName = self.fullRevisionedName + '.hpkg'
+
+		self.buildPackage = None
+		self.activeBuildPackage = None
+
+	def getStatusOnArchitecture(self, architecture):
+		"""Return the status of this package on the given architecture (which
+		   must be a hardware architecture, i.e. not ANY or SOURCE)"""
+		
+		if architecture in self.recipeKeys['ARCHITECTURES']:
+			return self.recipeKeys['ARCHITECTURES'][architecture]
+		elif (self.recipeKeys['ARCHITECTURES'][0] == Architectures.ANY
+			  or self.recipeKeys['ARCHITECTURES'][0] == Architectures.SOURCE):
+			return Status.STABLE
+		return Status.UNSUPPORTED
+	
+	def writePackageInfoIntoRepository(self, repositoryPath):
+		"""Write a PackageInfo-file for this package into the repository"""
+
+		packageInfoFile = repositoryPath + '/' + self.packageInfoName
+		self.generatePackageInfo(packageInfoFile, 
+								 [ 'BUILD_REQUIRES', 'REQUIRES' ], True)
+					
+	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
+							fakeEmptyProvides = False):
+		"""Create a .PackageInfo file for inclusion in a package or for
+		   dependency resolving"""
+		
+		with open(packageInfoPath, 'w') as infoFile:
+			if fakeEmptyProvides:
+				infoFile.write('name\t\t\tfaked_' + self.name + '\n')
+			else:
+				infoFile.write('name\t\t\t' + self.name + '\n')
+			infoFile.write('version\t\t\t' + self.fullVersion + '\n')
+			infoFile.write('architecture\t\t' + self.architecture + '\n')
+			infoFile.write('summary\t\t\t"' 
+						   + escapeForPackageInfo(self.recipeKeys['SUMMARY']) 
+						   + '"\n')
+	
+			infoFile.write('description\t\t"')
+			infoFile.write(
+				escapeForPackageInfo('\n'.join(self.recipeKeys['DESCRIPTION'])))
+			infoFile.write('"\n')
+	
+			infoFile.write('packager\t\t"' + globalConfiguration['PACKAGER'] 
+						   + '"\n')
+			infoFile.write('vendor\t\t\t"Haiku Project"\n')
+	
+			# These keys aren't mandatory so we need to check if they exist
+			if self.recipeKeys['LICENSE']:
+				infoFile.write('licenses {\n')
+				for license in self.recipeKeys['LICENSE']:
+					infoFile.write('\t"' + license + '"\n')
+				infoFile.write('}\n')
+	
+			if self.recipeKeys['COPYRIGHT']:
+				infoFile.write('copyrights {\n')
+				for copyright in self.recipeKeys['COPYRIGHT']:
+					infoFile.write('\t"' + copyright + '"\n')
+				infoFile.write('}\n')
+	
+			requires = []
+			for requiresKey in requiresToUse:
+				requires += self.recipeKeys[requiresKey]
+	
+			if fakeEmptyProvides:
+				infoFile.write('provides {\n\tfaked_' + self.name + ' = ' 
+							   + self.version + '\n}\n')
+			else:
+				self._writePackageInfoListByKey(infoFile, 'PROVIDES', 
+												'provides')
+			self._writePackageInfoList(infoFile, requires, 'requires')
+			self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 
+											'supplements')
+			self._writePackageInfoListByKey(infoFile, 'CONFLICTS', 'conflicts')
+			self._writePackageInfoListByKey(infoFile, 'FRESHENS', 'freshens')
+			self._writePackageInfoListByKey(infoFile, 'REPLACES', 'replaces')
+	
+			infoFile.write('urls\t\t\t"' + self.recipeKeys['HOMEPAGE'] + '"\n')
+	
+			# Generate SourceURL lines for all ports, regardless of license.
+			# Re-use the download URLs, as specified in the recipe.
+			infoFile.write('source-urls {\n')
+			uricount = 1
+			for src_uri in self.recipeKeys['SRC_URI']:
+				if uricount < 2:
+					infoFile.write('\t"Download <' + src_uri + '>"\n')
+				else:
+					infoFile.write('\t"Location ' + str(uricount) + ' <' 
+								   + src_uri + '>"\n')
+				uricount += 1
+
+			# TODO: fix or drop the following URLs
+			# Point directly to the file in subversion.
+			#recipeurl_base = ('http://ports.haiku-files.org/'
+			#				  + 'svn/haikuports/trunk/' + self.category + '/' 
+			#				  + self.name)
+			#
+			#recipeurl = (recipeurl_base + '/' + self.name+ '-' + self.version 
+			#			 + '.recipe')
+	
+			#infoFile.write('\t"Port-file <' + recipeurl + '>"\n')
+			#patchFilePath = (self.patchesDir + '/' + self.name + '-' 
+			#				 + self.version + '.patch')
+			#if os.path.exists(patchFilePath):
+			#	patchurl = (recipeurl_base + '/patches/' + self.name + '-'
+			#				+ self.version + '.patch')
+			#	infoFile.write('\t"Patches <' + patchurl + '>"\n')
+	
+			infoFile.write('}\n')
+		
+		if not quiet:
+			with open(packageInfoPath, 'r') as infoFile:
+				print infoFile.read()
+
+	def adjustToChroot(self):
+		"""Adjust directories to chroot()-ed environment"""
+		
+		# adjust all relevant directories
+		pathLengthToCut = len(self.workDir)
+		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
+		self.buildPackageDir = self.buildPackageDir[pathLengthToCut:]
+		self.packagingDir = self.packagingDir[pathLengthToCut:]
+		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
+		self.workDir = '/'
+		self.patchesDir = '/patches'
+				
+	def preparePackagingDir(self, populate):
+		"""Create and optionally populate the packaging directory"""
+
+		# recreate empty packaging directory
+		shutil.rmtree(self.packagingDir, True)
+		os.mkdir(self.packagingDir)
+
+		if populate:
+			if os.path.exists('/licenses'):
+				shutil.copytree('/licenses', 
+								self.packagingDir + '/data/licenses')
+
+	def makeHpkg(self):
+		"""Create a package suitable for distribution"""
+
+		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
+								 ['REQUIRES'], getOption('quiet'))
+
+		packageFile = self.hpkgDir + '/' + self.hpkgName
+		if os.path.exists(packageFile):
+			os.remove(packageFile)
+		
+		# Create the package
+		print 'creating package ' + self.hpkgName + ' ...'
+		os.chdir(self.packagingDir)
+		check_call(['package', 'create', packageFile])
+		os.chdir(self.workDir)
+
+		# Clean up after ourselves
+		shutil.rmtree(self.packagingDir)
+
+	def createBuildPackage(self):
+		"""Create the build package"""
+		
+		# create a package info for a build package
+		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName 
+							+ '-build.PackageInfo')
+		self.generatePackageInfo(buildPackageInfo, 
+								 ['REQUIRES', 'BUILD_REQUIRES', 
+								  'BUILD_PREREQUIRES'], True)
+
+		# create the build package
+		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 
+						+ '-build.hpkg')
+		cmdlineArgs = ['package', 'create', '-bi', buildPackageInfo, '-I',
+					   self.packagingDir, buildPackage]
+		if getOption('quiet'):
+			cmdlineArgs.insert(2, '-q')
+		check_call(cmdlineArgs)
+		self.buildPackage = buildPackage
+		os.remove(buildPackageInfo)
+
+	def activateBuildPackage(self):
+		"""Activate the build package"""
+		
+		# activate the build package
+		packagesDir = systemDir['B_COMMON_PACKAGES_DIRECTORY']
+		activeBuildPackage \
+			= packagesDir + '/' + os.path.basename(self.buildPackage)
+		if os.path.exists(activeBuildPackage):
+			os.remove(activeBuildPackage)
+			
+		if not getOption('chroot'):
+			# may have to cross devices, so better use a symlink
+			os.symlink(self.buildPackage, activeBuildPackage)
+		else:
+			# symlinking a package won't work in chroot, but in this
+			# case we are sure that the move won't cross devices
+			os.rename(self.buildPackage, activeBuildPackage)
+		self.activeBuildPackage = activeBuildPackage
+
+	def removeBuildPackage(self):
+		"""Deactivate and remove the build package"""
+		
+		if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
+			os.remove(self.activeBuildPackage)
+			self.activeBuildPackage = None
+		if self.buildPackage and os.path.exists(self.buildPackage):
+			os.remove(self.buildPackage)
+			self.buildPackage = None
+
+	def _writePackageInfoListByKey(self, infoFile, key, keyword):
+		self._writePackageInfoList(infoFile, self.recipeKeys[key], keyword)
+
+	def _writePackageInfoList(self, infoFile, list, keyword):
+		if list:
+			infoFile.write(keyword + ' {\n')
+			for item in list:
+				infoFile.write('\t' + item + '\n')
+			infoFile.write('}\n')

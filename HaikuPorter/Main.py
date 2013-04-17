@@ -197,7 +197,7 @@ class Main:
 
 		packageInfo = self.repositoryPath + '/' + port.packageInfoName
 		if not os.path.exists(packageInfo):
-			port.writePackageInfoIntoRepository(self.repositoryPath)
+			port.writePackageInfosIntoRepository(self.repositoryPath)
 		
 		buildDependencies \
 			= port.resolveBuildDependencies(self.repositoryPath,
@@ -379,7 +379,7 @@ class Main:
 						port.unsetFlag('build')
 					else:
 						print '\t%s' % port.versionedName
-					port.writePackageInfoIntoRepository(tempRepositoryPath)
+					port.writePackageInfosIntoRepository(tempRepositoryPath)
 				else:
 					print('\t%s is skipped, as it is %s on this architecture'
 						  % (port.versionedName, status))
@@ -396,6 +396,20 @@ class Main:
 		for packageInfo in packageInfos:
 			packageInfoFileName = os.path.basename(packageInfo)
 			portID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+
+			# what we have in portID may be a packageID instead, in which case
+			# we need to find the corresponding portID.
+			if portID not in allPorts:
+				# cut out subparts from the pacakge name until we find a port
+				# with that name:
+				(portName, version) = portID.rsplit('-', 1)
+				(portName, unused1, unused2) = portName.rpartition('-')
+				while portName:
+					portID = portName + '-' + version
+					if portID in allPorts:
+						break
+					(portName, unused1, unused2) = portName.rpartition('-')
+			
 			if portID in allPorts:
 				port = allPorts[portID]
 				if (not os.path.exists(packageInfo)
@@ -404,11 +418,11 @@ class Main:
 					if (port.checkFlag('build') 
 						and not self.options.preserveFlags):
 						port.unsetFlag('build')
-						print('\tupdating ' + packageInfoFileName 
+						print('\tupdating package infos of ' + portID
 							  + '   [build-flag has been reset]')
 					else:
-						print '\tupdating ' + packageInfoFileName
-					port.writePackageInfoIntoRepository(self.repositoryPath)
+						print '\tupdating package infos of ' + portID
+					port.writePackageInfosIntoRepository(self.repositoryPath)
 			else:
 				print '\tremoving ' + packageInfoFileName
 				os.remove(packageInfo)

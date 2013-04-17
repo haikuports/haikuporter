@@ -10,7 +10,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.RecipeTypes import (ArchitecturesType, LinesOfText, PhaseType)
+from HaikuPorter.Package import PackageType
+from HaikuPorter.RecipeTypes import (Architectures, LinesOfText, Phase)
 
 import types
 
@@ -18,114 +19,139 @@ import types
 # -- recipe keys and their attributes -----------------------------------------
 
 recipeAttributes = {
-	'ARCHITECTURES': {
-		'type': ArchitecturesType,
-		'required': True,
-		'default': None,
-	},
+	# non-extendable, i.e. per-port attributes
 	'BUILD_PACKAGE_ACTIVATION_PHASE': {
-		'type': PhaseType,
+		'type': Phase,
 		'required': False,
-		'default': PhaseType('BUILD'),
-	},
-	'BUILD_PREREQUIRES': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-		'perPackage': True,
-	},
-	'BUILD_REQUIRES': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-		'perPackage': True,
+		'default': Phase('BUILD'),
+		'extendable': False,
 	},
 	'CHECKSUM_MD5': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
-	},
-	'CONFLICTS': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-		'perPackage': True,
-	},
-	'COPYRIGHT': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-	},
-	'DESCRIPTION': {
-		'type': LinesOfText,
-		'required': True,
-		'default': None,
-		'perPackage': True,
-	},
-	'FRESHENS': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-		'perPackage': True,
+		'extendable': False,
 	},
 	'HOMEPAGE': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
-	},
-	'LICENSE': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
+		'extendable': False,
 	},
 	'MESSAGE': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
-	},
-	'PROVIDES': {
-		'type': types.ListType,
-		'required': True,
-		'default': None,
-		'perPackage': True,
-	},
-	'REPLACES': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-		'perPackage': True,
-	},
-	'REQUIRES': {
-		'type': types.ListType,
-		'required': False,
-		'default': [],
-		'perPackage': True,
+		'extendable': False,
 	},
 	'REVISION': {
 		'type': types.IntType,
 		'required': True,
 		'default': 1,
+		'extendable': False,
 	},
 	'SOURCE_DIR': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
+		'extendable': False,
 	},
 	'SRC_URI': {
 		'type': types.ListType,
 		'required': True,
 		'default': [],
+		'extendable': False,
+	},
+
+	# extendable, i.e. per-package attributes
+	'ARCHITECTURES': {
+		'type': Architectures,
+		'required': True,
+		'default': None,
+		'extendable': True,
+	},
+	'BUILD_PREREQUIRES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'BUILD_REQUIRES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'CONFLICTS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'COPYRIGHT': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'DESCRIPTION': {
+		'type': LinesOfText,
+		'required': True,
+		'default': None,
+		'extendable': True,
+	},
+	'FRESHENS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'LICENSE': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'NAME_EXTENSION': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': True,
+	},
+	'PROVIDES': {
+		'type': types.ListType,
+		'required': True,
+		'default': None,
+		'extendable': True,
+	},
+	'REPLACES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+	},
+	'REQUIRES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
 	},
 	'SUMMARY': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
-		'perPackage': True,
+		'extendable': True,
+		'suffix': {
+			PackageType.DEVELOPMENT: ' (development files)',
+			PackageType.DEBUG: ' (debug info)',
+			PackageType.DOCUMENTATION: ' (documentation)',
+			PackageType.SOURCE: ' (source files)',
+		}
 	},
 	'SUPPLEMENTS': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
-		'perPackage': True,
+		'extendable': True,
 	},
 }

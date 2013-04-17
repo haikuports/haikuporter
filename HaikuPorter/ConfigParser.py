@@ -16,7 +16,7 @@ import types
 
 class ConfigParser:
 	def __init__(self, filename, attributes, shellVariables={}):
-		self.entries = {}
+		self.entriesByExtension = {}
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
@@ -43,37 +43,52 @@ class ConfigParser:
 						'output of configuration script was: %s\n' 
 						% (filename, line, output))
 
-			# some keys may have package-specific extension, check:
+			# some keys may have a package-specific extension, check:
 			if key in attributes:
+				# unextended key
 				baseKey = key
+				extension = ''
 			else:
 				baseKey = ''
-				for subKey in key.split('_'):
+				subKeys = key.split('_')
+				while subKeys:
+					subKey = subKeys.pop(0)
 					baseKey += ('_' if baseKey else '') + subKey
 					if baseKey in attributes:
+						if not attributes[baseKey]['extendable']:
+							warn('Ignoring key %s in file %s, as %s is not '
+								 'extendable' % (key, filename, baseKey))
+							continue
+						extension = '_'.join(subKeys)
 						break;
 				else:
 					# skip unsupported key, just in case
 					warn('Key %s in file %s is unsupported, ignoring it'
 						 % (key, filename))
 					continue
+
+			# create empty dictionary for new extension
+			if extension not in self.entriesByExtension:
+				self.entriesByExtension[extension] = {}
+			
+			entries = self.entriesByExtension[extension]
 			
 			valueString = valueString.replace(r'\n', '\n')
 				# replace quoted newlines by real newlines
 				
 			type = attributes[baseKey]['type']
 			if type == types.StringType:
-				self.entries[key] = valueString
+				entries[key] = valueString
 			elif type == types.IntType:
 				try:
-					self.entries[key] = int(valueString)
+					entries[key] = int(valueString)
 				except ValueError:
 					sysExit('evaluating file %s produced illegal value '
 							'"%s" for key %s, expected an <integer> value'
 							% (filename, key, valueString))
 			elif type == types.ListType:
 				values = [v.strip() for v in valueString.splitlines()]
-				self.entries[key] = [v for v in values if len(v) > 0]
+				entries[key] = [v for v in values if len(v) > 0]
 			elif type == LinesOfText:
 				# like a list, but only strip empty lines in front of and
 				# after the text
@@ -82,16 +97,16 @@ class ConfigParser:
 					values.pop(0)
 				while values and len(values[-1]) == 0:
 					values.pop()
-				self.entries[key] = values
-			elif type == PhaseType:
-				if valueString.upper() not in PhaseType.getAllowedValues():
+				entries[key] = values
+			elif type == Phase:
+				if valueString.upper() not in Phase.getAllowedValues():
 					sysExit('evaluating file %s\nproduced illegal value "%s" '
 							'for key %s\nexpected one of: %s'
 							% (filename, key, valueString, 
-							   ','.join(PhaseType.getAllowedValues())))
-				self.entries[key] = valueString.upper()
-			elif type == ArchitecturesType:
-				self.entries[key] = {}
+							   ','.join(Phase.getAllowedValues())))
+				entries[key] = valueString.upper()
+			elif type == Architectures:
+				entries[key] = {}
 				for value in [v.lower() for v in valueString.split()]:
 					architecture = ''
 					if value.startswith('?'):
@@ -103,21 +118,31 @@ class ConfigParser:
 					else:
 						status = Status.STABLE
 						architecture = value
-					knownArchitectures = ArchitecturesType.getArchitectures()
+					knownArchitectures = Architectures.getArchitectures()
 					if architecture not in knownArchitectures:
 						architectures = ','.join(knownArchitectures)
 						sysExit('%s refers to unknown architecture %s\n'
 								'known architectures: %s'
 								% (filename, architecture, architectures))
-					self.entries[key][architecture] = status
-				if 'any' in self.entries[key] and len(self.entries[key]) > 1:
+					entries[key][architecture] = status
+				if 'any' in entries[key] and len(entries[key]) > 1:
 					sysExit("%s specifies both 'any' and other architectures" 
+							% (filename))
+				if 'source' in entries[key] and len(entries[key]) > 1:
+					sysExit("%s specifies both 'source' and other architectures" 
 							% (filename))
 			else:
 				sysExit('type of key %s in file %s is unsupported'
 						% (key, filename))
-		# for key in self.entries:
-		#	print key + " = " + str(self.entries[key])
+		# for entries in self.entriesByExtension.values():
+		#	for key in entries:
+		#		print key + " = " + str(entries[key])
 
-	def getEntries(self):
-		return self.entries
+	def getEntriesForExtension(self, extension):
+		if extension in self.entriesByExtension:
+			return self.entriesByExtension[extension]
+		else:
+			return {}
+
+	def getExtensions(self):
+		return self.entriesByExtension.keys()
