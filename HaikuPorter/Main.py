@@ -403,12 +403,12 @@ class Main:
 				# cut out subparts from the pacakge name until we find a port
 				# with that name:
 				(portName, version) = portID.rsplit('-', 1)
-				(portName, unused1, unused2) = portName.rpartition('-')
+				(portName, unused1, unused2) = portName.rpartition('_')
 				while portName:
 					portID = portName + '-' + version
 					if portID in allPorts:
 						break
-					(portName, unused1, unused2) = portName.rpartition('-')
+					(portName, unused1, unused2) = portName.rpartition('_')
 			
 			if portID in allPorts:
 				port = allPorts[portID]
