@@ -549,6 +549,12 @@ class Port:
 		else:
 			sysExit('Unrecognized archive type in file ' + self.src_local)
 
+		# automatically try to rename archive folders containing '-':
+		if not os.path.exists(self.sourceDir):
+			maybeSourceDir = self.sourceDir.replace('_', '-')
+			if os.path.exists(maybeSourceDir):
+				os.rename(maybeSourceDir, self.sourceDir)
+
 		self.setFlag('unpack')
 
 	def patchSource(self):
