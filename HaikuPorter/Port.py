@@ -662,6 +662,10 @@ class Port:
 			'sourceDir': self.sourceDir,
 		})
 
+		# force POSIX locale, as otherwise strange things may happen for some
+		# build (e.g. gcc)
+		self.shellVariables['LC_ALL'] = 'POSIX'
+
 		prefix = systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/' \
 			+ self.revisionedName + '/.self'
 		configureDirs = {
