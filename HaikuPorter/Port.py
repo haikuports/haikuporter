@@ -160,7 +160,7 @@ class Port:
 				name = keys['NAME_EXTENSION']
 			else:
 				if extension:
-					name = self.name + '-' + extension
+					name = self.name + '_' + extension
 				else:
 					name = self.name
 			package = Package(PackageType.byName(extension), name,
