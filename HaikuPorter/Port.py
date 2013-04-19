@@ -386,7 +386,8 @@ class Port:
 					# succesfully downloaded source archive
 					return
 			except Exception:
-				warn('Download error, trying next location.')
+				warn('Download error from %s, trying next location.'
+					 % src_uri)
 
 		# failed to fetch source
 		sysExit('Failed to download source package from all locations.')
