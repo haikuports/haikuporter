@@ -370,20 +370,24 @@ class Main:
 		for portID in sorted(allPorts.keys()):
 			port = allPorts[portID]
 			try:
+				sys.stdout.write(' ' * 60)
+				sys.stdout.write('\r\t%s' % port.versionedName)
+				sys.stdout.flush()
 				port.parseRecipeFile()
 				status = port.getStatusOnCurrentArchitecture()
 				if status == Status.STABLE:
 					if (port.checkFlag('build') 
 						and not self.options.preserveFlags):
-						print '\t%s   [build-flag reset]' % port.versionedName
+						print '   [build-flag reset]'
 						port.unsetFlag('build')
 					else:
-						print '\t%s' % port.versionedName
+						print
 					port.writePackageInfosIntoRepository(tempRepositoryPath)
 				else:
-					print('\t%s is skipped, as it is %s on this architecture'
-						  % (port.versionedName, status))
+					print(' is skipped, as it is %s on this architecture'
+						  % status)
 			except SystemExit:
+				sys.stdout.write('\r')
 				pass
 		os.rename(tempRepositoryPath, self.repositoryPath)
 
