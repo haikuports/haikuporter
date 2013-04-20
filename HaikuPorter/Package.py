@@ -13,7 +13,8 @@
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
-from HaikuPorter.Utils import escapeForPackageInfo, sysExit, systemDir
+from HaikuPorter.Utils import (escapeForPackageInfo, sysExit, systemDir, 
+							   unpackArchive)
 
 import os
 import shutil
@@ -45,22 +46,20 @@ class PackageType(str):
 			return PackageType.GENERAL
 
 
-# -- A package which can be created from a port -------------------------------
+# -- Base class for all packages ----------------------------------------------
 
-class Package:
-	def __init__(self, type, name, version, revision, currentArchitecture, 
-				 workDir, packageInfoDir, buildPackageDir, packagingBaseDir, 
-				 hpkgDir, recipeKeys):
+class Package(object):
+	def __init__(self, type, name, port, recipeKeys):
 		self.type = type
 		self.name = name
-		self.version = version
-		self.revision = revision
+		self.version = port.version
+		self.revision = port.revision
 		
-		self.workDir = workDir
-		self.packageInfoDir = packageInfoDir
-		self.buildPackageDir = buildPackageDir
-		self.packagingDir = packagingBaseDir + '/' + self.name
-		self.hpkgDir = hpkgDir
+		self.workDir = port.workDir
+		self.packageInfoDir = port.packageInfoDir
+		self.buildPackageDir = port.buildPackageDir
+		self.packagingDir = port.packagingBaseDir + '/' + self.name
+		self.hpkgDir = port.hpkgDir
 		self.recipeKeys = recipeKeys
 		
 		self.versionedName = self.name + '-' + self.version
@@ -69,14 +68,14 @@ class Package:
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
-		if currentArchitecture in self.recipeKeys['ARCHITECTURES']:
-			self.architecture = currentArchitecture
+		if port.currentArchitecture in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = port.currentArchitecture
 		elif (self.recipeKeys['ARCHITECTURES'][0] == Architectures.ANY
 			  or self.recipeKeys['ARCHITECTURES'][0] == Architectures.SOURCE):
 			self.architecture = self.recipeKeys['ARCHITECTURES'][0]
 		else:
 			sysExit('package %s can not be built on architecture %s'
-					% (self.versionedName, currentArchitecture))
+					% (self.versionedName, port.currentArchitecture))
 
 		self.fullVersionedName = self.versionedName + '-' + self.architecture
 		self.fullRevisionedName = self.revisionedName + '-' + self.architecture
@@ -207,17 +206,11 @@ class Package:
 		self.workDir = '/'
 		self.patchesDir = '/patches'
 				
-	def preparePackagingDir(self, populate):
-		"""Create and optionally populate the packaging directory"""
+	def prepopulatePackagingDir(self, port):
+		"""Prefill packaging directory with stuff from the outside"""
 
-		# recreate empty packaging directory
-		shutil.rmtree(self.packagingDir, True)
-		os.mkdir(self.packagingDir)
-
-		if populate:
-			if os.path.exists('/licenses'):
-				shutil.copytree('/licenses', 
-								self.packagingDir + '/data/licenses')
+		if os.path.exists('/licenses'):
+			shutil.copytree('/licenses', self.packagingDir + '/data/licenses')
 
 	def makeHpkg(self):
 		"""Create a package suitable for distribution"""
@@ -297,3 +290,61 @@ class Package:
 			for item in list:
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
+
+# -- A source package ---------------------------------------------------------
+
+class SourcePackage(Package):
+	def setArchiveFile(self, archiveFile):
+		self.archiveFile = archiveFile
+		
+	def prepopulatePackagingDir(self, port):
+		"""Prefill packaging directory with stuff from the outside"""
+
+		print "Populating source package ..."
+		
+		targetDir = self.packagingDir + '/source'
+		if not os.path.exists(targetDir):
+			os.mkdir(targetDir)
+
+		if port.archiveFile:
+			# unpack the archive into source package's directory
+			unpackArchive(port.archiveFile, targetDir)
+		elif port.checkout:
+			# Start building the command to perform the checkout
+			type = port.checkout['type']
+			rev = port.checkout['rev']
+			os.chdir(self.sourceDir)
+			if type == 'svn':
+				command = 'svn export -r %s . "%s"' % (rev, targetDir)
+			elif type == 'hg':
+				command = 'hg archive -r %s -t files "%s"' % (rev, targetDir)
+			elif type == 'git':
+				command = 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
+			else:
+				sysExit('Exporting sources from checkout is not implemented '
+						+ 'yet for vcs-type ' + type)
+			check_call(command, shell=True)
+
+		if port.patches:
+			# copy and apply patches
+			patchesDir = self.packagingDir + '/patches'
+			os.mkdir(patchesDir)
+			for patch in port.patches:
+				shutil.copy(patch, patchesDir)
+				check_call(['patch', '-p0', '-i', patch], cwd=targetDir)
+			with open(patchesDir + '/ReadMe', 'w') as readmeFile:
+				readmeFile.write('The patches in this folder have already '
+								 + 'been applied to the source directory.\n')
+
+		# copy recipe file
+		shutil.copy(port.recipeFilePath, self.packagingDir)
+
+# -- package factory function -------------------------------------------------
+
+def packageFactory(type, name, port, recipeKeys):
+	"""Creates a package matching the given type"""
+	
+	if type == PackageType.SOURCE:
+		return SourcePackage(type, name, port, recipeKeys)
+	else:
+		return Package(type, name, port, recipeKeys)

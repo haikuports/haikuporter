@@ -5,6 +5,8 @@
 
 from subprocess import PIPE, Popen, CalledProcessError
 import sys
+import tarfile
+import zipfile
 
 
 # -- capture output of shell command -----------------------------------------
@@ -44,16 +46,8 @@ def findDirectory(aDir):
 	
 	return check_output(['/bin/finddir', aDir]).rstrip()  # drop newline
 
-# -- quote --------------------------------------------------------------------
-def escapeForPackageInfo(string):
-	"""escapes string to be used within "" quotes in a .PackageInfo file"""
-	
-	return string.replace('\\', '\\\\').replace('"', '\\"')
 
-
-# ----------------------------------------------------------------------------
-
-# Frequently used directories
+# -- frequently used directories ----------------------------------------------
 systemDir = {
 	'B_COMMON_DIRECTORY': None,
 	'B_COMMON_PACKAGES_DIRECTORY': None,
@@ -63,3 +57,33 @@ systemDir = {
 }
 for key in systemDir.keys():
 	systemDir[key] = findDirectory(key)
+
+# -- escapeForPackageInfo -----------------------------------------------------
+def escapeForPackageInfo(string):
+	"""escapes string to be used within "" quotes in a .PackageInfo file"""
+	
+	return string.replace('\\', '\\\\').replace('"', '\\"')
+
+# -- unpackArchive ------------------------------------------------------------
+def unpackArchive(archiveFile, targetBaseDir):
+	"""Unpack archive into a directory"""
+
+	# unpack source archive
+	if tarfile.is_tarfile(archiveFile):
+		tarFile = tarfile.open(archiveFile, 'r')
+		tarFile.extractall(targetBaseDir)
+		tarFile.close()
+	elif zipfile.is_zipfile(archiveFile):
+		zipFile = zipfile.ZipFile(archiveFile, 'r')
+		zipFile.extractall(targetBaseDir)
+		zipFile.close()
+	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
+		Popen(['xz', '-d', '-k', archiveFile]).wait()
+		tar = archiveFile[:-3]
+		if tarfile.is_tarfile(tar):
+			tarFile = tarfile.open(tar, 'r')
+			tarFile.extractall(targetBaseDir)
+			tarFile.close()
+	else:
+		sysExit('Unrecognized archive type in file ' 
+				+ archiveFile)

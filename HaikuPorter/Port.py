@@ -12,23 +12,22 @@
 
 from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.Options import getOption
-from HaikuPorter.Package import PackageType, Package
+from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
 from HaikuPorter.RecipeTypes import Phase, Status
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
 										 recipeActionScript)
-from HaikuPorter.Utils import check_output, sysExit, systemDir, warn
+from HaikuPorter.Utils import (check_output, sysExit, systemDir, unpackArchive, 
+							   warn)
 
 import hashlib
 import os
 import re
 import shutil
-from subprocess import check_call, Popen, CalledProcessError
-import tarfile
+from subprocess import check_call, CalledProcessError
 import traceback
 import urllib2
-import zipfile
 
 
 # -- Modules preloaded for chroot ---------------------------------------------
@@ -106,6 +105,11 @@ class Port:
 		self.revision = None
 		self.fullVersion = None
 		self.revisionedName = None
+		
+		self.archiveFile = None
+		self.checkout = None
+
+		self.patches = []
 
 		# build dictionary of variables to inherit to shell
 		self.shellVariables = {
@@ -163,11 +167,8 @@ class Port:
 					name = self.name + '_' + extension
 				else:
 					name = self.name
-			package = Package(PackageType.byName(extension), name,
-							  self.version, self.revision, 
-							  self.currentArchitecture, self.workDir, 
-							  self.packageInfoDir, self.buildPackageDir, 
-							  self.packagingBaseDir, self.hpkgDir, keys)
+			packageType = PackageType.byName(extension)
+			package = packageFactory(packageType, name, self, keys)
 			self.allPackages.append(package)
 			
 			status = package.getStatusOnArchitecture(self.currentArchitecture)
@@ -368,11 +369,11 @@ class Port:
 				uri_request = urllib2.urlopen(src_uri)
 				src_uri = uri_request.geturl()
 
-				self.src_local = src_uri[src_uri.rindex('/') + 1:]
-				fp = self.downloadDir + '/' + self.src_local
-				if os.path.isfile(fp):
+				self.downloadLocalFileName = src_uri[src_uri.rindex('/') + 1:]
+				archiveFile = (self.downloadDir + '/' 
+							   + self.downloadLocalFileName)
+				if os.path.isfile(archiveFile):
 					print 'Skipping download ...'
-					return
 				else:
 					# create download dir and cd into it
 					if not os.path.exists(self.downloadDir):
@@ -382,9 +383,10 @@ class Port:
 
 					print '\nDownloading: ' + src_uri
 					check_call(['wget', '-c', '--tries=3', src_uri])
-
-					# succesfully downloaded source archive
-					return
+				
+				# successfully downloaded source or it was already there
+				self.archiveFile = archiveFile
+				return
 			except Exception:
 				warn('Download error from %s, trying next location.'
 					 % src_uri)
@@ -395,16 +397,6 @@ class Port:
 	def checkoutSource(self, uri):
 		"""Parse the URI and execute the appropriate command to check out the
 		   source."""
-
-		if self.checkFlag('checkout') and not getOption('force'):
-			print 'Source already checked out. Skipping ...'
-			return
-
-		# If the work dir exists we need to clean it out
-		if os.path.exists(self.workDir):
-			shutil.rmtree(self.workDir)
-
-		print 'Source checkout: ' + uri
 
 		# Attempt to parse a URI with a + in it. ex: hg+http://blah
 		# If it doesn't find the 'type' it should extract 'real_uri' and 'rev'
@@ -418,7 +410,6 @@ class Port:
 		rev = m.group('rev')
 
 		# Attempt to parse a URI without a + in it. ex: svn://blah
-		# TODO improve the regex above to fallback to this pattern
 		if not type:
 			m = re.match("^(\w*).*$", real_uri)
 			if m:
@@ -426,6 +417,22 @@ class Port:
 
 		if not type:
 			sysExit("Couldn't parse repository type from URI " + real_uri)
+
+		self.checkout = {
+			'type': type,
+			'uri': real_uri,
+			'rev': rev,
+		}
+
+		if self.checkFlag('checkout') and not getOption('force'):
+			print 'Source already checked out. Skipping ...'
+			return
+
+		# If the work dir exists we need to clean it out
+		if os.path.exists(self.workDir):
+			shutil.rmtree(self.workDir)
+
+		print 'Source checkout: ' + uri
 
 		# Set the name of the directory to check out sources into
 		checkoutDir = self.name + '-' + self.version
@@ -472,7 +479,8 @@ class Port:
 			checkoutCommand += 'fossil open ' + checkoutDir + '.fossil'
 			if rev:
 				checkoutCommand += ' ' + rev
-		else:
+		else:	# assume git
+			self.checkout['type'] = 'git'
 			# TODO Skip the initial checkout if a rev is specified?
 			checkoutCommand = 'git clone %s %s' % (real_uri, checkoutDir)
 			if rev:
@@ -495,7 +503,7 @@ class Port:
 		if self.recipeKeys['CHECKSUM_MD5']:
 			print 'Checking MD5 checksum of download ...'
 			h = hashlib.md5()
-			f = open(self.downloadDir + '/' + self.src_local, 'rb')
+			f = open(self.downloadDir + '/' + self.downloadLocalFileName, 'rb')
 			while True:
 				d = f.read(16384)
 				if not d:
@@ -529,25 +537,8 @@ class Port:
 			return
 
 		# unpack source archive
-		print 'Unpacking ' + self.src_local
-		archiveFullPath = self.downloadDir + '/' + self.src_local
-		if tarfile.is_tarfile(archiveFullPath):
-			tf = tarfile.open(self.downloadDir + '/' + self.src_local, 'r')
-			tf.extractall(self.sourceBaseDir)
-			tf.close()
-		elif zipfile.is_zipfile(archiveFullPath):
-			zf = zipfile.ZipFile(self.downloadDir + '/' + self.src_local, 'r')
-			zf.extractall(self.sourceBaseDir)
-			zf.close()
-		elif archiveFullPath.split('/')[-1].split('.')[-1] == 'xz':
-			Popen(['xz', '-d', '-k', archiveFullPath]).wait()
-			tar = archiveFullPath[:-3]
-			if tarfile.is_tarfile(tar):
-				tf = tarfile.open(tar, 'r')
-				tf.extractall(self.sourceBaseDir)
-				tf.close()
-		else:
-			sysExit('Unrecognized archive type in file ' + self.src_local)
+		print 'Unpacking ' + self.downloadLocalFileName
+		unpackArchive(self.archiveFile, self.sourceBaseDir)
 
 		# automatically try to rename archive folders containing '-':
 		if not os.path.exists(self.sourceDir):
@@ -560,12 +551,14 @@ class Port:
 	def patchSource(self):
 		"""Apply the Haiku patches to the source directory"""
 
-		# Check to see if the patch was already applied to the source.
+		patchFilePath = (self.patchesDir + '/' + self.name + '-' + self.version 
+						 + '.patch')
+		self.patches.append(patchFilePath)
+		
+		# Check to see if the source has already been patched.
 		if self.checkFlag('patch') and not getOption('force'):
 			return
 
-		patchFilePath = self.patchesDir + '/' + self.name + '-'\
-			 + self.version + '.patch'
 		if os.path.exists(patchFilePath):
 			print 'Patching ...'
 			check_call(['patch', '-p0', '-i', patchFilePath], 
@@ -584,7 +577,8 @@ class Port:
 				shutil.rmtree(directory, True)
 			os.mkdir(directory)
 		for package in self.packages:
-			package.preparePackagingDir(False)
+			os.mkdir(package.packagingDir)
+			package.prepopulatePackagingDir(self)
 		
 		packageInfoFiles = []
 		for package in self.packages:
@@ -775,13 +769,6 @@ class Port:
 
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
-
-		# recreate empty packaging base directory
-		shutil.rmtree(self.packagingBaseDir, True)
-		os.mkdir(self.packagingBaseDir)
-		
-		for package in self.packages:
-			package.preparePackagingDir(True)
 
 		self._doInstallStage()
 		
