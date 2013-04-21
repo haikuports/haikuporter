@@ -635,6 +635,9 @@ class Port:
 					os.rename(packageFile,
 							  packagesPath + '/' + package.hpkgName)
 
+		if os.path.exists(self.hpkgDir):
+			os.rmdir(self.hpkgDir)
+			
 	def setFlag(self, name):
 		open('%s/flag.%s' % (self.workDir, name), 'w').close()
 

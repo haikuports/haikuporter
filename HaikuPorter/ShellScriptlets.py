@@ -111,14 +111,8 @@ for pkg in $packages; do
 	ln -sfn "$pkg" boot/common/packages/
 done
 
-# copy recipe file and (optional) license & package directories into the chroot
+# copy recipe file into the chroot
 cp $recipeFile port.recipe
-if [ -d ../licenses ]; then
-	cp -r ../licenses .
-fi	
-if [ -d ../patches ]; then
-	cp -r ../patches .
-fi	
 
 # silently unmount if needed, just to be one the safe side
 if [ -e dev/null ]; then
@@ -161,15 +155,17 @@ if [[ $buildOk ]]; then
 	rmdir dev
 	rm -rf \
 		boot \
-		licenses \
+		build-packages \
+		package-infos \
 		packages \
-		repository \
-		system
+		packaging \
+		repository
 	rm -f \
 		.PackageInfo \
 		bin \
 		etc \
 		port.recipe \
+		system \
 		tmp \
 		var
 else
