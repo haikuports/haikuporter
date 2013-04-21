@@ -399,7 +399,8 @@ class Main:
 		packageInfos = glob.glob(self.repositoryPath + '/*.PackageInfo')
 		for packageInfo in packageInfos:
 			packageInfoFileName = os.path.basename(packageInfo)
-			portID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+			portID = packageID
 
 			# what we have in portID may be a packageID instead, in which case
 			# we need to find the corresponding portID.
@@ -422,10 +423,10 @@ class Main:
 					if (port.checkFlag('build') 
 						and not self.options.preserveFlags):
 						port.unsetFlag('build')
-						print('\tupdating package infos of ' + portID
+						print('\tupdating package infos of ' + packageID
 							  + '   [build-flag has been reset]')
 					else:
-						print '\tupdating package infos of ' + portID
+						print '\tupdating package infos of ' + packageID
 					port.writePackageInfosIntoRepository(self.repositoryPath)
 			else:
 				print '\tremoving ' + packageInfoFileName
