@@ -209,8 +209,9 @@ class Package(object):
 	def prepopulatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
-		if os.path.exists('/licenses'):
-			shutil.copytree('/licenses', self.packagingDir + '/data/licenses')
+		licenseDir = port.baseDir + '/licenses'
+		if os.path.exists(licenseDir):
+			shutil.copytree(licenseDir, self.packagingDir + '/data/licenses')
 
 	def makeHpkg(self):
 		"""Create a package suitable for distribution"""
