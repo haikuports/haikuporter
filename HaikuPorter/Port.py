@@ -679,7 +679,7 @@ class Port:
 			'libDir': prefix + '/lib',
 			'includeDir': prefix + '/develop/headers',
 			'sysconfDir': prefix + '/settings',
-			'docDir': prefix + '/documentation/packages/' + self.name,
+			'docDir': prefix + '/documentation/html/' + self.name,
 			'infoDir': prefix + '/documentation/info',
 			'manDir': prefix + '/documentation/man',
 		}
