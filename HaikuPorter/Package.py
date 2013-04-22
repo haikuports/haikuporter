@@ -70,9 +70,10 @@ class Package(object):
 
 		if port.currentArchitecture in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = port.currentArchitecture
-		elif (self.recipeKeys['ARCHITECTURES'][0] == Architectures.ANY
-			  or self.recipeKeys['ARCHITECTURES'][0] == Architectures.SOURCE):
-			self.architecture = self.recipeKeys['ARCHITECTURES'][0]
+		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = Architectures.ANY
+		elif Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = Architectures.SOURCE
 		else:
 			sysExit('package %s can not be built on architecture %s'
 					% (self.versionedName, port.currentArchitecture))
@@ -90,8 +91,8 @@ class Package(object):
 		
 		if architecture in self.recipeKeys['ARCHITECTURES']:
 			return self.recipeKeys['ARCHITECTURES'][architecture]
-		elif (self.recipeKeys['ARCHITECTURES'][0] == Architectures.ANY
-			  or self.recipeKeys['ARCHITECTURES'][0] == Architectures.SOURCE):
+		elif (Architectures.ANY in self.recipeKeys['ARCHITECTURES']
+			  or Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']):
 			return Status.STABLE
 		return Status.UNSUPPORTED
 	
