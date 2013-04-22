@@ -700,6 +700,17 @@ class Port:
 			= ' '.join(['--%s=%s' % (k.lower(), v) 
 					   for k, v in configureDirs.iteritems()])
 
+		# Add variables for other standard directories. Consequently, we should
+		# use finddir to get them (also for the configure variables above), but
+		# we want relative paths here.
+		otherDirs = {
+			'addOnsDir': prefix + '/add-ons',
+			'appsDir': prefix + '/apps',
+			'preferencesDir': prefix + '/preferences',
+			'settingsDir': prefix + '/settings',
+		}
+		self.shellVariables.update(otherDirs)
+
 	def _getPackagesRequiredForBuild(self, packageInfoFiles, packagesPath):
 		"""Determine the set of packages that must be linked into the 
 		   build environment (chroot) for the build stage"""
