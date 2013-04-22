@@ -711,6 +711,7 @@ class Port:
 		otherDirs = {
 			'addOnsDir': prefix + '/add-ons',
 			'appsDir': prefix + '/apps',
+			'fontsDir': prefix + '/data/fonts',
 			'preferencesDir': prefix + '/preferences',
 			'settingsDir': prefix + '/settings',
 		}
