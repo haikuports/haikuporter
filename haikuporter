@@ -1,7 +1,7 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 # copyright 2007-2011 Brecht Machiels
-# copyright 2009-2010 Chris Roberts
+# copyright 2009-2013 Chris Roberts
 # copyright 2009-2013 Scott McCreary
 # copyright 2009 Alexander Deynichenko
 # copyright 2009 HaikuBot (aka RISC)
@@ -34,7 +34,7 @@ from optparse import OptionParser
 # location of haikuports.conf
 haikuPortsConf = '/boot/common/etc/haikuports.conf'
 
-svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
+repoPath = 'https://bitbucket.org/haikuports/haikuports.git'
 
 # -----------------------------------------------------------------------------
 
@@ -328,12 +328,12 @@ class HaikuPorter:
             return False
 
     def updatePortsTree(self):
-        """Get/Update the port tree via svn"""
+        """Get/Update the port tree via git"""
         print 'Refreshing the port tree: %s' % self.packagesPath
-        if os.path.exists(self.packagesPath + '/.svn'):
-            check_call(['svn', 'update', self.packagesPath])
+        if os.path.exists(self.packagesPath + '/.git'):
+            check_call(['git', 'pull', self.packagesPath])
         else:
-            check_call(['svn', 'checkout', svnPath, self.packagesPath])
+            check_call(['git', 'clone', repoPath, self.packagesPath])
 
     def validateBepFile(self, bepFilePath, exitOnError=True):
         """Validate the keys/values in a bep file"""

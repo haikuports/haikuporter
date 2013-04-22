@@ -9,15 +9,15 @@ _progress () {
 		--progress "$1" "$2" >/dev/null
 }
 
-_progress 0.1 "check for subversion"
-	if [ ! -e `finddir B_COMMON_BIN_DIRECTORY`/svn ]; then
-		_progress 0.2 "trying to install subversion"
-		installoptionalpackage subversion
+_progress 0.1 "check for git"
+	if [ ! -e `finddir B_COMMON_BIN_DIRECTORY`/git ]; then
+		_progress 0.2 "trying to install git"
+		installoptionalpackage git
 	fi
 	
 _progress 0.4 "haikuporter"
 	cd `finddir B_COMMON_DEVELOP_DIRECTORY`
-	svn co http://ports.haiku-files.org/svn/haikuporter/trunk haikuporter
+	git clone https://bitbucket.org/haikuports/haikuporter.git
 
 _progress 0.5 "haikuporter setup"
 	cd `finddir B_COMMON_DEVELOP_DIRECTORY`/haikuporter
