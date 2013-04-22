@@ -564,6 +564,10 @@ class Port:
 	def patchSource(self):
 		"""Apply the Haiku patches to the source directory"""
 
+		# Check to see if the source has already been patched.
+		if self.checkFlag('patch') and not getOption('force'):
+			return
+
 		if self.patches:
 			for patch in self.patches:
 				if not os.path.exists(patch):
