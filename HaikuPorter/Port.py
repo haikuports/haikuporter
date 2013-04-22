@@ -143,7 +143,7 @@ class Port:
 	def __exit__(self, type, value, traceback):
 		pass
 
-	def parseRecipeFile(self):
+	def parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port"""
 
 		# If a patch file named like the port exists, use that as a default
@@ -153,7 +153,7 @@ class Port:
 		if os.path.exists(patchFilePath):
 			self.shellVariables.update({ 'PATCHES': patchFileName })
 		
-		self.recipeKeysByExtension = self.validateRecipeFile()
+		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
 		for entries in self.recipeKeysByExtension.values():
 			self.recipeKeys.update(entries)
@@ -197,7 +197,7 @@ class Port:
 		# when executing a recipe action
 		self._updateShellVariablesFromRecipe()
 
-	def validateRecipeFile(self):
+	def validateRecipeFile(self, showWarnings = False):
 		"""Validate the syntax and contents of the recipe file"""
 		
 		if not os.path.exists(self.recipeFilePath):
@@ -253,7 +253,7 @@ class Port:
 					if '\n' in entries[key]:
 						sysExit('%s must be a single line of text (%s).' 
 							% (key, self.recipeFilePath))
-					if len(entries[key]) > 70:
+					if len(entries[key]) > 70 and showWarnings:
 						warn('%s exceeds 70 chars (in %s)' 
 							 % (key, self.recipeFilePath))
 
@@ -279,12 +279,14 @@ class Port:
 										+ '\nValid license filenames included '
 										+ 'with Haiku are:\n' 
 										+ '\n'.join(haikuLicenseList))
-					else:
-						warn('No %s found (in %s)' % (key, self.recipeFileName))
+					elif showWarnings:
+						warn('No %s found (in %s)' % (key, self.recipeFilePath))
 
 				if baseKey == 'COPYRIGHT':
 					if key not in entries or not entries[key]:
-						warn('No %s found (in %s)' % (key, self.recipeFileName))
+						if showWarnings:
+							warn('No %s found (in %s)' 
+								 % (key, self.recipeFilePath))
 
 				# store extension-specific value under base key						
 				recipeKeys[baseKey] = entries[key]
@@ -321,7 +323,7 @@ class Port:
 		"""Write one PackageInfo-file per stable package into the repository"""
 
 		if not self.revision:
-			self.parseRecipeFile()
+			self.parseRecipeFile(False)
 			
 		for package in self.packages:
 			package.writePackageInfoIntoRepository(repositoryPath)
