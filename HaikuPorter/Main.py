@@ -28,8 +28,8 @@ import sys
 
 # regex to split recipe filenames into port / version
 regExp = {}
-regExp['portname'] = '^(?P<name>[\w\-\+]+?)'
-regExp['portversion'] = '(?P<version>[\w]*?[\d]+([\w\-\\.\+])*)'
+regExp['portname'] = '^(?P<name>[^-/=!<>]+)'
+regExp['portversion'] = '(?P<version>[\w.~]+)'
 regExp['portfullname'] = regExp['portname'] + '-' + regExp['portversion']
 regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 
@@ -461,6 +461,6 @@ class Main:
 								   self.shellVariables)
 					else:
 						# invalid argument
-						print("Error: Couldn't parse port/version info: " 
+						print("Warning: Couldn't parse port/version info: " 
 							  + recipe)
 		return self._allPorts
