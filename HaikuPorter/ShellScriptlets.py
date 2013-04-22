@@ -91,6 +91,7 @@ mkdir -p \
 	boot/common/cache/tmp \
 	boot/common/packages \
 	boot/common/settings/etc \
+	port \
 
 ln -sfn /boot/system system
 ln -sfn /boot/system/bin bin
@@ -124,11 +125,18 @@ fi
 if [ -e boot/common/bin ]; then
 	unmount boot/common
 fi
+if [ -e port/work* ]; then
+	unmount port
+fi
 
 # mount dev, system-packagefs and common-packagefs
 mount -t bindfs -p "source /dev" dev
 mount -t packagefs -p "type system" boot/system
 mount -t packagefs -p "type common" boot/common
+
+# bind-mount the port directory to port/
+portDir=$(dirname $recipeFile)
+mount -t bindfs -p "source $portDir" port
 '''
 
 
@@ -148,11 +156,12 @@ fi
 unmount dev
 unmount boot/system
 unmount boot/common
+unmount port
 
 # wipe files and directories if it is ok to do so
 if [[ $buildOk ]]; then
 	echo "cleaning chroot folder"
-	rmdir dev
+	rmdir dev port
 	rm -rf \
 		boot \
 		build-packages \

@@ -673,6 +673,7 @@ class Port:
 			'portFullVersion': self.fullVersion,
 			'portRevisionedName': self.revisionedName,
 			'sourceDir': self.sourceDir,
+			'portDir': '/port',
 		})
 
 		# force POSIX locale, as otherwise strange things may happen for some
