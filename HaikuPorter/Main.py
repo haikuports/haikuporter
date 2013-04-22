@@ -39,7 +39,76 @@ regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
 
 
+# -- naturalCompare -----------------------------------------------------------
+
+def naturalCompare(left, right): 
+	"""performs a natural compare between the two given strings - returns:
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both are equal"""
+	
+	convert = lambda text: int(text) if text.isdigit() else text.lower()
+	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+	return cmp(alphanum_key(left), alphanum_key(right))
+
+# -- bareVersionCompare -------------------------------------------------------
+
+def bareVersionCompare(left, right):
+	"""Compares two given bare versions - returns:
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both versions are equal"""
+
+	leftElements = left.split('.')
+	rightElements = right.split('.')
+
+	index = 0
+	leftElementCount = len(leftElements)
+	rightElementCount = len(rightElements)
+	while True:
+		if index + 1 > leftElementCount:
+			if index + 1 > rightElementCount:
+				return 0
+			else:
+				return -1
+		elif index + 1 > rightElementCount:
+			return 1
+			
+		result = naturalCompare(leftElements[index], rightElements[index])
+		if result != 0:
+			return result
+		
+		index += 1
+		
+# -- versionCompare -----------------------------------------------------------
+
+def versionCompare(left, right):
+	"""Compares two given versions that may include a pre-release - returns 
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both versions are equal"""
+
+	leftElements = left.split('~', 1)
+	rightElements = right.split('~', 1)
+
+	result = bareVersionCompare(leftElements[0], rightElements[0])
+	if result != 0:
+		return result
+	
+	if len(leftElements) < 2:
+		if len(rightElements) < 2:
+			return 0
+		else:
+			return -1
+	elif len(rightElements) < 2:
+		return 1
+	
+	# compare pre-release strings
+	return naturalCompare(leftElements[1], rightElements[1])
+
+
 # -- Main Class ---------------------------------------------------------------
+
 class Main:
 	def __init__(self, options, args):
 		self.options = options
@@ -147,14 +216,17 @@ class Main:
 			
 		# do whatever's needed to the main port
 		allPorts = self._getAllPorts()
-		self._doMainPort(allPorts[name + '-' + version])
+		portID = name + '-' + version
+		if portID not in allPorts:
+			sysExit(portID + ' not found in tree.')
+		self._doMainPort(allPorts[portID])
 
 	def _doMainPort(self, port):
 		"""Build/Unpack/... the port requested on the cmdline"""
 			
 		# read data from the recipe file
 		if not port.revision:
-			port.parseRecipeFile()
+			port.parseRecipeFile(True)
 
 		# show port description, if requested
 		if self.options.about:
@@ -241,7 +313,7 @@ class Main:
 		port.avoidChroot = not self.options.chroot
 		
 		if parseRecipe:
-			port.parseRecipeFile()
+			port.parseRecipeFile(True)
 
 		# clean the work directory, if requested
 		if self.options.clean:
@@ -346,13 +418,15 @@ class Main:
 		print 'Checking HaikuPorts tree at: ' + self.treePath
 
 		allPorts = self._getAllPorts()
-		for portID in sorted(allPorts.keys()):
-			port = allPorts[portID]
-			print '%s   [%s]' % (portID, port.category)
-			try:
-				port.validateRecipeFile()
-			except SystemExit as e:
-				print e.code
+		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+			for version in self._portVersionsByName[portName]:
+				portID = portName + '-' + version
+				port = allPorts[portID]
+				print '%s   [%s]' % (portID, port.category)
+				try:
+					port.validateRecipeFile(True)
+				except SystemExit as e:
+					print e.code
 
 	def _populateRepository(self):
 		"""Remove and refill the repository with all PackageInfo-files from
@@ -360,36 +434,39 @@ class Main:
 
 		if os.path.exists(self.repositoryPath):
 			shutil.rmtree(self.repositoryPath)
-		tempRepositoryPath = self.repositoryPath + '.new'
-		if os.path.exists(tempRepositoryPath):
-			shutil.rmtree(tempRepositoryPath)
-		os.mkdir(tempRepositoryPath)
+		newRepositoryPath = self.repositoryPath + '.new'
+		if os.path.exists(newRepositoryPath):
+			shutil.rmtree(newRepositoryPath)
+		os.mkdir(newRepositoryPath)
 		print 'Populating repository ...'
 
 		allPorts = self._getAllPorts()
-		for portID in sorted(allPorts.keys()):
-			port = allPorts[portID]
-			try:
-				sys.stdout.write(' ' * 60)
-				sys.stdout.write('\r\t%s' % port.versionedName)
-				sys.stdout.flush()
-				port.parseRecipeFile()
-				status = port.getStatusOnCurrentArchitecture()
-				if status == Status.STABLE:
-					if (port.checkFlag('build') 
-						and not self.options.preserveFlags):
-						print '   [build-flag reset]'
-						port.unsetFlag('build')
+		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+			for version in reversed(self._portVersionsByName[portName]):
+				portID = portName + '-' + version
+				port = allPorts[portID]
+				try:
+					sys.stdout.write(' ' * 60)
+					sys.stdout.write('\r\t%s' % port.versionedName)
+					sys.stdout.flush()
+					port.parseRecipeFile(False)
+					status = port.getStatusOnCurrentArchitecture()
+					if status == Status.STABLE:
+						if (port.checkFlag('build') 
+							and not self.options.preserveFlags):
+							print '   [build-flag reset]'
+							port.unsetFlag('build')
+						else:
+							print
+						port.writePackageInfosIntoRepository(newRepositoryPath)
+						break;
 					else:
-						print
-					port.writePackageInfosIntoRepository(tempRepositoryPath)
-				else:
-					print(' is skipped, as it is %s on this architecture'
-						  % status)
-			except SystemExit:
-				sys.stdout.write('\r')
-				pass
-		os.rename(tempRepositoryPath, self.repositoryPath)
+						print(' is skipped, as it is %s on this architecture'
+							  % status)
+				except SystemExit:
+					sys.stdout.write('\r')
+					pass
+		os.rename(newRepositoryPath, self.repositoryPath)
 
 	def _updateRepository(self):
 		"""Update all PackageInfo-files in the repository as needed"""
@@ -405,7 +482,7 @@ class Main:
 			# what we have in portID may be a packageID instead, in which case
 			# we need to find the corresponding portID.
 			if portID not in allPorts:
-				# cut out subparts from the pacakge name until we find a port
+				# cut out subparts from the package name until we find a port
 				# with that name:
 				(portName, version) = portID.rsplit('-', 1)
 				(portName, unused1, unused2) = portName.rpartition('_')
@@ -436,7 +513,11 @@ class Main:
 		if hasattr(self, '_allPorts'):
 			return self._allPorts
 
+		# For now, we collect all ports into a dictionary that can be keyed
+		# by name + '-' + version. Additionally, we keep a sorted list of 
+		# available versions for each port name.
 		self._allPorts = {}
+		self._portVersionsByName = {}
 		for category in sorted(os.listdir(self.treePath)):
 			categoryPath = self.treePath + '/' + category
 			if (not os.path.isdir(categoryPath) or category[0] == '.'
@@ -456,6 +537,10 @@ class Main:
 					if (m and m.group('name') and m.group('version')):
 						name = m.group('name')
 						version = m.group('version')
+						if name not in self._portVersionsByName:
+							self._portVersionsByName[name] = [ version ]
+						else:
+							self._portVersionsByName[name].append(version)
 						self._allPorts[name + '-' + version] \
 							= Port(name, version, category, portPath, 
 								   self.shellVariables)
@@ -463,4 +548,9 @@ class Main:
 						# invalid argument
 						print("Warning: Couldn't parse port/version info: " 
 							  + recipe)
+
+		# Sort version list of each port
+		for portName in self._portVersionsByName.keys():
+			self._portVersionsByName[portName].sort(cmp=versionCompare)
+
 		return self._allPorts
