@@ -145,6 +145,13 @@ class Port:
 
 	def parseRecipeFile(self):
 		"""Parse the recipe-file of the specified port"""
+
+		# If a patch file named like the port exists, use that as a default
+		# for "PATCHES".
+		patchFileName = self.name + '-' + self.version + '.patch'
+		patchFilePath = self.patchesDir + '/' + patchFileName
+		if os.path.exists(patchFilePath):
+			self.shellVariables.update({ 'PATCHES': patchFileName })
 		
 		self.recipeKeysByExtension = self.validateRecipeFile()
 		self.recipeKeys = {}
@@ -179,6 +186,12 @@ class Port:
 		if self.recipeKeys['SOURCE_DIR']:
 			self.sourceDir = (self.sourceBaseDir + '/' + 
 							  self.recipeKeys['SOURCE_DIR'])
+
+		# If PATCHES were specified, set our patches list accordingly.
+		self.patches = []
+		if self.recipeKeys['PATCHES']:
+			for patch in self.recipeKeys['PATCHES']:
+				self.patches.append(self.patchesDir + '/' + patch)
 
 		# set up the complete list of variables we'll inherit to the shell
 		# when executing a recipe action
@@ -551,20 +564,17 @@ class Port:
 	def patchSource(self):
 		"""Apply the Haiku patches to the source directory"""
 
-		patchFilePath = (self.patchesDir + '/' + self.name + '-' + self.version 
-						 + '.patch')
-		self.patches.append(patchFilePath)
-		
-		# Check to see if the source has already been patched.
-		if self.checkFlag('patch') and not getOption('force'):
-			return
+		if self.patches:
+			for patch in self.patches:
+				if not os.path.exists(patch):
+					sysExit('patch file "' + patch + '" not found.')
 
-		if os.path.exists(patchFilePath):
-			print 'Patching ...'
-			check_call(['patch', '-p0', '-i', patchFilePath], 
-					   cwd=self.sourceBaseDir)
+				print 'Applying patch "%s" ...' % patch
+				check_call(['patch', '-p0', '-i', patch], 
+						   cwd=self.sourceBaseDir)
 		else:
 			print 'No patching required'
+
 		self.setFlag('patch')
 
 	def build(self, packagesPath, makePackages):

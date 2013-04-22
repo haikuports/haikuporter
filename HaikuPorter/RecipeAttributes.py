@@ -44,6 +44,12 @@ recipeAttributes = {
 		'default': None,
 		'extendable': False,
 	},
+	'PATCHES': {
+		'type': types.ListType,
+		'required': False,
+		'default': None,
+		'extendable': False,
+	},
 	'REVISION': {
 		'type': types.IntType,
 		'required': True,
