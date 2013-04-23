@@ -3,6 +3,9 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import glob
+import os
+import shutil
 from subprocess import PIPE, Popen, CalledProcessError
 import sys
 import tarfile
@@ -87,3 +90,29 @@ def unpackArchive(archiveFile, targetBaseDir):
 	else:
 		sysExit('Unrecognized archive type in file ' 
 				+ archiveFile)
+
+# -- symlinkDirectoryContents -------------------------------------------------
+def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst = True):
+	"""Populates targetDir with symlinks to all files from sourceDir"""
+	
+	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir) ]
+	symlinkFiles(files, targetDir)
+	
+# -- symlinkGlob --------------------------------------------------------------
+def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst = True):
+	"""Populates targetDir with symlinks to all files matching given globSpec"""
+	
+	files = glob.glob(globSpec)
+	symlinkFiles(files, targetDir)
+	
+# -- symlinkFiles -------------------------------------------------------------
+def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
+	"""Populates targetDir with symlinks to all the given files"""
+	
+	if os.path.exists(targetDir) and emptyTargetDirFirst:
+		shutil.rmtree(targetDir)
+	if not os.path.exists(targetDir):
+		os.makedirs(targetDir)
+	for sourceFile in sourceFiles:
+		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
+	

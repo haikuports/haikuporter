@@ -18,8 +18,8 @@ from HaikuPorter.RecipeTypes import Phase, Status
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
 										 recipeActionScript)
-from HaikuPorter.Utils import (check_output, sysExit, systemDir, unpackArchive, 
-							   warn)
+from HaikuPorter.Utils import (check_output, symlinkFiles, symlinkGlob, sysExit, 
+							   systemDir, unpackArchive, warn)
 
 import hashlib
 import os
@@ -61,31 +61,6 @@ class ChrootSetup:
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
 		check_call(['/bin/bash', '-c', cleanupChrootScript], env=shellEnv)
-
-
-# -- Scoped resource for one or more temporarily renamed files ----------------
-class TemporarilyRenamedFiles:
-	def __init__(self, dir, fileNames):
-		self.dir = dir
-		self.fileNames = fileNames
-		self.subDir = None
-
-	def __enter__(self):
-		# rename the file
-		self.subDir = self.dir + '/deactivated'
-		if not os.path.exists(self.subDir):
-			os.mkdir(self.subDir)
-		for fileName in self.fileNames:
-			os.rename(self.dir + '/' + fileName, self.subDir + '/' + fileName)
-		return self
-	
-	def __exit__(self, type, value, traceback):
-		# restore the original file
-		if self.subDir:
-			for fileName in self.fileNames:
-				os.rename(self.subDir + '/' + fileName, 
-						  self.dir + '/' + fileName)
-			os.rmdir(self.subDir)
 
 
 # -- A single port with its recipe, allows to execute actions -----------------
@@ -329,36 +304,66 @@ class Port:
 			package.writePackageInfoIntoRepository(repositoryPath)
 					
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
-		"""Resolve any other ports that need to be built before this one"""
+		"""Resolve any other ports that need to be built before this one.
+		
+		   In order to do so, we first determine the prerequired packages for
+		   the build, for which packages from outside the haikuports-tree may 
+		   be considered. A temporary folder is then populated with only these
+		   prerequired packages and then all the build requirements of this
+		   port are determined with only the haikuports repository, the already
+		   built packages and the repository of prerequired packages active.
+		   This ensures that any build requirements a port may have that can not 
+		   be fulfilled from within the haikuports tree will be raised as an 
+		   error here.
+		"""
 
-		shadowedPackageInfoNames = [package.packageInfoName 
-									for package in self.packages]
-		with TemporarilyRenamedFiles(repositoryPath, shadowedPackageInfoNames):
-			# For each package, generate a PackageInfo-file containing only the 
-			# immediate  requirements for building the package:
-			packageInfoFiles = []
-			for package in self.packages:
-				packageInfoFile = repositoryPath + '/' + package.packageInfoName
-				package.generatePackageInfo(packageInfoFile, 
-											['BUILD_REQUIRES'], True)
-				packageInfoFiles.append(packageInfoFile)
+		# First create a work-repository by symlinking all package-infos from
+		# the haikuports-repository - we need to overwrite the package-infos
+		# for this port, so we do that in a private directory.
+		workRepositoryPath = self.workDir + '/repository'
+		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
+		
+		# For each package, generate a PackageInfo-file containing only the 
+		# prerequirements for building the package and no own provides (if a
+		# port prerequires itself, we want to pull in the "host" package)
+		packageInfoFiles = []
+		for package in self.packages:
+			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
+			package.generatePackageInfoWithoutProvides(packageInfoFile, 
+													   ['BUILD_PREREQUIRES'])
+			packageInfoFiles.append(packageInfoFile)
+		
+		# determine the prerequired packages, allowing "host" packages
+		repositories = [ packagesPath, workRepositoryPath,
+						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
+						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
+		prereqPackages = self._resolveDependenciesViaPkgman(
+			packageInfoFiles, repositories, 'build prerequirements')
 
-			args = ([ '/bin/pkgman', 'resolve-dependencies' ]
-					+ packageInfoFiles
-					+ [ packagesPath, repositoryPath,
-						systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
-						systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ])
-			try:
-				print ' '.join(args)
-				output = check_output(args)
-				return output.splitlines()
-			except CalledProcessError:
-				try:
-					check_call(args)
-				except:
-					pass
-				sysExit('unable to resolve dependencies for ' 
-						+ self.versionedName)
+		# Populate a directory with those prerequired packages.
+		prereqRepositoryPath = self.workDir + '/prereq-repository'
+		symlinkFiles(prereqPackages, prereqRepositoryPath)
+
+		# For each package, generate a PackageInfo-file containing only the 
+		# immediate  requirements for building the package:
+		packageInfoFiles = []
+		for package in self.packages:
+			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
+			package.generatePackageInfo(packageInfoFile, 
+										['BUILD_REQUIRES'], True)
+			packageInfoFiles.append(packageInfoFile)
+
+		# Determine the build requirements, this time only allowing system
+		# packages.from the host.
+		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
+						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
+		dependencies = self._resolveDependenciesViaPkgman(
+			packageInfoFiles, repositories, 'build requirements')
+
+		shutil.rmtree(workRepositoryPath)
+		shutil.rmtree(prereqRepositoryPath)
+		return dependencies
+
 
 	def cleanWorkDirectory(self):
 		"""Clean the working directory"""
@@ -595,18 +600,8 @@ class Port:
 		for package in self.packages:
 			os.mkdir(package.packagingDir)
 			package.prepopulatePackagingDir(self)
-		
-		packageInfoFiles = []
-		for package in self.packages:
-			packageInfoFile = (package.packageInfoDir + '/' 
-							   + package.packageInfoName)
-			package.generatePackageInfo(packageInfoFile, 
-										['BUILD_REQUIRES', 'BUILD_PREREQUIRES'], 
-										True, True)
-			packageInfoFiles.append(packageInfoFile)
 
-		requiredPackages = self._getPackagesRequiredForBuild(packageInfoFiles, 
-															 packagesPath)
+		requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
 
 		if getOption('chroot'):
 			# setup chroot and keep it while executing the actions
@@ -719,29 +714,55 @@ class Port:
 		}
 		self.shellVariables.update(otherDirs)
 
-	def _getPackagesRequiredForBuild(self, packageInfoFiles, packagesPath):
+	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the 
 		   build environment (chroot) for the build stage"""
 		
-		try:
-			args = ([ '/bin/pkgman', 'resolve-dependencies' ]
-					+ packageInfoFiles
-					+ [ packagesPath,
-						systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
-						systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ])
-			output = check_output(args)
-			packages = output.splitlines()
-			return [ 
-				package for package in packages 
-				if not package.startswith(
-					systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
-			]
-		except CalledProcessError:
-			try:
-				check_call(args)
-			except:
-				pass
-			sysExit('unable to resolve dependencies for ' + self.versionedName)
+		# For each package, generate a PackageInfo-file containing only the 
+		# prerequirements for building the package and no own provides (if a
+		# port prerequires itself, we want to pull in the "host" package)
+		packageInfoFiles = []
+		for package in self.packages:
+			packageInfoFile = (package.packageInfoDir + '/' 
+							   + package.packageInfoName)
+			package.generatePackageInfoWithoutProvides(packageInfoFile, 
+													   ['BUILD_PREREQUIRES'])
+			packageInfoFiles.append(packageInfoFile)
+		
+		# determine the prerequired packages, allowing "host" packages
+		repositories = [ packagesPath,
+						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
+						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
+		prereqPackages = self._resolveDependenciesViaPkgman(
+			packageInfoFiles, repositories, 'build prerequirements')
+
+		# Populate a directory with those prerequired packages.
+		prereqRepositoryPath = self.workDir + '/prereq-repository'
+		symlinkFiles(prereqPackages, prereqRepositoryPath)
+
+		# For each package, create a package-info that contains both the
+		# prerequired and required packages for the build:
+		packageInfoFiles = []
+		for package in self.packages:
+			packageInfoFile = (package.packageInfoDir + '/' 
+							   + package.packageInfoName)
+			package.generatePackageInfo(packageInfoFile, 
+										[ 'BUILD_REQUIRES', 
+										  'BUILD_PREREQUIRES' ], True)
+			packageInfoFiles.append(packageInfoFile)
+
+		# Determine the build requirements.
+		repositories = [ packagesPath, prereqRepositoryPath, 
+						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
+		packages = self._resolveDependenciesViaPkgman(
+			packageInfoFiles, repositories, 'build requirements')
+
+		# Filter out system packages, they will be linked into the chroot
+		# anyway.
+		return [ 
+			package for package in packages 
+			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
+		]
 
 	def _executeBuild(self, makePackages):
 		"""Executes the build stage and creates all declared packages"""
@@ -849,3 +870,25 @@ class Port:
 		# execute the requested action via a shell ....
 		wrapperScript = recipeActionScript % (self.recipeFilePath, action)
 		check_call(['/bin/bash', '-c', wrapperScript], cwd=dir, env=shellEnv)
+
+	def _resolveDependenciesViaPkgman(self, packageInfoFiles, repositories,
+									  description):
+		"""Invoke pkgman to resolve dependencies of one or more package-infos"""
+
+		args = ([ '/bin/pkgman', 'resolve-dependencies' ]
+				+ packageInfoFiles + repositories)
+		try:
+			with open(os.devnull, "w") as devnull:
+				output = check_output(args, stderr=devnull)
+			return output.splitlines()
+		except CalledProcessError:
+			try:
+				check_call(args)
+			except:
+				pass
+			sysExit(('unable to resolve %s for %s\n'
+					 + '\tpackage-infos:\n\t\t%s\n'
+					 + '\trepositories:\n\t\t%s\n')
+					% (description, self.versionedName, 
+					   '\n\t\t'.join(packageInfoFiles),
+					   '\n\t\t'.join(repositories)))

@@ -100,11 +100,112 @@ class Package(object):
 		"""Write a PackageInfo-file for this package into the repository"""
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		self.generatePackageInfo(packageInfoFile, 
-								 [ 'BUILD_REQUIRES', 'REQUIRES' ], True)
+		self._generatePackageInfo(packageInfoFile, 
+								  [ 'BUILD_REQUIRES', 'REQUIRES' ], True, False)
 					
-	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
-							fakeEmptyProvides = False):
+	def generatePackageInfoWithoutProvides(self, packageInfoPath, 
+										   requiresToUse):
+		"""Create a .PackageInfo file that doesn't include any provides except
+		   for the one matching the package name"""
+
+		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True)
+		
+	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
+		"""Create a .PackageInfo file for inclusion in a package or for
+		   dependency resolving"""
+
+		self._generatePackageInfo(packageInfoPath, requiresToUse, quiet, False)
+
+	def adjustToChroot(self):
+		"""Adjust directories to chroot()-ed environment"""
+		
+		# adjust all relevant directories
+		pathLengthToCut = len(self.workDir)
+		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
+		self.buildPackageDir = self.buildPackageDir[pathLengthToCut:]
+		self.packagingDir = self.packagingDir[pathLengthToCut:]
+		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
+		self.workDir = '/'
+		self.patchesDir = '/patches'
+				
+	def prepopulatePackagingDir(self, port):
+		"""Prefill packaging directory with stuff from the outside"""
+
+		licenseDir = port.baseDir + '/licenses'
+		if os.path.exists(licenseDir):
+			shutil.copytree(licenseDir, self.packagingDir + '/data/licenses')
+
+	def makeHpkg(self):
+		"""Create a package suitable for distribution"""
+
+		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
+								 ['REQUIRES'], getOption('quiet'))
+
+		packageFile = self.hpkgDir + '/' + self.hpkgName
+		if os.path.exists(packageFile):
+			os.remove(packageFile)
+		
+		# Create the package
+		print 'creating package ' + self.hpkgName + ' ...'
+		os.chdir(self.packagingDir)
+		check_call(['package', 'create', packageFile])
+		os.chdir(self.workDir)
+
+		# Clean up after ourselves
+		shutil.rmtree(self.packagingDir)
+
+	def createBuildPackage(self):
+		"""Create the build package"""
+		
+		# create a package info for a build package
+		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName 
+							+ '-build.PackageInfo')
+		self.generatePackageInfo(buildPackageInfo, 
+								 ['REQUIRES', 'BUILD_REQUIRES', 
+								  'BUILD_PREREQUIRES'], True)
+
+		# create the build package
+		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 
+						+ '-build.hpkg')
+		cmdlineArgs = ['package', 'create', '-bi', buildPackageInfo, '-I',
+					   self.packagingDir, buildPackage]
+		if getOption('quiet'):
+			cmdlineArgs.insert(2, '-q')
+		check_call(cmdlineArgs)
+		self.buildPackage = buildPackage
+		os.remove(buildPackageInfo)
+
+	def activateBuildPackage(self):
+		"""Activate the build package"""
+		
+		# activate the build package
+		packagesDir = systemDir['B_COMMON_PACKAGES_DIRECTORY']
+		activeBuildPackage \
+			= packagesDir + '/' + os.path.basename(self.buildPackage)
+		if os.path.exists(activeBuildPackage):
+			os.remove(activeBuildPackage)
+			
+		if not getOption('chroot'):
+			# may have to cross devices, so better use a symlink
+			os.symlink(self.buildPackage, activeBuildPackage)
+		else:
+			# symlinking a package won't work in chroot, but in this
+			# case we are sure that the move won't cross devices
+			os.rename(self.buildPackage, activeBuildPackage)
+		self.activeBuildPackage = activeBuildPackage
+
+	def removeBuildPackage(self):
+		"""Deactivate and remove the build package"""
+		
+		if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
+			os.remove(self.activeBuildPackage)
+			self.activeBuildPackage = None
+		if self.buildPackage and os.path.exists(self.buildPackage):
+			os.remove(self.buildPackage)
+			self.buildPackage = None
+
+	def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
+							fakeEmptyProvides):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 		
@@ -194,94 +295,6 @@ class Package(object):
 		if not quiet:
 			with open(packageInfoPath, 'r') as infoFile:
 				print infoFile.read()
-
-	def adjustToChroot(self):
-		"""Adjust directories to chroot()-ed environment"""
-		
-		# adjust all relevant directories
-		pathLengthToCut = len(self.workDir)
-		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
-		self.buildPackageDir = self.buildPackageDir[pathLengthToCut:]
-		self.packagingDir = self.packagingDir[pathLengthToCut:]
-		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
-		self.workDir = '/'
-		self.patchesDir = '/patches'
-				
-	def prepopulatePackagingDir(self, port):
-		"""Prefill packaging directory with stuff from the outside"""
-
-		licenseDir = port.baseDir + '/licenses'
-		if os.path.exists(licenseDir):
-			shutil.copytree(licenseDir, self.packagingDir + '/data/licenses')
-
-	def makeHpkg(self):
-		"""Create a package suitable for distribution"""
-
-		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
-								 ['REQUIRES'], getOption('quiet'))
-
-		packageFile = self.hpkgDir + '/' + self.hpkgName
-		if os.path.exists(packageFile):
-			os.remove(packageFile)
-		
-		# Create the package
-		print 'creating package ' + self.hpkgName + ' ...'
-		os.chdir(self.packagingDir)
-		check_call(['package', 'create', packageFile])
-		os.chdir(self.workDir)
-
-		# Clean up after ourselves
-		shutil.rmtree(self.packagingDir)
-
-	def createBuildPackage(self):
-		"""Create the build package"""
-		
-		# create a package info for a build package
-		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName 
-							+ '-build.PackageInfo')
-		self.generatePackageInfo(buildPackageInfo, 
-								 ['REQUIRES', 'BUILD_REQUIRES', 
-								  'BUILD_PREREQUIRES'], True)
-
-		# create the build package
-		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 
-						+ '-build.hpkg')
-		cmdlineArgs = ['package', 'create', '-bi', buildPackageInfo, '-I',
-					   self.packagingDir, buildPackage]
-		if getOption('quiet'):
-			cmdlineArgs.insert(2, '-q')
-		check_call(cmdlineArgs)
-		self.buildPackage = buildPackage
-		os.remove(buildPackageInfo)
-
-	def activateBuildPackage(self):
-		"""Activate the build package"""
-		
-		# activate the build package
-		packagesDir = systemDir['B_COMMON_PACKAGES_DIRECTORY']
-		activeBuildPackage \
-			= packagesDir + '/' + os.path.basename(self.buildPackage)
-		if os.path.exists(activeBuildPackage):
-			os.remove(activeBuildPackage)
-			
-		if not getOption('chroot'):
-			# may have to cross devices, so better use a symlink
-			os.symlink(self.buildPackage, activeBuildPackage)
-		else:
-			# symlinking a package won't work in chroot, but in this
-			# case we are sure that the move won't cross devices
-			os.rename(self.buildPackage, activeBuildPackage)
-		self.activeBuildPackage = activeBuildPackage
-
-	def removeBuildPackage(self):
-		"""Deactivate and remove the build package"""
-		
-		if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
-			os.remove(self.activeBuildPackage)
-			self.activeBuildPackage = None
-		if self.buildPackage and os.path.exists(self.buildPackage):
-			os.remove(self.buildPackage)
-			self.buildPackage = None
 
 	def _writePackageInfoListByKey(self, infoFile, key, keyword):
 		self._writePackageInfoList(infoFile, self.recipeKeys[key], keyword)
