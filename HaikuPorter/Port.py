@@ -738,12 +738,18 @@ class Port:
 													   ['BUILD_PREREQUIRES'])
 			packageInfoFiles.append(packageInfoFile)
 		
-		# determine the prerequired packages, allowing "host" packages
+		# Determine the prerequired packages, allowing "host" packages, but
+		# filter out system packages, as they will be linked into the chroot
+		# anyway.
 		repositories = [ packagesPath,
 						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		prereqPackages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'build prerequirements')
+		prereqPackages = [ 
+			package for package in prereqPackages 
+			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
+		]
 
 		# Populate a directory with those prerequired packages.
 		prereqRepositoryPath = self.workDir + '/prereq-repository'
