@@ -333,12 +333,17 @@ class Port:
 													   ['BUILD_PREREQUIRES'])
 			packageInfoFiles.append(packageInfoFile)
 		
-		# determine the prerequired packages, allowing "host" packages
+		# determine the prerequired packages, allowing "host" packages, but
+		# filter our system packages, as those are irrelevant.
 		repositories = [ packagesPath, workRepositoryPath,
 						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		prereqPackages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'build prerequirements')
+		prereqPackages = [ 
+			package for package in prereqPackages 
+			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
+		]
 
 		# Populate a directory with those prerequired packages.
 		prereqRepositoryPath = self.workDir + '/prereq-repository'
@@ -357,13 +362,17 @@ class Port:
 		# packages.from the host.
 		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
-		dependencies = self._resolveDependenciesViaPkgman(
+		packages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'build requirements')
 
 		shutil.rmtree(workRepositoryPath)
 		shutil.rmtree(prereqRepositoryPath)
-		return dependencies
 
+		# Filter out system packages, as they are irrelevant.
+		return [ 
+			package for package in packages 
+			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
+		], workRepositoryPath
 
 	def cleanWorkDirectory(self):
 		"""Clean the working directory"""

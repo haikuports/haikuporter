@@ -271,14 +271,13 @@ class Main:
 		if not os.path.exists(packageInfo):
 			port.writePackageInfosIntoRepository(self.repositoryPath)
 		
-		buildDependencies \
+		(buildDependencies, portRepositoryPath) \
 			= port.resolveBuildDependencies(self.repositoryPath,
 											self.packagesPath)
 		allPorts = self._getAllPorts()
 		requiredPortsToBuild = []
 		for dependency in buildDependencies:
-			print dependency
-			if dependency.startswith(self.repositoryPath):
+			if dependency.startswith(portRepositoryPath):
 				packageInfoFileName = os.path.basename(dependency)
 				requiredPortID \
 					= packageInfoFileName[:packageInfoFileName.rindex('.')]
