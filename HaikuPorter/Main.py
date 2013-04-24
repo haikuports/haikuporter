@@ -437,6 +437,8 @@ class Main:
 		if os.path.exists(newRepositoryPath):
 			shutil.rmtree(newRepositoryPath)
 		os.mkdir(newRepositoryPath)
+		skippedDir = newRepositoryPath + '/.skipped'
+		os.mkdir(skippedDir)
 		print 'Populating repository ...'
 
 		allPorts = self._getAllPorts()
@@ -458,11 +460,15 @@ class Main:
 						else:
 							print
 						port.writePackageInfosIntoRepository(newRepositoryPath)
-						break;
+						break
 					else:
+						# take notice of skipped recipe file
+						open(skippedDir + '/' + portID, 'w').close()
 						print(' is skipped, as it is %s on this architecture'
 							  % status)
 				except SystemExit:
+					# take notice of broken recipe file
+					open(skippedDir + '/' + portID, 'w').close()
 					sys.stdout.write('\r')
 					pass
 		os.rename(newRepositoryPath, self.repositoryPath)
@@ -470,8 +476,85 @@ class Main:
 	def _updateRepository(self):
 		"""Update all PackageInfo-files in the repository as needed"""
 		
-		print 'Checking if any recipes have changed ...'
 		allPorts = self._getAllPorts()
+
+		# check for all known ports if their recipe has been changed
+		print 'Checking if any package-infos need to be updated ...'
+		skippedDir = self.repositoryPath + '/.skipped'
+		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+			higherVersionIsActive = False
+			for version in reversed(self._portVersionsByName[portName]):
+				portID = portName + '-' + version
+				port = allPorts[portID]
+				
+				# ignore recipes that were skipped last time unless they've 
+				# been changed since then
+				if (os.path.exists(skippedDir + '/' + portID)
+					and (os.path.getmtime(port.recipeFilePath) 
+						 <= os.path.getmtime(skippedDir + '/' + portID))):
+					continue
+
+				# update all package-infos of port if the recipe is newer than
+				# the main package-info of that port
+				mainPackageInfoFile = (self.repositoryPath + '/' 
+									   + port.packageInfoName)
+				if (os.path.exists(mainPackageInfoFile)
+					and not higherVersionIsActive
+					and (os.path.getmtime(port.recipeFilePath) 
+						 <= os.path.getmtime(mainPackageInfoFile))):
+					higherVersionIsActive = True
+					break
+				
+				# try tp parse updated recipe
+				try:
+					port.parseRecipeFile(False)
+
+					if higherVersionIsActive:
+						# remove package infos from lower version, if it exists
+						if os.path.exists(mainPackageInfoFile):
+							print('\tremoving package-infos for ' + portID
+								  + ', as newer version is active')
+							port.removePackageInfosFromRepository(
+								self.repositoryPath)
+							self._removePackagesForPortID(portID)
+							break
+						continue
+					
+					status = port.getStatusOnCurrentArchitecture()
+					if status != Status.STABLE:
+						open(skippedDir + '/' + portID, 'w').close()
+						print('\t%s is still marked as %s on this architecture' 
+							  % (portID, status))
+						continue
+
+					higherVersionIsActive = True
+					if os.path.exists(skippedDir + '/' + portID):
+						os.remove(skippedDir + '/' + portID)
+						
+					if (port.checkFlag('build') 
+						and not self.options.preserveFlags):
+						port.unsetFlag('build')
+						print('\tupdating package infos of ' + portID
+							  + '   [build-flag has been reset]')
+					else:
+						print '\tupdating package infos of ' + portID
+					port.writePackageInfosIntoRepository(self.repositoryPath)
+					
+				except SystemExit:
+					if not higherVersionIsActive:
+						# take notice of broken recipe file
+						open(skippedDir + '/' + portID, 'w').close()
+						print '\trecipe for %s is still broken' % portID
+
+		self._removeStalePackageInfos()
+
+	def _removeStalePackageInfos(self):
+		"""check for any package-infos that no longer have a corresponding
+		   recipe file"""
+		
+		allPorts = self._getAllPorts()
+
+		print "Looking for stale package-infos ..."
 		packageInfos = glob.glob(self.repositoryPath + '/*.PackageInfo')
 		for packageInfo in packageInfos:
 			packageInfoFileName = os.path.basename(packageInfo)
@@ -491,22 +574,23 @@ class Main:
 						break
 					(portName, unused1, unused2) = portName.rpartition('_')
 			
-			if portID in allPorts:
-				port = allPorts[portID]
-				if (not os.path.exists(packageInfo)
-					or (os.path.getmtime(port.recipeFilePath) 
-						> os.path.getmtime(packageInfo))):
-					if (port.checkFlag('build') 
-						and not self.options.preserveFlags):
-						port.unsetFlag('build')
-						print('\tupdating package infos of ' + packageID
-							  + '   [build-flag has been reset]')
-					else:
-						print '\tupdating package infos of ' + packageID
-					port.writePackageInfosIntoRepository(self.repositoryPath)
-			else:
+			if portID not in allPorts:
 				print '\tremoving ' + packageInfoFileName
 				os.remove(packageInfo)
+				self._removePackagesForPortID(portID)
+
+	def _removePackagesForPortID(self, portID):
+		"""remove all packages for the given port-ID"""
+		
+		packages = glob.glob(self.packagesPath + '/' + portID + '-*.hpkg')
+		obsoleteDir = self.packagesPath + '/.obsolete'
+		for package in packages:
+			packageFileName = os.path.basename(package)
+			print '\tobsoleting package ' + packageFileName
+			obsoletePackage = obsoleteDir + '/' + packageFileName
+			if not os.path.exists(obsoleteDir):
+				os.mkdir(obsoleteDir)
+			os.rename(package, obsoletePackage)
 
 	def _getAllPorts(self):
 		if hasattr(self, '_allPorts'):

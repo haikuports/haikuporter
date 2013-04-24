@@ -297,11 +297,14 @@ class Port:
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""
 
-		if not self.revision:
-			self.parseRecipeFile(False)
-			
 		for package in self.packages:
 			package.writePackageInfoIntoRepository(repositoryPath)
+					
+	def removePackageInfosFromRepository(self, repositoryPath):
+		"""Remove all PackageInfo-files for this port from the repository"""
+
+		for package in self.packages:
+			package.removePackageInfoFromRepository(repositoryPath)
 					
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
 		"""Resolve any other ports that need to be built before this one.

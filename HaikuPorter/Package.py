@@ -103,6 +103,13 @@ class Package(object):
 		self._generatePackageInfo(packageInfoFile, 
 								  [ 'BUILD_REQUIRES', 'REQUIRES' ], True, False)
 					
+	def removePackageInfoFromRepository(self, repositoryPath):
+		"""Remove PackageInfo-file from repository, if it's there"""
+
+		packageInfoFile = repositoryPath + '/' + self.packageInfoName
+		if os.path.exists(packageInfoFile):
+			os.remove(packageInfoFile)
+					
 	def generatePackageInfoWithoutProvides(self, packageInfoPath, 
 										   requiresToUse):
 		"""Create a .PackageInfo file that doesn't include any provides except
