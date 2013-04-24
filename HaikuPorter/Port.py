@@ -706,16 +706,30 @@ class Port:
 			+ self.revisionedName + '/.self'
 		configureDirs = {
 			'prefix': prefix,
+			'dataDir': prefix + '/data',
 			'dataRootDir': prefix + '/data',
 			'binDir': prefix + '/bin',
 			'sbinDir': prefix + '/bin',
 			'libDir': prefix + '/lib',
 			'includeDir': prefix + '/develop/headers',
+			'oldIncludeDir': prefix + '/develop/headers',
 			'sysconfDir': prefix + '/settings',
 			'docDir': prefix + '/documentation/packages/' + self.name,
 			'infoDir': prefix + '/documentation/info',
 			'manDir': prefix + '/documentation/man',
+			'libExecDir': prefix + '/bin/private',	# TODO: OK?
+			'sharedStateDir': prefix + '/settings',	# TODO: OK?
+			'localStateDir': prefix + '/settings',	# TODO: OK?
 		}
+
+		# Note: Newer build systems also support the following options. Their
+		# default values are OK for us for now:
+		# --localedir=DIR         locale-dependent data [DATAROOTDIR/locale]
+		# --htmldir=DIR           html documentation [DOCDIR]
+		# --dvidir=DIR            dvi documentation [DOCDIR]
+		# --pdfdir=DIR            pdf documentation [DOCDIR]
+		# --psdir=DIR             ps documentation [DOCDIR]
+
 		self.shellVariables.update(configureDirs)
 
 		# add one more variable containing all the dir args for configure:
