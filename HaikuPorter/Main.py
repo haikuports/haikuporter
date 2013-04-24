@@ -267,10 +267,18 @@ class Main:
 	def _buildMainPort(self, port):
 		"""Build the port given on cmdline"""
 
+		# HPKGs are usually written into the 'packages' directory, but when
+		# an obsolete port (one that's not in the repository) is being built,
+		# its packages are stored into the .obsolete subfolder of the packages
+		# directory.
+		targetPath = self.packagesPath
 		packageInfo = self.repositoryPath + '/' + port.packageInfoName
 		if not os.path.exists(packageInfo):
-			port.writePackageInfosIntoRepository(self.repositoryPath)
-		
+			warn('building obsolete package')
+			targetPath += '/.obsolete'
+			if not os.path.exists(targetPath):
+				os.makedirs(targetPath)
+			
 		(buildDependencies, portRepositoryPath) \
 			= port.resolveBuildDependencies(self.repositoryPath,
 											self.packagesPath)
@@ -295,11 +303,11 @@ class Main:
 				print('\t' + requiredPort.category + '::' 
 					  + requiredPort.versionedName)
 			for requiredPort in requiredPortsToBuild:			
-				self._buildPort(requiredPort, True)
+				self._buildPort(requiredPort, True, targetPath)
 				
-		self._buildPort(port, False)
+		self._buildPort(port, False, targetPath)
 
-	def _buildPort(self, port, parseRecipe):
+	def _buildPort(self, port, parseRecipe, targetPath):
 		"""Build a single port"""
 
 		print '-' * 70
@@ -324,7 +332,7 @@ class Main:
 		if self.options.patch:
 			port.patchSource()
 			
-		port.build(self.packagesPath, self.options.package)
+		port.build(self.packagesPath, self.options.package, targetPath)
 	
 
 	def _initGlobalShellVariables(self):

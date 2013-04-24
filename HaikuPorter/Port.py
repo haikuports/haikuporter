@@ -600,7 +600,7 @@ class Port:
 
 		self.setFlag('patch')
 
-	def build(self, packagesPath, makePackages):
+	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package"""
 
 		# Delete and re-create a couple of directories
@@ -655,9 +655,10 @@ class Port:
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
-					print 'grabbing ' + package.hpkgName
+					print('grabbing ' + package.hpkgName 
+						  + ' and putting it into ' + hpkgStoragePath)
 					os.rename(packageFile,
-							  packagesPath + '/' + package.hpkgName)
+							  hpkgStoragePath + '/' + package.hpkgName)
 
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
