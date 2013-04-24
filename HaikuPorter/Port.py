@@ -737,6 +737,10 @@ class Port:
 			= ' '.join(['--%s=%s' % (k.lower(), v) 
 					   for k, v in configureDirs.iteritems()])
 
+		# add another one with the list of possible variable
+		self.shellVariables['configureDirVariables'] \
+			= ' '.join(configureDirs.iterkeys())
+
 		# Add variables for other standard directories. Consequently, we should
 		# use finddir to get them (also for the configure variables above), but
 		# we want relative paths here.

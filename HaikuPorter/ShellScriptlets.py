@@ -38,7 +38,7 @@ done
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that is used to trigger one of the actions defined in a build
-# recipe.The first placeholder is substituted with the configuration file, the 
+# recipe. The first placeholder is substituted with the configuration file, the 
 # second one with the action to be invoked.
 recipeActionScript = r'''# wrapper scriptlet for running an action
 
@@ -59,6 +59,57 @@ INSTALL()
 TEST()
 {
 	true
+}
+
+# helper function to invoke a configure script with the correct directory
+# arguments
+runConfigure()
+{
+	# parse arguments
+	varsToOmit=""
+
+	while [ $# -ge 1 ]; do
+		case $1 in
+			--omit-dirs)
+				shift 1
+				if [ $# -lt 1 ]; then
+					echo "runConfigure: \"--omit-dirs\" needs an argument!" >&2
+				fi
+				varsToOmit="$1"
+				shift 1
+				;;
+			*)
+				break
+				;;
+		esac
+	done
+
+	if [ $# -lt 1 ]; then
+		echo "Usage: runConfigure [ --omit-dirs <dirsToOmit> ] <configure>" \
+			"<argsToConfigure> ..." >&2
+		echo "  <configure>" >&2
+		echo "      The configure program to be called." >&2
+		echo "  <dirsToOmit>" >&2
+		echo "      Space-separated list of directory arguments not to be" >&2
+		echo "      passed to configure, e.g. \"docDir manDir\" (single" >&2
+		echo "      argument!)." >&2
+		echo "  <argsToConfigure>" >&2
+		echo "      The additional arguments passed to configure." >&2
+		exit 1
+	fi
+
+	configure=$1
+	shift 1
+
+	# build the directory arguments string
+	dirArgs=""
+	for dir in $configureDirVariables; do
+		if ! [[ "$varsToOmit" =~ (^|\ )${dir}($|\ ) ]]; then
+			dirArgs="$dirArgs --${dir,,}=${!dir}"
+		fi
+	done
+
+	$configure $dirArgs $@
 }
 
 # source the configuration file
