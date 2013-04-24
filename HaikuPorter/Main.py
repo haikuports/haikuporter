@@ -539,13 +539,7 @@ class Main:
 					if os.path.exists(skippedDir + '/' + portID):
 						os.remove(skippedDir + '/' + portID)
 						
-					if (port.checkFlag('build') 
-						and not self.options.preserveFlags):
-						port.unsetFlag('build')
-						print('\tupdating package infos of ' + portID
-							  + '   [build-flag has been reset]')
-					else:
-						print '\tupdating package infos of ' + portID
+					print '\tupdating package infos of ' + portID
 					port.writePackageInfosIntoRepository(self.repositoryPath)
 					
 				except SystemExit:

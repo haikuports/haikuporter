@@ -603,6 +603,13 @@ class Port:
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package"""
 
+		# reset build flag if recipe is newer (unless that's prohibited)
+		if (not getOption('preserveFlags') and self.checkFlag('build')
+			and (os.path.getmtime(self.recipeFilePath)
+				 > os.path.getmtime(self.workDir + '/flag.build'))):
+			print 'unsetting build flag, as recipe is newer'
+			self.unsetFlag('build')
+
 		# Delete and re-create a couple of directories
 		for directory in [self.packageInfoDir, self.packagingBaseDir, 
 						  self.buildPackageDir, self.hpkgDir]:
