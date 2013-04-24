@@ -635,8 +635,9 @@ class Port:
 
 				# parent, wait on child
 				if os.waitpid(pid, 0)[1] != 0:
+					self.unsetFlag('build')
 					sysExit('Build has failed - stopping.')
-				
+
 				# tell the shell scriptlets that the build has succeeded
 				chrootSetup.buildOk = True
 		else:
