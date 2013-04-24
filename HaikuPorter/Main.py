@@ -331,7 +331,7 @@ class Main:
 		port.unpackSource()
 		if self.options.patch:
 			port.patchSource()
-			
+
 		port.build(self.packagesPath, self.options.package, targetPath)
 	
 
