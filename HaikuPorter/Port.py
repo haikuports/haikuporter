@@ -765,9 +765,9 @@ class Port:
 		for package in self.packages:
 			packageInfoFile = (package.packageInfoDir + '/' 
 							   + package.packageInfoName)
-			package.generatePackageInfo(packageInfoFile, 
-										[ 'BUILD_REQUIRES', 
-										  'BUILD_PREREQUIRES' ], True)
+			package.generatePackageInfoWithoutProvides(packageInfoFile, 
+													   [ 'BUILD_REQUIRES', 
+													     'BUILD_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 
 		# Determine the build requirements.
