@@ -112,6 +112,67 @@ runConfigure()
 	$configure $dirArgs $@
 }
 
+prepareInstalledDevelLibsHelper()
+{
+	if [ $# -ne 1 ]; then
+		echo "Usage: prepareInstalledDevelLibs <libBaseName>" >&2
+		echo "Moves libraries from \$prefix/lib to \$prefix/develop/lib and" >&2
+		echo "creates symlinks as required." >&2
+		echo "  <libBaseName>" >&2
+		echo "      The base name of the library, e.g. \"libfoo\"." >&2
+		exit 1
+	fi
+
+	libDir=$prefix/lib
+	develLibDir=$prefix/develop/lib
+
+	mkdir -p $develLibDir
+
+	libBaseName=$1
+
+	# find the shared library file and get its soname
+	sharedLib=""
+	sonameLib=""
+	soname=""
+	for lib in $libDir/${libBaseName}.so*; do
+		if [ -f $lib -a ! -h $lib ]; then
+			sharedLib=$lib
+			sonameLine=$(readelf --dynamic $lib | grep SONAME)
+			if [ -n "$sonameLine" ]; then
+				soname=$(echo "$sonameLine" | sed 's,.*\[\(.*\)\].*,\1,')
+				if [ "$soname" != "$sonameLine" ]; then
+					sonameLib=$libDir/$soname
+				else
+					soname=""
+				fi
+			fi
+
+			break;
+		fi
+	done
+
+	# Move things/create symlinks: The shared library file and the symlink for
+	# the soname remain where they are, but we create respective symlinks in the
+	# development directory. Everything else is moved there.
+	for lib in $libDir/${libBaseName}.*; do
+		if [ "$lib" = "$sharedLib" ]; then
+			ln -s ../../lib/$(basename $lib) $develLibDir/
+		elif [ "$lib" = "$sonameLib" ]; then
+			ln -s $(basename $sharedLib) $develLibDir/$soname
+		else
+			mv $lib $develLibDir/
+		fi
+	done
+}
+
+prepareInstalledDevelLibs()
+{
+	while [ $# -ge 1 ]; do
+		prepareInstalledDevelLibsHelper $1
+		shift 1
+	done
+}
+
 # source the configuration file
 . %s >/dev/null
 
