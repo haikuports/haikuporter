@@ -259,6 +259,8 @@ class Main:
 
 		if self.options.build:
 			self._buildMainPort(port)
+		else:
+			self._buildPort(port, True, self.packagesPath)
 
 		# TODO: reactivate these!
 		# if self.options.test:
@@ -332,7 +334,8 @@ class Main:
 		if self.options.patch:
 			port.patchSource()
 
-		port.build(self.packagesPath, self.options.package, targetPath)
+		if self.options.build:
+			port.build(self.packagesPath, self.options.package, targetPath)
 	
 
 	def _initGlobalShellVariables(self):
