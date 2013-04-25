@@ -123,10 +123,7 @@ prepareInstalledDevelLibsHelper()
 		exit 1
 	fi
 
-	libDir=$prefix/lib
-	develLibDir=$prefix/develop/lib
-
-	mkdir -p $develLibDir
+	mkdir -p $developLibDir
 
 	libBaseName=$1
 
@@ -156,11 +153,11 @@ prepareInstalledDevelLibsHelper()
 	# development directory. Everything else is moved there.
 	for lib in $libDir/${libBaseName}.*; do
 		if [ "$lib" = "$sharedLib" ]; then
-			ln -s ../../lib/$(basename $lib) $develLibDir/
+			ln -s ../../lib/$(basename $lib) $developLibDir/
 		elif [ "$lib" = "$sonameLib" ]; then
-			ln -s $(basename $sharedLib) $develLibDir/$soname
+			ln -s $(basename $sharedLib) $developLibDir/$soname
 		else
-			mv $lib $develLibDir/
+			mv $lib $developLibDir/
 		fi
 	done
 }
