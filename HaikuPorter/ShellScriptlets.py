@@ -170,6 +170,28 @@ prepareInstalledDevelLibs()
 	done
 }
 
+fixPkgconfig()
+{
+	sourcePkgconfigDir=$libDir/pkgconfig
+	targetPkgconfigDir=$developLibDir/pkgconfig
+
+	if [ ! -d $sourcePkgconfigDir ]; then
+		return
+	fi
+
+
+	mkdir -p $targetPkgconfigDir
+
+	for file in $sourcePkgconfigDir/*; do
+		name=$(basename $file)
+		sed -e 's,^libdir=\(.*\),libdir=${prefix}/develop/lib,' \
+			-e 's,^includedir=\(.*\),includedir=${prefix}/develop/headers,' \
+			$file > $targetPkgconfigDir/$name
+	done
+
+	rm -r $sourcePkgconfigDir
+}
+
 # source the configuration file
 . %s >/dev/null
 
