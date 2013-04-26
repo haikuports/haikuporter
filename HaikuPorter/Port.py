@@ -307,6 +307,12 @@ class Port:
 		for package in self.packages:
 			package.removePackageInfoFromRepository(repositoryPath)
 					
+	def obsoletePackages(self, packagesPath):
+		"""Moves all package-files into the 'obsolete' sub-directory"""
+
+		for package in self.packages:
+			package.obsoletePackage(packagesPath)
+					
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
 		"""Resolve any other ports that need to be built before this one.
 		

@@ -109,6 +109,18 @@ class Package(object):
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
 		if os.path.exists(packageInfoFile):
 			os.remove(packageInfoFile)
+
+	def obsoletePackage(self, packagesPath):
+		"""Moves the package-file into the 'obsolete' sub-directory"""
+
+		obsoleteDir = packagesPath + '/.obsolete'
+		packageFile = packagesPath + '/' + self.hpkgName
+		if os.path.exists(packageFile):
+			print '\tobsoleting package ' + self.hpkgName
+			obsoletePackage = obsoleteDir + '/' + self.hpkgName
+			if not os.path.exists(obsoleteDir):
+				os.mkdir(obsoleteDir)
+			os.rename(packageFile, obsoletePackage)
 					
 	def generatePackageInfoWithoutProvides(self, packageInfoPath, 
 										   requiresToUse):

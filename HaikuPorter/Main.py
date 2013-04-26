@@ -488,6 +488,8 @@ class Main:
 		"""Update all PackageInfo-files in the repository as needed"""
 		
 		allPorts = self._getAllPorts()
+		
+		brokenPorts = []
 
 		# check for all known ports if their recipe has been changed
 		print 'Checking if any package-infos need to be updated ...'
@@ -527,7 +529,7 @@ class Main:
 								  + ', as newer version is active')
 							port.removePackageInfosFromRepository(
 								self.repositoryPath)
-							self._removePackagesForPortID(portID)
+							port.obsoletePackages(self.packagesPath)
 							break
 						continue
 					
@@ -549,11 +551,14 @@ class Main:
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
 						open(skippedDir + '/' + portID, 'w').close()
-						print '\trecipe for %s is still broken' % portID
+						if os.path.exists(mainPackageInfoFile):
+							brokenPorts.append(portID)
+						else:
+							print '\trecipe for %s is still broken' % portID
 
-		self._removeStalePackageInfos()
+		self._removeStalePackageInfos(brokenPorts)
 
-	def _removeStalePackageInfos(self):
+	def _removeStalePackageInfos(self, brokenPorts):
 		"""check for any package-infos that no longer have a corresponding
 		   recipe file"""
 		
@@ -579,15 +584,18 @@ class Main:
 						break
 					(portName, unused1, unused2) = portName.rpartition('_')
 			
-			if portID not in allPorts:
+			if portID not in allPorts or portID in brokenPorts:
 				print '\tremoving ' + packageInfoFileName
 				os.remove(packageInfo)
-				self._removePackagesForPortID(portID)
+				
+				# obsolete corresponding package, if any
+				self._removePackagesForPackageInfo(packageInfo)
 
-	def _removePackagesForPortID(self, portID):
-		"""remove all packages for the given port-ID"""
-		
-		packages = glob.glob(self.packagesPath + '/' + portID + '-*.hpkg')
+	def _removePackagesForPackageInfo(self, packageInfo):
+		"""remove all packages for the given package-info"""
+
+		(packageSpec, unused) = os.path.basename(packageInfo).rsplit('.', 1)
+		packages = glob.glob(self.packagesPath + '/' + packageSpec + '-*.hpkg')
 		obsoleteDir = self.packagesPath + '/.obsolete'
 		for package in packages:
 			packageFileName = os.path.basename(package)
