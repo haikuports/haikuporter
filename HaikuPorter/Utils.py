@@ -81,6 +81,7 @@ def unpackArchive(archiveFile, targetBaseDir):
 		zipFile.extractall(targetBaseDir)
 		zipFile.close()
 	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
+		ensureCommandIsAvailable('xz')
 		Popen(['xz', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
@@ -115,4 +116,18 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 		os.makedirs(targetDir)
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
-	
+
+
+# -- ensureCommandIsAvailable -------------------------------------------------
+availableCommands = {}
+
+def ensureCommandIsAvailable(command):
+	"""checks if the given command is available and bails if not"""
+
+	if command not in availableCommands:
+		for path in os.environ['PATH'].split(':'):
+			if os.path.exists(path + '/' + command):
+				availableCommands[command] = True
+				break
+		else:
+			sysExit("'" + command + "' is not available, please install it")
