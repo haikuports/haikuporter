@@ -595,7 +595,10 @@ class Port:
 
 		# automatically try to rename archive folders containing '-':
 		if not os.path.exists(self.sourceDir):
-			maybeSourceDir = self.sourceDir.replace('_', '-')
+			maybeSourceDirName \
+				= os.path.basename(self.sourceDir).replace('_', '-')
+			maybeSourceDir = (os.path.dirname(self.sourceDir) + '/'
+							  + maybeSourceDirName)
 			if os.path.exists(maybeSourceDir):
 				os.rename(maybeSourceDir, self.sourceDir)
 
