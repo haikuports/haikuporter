@@ -86,6 +86,8 @@ class Port:
 
 		self.patches = []
 
+		self.definedPhases = []
+
 		# build dictionary of variables to inherit to shell
 		self.shellVariables = {
 			'portName': self.name,
@@ -181,6 +183,7 @@ class Port:
 		recipeConfig = ConfigParser(self.recipeFilePath, recipeAttributes, 
 							  		self.shellVariables)
 		extensions = recipeConfig.getExtensions()
+		self.definedPhases = recipeConfig.getDefinedPhases()
 		
 		if '' not in extensions:
 			sysExit('No base package defined in (in %s)' % self.recipeFilePath)
@@ -587,15 +590,32 @@ class Port:
 		if self.checkFlag('patch') and not getOption('force'):
 			return
 
-		if self.patches:
-			for patch in self.patches:
-				if not os.path.exists(patch):
-					sysExit('patch file "' + patch + '" not found.')
+		patched = False
 
-				print 'Applying patch "%s" ...' % patch
-				check_call(['patch', '-p0', '-i', patch], 
-						   cwd=self.sourceBaseDir)
-		else:
+		try:
+			# Apply patches
+			if self.patches:
+				for patch in self.patches:
+					if not os.path.exists(patch):
+						sysExit('patch file "' + patch + '" not found.')
+	
+					print 'Applying patch "%s" ...' % patch
+					check_call(['patch', '-p0', '-i', patch], 
+							   cwd=self.sourceBaseDir)
+					patched = True
+	
+			# Run PATCH() function in recipe, if defined.
+			if Phase.PATCH in self.definedPhases:
+				self._doRecipeAction(Phase.PATCH, self.sourceDir)
+				patched = True
+		except:
+			# Make sure the sources aren't in a half-patched state.
+			if patched:
+				self.unsetFlag('unpack')
+				self.unsetFlag('checkout')
+			raise
+
+		if not patched:
 			print 'No patching required'
 
 		self.setFlag('patch')

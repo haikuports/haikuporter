@@ -17,11 +17,14 @@ import types
 class ConfigParser:
 	def __init__(self, filename, attributes, shellVariables={}):
 		self.entriesByExtension = {}
+		self.definedPhases = []
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = os.environ
 		shellEnv.update(shellVariables)
+
+		shellEnv['recipePhases'] = ' '.join(Phase.getAllowedValues())
 
 		# execute the config file via the shell ....
 		supportedKeysString = '|'.join(attributes.keys())
@@ -62,9 +65,18 @@ class ConfigParser:
 						extension = '_'.join(subKeys)
 						break;
 				else:
-					# skip unsupported key, just in case
-					warn('Key %s in file %s is unsupported, ignoring it'
-						 % (key, filename))
+					# might be a <PHASE>_DEFINED
+					isPhaseKey = False
+					if key.endswith('_DEFINED'):
+						phase = key[:-8]
+						if phase in Phase.getAllowedValues():
+							isPhaseKey = True
+							self.definedPhases.append(phase)
+
+					if not isPhaseKey:
+						# skip unsupported key, just in case
+						warn('Key %s in file %s is unsupported, ignoring it'
+							 % (key, filename))
 					continue
 
 			# create empty dictionary for new extension
@@ -146,3 +158,6 @@ class ConfigParser:
 
 	def getExtensions(self):
 		return self.entriesByExtension.keys()
+
+	def getDefinedPhases(self):
+		return self.definedPhases

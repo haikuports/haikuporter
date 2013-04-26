@@ -43,13 +43,14 @@ class Status(str):
 
 # Identifies a phase of building a port.
 class Phase(str):
+	PATCH = 'PATCH'
 	BUILD = 'BUILD'
 	INSTALL = 'INSTALL'
 	TEST = 'TEST'
 	
 	@staticmethod
 	def getAllowedValues():
-		return [ Phase.BUILD, Phase.TEST, Phase.INSTALL ]
+		return [ Phase.PATCH, Phase.BUILD, Phase.TEST, Phase.INSTALL ]
 
 
 # -- LinesOfText --------------------------------------------------------------

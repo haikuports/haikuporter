@@ -32,6 +32,12 @@ do
 		echo "$key=${value//$NL/\\n}"
 	fi
 done
+
+for phase in ${recipePhases}; do
+	if [ -n "$(type -t $phase)" ]; then
+		echo "${phase}_DEFINED=1"
+	fi
+done
 '''
 
 
