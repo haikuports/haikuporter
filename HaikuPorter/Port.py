@@ -396,6 +396,20 @@ class Port:
 				self.checkoutSource(src_uri)
 				return
 
+			# The source URI may be a local file path relative to the port
+			# directory.
+			if not ':' in src_uri:
+				filePath = self.baseDir + '/' + src_uri
+				if not os.path.isfile(filePath):
+					print ('SRC_URI %s looks like a local file path, but '
+						+ 'doesn\'t refer to a file, trying next location.\n'
+						% src_uri)
+					continue
+
+				self.archiveFile = filePath
+				self.downloadLocalFileName = os.path.basename(src_uri)
+				return
+
 			try:
 				# Need to make a request to get the actual uri in case it is an
 				# http redirect
@@ -536,7 +550,7 @@ class Port:
 		if self.recipeKeys['CHECKSUM_MD5']:
 			print 'Checking MD5 checksum of download ...'
 			h = hashlib.md5()
-			f = open(self.downloadDir + '/' + self.downloadLocalFileName, 'rb')
+			f = open(self.archiveFile, 'rb')
 			while True:
 				d = f.read(16384)
 				if not d:
