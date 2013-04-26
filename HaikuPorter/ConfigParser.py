@@ -21,7 +21,8 @@ class ConfigParser:
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
-		shellEnv = os.environ
+		shellEnv = {}
+		shellEnv.update(os.environ)
 		shellEnv.update(shellVariables)
 
 		shellEnv['recipePhases'] = ' '.join(Phase.getAllowedValues())

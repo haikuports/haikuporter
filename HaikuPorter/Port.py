@@ -84,8 +84,6 @@ class Port:
 		self.archiveFile = None
 		self.checkout = None
 
-		self.patches = []
-
 		self.definedPhases = []
 
 		# build dictionary of variables to inherit to shell
@@ -128,7 +126,7 @@ class Port:
 		patchFileName = self.name + '-' + self.version + '.patch'
 		patchFilePath = self.patchesDir + '/' + patchFileName
 		if os.path.exists(patchFilePath):
-			self.shellVariables.update({ 'PATCHES': patchFileName })
+			self.shellVariables['PATCHES'] = patchFileName
 		
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
