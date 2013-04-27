@@ -14,7 +14,7 @@ from HaikuPorter.GlobalConfig import (globalConfiguration,
 									  readGlobalConfiguration)
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
-from HaikuPorter.Utils import check_output, sysExit, warn
+from HaikuPorter.Utils import check_output, sysExit, touchFile, warn
 
 import glob
 import os
@@ -474,12 +474,12 @@ class Main:
 						break
 					else:
 						# take notice of skipped recipe file
-						open(skippedDir + '/' + portID, 'w').close()
+						touchFile(skippedDir + '/' + portID)
 						print(' is skipped, as it is %s on this architecture'
 							  % status)
 				except SystemExit:
 					# take notice of broken recipe file
-					open(skippedDir + '/' + portID, 'w').close()
+					touchFile(skippedDir + '/' + portID)
 					sys.stdout.write('\r')
 					pass
 		os.rename(newRepositoryPath, self.repositoryPath)
@@ -535,7 +535,7 @@ class Main:
 					
 					status = port.getStatusOnCurrentArchitecture()
 					if status != Status.STABLE:
-						open(skippedDir + '/' + portID, 'w').close()
+						touchFile(skippedDir + '/' + portID)
 						print('\t%s is still marked as %s on this architecture' 
 							  % (portID, status))
 						continue
@@ -550,7 +550,7 @@ class Main:
 				except SystemExit:
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
-						open(skippedDir + '/' + portID, 'w').close()
+						touchFile(skippedDir + '/' + portID)
 						if os.path.exists(mainPackageInfoFile):
 							brokenPorts.append(portID)
 						else:

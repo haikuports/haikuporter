@@ -19,7 +19,7 @@ from HaikuPorter.ShellScriptlets import (setupChrootScript,
 										 cleanupChrootScript,
 										 recipeActionScript)
 from HaikuPorter.Utils import (check_output, symlinkFiles, symlinkGlob, sysExit, 
-							   systemDir, unpackArchive, warn)
+							   systemDir, touchFile, unpackArchive, warn)
 
 import hashlib
 import os
@@ -712,7 +712,7 @@ class Port:
 			os.rmdir(self.hpkgDir)
 			
 	def setFlag(self, name):
-		open('%s/flag.%s' % (self.workDir, name), 'w').close()
+		touchFile('%s/flag.%s' % (self.workDir, name))
 
 	def unsetFlag(self, name):
 		flagFile = '%s/flag.%s' % (self.workDir, name)

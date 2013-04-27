@@ -117,6 +117,13 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
 
+# -- touchFile ----------------------------------------------------------------
+def touchFile(file):
+	"""Touches given file, making sure that its modification date is bumped"""
+	
+	if os.path.exists(file):
+		os.remove(file)
+	open(file, 'w').close()
 
 # -- ensureCommandIsAvailable -------------------------------------------------
 availableCommands = {}
