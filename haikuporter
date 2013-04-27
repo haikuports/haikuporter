@@ -331,7 +331,7 @@ class HaikuPorter:
         """Get/Update the port tree via git"""
         print 'Refreshing the port tree: %s' % self.packagesPath
         if os.path.exists(self.packagesPath + '/.git'):
-            check_call(['git', 'pull', self.packagesPath])
+            check_call(['git', 'pull'], cwd=self.packagesPath)
         else:
             check_call(['git', 'clone', repoPath, self.packagesPath])
 
