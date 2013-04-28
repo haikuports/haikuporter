@@ -362,6 +362,8 @@ class Main:
 			'architecture': self.architecture,
 			'jobs': str(self.options.jobs),
 		}
+		if self.options.jobs > 1:
+			self.shellVariables['jobArgs'] = '-j' + str(self.options.jobs)
 		if self.options.quiet:
 			self.shellVariables['quiet'] = '1'
 
