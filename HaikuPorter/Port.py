@@ -743,24 +743,21 @@ class Port:
 		# build (e.g. gcc)
 		self.shellVariables['LC_ALL'] = 'POSIX'
 
-		prefix = systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/' \
-			+ self.revisionedName + '/.self'
-		configureDirs = {
-			'prefix': prefix,
-			'dataDir': prefix + '/data',
-			'dataRootDir': prefix + '/data',
-			'binDir': prefix + '/bin',
-			'sbinDir': prefix + '/bin',
-			'libDir': prefix + '/lib',
-			'includeDir': prefix + '/develop/headers',
-			'oldIncludeDir': prefix + '/develop/headers',
-			'sysconfDir': prefix + '/settings',
-			'docDir': prefix + '/documentation/packages/' + self.name,
-			'infoDir': prefix + '/documentation/info',
-			'manDir': prefix + '/documentation/man',
-			'libExecDir': prefix + '/bin/private',	# TODO: OK?
-			'sharedStateDir': prefix + '/settings',	# TODO: OK?
-			'localStateDir': prefix + '/settings',	# TODO: OK?
+		relativeConfigureDirs = {
+			'relativeDataDir':			'data',
+			'relativeDataRootDir':		'data',
+			'relativeBinDir':			'bin',
+			'relativeSbinDir':			'bin',
+			'relativeLibDir':			'lib',
+			'relativeIncludeDir':		'develop/headers',
+			'relativeOldIncludeDir':	'develop/headers',
+			'relativeSysconfDir':		'settings',
+			'relativeDocDir':			'documentation/packages/' + self.name,
+			'relativeInfoDir':			'documentation/info',
+			'relativeManDir':			'documentation/man',
+			'relativeLibExecDir':		'bin/private',	# TODO: OK?
+			'relativeSharedStateDir':	'settings',		# TODO: OK?
+			'relativeLocalStateDir':	'settings',		# TODO: OK?
 		}
 
 		# Note: Newer build systems also support the following options. Their
@@ -770,6 +767,16 @@ class Port:
 		# --dvidir=DIR            dvi documentation [DOCDIR]
 		# --pdfdir=DIR            pdf documentation [DOCDIR]
 		# --psdir=DIR             ps documentation [DOCDIR]
+
+		self.shellVariables.update(relativeConfigureDirs)
+
+		prefix = systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/' \
+			+ self.revisionedName + '/.self'
+
+		configureDirs = { 'prefix': prefix }
+		for relativeName, value in relativeConfigureDirs.iteritems():
+			name = relativeName[8].lower() + relativeName[9:]
+			configureDirs[name] = prefix + '/' + value
 
 		self.shellVariables.update(configureDirs)
 
