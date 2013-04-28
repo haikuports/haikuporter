@@ -14,7 +14,8 @@ from HaikuPorter.GlobalConfig import (globalConfiguration,
 									  readGlobalConfiguration)
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
-from HaikuPorter.Utils import check_output, sysExit, touchFile, warn
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit, 
+							   touchFile, warn)
 
 import glob
 import os
@@ -36,7 +37,7 @@ regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 
 # -- path to haikuports-tree --------------------------------------------------
 
-svnPath = 'http://ports.haiku-files.org/svn/haikuports/trunk'
+haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 
 
 # -- naturalCompare -----------------------------------------------------------
@@ -367,10 +368,11 @@ class Main:
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""
 		print 'Refreshing the port tree: %s' % self.treePath
-		if os.path.exists(self.treePath + '/.svn'):
-			check_call(['svn', 'update', self.treePath])
+		ensureCommandIsAvailable('git')
+		if os.path.exists(self.treePath + '/.git'):
+			check_call(['git', 'pull'], cwd = self.treePath)
 		else:
-			check_call(['svn', 'checkout', svnPath, self.treePath])
+			check_call(['git', 'clone', haikuportsRepoUrl, self.treePath])
 
 	def _searchPorts(self, regExp):
 		"""Search for a port in the HaikuPorts tree"""
