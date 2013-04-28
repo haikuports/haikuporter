@@ -82,7 +82,8 @@ class Port:
 		self.fullVersion = None
 		self.revisionedName = None
 		
-		self.archiveFile = None
+		self.downloadedFile = None
+		self.downloadedFileIsArchive = True
 		self.checkout = None
 
 		self.definedPhases = []
@@ -413,7 +414,7 @@ class Port:
 						% src_uri)
 					continue
 
-				self.archiveFile = filePath
+				self.downloadedFile = filePath
 				self.downloadLocalFileName = os.path.basename(src_uri)
 				return
 
@@ -424,9 +425,13 @@ class Port:
 				src_uri = uri_request.geturl()
 
 				self.downloadLocalFileName = src_uri[src_uri.rindex('/') + 1:]
-				archiveFile = (self.downloadDir + '/' 
-							   + self.downloadLocalFileName)
-				if os.path.isfile(archiveFile):
+				if self.downloadLocalFileName.endswith('#noarchive'):
+					self.downloadLocalFileName \
+						= self.downloadLocalFileName[:-10]
+					self.downloadedFileIsArchive = False
+				localFile = (self.downloadDir + '/' 
+							 + self.downloadLocalFileName)
+				if os.path.isfile(localFile):
 					print 'Skipping download ...'
 				else:
 					# create download dir and cd into it
@@ -440,7 +445,7 @@ class Port:
 					check_call(['wget', '-c', '--tries=3', src_uri])
 				
 				# successfully downloaded source or it was already there
-				self.archiveFile = archiveFile
+				self.downloadedFile = localFile
 				return
 			except Exception:
 				warn('Download error from %s, trying next location.'
@@ -564,7 +569,7 @@ class Port:
 		if self.recipeKeys['CHECKSUM_MD5']:
 			print 'Checking MD5 checksum of download ...'
 			h = hashlib.md5()
-			f = open(self.archiveFile, 'rb')
+			f = open(self.downloadedFile, 'rb')
 			while True:
 				d = f.read(16384)
 				if not d:
@@ -584,7 +589,7 @@ class Port:
 	def unpackSource(self):
 		"""Unpack the source archive (into the work directory)"""
 
-		# If the source came from a vcs there is no unpack step
+		# Skip the unpack step if the source came from a vcs
 		if self.checkFlag('checkout'):
 			return
 
@@ -597,9 +602,12 @@ class Port:
 			print 'Skipping unpack ...'
 			return
 
-		# unpack source archive
-		print 'Unpacking ' + self.downloadLocalFileName
-		unpackArchive(self.archiveFile, self.sourceBaseDir)
+		# unpack source archive or simply copy source file
+		if not self.downloadedFileIsArchive:
+			shutil.copy(self.downloadedFile, self.sourceBaseDir)
+		else:
+			print 'Unpacking ' + self.downloadLocalFileName
+			unpackArchive(self.downloadedFile, self.sourceBaseDir)
 
 		# automatically try to rename archive folders containing '-':
 		if not os.path.exists(self.sourceDir):
