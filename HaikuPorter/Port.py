@@ -18,8 +18,9 @@ from HaikuPorter.RecipeTypes import Phase, Status
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
 										 recipeActionScript)
-from HaikuPorter.Utils import (check_output, symlinkFiles, symlinkGlob, sysExit, 
-							   systemDir, touchFile, unpackArchive, warn)
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
+							   symlinkFiles, symlinkGlob, sysExit, systemDir, 
+							   touchFile, unpackArchive, warn)
 
 import hashlib
 import os
@@ -435,6 +436,7 @@ class Port:
 					os.chdir(self.downloadDir)
 
 					print '\nDownloading: ' + src_uri
+					ensureCommandIsAvailable('wget')
 					check_call(['wget', '-c', '--tries=3', src_uri])
 				
 				# successfully downloaded source or it was already there
@@ -498,24 +500,28 @@ class Port:
 			# Extract the cvs module from the uri and remove it from real_uri
 			module = real_uri[real_uri.rfind('/') + 1:]
 			real_uri = real_uri[:real_uri.rfind('/')]
+			ensureCommandIsAvailable('cvs')
 			checkoutCommand = 'cvs -d' + real_uri + ' co -P'
 			if rev:
 				# For CVS 'rev' specifies a date
 				checkoutCommand += ' -D' + rev
 			checkoutCommand += ' -d ' + checkoutDir + ' ' + module
 		elif type == 'svn':
+			ensureCommandIsAvailable('svn')
 			checkoutCommand \
 				= 'svn co --non-interactive --trust-server-cert'
 			if rev:
 				checkoutCommand += ' -r ' + rev
 			checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
 		elif type == 'hg':
+			ensureCommandIsAvailable('hg')
 			checkoutCommand = 'hg clone'
 			if rev:
 				checkoutCommand += ' -r ' + rev
 			checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
 		elif type == 'bzr':
 			# http://doc.bazaar.canonical.com/bzr-0.10/bzr_man.htm#bzr-branch-from-location-to-location
+			ensureCommandIsAvailable('bzr')
 			checkoutCommand = 'bzr checkout --lightweight'
 			if rev:
 				checkoutCommand += ' -r ' + rev
@@ -524,6 +530,7 @@ class Port:
 			# http://fossil-scm.org/index.html/doc/trunk/www/quickstart.wiki
 			if os.path.exists(checkoutDir + '.fossil'):
 				shutil.rmtree(checkoutDir + '.fossil')
+			ensureCommandIsAvailable('fossil')
 			checkoutCommand = 'fossil clone ' + real_uri
 			checkoutCommand += ' ' + checkoutDir + '.fossil'
 			checkoutCommand += ' && '
@@ -533,6 +540,7 @@ class Port:
 			if rev:
 				checkoutCommand += ' ' + rev
 		else:	# assume git
+			ensureCommandIsAvailable('git')
 			self.checkout['type'] = 'git'
 			# TODO Skip the initial checkout if a rev is specified?
 			checkoutCommand = 'git clone %s %s' % (real_uri, checkoutDir)
