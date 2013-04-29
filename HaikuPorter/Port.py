@@ -942,7 +942,21 @@ class Port:
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
 
+		# Create the settings directory in the packaging directory, if needed.
+		# We need to do that, since the .settings link would otherwise point
+		# to a non-existing entry and the directory couldn't be made either.
+		for package in self.packages:
+			settingsDir = package.packagingDir + '/settings'
+			if not os.path.exists(settingsDir):
+				os.mkdir(settingsDir)
+
 		self._doInstallStage()
+
+		# If the settings directory is still empty, remove it.
+		for package in self.packages:
+			settingsDir = package.packagingDir + '/settings'
+			if not os.listdir(settingsDir):
+				os.rmdir(settingsDir)
 		
 		# create hpkg-directory if needed
 		if not os.path.exists(self.hpkgDir):
