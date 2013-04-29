@@ -118,26 +118,38 @@ runConfigure()
 	$configure $dirArgs $@
 }
 
-prepareInstalledDevelLibsHelper()
+prepareInstalledDevelLib()
 {
-	if [ $# -ne 1 ]; then
-		echo "Usage: prepareInstalledDevelLibs <libBaseName>" >&2
+	if [ $# -lt 1 ]; then
+		echo >&2 "Usage: prepareInstalledDevelLib <libBaseName>" \
+			"[ <soPattern> [ <pattern> ] ]"
 		echo "Moves libraries from \$prefix/lib to \$prefix/develop/lib and" >&2
-		echo "creates symlinks as required." >&2
-		echo "  <libBaseName>" >&2
-		echo "      The base name of the library, e.g. \"libfoo\"." >&2
+		echo >&2 "creates symlinks as required."
+		echo >&2 "  <libBaseName>"
+		echo >&2 "      The base name of the library, e.g. \"libfoo\"."
+		echo >&2 "  <soPattern>"
+		echo >&2 "      The glob pattern to be used to enumerate the shared"
+		echo >&2 '      library entries. Is appended to $libDir/${libBaseName}'
+		echo >&2 '      to form the complete pattern. Defaults to ".so*".'
+		echo >&2 "  <pattern>"
+		echo >&2 "      The glob pattern to be used to enumerate all library"
+		echo >&2 '      entries. Is appended to $libDir/${libBaseName} to form'
+		echo >&2 '      the complete pattern. Defaults to ".*".'
+		
 		exit 1
 	fi
 
 	mkdir -p $developLibDir
 
 	libBaseName=$1
+	soPattern=$2
+	pattern=$3
 
 	# find the shared library file and get its soname
 	sharedLib=""
 	sonameLib=""
 	soname=""
-	for lib in $libDir/${libBaseName}.so*; do
+	for lib in $libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
 			sharedLib=$lib
 			sonameLine=$(readelf --dynamic $lib | grep SONAME)
@@ -157,7 +169,7 @@ prepareInstalledDevelLibsHelper()
 	# Move things/create symlinks: The shared library file and the symlink for
 	# the soname remain where they are, but we create respective symlinks in the
 	# development directory. Everything else is moved there.
-	for lib in $libDir/${libBaseName}.*; do
+	for lib in $libDir/${libBaseName}${pattern:-.*}; do
 		if [ "$lib" = "$sharedLib" ]; then
 			ln -s ../../lib/$(basename $lib) $developLibDir/
 		elif [ "$lib" = "$sonameLib" ]; then
@@ -171,7 +183,7 @@ prepareInstalledDevelLibsHelper()
 prepareInstalledDevelLibs()
 {
 	while [ $# -ge 1 ]; do
-		prepareInstalledDevelLibsHelper $1
+		prepareInstalledDevelLib $1
 		shift 1
 	done
 }
