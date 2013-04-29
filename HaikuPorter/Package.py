@@ -328,9 +328,6 @@ class Package(object):
 # -- A source package ---------------------------------------------------------
 
 class SourcePackage(Package):
-	def setArchiveFile(self, archiveFile):
-		self.archiveFile = archiveFile
-		
 	def prepopulatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
@@ -340,9 +337,9 @@ class SourcePackage(Package):
 		if not os.path.exists(targetDir):
 			os.mkdir(targetDir)
 
-		if port.archiveFile:
+		if port.downloadedFile:
 			# unpack the archive into source package's directory
-			unpackArchive(port.archiveFile, targetDir)
+			unpackArchive(port.downloadedFile, targetDir)
 		elif port.checkout:
 			# Start building the command to perform the checkout
 			type = port.checkout['type']
