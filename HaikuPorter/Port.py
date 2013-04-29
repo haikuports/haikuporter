@@ -767,13 +767,14 @@ class Port:
 			'relativeLibDir':			'lib',
 			'relativeIncludeDir':		'develop/headers',
 			'relativeOldIncludeDir':	'develop/headers',
-			'relativeSysconfDir':		'settings',
 			'relativeDocDir':			'documentation/packages/' + self.name,
 			'relativeInfoDir':			'documentation/info',
 			'relativeManDir':			'documentation/man',
-			'relativeLibExecDir':		'bin/private',	# TODO: OK?
-			'relativeSharedStateDir':	'settings',		# TODO: OK?
-			'relativeLocalStateDir':	'settings',		# TODO: OK?
+			'relativeLibExecDir':		'lib',
+			'relativeSharedStateDir':	'var',
+			'relativeLocalStateDir':	'var',
+			# sysconfdir is only defined in configDirs below, since it is not
+			# necessarily below prefix
 		}
 
 		# Note: Newer build systems also support the following options. Their
@@ -786,10 +787,14 @@ class Port:
 
 		self.shellVariables.update(relativeConfigureDirs)
 
-		prefix = systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/' \
-			+ self.revisionedName + '/.self'
+		portPackageLinksDir = (systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/'
+			+ self.revisionedName)
+		prefix = portPackageLinksDir + '/.self'
 
-		configureDirs = { 'prefix': prefix }
+		configureDirs = {
+			'prefix':		prefix,
+			'sysconfDir':	portPackageLinksDir + '/.settings',
+		}
 		for relativeName, value in relativeConfigureDirs.iteritems():
 			name = relativeName[8].lower() + relativeName[9:]
 			configureDirs[name] = prefix + '/' + value
@@ -816,6 +821,7 @@ class Port:
 			'developLibDir': prefix + '/develop/lib',
 			'documentationDir': prefix + '/documentation',
 			'fontsDir': prefix + '/data/fonts',
+			'portPackageLinksDir': portPackageLinksDir,
 			'preferencesDir': prefix + '/preferences',
 			'settingsDir': prefix + '/settings',
 		}
