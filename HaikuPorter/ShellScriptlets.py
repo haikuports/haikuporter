@@ -185,7 +185,7 @@ prepareInstalledDevelLib()
 			ln -s $(basename $sharedLib) $developLibDir/$soname
 		else
 			# patch .la files before moving
-			if [[ "$lib" =~ .*\.la ]]; then
+			if [[ "$lib" = *.la ]]; then
 				fixDevelopLibDirReferences $lib
 			fi
 
@@ -222,6 +222,51 @@ fixPkgconfig()
 	done
 
 	rm -r $sourcePkgconfigDir
+}
+
+packageEntries()
+{
+	# Usage: packageEntries <packageSuffix> <entry> ...
+	# Moves the given entries to the packaging directory for the package
+	# specified by package name suffix (e.g. "devel").
+	# Entry paths can be absolute or relative to $prefix.
+
+	if [ $# -lt 2 ]; then
+		echo >&2 "Usage: packageEntries <packageSuffix> <entry> ..."
+		exit 1
+	fi
+
+	packageSuffix="$1"
+	shift 1
+
+	packageLinksDir="$(dirname $portPackageLinksDir)"
+	packageName="${portName}_$packageSuffix"
+	packagePackageLinksDir="$packageLinksDir/$packageName-$portFullVersion"
+	packagePrefix="$packagePackageLinksDir/.self"
+
+	if [ ! -e "$packagePrefix" ]; then
+		echo >&2 "packageEntries: error: \"$packageSuffix\" doesn't seem to be"
+		echo >&2 "a valid package suffix."
+		exit 1
+	fi
+
+	# move the entries
+	for file in $*; do
+		# If absolute, resolve to relative file name.
+		if [[ "$file" = /* ]]; then
+			if [[ "$file" =~ $prefix/(.*) ]]; then
+				file=${BASH_REMATCH[1]}
+			else
+				echo >&2 "packageEntries: error: absolute entry \"$file\""
+				echo >&2 "doesn't appear to be in \"$prefix\"."
+			fi
+		fi
+
+		# make sure target containing directory exists and move there
+		targetDir=$(dirname "$packagePrefix/$file")
+		mkdir -p "$targetDir"
+		mv "$prefix/$file" "$targetDir"
+	done
 }
 
 # source the configuration file
