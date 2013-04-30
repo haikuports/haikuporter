@@ -760,19 +760,19 @@ class Port:
 		self.shellVariables['LC_ALL'] = 'POSIX'
 
 		relativeConfigureDirs = {
-			'relativeDataDir':			'data',
-			'relativeDataRootDir':		'data',
-			'relativeBinDir':			'bin',
-			'relativeSbinDir':			'bin',
-			'relativeLibDir':			'lib',
-			'relativeIncludeDir':		'develop/headers',
-			'relativeOldIncludeDir':	'develop/headers',
-			'relativeDocDir':			'documentation/packages/' + self.name,
-			'relativeInfoDir':			'documentation/info',
-			'relativeManDir':			'documentation/man',
-			'relativeLibExecDir':		'lib',
-			'relativeSharedStateDir':	'var',
-			'relativeLocalStateDir':	'var',
+			'dataDir':			'data',
+			'dataRootDir':		'data',
+			'binDir':			'bin',
+			'sbinDir':			'bin',
+			'libDir':			'lib',
+			'includeDir':		'develop/headers',
+			'oldIncludeDir':	'develop/headers',
+			'docDir':			'documentation/packages/' + self.name,
+			'infoDir':			'documentation/info',
+			'manDir':			'documentation/man',
+			'libExecDir':		'lib',
+			'sharedStateDir':	'var',
+			'localStateDir':	'var',
 			# sysconfdir is only defined in configDirs below, since it is not
 			# necessarily below prefix
 		}
@@ -785,8 +785,6 @@ class Port:
 		# --pdfdir=DIR            pdf documentation [DOCDIR]
 		# --psdir=DIR             ps documentation [DOCDIR]
 
-		self.shellVariables.update(relativeConfigureDirs)
-
 		portPackageLinksDir = (systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/'
 			+ self.revisionedName)
 		prefix = portPackageLinksDir + '/.self'
@@ -795,9 +793,10 @@ class Port:
 			'prefix':		prefix,
 			'sysconfDir':	portPackageLinksDir + '/.settings',
 		}
-		for relativeName, value in relativeConfigureDirs.iteritems():
-			name = relativeName[8].lower() + relativeName[9:]
+		for name, value in relativeConfigureDirs.iteritems():
 			configureDirs[name] = prefix + '/' + value
+			relativeName = 'relative' + name[0].upper() + name[1:]
+			self.shellVariables[relativeName] = value
 
 		self.shellVariables.update(configureDirs)
 
@@ -813,19 +812,24 @@ class Port:
 		# Add variables for other standard directories. Consequently, we should
 		# use finddir to get them (also for the configure variables above), but
 		# we want relative paths here.
-		otherDirs = {
-			'addOnsDir': prefix + '/add-ons',
-			'appsDir': prefix + '/apps',
-			'developDir': prefix + '/develop',
-			'developDocDir': prefix + '/develop/documentation/'  + self.name,
-			'developLibDir': prefix + '/develop/lib',
-			'documentationDir': prefix + '/documentation',
-			'fontsDir': prefix + '/data/fonts',
-			'portPackageLinksDir': portPackageLinksDir,
-			'preferencesDir': prefix + '/preferences',
-			'settingsDir': prefix + '/settings',
+		relativeOtherDirs = {
+			'addOnsDir':		'add-ons',
+			'appsDir':			'apps',
+			'developDir':		'develop',
+			'developDocDir':	'develop/documentation/'  + self.name,
+			'developLibDir':	'develop/lib',
+			'documentationDir':	'documentation',
+			'fontsDir':			'data/fonts',
+			'preferencesDir':	'preferences',
+			'settingsDir':		'settings',
 		}
-		self.shellVariables.update(otherDirs)
+
+		for name, value in relativeOtherDirs.iteritems():
+			self.shellVariables[name] = prefix + '/' + value
+			relativeName = 'relative' + name[0].upper() + name[1:]
+			self.shellVariables[relativeName] = value
+
+		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the 
