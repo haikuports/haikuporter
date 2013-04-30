@@ -118,6 +118,15 @@ runConfigure()
 	$configure $dirArgs $@
 }
 
+fixDevelopLibDirReferences()
+{
+	# Usage: fixDevelopLibDirReferences <file> ...
+	# Replaces instances of $libDir in the given files with $developLibDir.
+	for file in $*; do
+		sed -i "s,$libDir,$developLibDir,g" $file
+	done
+}
+
 prepareInstalledDevelLib()
 {
 	if [ $# -lt 1 ]; then
@@ -175,6 +184,11 @@ prepareInstalledDevelLib()
 		elif [ "$lib" = "$sonameLib" ]; then
 			ln -s $(basename $sharedLib) $developLibDir/$soname
 		else
+			# patch .la files before moving
+			if [[ "$lib" =~ .*\.la ]]; then
+				fixDevelopLibDirReferences $lib
+			fi
+
 			mv $lib $developLibDir/
 		fi
 	done
