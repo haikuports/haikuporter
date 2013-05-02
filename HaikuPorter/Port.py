@@ -603,14 +603,15 @@ class Port:
 		if self.checkFlag('checkout'):
 			return
 
-		# create source-base dir
-		if not os.path.exists(self.sourceBaseDir):
-			os.makedirs(self.sourceBaseDir)
-
 		# Check to see if the source archive was already unpacked.
 		if self.checkFlag('unpack') and not getOption('force'):
 			print 'Skipping unpack ...'
 			return
+
+		# re-create source-base dir
+		if os.path.exists(self.sourceBaseDir):
+			shutil.rmtree(self.sourceBaseDir)
+		os.makedirs(self.sourceBaseDir)
 
 		# unpack source archive or simply copy source file
 		if not self.downloadedFileIsArchive:
