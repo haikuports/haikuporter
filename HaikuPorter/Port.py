@@ -419,10 +419,15 @@ class Port:
 				return
 
 			try:
-				# Need to make a request to get the actual uri in case it is an
-				# http redirect
-				uri_request = urllib2.urlopen(src_uri)
-				src_uri = uri_request.geturl()
+				# Need to make a request to get the actual URI in case it is an
+				# http redirect. Don't do that, if the URI already looks like it
+				# points to an archive file. This avoids unnecessary network
+				# traffic for the common case, particularly when the file has
+				# already been downloaded.
+				if not (src_uri.endswith('.gz') or src_uri.endswith('.bz2')
+					or src_uri.endswith('.xz') or src_uri.endswith('.tgz')):
+					uri_request = urllib2.urlopen(src_uri)
+					src_uri = uri_request.geturl()
 
 				self.downloadLocalFileName = src_uri[src_uri.rindex('/') + 1:]
 				if self.downloadLocalFileName.endswith('#noarchive'):
