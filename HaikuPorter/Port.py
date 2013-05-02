@@ -513,8 +513,13 @@ class Port:
 			ensureCommandIsAvailable('cvs')
 			checkoutCommand = 'cvs -d' + real_uri + ' co -P'
 			if rev:
-				# For CVS 'rev' specifies a date
-				checkoutCommand += ' -D' + rev
+				# For CVS 'rev' may specify a date or a revision/tag name. If it
+				# looks like a date, we assume it is one.
+				dateRegExp = re.compile('^\d{1,2}/\d{1,2}/\d{2,4}$')
+				if dateRegExp.match(rev):
+					checkoutCommand += ' -D' + rev
+				else:
+					checkoutCommand += ' -r' + rev
 			checkoutCommand += ' -d ' + checkoutDir + ' ' + module
 		elif type == 'svn':
 			ensureCommandIsAvailable('svn')
