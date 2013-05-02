@@ -64,6 +64,11 @@ def parseOptions():
 	parser.add_option('-n', '--nopatch', 
 					  action='store_false', dest='patch', default=True, 
 					  help="don't patch the sources, just download and unpack")
+	parser.add_option('-B', '--patch-files-only', 
+					  action='store_true', dest='patchFilesOnly',
+					  default=False,
+					  help="don't build the port, just download, unpack and "
+					  	   "apply patch files; don't call PATCH() though")
 	parser.add_option('-b', '--nobuild', 
 					  action='store_false', dest='build', default=True, 
 					  help="don't build the port, just download, unpack and "
@@ -104,5 +109,11 @@ def parseOptions():
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()
-	
+
+	# some normalization
+	if getOption('patchFilesOnly') or not getOption('patch'):
+		setattr(__Options__, 'build', False)
+	if not getOption('build'):
+		setattr(__Options__, 'package', False)
+
 	return (__Options__, args)

@@ -653,19 +653,29 @@ class Port:
 	
 			# Run PATCH() function in recipe, if defined.
 			if Phase.PATCH in self.definedPhases:
-				self._doRecipeAction(Phase.PATCH, self.sourceDir)
-				patched = True
+				if not getOption('patchFilesOnly'):
+					print 'Patching ...'
+					self._doRecipeAction(Phase.PATCH, self.sourceDir)
+					patched = True
+				else:
+					print 'Skipping patching ...'
+					# Make sure the half-patched sources aren't considered
+					# valid.
+					if patched:
+						self.unsetFlag('unpack')
+						self.unsetFlag('checkout')
+					return
 		except:
-			# Make sure the sources aren't in a half-patched state.
+			# Make sure a half-patched sources aren't considered valid.
 			if patched:
 				self.unsetFlag('unpack')
 				self.unsetFlag('checkout')
 			raise
 
-		if not patched:
+		if patched:
+			self.setFlag('patch')
+		else:
 			print 'No patching required'
-
-		self.setFlag('patch')
 
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package"""
