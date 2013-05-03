@@ -447,7 +447,10 @@ class Port:
 
 					print '\nDownloading: ' + src_uri
 					ensureCommandIsAvailable('wget')
-					check_call(['wget', '-c', '--tries=3', src_uri])
+					args = ['wget', '-c', '--tries=3', src_uri]
+					if src_uri.startswith('https://'):
+						args.insert(3, '--no-check-certificate')
+					check_call(args)
 				
 				# successfully downloaded source or it was already there
 				self.downloadedFile = localFile
