@@ -18,17 +18,14 @@ from HaikuPorter.RecipeTypes import Phase, Status
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
 										 recipeActionScript)
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
-							   symlinkFiles, symlinkGlob, sysExit, systemDir, 
-							   touchFile, unpackArchive, warn)
+from HaikuPorter.Source import Source
+from HaikuPorter.Utils import (check_output, naturalCompare, symlinkFiles, 
+							   symlinkGlob, sysExit, systemDir, touchFile, warn)
 
-import hashlib
 import os
-import re
 import shutil
 from subprocess import check_call, CalledProcessError
 import traceback
-import urllib2
 
 
 # -- Modules preloaded for chroot ---------------------------------------------
@@ -82,10 +79,6 @@ class Port:
 		self.fullVersion = None
 		self.revisionedName = None
 		
-		self.downloadedFile = None
-		self.downloadedFileIsArchive = True
-		self.checkout = None
-
 		self.definedPhases = []
 
 		# build dictionary of variables to inherit to shell
@@ -108,7 +101,7 @@ class Port:
 		self.downloadDir = self.baseDir + '/download'
 		self.patchesDir = self.baseDir + '/patches'
 		self.workDir = self.baseDir + '/work-' + self.version
-		self.sourceDir = self.sourceBaseDir = self.workDir + '/sources'
+		self.sourceBaseDir = self.workDir + '/sources'
 		self.packageInfoDir = self.workDir + '/package-infos'
 		self.buildPackageDir = self.workDir + '/build-packages'
 		self.packagingBaseDir = self.workDir + '/packaging'
@@ -140,6 +133,18 @@ class Port:
 		self.fullVersion = self.version + '-' + self.revision
 		self.revisionedName = self.name + '-' + self.fullVersion
 
+		# create sources
+		self.sources = []
+		keys = self.recipeKeys
+		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
+			source = Source(self, index, keys['SRC_URI'][index], 
+							keys['SRC_FILENAME'].get(index, None),
+							keys['CHECKSUM_MD5'].get(index, None),
+							keys['SOURCE_DIR'].get(index, None),
+							keys['PATCHES'].get(index, []))
+			self.sources.append(source)
+
+		# create packages
 		self.allPackages = []
 		self.packages = []
 		for extension in sorted(self.recipeKeysByExtension.keys()):
@@ -159,16 +164,7 @@ class Port:
 			if status == Status.STABLE:
 				self.packages.append(package)
 
-		# If a SOURCE_DIR was specified, adjust the default
-		if self.recipeKeys['SOURCE_DIR']:
-			self.sourceDir = (self.sourceBaseDir + '/' + 
-							  self.recipeKeys['SOURCE_DIR'])
-
-		# If PATCHES were specified, set our patches list accordingly.
-		self.patches = []
-		if self.recipeKeys['PATCHES']:
-			for patch in self.recipeKeys['PATCHES']:
-				self.patches.append(self.patchesDir + '/' + patch)
+		self.sourceDir = self.sources[0].sourceDir
 
 		# set up the complete list of variables we'll inherit to the shell
 		# when executing a recipe action
@@ -394,292 +390,45 @@ class Port:
 			shutil.rmtree(self.workDir)
 				
 	def downloadSource(self):
-		"""Fetch the source archive"""
-		
-		for src_uri in self.recipeKeys['SRC_URI']:
-			# Examine the URI to determine if we need to perform a checkout
-			# instead of download
-			if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$|^bzr.*$|^fossil.*$',
-						src_uri):
-				self.checkoutSource(src_uri)
-				return
+		"""Fetch the source archives and validate their checksum"""
 
-			# The source URI may be a local file path relative to the port
-			# directory.
-			if not ':' in src_uri:
-				filePath = self.baseDir + '/' + src_uri
-				if not os.path.isfile(filePath):
-					print ('SRC_URI %s looks like a local file path, but '
-						+ 'doesn\'t refer to a file, trying next location.\n'
-						% src_uri)
-					continue
-
-				self.downloadedFile = filePath
-				self.downloadLocalFileName = os.path.basename(src_uri)
-				return
-
-			try:
-				# Need to make a request to get the actual URI in case it is an
-				# http redirect. Don't do that, if the URI already looks like it
-				# points to an archive file. This avoids unnecessary network
-				# traffic for the common case, particularly when the file has
-				# already been downloaded.
-				if not (src_uri.endswith('.gz') or src_uri.endswith('.bz2')
-					or src_uri.endswith('.xz') or src_uri.endswith('.tgz')):
-					uri_request = urllib2.urlopen(src_uri)
-					src_uri = uri_request.geturl()
-
-				self.downloadLocalFileName = src_uri[src_uri.rindex('/') + 1:]
-				if self.downloadLocalFileName.endswith('#noarchive'):
-					self.downloadLocalFileName \
-						= self.downloadLocalFileName[:-10]
-					self.downloadedFileIsArchive = False
-				localFile = (self.downloadDir + '/' 
-							 + self.downloadLocalFileName)
-				if os.path.isfile(localFile):
-					print 'Skipping download ...'
-				else:
-					# create download dir and cd into it
-					if not os.path.exists(self.downloadDir):
-						os.mkdir(self.downloadDir)
-
-					os.chdir(self.downloadDir)
-
-					print '\nDownloading: ' + src_uri
-					ensureCommandIsAvailable('wget')
-					args = ['wget', '-c', '--tries=3', src_uri]
-					if src_uri.startswith('https://'):
-						args.insert(3, '--no-check-certificate')
-					check_call(args)
-				
-				# successfully downloaded source or it was already there
-				self.downloadedFile = localFile
-				return
-			except Exception:
-				warn('Download error from %s, trying next location.'
-					 % src_uri)
-
-		# failed to fetch source
-		sysExit('Failed to download source package from all locations.')
-
-	def checkoutSource(self, uri):
-		"""Parse the URI and execute the appropriate command to check out the
-		   source."""
-
-		# Attempt to parse a URI with a + in it. ex: hg+http://blah
-		# If it doesn't find the 'type' it should extract 'real_uri' and 'rev'
-		m = re.match('^((?P<type>\w*)\+)?(?P<real_uri>.+?)(#(?P<rev>.+))?$',
-					 uri)
-		if not m or not m.group('real_uri'):
-			sysExit("Couldn't parse repository URI " + uri)
-
-		type = m.group('type')
-		real_uri = m.group('real_uri')
-		rev = m.group('rev')
-
-		# Attempt to parse a URI without a + in it. ex: svn://blah
-		if not type:
-			m = re.match("^(\w*).*$", real_uri)
-			if m:
-				type = m.group(1)
-
-		if not type:
-			sysExit("Couldn't parse repository type from URI " + real_uri)
-
-		self.checkout = {
-			'type': type,
-			'uri': real_uri,
-			'rev': rev,
-		}
-
-		if self.checkFlag('checkout') and not getOption('force'):
-			print 'Source already checked out. Skipping ...'
-			return
-
-		# If the work dir exists we need to clean it out
-		if os.path.exists(self.workDir):
-			shutil.rmtree(self.workDir)
-
-		print 'Source checkout: ' + uri
-
-		# Set the name of the directory to check out sources into
-		checkoutDir = self.name + '-' + self.version
-
-		# Start building the command to perform the checkout
-		if type == 'cvs':
-			# Chop off the leading cvs:// part of the uri
-			real_uri = real_uri[real_uri.index('cvs://') + 6:]
-
-			# Extract the cvs module from the uri and remove it from real_uri
-			module = real_uri[real_uri.rfind('/') + 1:]
-			real_uri = real_uri[:real_uri.rfind('/')]
-			ensureCommandIsAvailable('cvs')
-			checkoutCommand = 'cvs -d' + real_uri + ' co -P'
-			if rev:
-				# For CVS 'rev' may specify a date or a revision/tag name. If it
-				# looks like a date, we assume it is one.
-				dateRegExp = re.compile('^\d{1,2}/\d{1,2}/\d{2,4}$')
-				if dateRegExp.match(rev):
-					checkoutCommand += ' -D' + rev
-				else:
-					checkoutCommand += ' -r' + rev
-			checkoutCommand += ' -d ' + checkoutDir + ' ' + module
-		elif type == 'svn':
-			ensureCommandIsAvailable('svn')
-			checkoutCommand \
-				= 'svn co --non-interactive --trust-server-cert'
-			if rev:
-				checkoutCommand += ' -r ' + rev
-			checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
-		elif type == 'hg':
-			ensureCommandIsAvailable('hg')
-			checkoutCommand = 'hg clone'
-			if rev:
-				checkoutCommand += ' -r ' + rev
-			checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
-		elif type == 'bzr':
-			# http://doc.bazaar.canonical.com/bzr-0.10/bzr_man.htm#bzr-branch-from-location-to-location
-			ensureCommandIsAvailable('bzr')
-			checkoutCommand = 'bzr checkout --lightweight'
-			if rev:
-				checkoutCommand += ' -r ' + rev
-			checkoutCommand += ' ' + real_uri + ' ' + checkoutDir
-		elif type == 'fossil':
-			# http://fossil-scm.org/index.html/doc/trunk/www/quickstart.wiki
-			if os.path.exists(checkoutDir + '.fossil'):
-				shutil.rmtree(checkoutDir + '.fossil')
-			ensureCommandIsAvailable('fossil')
-			checkoutCommand = 'fossil clone ' + real_uri
-			checkoutCommand += ' ' + checkoutDir + '.fossil'
-			checkoutCommand += ' && '
-			checkoutCommand += 'mkdir -p ' + checkoutDir
-			checkoutCommand += ' && '
-			checkoutCommand += 'fossil open ' + checkoutDir + '.fossil'
-			if rev:
-				checkoutCommand += ' ' + rev
-		else:	# assume git
-			ensureCommandIsAvailable('git')
-			self.checkout['type'] = 'git'
-			# TODO Skip the initial checkout if a rev is specified?
-			checkoutCommand = 'git clone %s %s' % (real_uri, checkoutDir)
-			if rev:
-				checkoutCommand += (' && cd %s'
-									' && git checkout %s' % (checkoutDir, rev))
-
-		# create the source-base dir
-		if not os.path.exists(self.sourceBaseDir):
-			os.makedirs(self.sourceBaseDir)
-
-		check_call(checkoutCommand, shell=True, cwd=self.sourceBaseDir)
-
-		# Set the 'checkout' flag to signal that the checkout is complete
-		# This also tells haikuporter not to attempt an unpack step
-		self.setFlag('checkout')
-
-	def checksumSource(self):
-		"""Make sure that the MD5-checksum matches the expectations"""
-
-		if self.recipeKeys['CHECKSUM_MD5']:
-			print 'Checking MD5 checksum of download ...'
-			h = hashlib.md5()
-			f = open(self.downloadedFile, 'rb')
-			while True:
-				d = f.read(16384)
-				if not d:
-					break
-				h.update(d)
-			f.close()
-			if h.hexdigest() != self.recipeKeys['CHECKSUM_MD5']:
-				sysExit('Expected: ' + self.recipeKeys['CHECKSUM_MD5'] + '\n'
-						+ 'Found: ' + h.hexdigest())
-		else:
-			# The checkout flag only gets set when a source checkout is 
-			# performed. If it exists we don't need to warn about the missing 
-			# recipe field
-			if not self.checkFlag('checkout'):
-				warn('CHECKSUM_MD5 key not found in recipe file.')
+		for source in self.sources:
+			source.download(self)
+			source.validateChecksum(self)
 
 	def unpackSource(self):
-		"""Unpack the source archive (into the work directory)"""
+		"""Unpack the source archive(s)"""
 
-		# Skip the unpack step if the source came from a vcs
-		if self.checkFlag('checkout'):
-			return
-
-		# Check to see if the source archive was already unpacked.
-		if self.checkFlag('unpack') and not getOption('force'):
-			print 'Skipping unpack ...'
-			return
-
-		# re-create source-base dir
-		if os.path.exists(self.sourceBaseDir):
-			shutil.rmtree(self.sourceBaseDir)
-		os.makedirs(self.sourceBaseDir)
-
-		# unpack source archive or simply copy source file
-		if not self.downloadedFileIsArchive:
-			shutil.copy(self.downloadedFile, self.sourceBaseDir)
-		else:
-			print 'Unpacking ' + self.downloadLocalFileName
-			unpackArchive(self.downloadedFile, self.sourceBaseDir)
-
-		# automatically try to rename archive folders containing '-':
-		if not os.path.exists(self.sourceDir):
-			maybeSourceDirName \
-				= os.path.basename(self.sourceDir).replace('_', '-')
-			maybeSourceDir = (os.path.dirname(self.sourceDir) + '/'
-							  + maybeSourceDirName)
-			if os.path.exists(maybeSourceDir):
-				os.rename(maybeSourceDir, self.sourceDir)
-
-		self.setFlag('unpack')
+		for source in self.sources:
+			source.unpackSource(self)
 
 	def patchSource(self):
-		"""Apply the Haiku patches to the source directory"""
-
-		# Check to see if the source has already been patched.
-		if self.checkFlag('patch') and not getOption('force'):
-			return
+		"""Apply the Haiku patches to the source(s)"""
 
 		patched = False
+		for source in self.sources:
+			if source.patch(self):
+				patched = True
 
-		try:
-			# Apply patches
-			if self.patches:
-				for patch in self.patches:
-					if not os.path.exists(patch):
-						sysExit('patch file "' + patch + '" not found.')
-	
-					print 'Applying patch "%s" ...' % patch
-					check_call(['patch', '-p0', '-i', patch], 
-							   cwd=self.sourceBaseDir)
-					patched = True
-	
-			# Run PATCH() function in recipe, if defined.
-			if Phase.PATCH in self.definedPhases:
-				if not getOption('patchFilesOnly'):
-					print 'Patching ...'
-					self._doRecipeAction(Phase.PATCH, self.sourceDir)
-					patched = True
-				else:
-					print 'Skipping patching ...'
-					# Make sure the half-patched sources aren't considered
-					# valid.
-					if patched:
-						self.unsetFlag('unpack')
-						self.unsetFlag('checkout')
-					return
-		except:
-			# Make sure a half-patched sources aren't considered valid.
-			if patched:
-				self.unsetFlag('unpack')
-				self.unsetFlag('checkout')
-			raise
-
-		if patched:
+		# Run PATCH() function in recipe, if defined.
+		if Phase.PATCH in self.definedPhases:
+			if getOption('patchFilesOnly'):
+				print 'Skipping patching ...'
+				# Make sure the half-patched sources aren't considered
+				# valid.
+				if patched:
+					for source in self.sources:
+						self.unsetFlag('unpack', source.index)
+						self.unsetFlag('checkout', source.index)
+				return
+			
+			# Check to see if the patching phase  has already been executed.
+			if self.checkFlag('patch') and not getOption('force'):
+				return
+			
+			print 'Patching ...'
+			self._doRecipeAction(Phase.PATCH, self.sourceDir)
 			self.setFlag('patch')
-		else:
-			print 'No patching required'
 
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package"""
@@ -751,16 +500,26 @@ class Port:
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
 			
-	def setFlag(self, name):
-		touchFile('%s/flag.%s' % (self.workDir, name))
+	def setFlag(self, name, index = '1'):
+		if index == '1':
+			touchFile('%s/flag.%s' % (self.workDir, name))
+		else:
+			touchFile('%s/flag.%s-%s' % (self.workDir, name, index))
 
-	def unsetFlag(self, name):
-		flagFile = '%s/flag.%s' % (self.workDir, name)
+	def unsetFlag(self, name, index = '1'):
+		if index == '1':
+			flagFile = '%s/flag.%s' % (self.workDir, name)
+		else:
+			flagFile = '%s/flag.%s-%s' % (self.workDir, name, index)
+			
 		if os.path.exists(flagFile):
 			os.remove(flagFile)
 
-	def checkFlag(self, name):
-		return os.path.exists('%s/flag.%s' % (self.workDir, name))
+	def checkFlag(self, name, index = '1'):
+		if index == '1':
+			return os.path.exists('%s/flag.%s' % (self.workDir, name))
+
+		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
 
 	def test(self):
 		"""Test the port"""
@@ -775,9 +534,15 @@ class Port:
 			'portRevision': self.revision,
 			'portFullVersion': self.fullVersion,
 			'portRevisionedName': self.revisionedName,
-			'sourceDir': self.sourceDir,
 			'portDir': '/port',
 		})
+		
+		for source in self.sources:
+			if source.index == '1':
+				sourceDirKey = 'sourceDir'
+			else:
+				sourceDirKey = 'sourceDir' + source.index
+			self.shellVariables[sourceDirKey] = source.sourceDir
 
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)
@@ -928,6 +693,12 @@ class Port:
 	def _adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
 		
+		for source in self.sources:
+			source.adjustToChroot(self)
+
+		for package in self.allPackages:
+			package.adjustToChroot()
+
 		# unset directories which can't be reached from inside the chroot
 		self.baseDir = None
 		self.downloadDir = None
@@ -948,8 +719,6 @@ class Port:
 		# update shell variables, too
 		self._updateShellVariablesFromRecipe()
 				
-		for package in self.allPackages:
-			package.adjustToChroot()
 
 	def _doBuildStage(self):
 		"""Run the actual build"""

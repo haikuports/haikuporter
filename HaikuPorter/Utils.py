@@ -5,6 +5,7 @@
 
 import glob
 import os
+import re
 import shutil
 from subprocess import PIPE, Popen, CalledProcessError
 import sys
@@ -138,3 +139,15 @@ def ensureCommandIsAvailable(command):
 				break
 		else:
 			sysExit("'" + command + "' is not available, please install it")
+
+# -- naturalCompare -----------------------------------------------------------
+
+def naturalCompare(left, right): 
+	"""performs a natural compare between the two given strings - returns:
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both are equal"""
+	
+	convert = lambda text: int(text) if text.isdigit() else text.lower()
+	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+	return cmp(alphanum_key(left), alphanum_key(right))

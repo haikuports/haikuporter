@@ -24,18 +24,21 @@ haikuportsAttributes = {
 		'required': True,
 		'default': None,
 		'extendable': False,
+		'indexable': False,
 	},
 	'PATCH_OPTIONS': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
 		'extendable': False,
+		'indexable': False,
 	},
 	'TREE_PATH': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
 		'extendable': False,
+		'indexable': False,
 	},
 }
 

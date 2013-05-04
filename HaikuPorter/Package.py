@@ -13,8 +13,8 @@
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
-from HaikuPorter.Utils import (escapeForPackageInfo, sysExit, systemDir, 
-							   unpackArchive)
+from HaikuPorter.Utils import (escapeForPackageInfo, naturalCompare, sysExit, 
+							   systemDir, unpackArchive)
 
 import os
 import shutil
@@ -283,14 +283,16 @@ class Package(object):
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.
 			infoFile.write('source-urls {\n')
-			uricount = 1
-			for src_uri in self.recipeKeys['SRC_URI']:
-				if uricount < 2:
-					infoFile.write('\t"Download <' + src_uri + '>"\n')
-				else:
-					infoFile.write('\t"Location ' + str(uricount) + ' <' 
-								   + src_uri + '>"\n')
-				uricount += 1
+			for index in sorted(self.recipeKeys['SRC_URI'].keys(), 
+								cmp=naturalCompare):
+				uricount = 1
+				for uri in self.recipeKeys['SRC_URI'][index]:
+					if uricount < 2:
+						infoFile.write('\t"Download <' + uri + '>"\n')
+					else:
+						infoFile.write('\t"Location ' + str(uricount) + ' <' 
+									   + uri + '>"\n')
+					uricount += 1
 
 			# TODO: fix or drop the following URLs
 			# Point directly to the file in subversion.
@@ -332,40 +334,47 @@ class SourcePackage(Package):
 		"""Prefill packaging directory with stuff from the outside"""
 
 		print "Populating source package ..."
-		
-		targetDir = self.packagingDir + '/source'
-		if not os.path.exists(targetDir):
-			os.mkdir(targetDir)
 
-		if port.downloadedFile:
-			# unpack the archive into source package's directory
-			unpackArchive(port.downloadedFile, targetDir)
-		elif port.checkout:
-			# Start building the command to perform the checkout
-			type = port.checkout['type']
-			rev = port.checkout['rev']
-			os.chdir(self.sourceDir)
-			if type == 'svn':
-				command = 'svn export -r %s . "%s"' % (rev, targetDir)
-			elif type == 'hg':
-				command = 'hg archive -r %s -t files "%s"' % (rev, targetDir)
-			elif type == 'git':
-				command = 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
+		for source in port.sources:
+			if source.index == '1':
+				targetDir = self.packagingDir + '/source'
 			else:
-				sysExit('Exporting sources from checkout is not implemented '
-						+ 'yet for vcs-type ' + type)
-			check_call(command, shell=True)
-
-		if port.patches:
-			# copy and apply patches
-			patchesDir = self.packagingDir + '/patches'
-			os.mkdir(patchesDir)
-			for patch in port.patches:
-				shutil.copy(patch, patchesDir)
-				check_call(['patch', '-p0', '-i', patch], cwd=targetDir)
-			with open(patchesDir + '/ReadMe', 'w') as readmeFile:
-				readmeFile.write('The patches in this folder have already '
-								 + 'been applied to the source directory.\n')
+				targetDir = self.packagingDir + '/source-' + source.index
+				
+			if not os.path.exists(targetDir):
+				os.mkdir(targetDir)
+	
+			if source.localFile:
+				# unpack the archive into source package's directory
+				unpackArchive(source.localFile, targetDir)
+			elif source.checkout:
+				# Start building the command to perform the checkout
+				type = source.checkout['type']
+				rev = source.checkout['rev']
+				os.chdir(source.sourceDir)
+				if type == 'svn':
+					command = 'svn export -r %s . "%s"' % (rev, targetDir)
+				elif type == 'hg':
+					command \
+						= 'hg archive -r %s -t files "%s"' % (rev, targetDir)
+				elif type == 'git':
+					command \
+						= 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
+				else:
+					sysExit('Exporting sources from checkout has not been '
+						    + ' implemented yet for vcs-type ' + type)
+				check_call(command, shell=True)
+	
+			if source.patches:
+				# copy and apply patches
+				patchesDir = self.packagingDir + '/patches'
+				os.mkdir(patchesDir)
+				for patch in source.patches:
+					shutil.copy(patch, patchesDir)
+					check_call(['patch', '-p0', '-i', patch], cwd=targetDir)
+				with open(patchesDir + '/ReadMe', 'w') as readmeFile:
+					readmeFile.write('The patches in this folder have already '
+									 + 'been applied to the sources.\n')
 
 		# copy recipe file
 		shutil.copy(port.recipeFilePath, self.packagingDir)

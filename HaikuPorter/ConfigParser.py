@@ -52,6 +52,7 @@ class ConfigParser:
 				# unextended key
 				baseKey = key
 				extension = ''
+				index = '1'
 			else:
 				baseKey = ''
 				subKeys = key.split('_')
@@ -59,12 +60,19 @@ class ConfigParser:
 					subKey = subKeys.pop(0)
 					baseKey += ('_' if baseKey else '') + subKey
 					if baseKey in attributes:
-						if not attributes[baseKey]['extendable']:
-							warn('Ignoring key %s in file %s, as %s is not '
-								 'extendable' % (key, filename, baseKey))
-							continue
-						extension = '_'.join(subKeys)
-						break;
+						if attributes[baseKey]['extendable']:
+							extension = '_'.join(subKeys)
+							break
+						if attributes[baseKey]['indexable']:
+							index = None
+							if len(subKeys) == 0:
+								index = '1'
+								break
+							if len(subKeys) == 1 and subKeys[0].isdigit():
+								index = subKeys[0]
+								break
+						warn('Ignoring key %s in file %s' % (key, filename))
+						continue
 				else:
 					# might be a <PHASE>_DEFINED
 					isPhaseKey = False
@@ -89,19 +97,33 @@ class ConfigParser:
 			valueString = valueString.replace(r'\n', '\n')
 				# replace quoted newlines by real newlines
 				
+			if attributes[baseKey]['indexable']: 
+				if not baseKey in entries:
+					entries[baseKey] = {}
+				
 			type = attributes[baseKey]['type']
 			if type == types.StringType:
-				entries[key] = valueString
+				if attributes[baseKey]['indexable']:
+					entries[baseKey][index] = valueString
+				else:
+					entries[key] = valueString
 			elif type == types.IntType:
 				try:
-					entries[key] = int(valueString)
+					if attributes[baseKey]['indexable']:
+						entries[baseKey][index] = int(valueString)
+					else:
+						entries[key] = int(valueString)
 				except ValueError:
 					sysExit('evaluating file %s produced illegal value '
 							'"%s" for key %s, expected an <integer> value'
 							% (filename, key, valueString))
 			elif type == types.ListType:
 				values = [v.strip() for v in valueString.splitlines()]
-				entries[key] = [v for v in values if len(v) > 0]
+				values = [v for v in values if len(v) > 0]
+				if attributes[baseKey]['indexable']:
+					entries[baseKey][index] = values
+				else:
+					entries[key] = values
 			elif type == LinesOfText:
 				# like a list, but only strip empty lines in front of and
 				# after the text

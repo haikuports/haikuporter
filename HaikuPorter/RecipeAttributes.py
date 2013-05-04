@@ -19,54 +19,71 @@ import types
 # -- recipe keys and their attributes -----------------------------------------
 
 recipeAttributes = {
-	# non-extendable, i.e. per-port attributes
+	# non-extendable and non-indexable, i.e. per-port attributes
 	'BUILD_PACKAGE_ACTIVATION_PHASE': {
 		'type': Phase,
 		'required': False,
 		'default': Phase('BUILD'),
 		'extendable': False,
-	},
-	'CHECKSUM_MD5': {
-		'type': types.StringType,
-		'required': False,
-		'default': None,
-		'extendable': False,
+		'indexable': False,
 	},
 	'HOMEPAGE': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
 		'extendable': False,
+		'indexable': False,
 	},
 	'MESSAGE': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
 		'extendable': False,
-	},
-	'PATCHES': {
-		'type': types.ListType,
-		'required': False,
-		'default': None,
-		'extendable': False,
+		'indexable': False,
 	},
 	'REVISION': {
 		'type': types.IntType,
 		'required': True,
 		'default': 1,
 		'extendable': False,
+		'indexable': False,
+	},
+				
+	# indexable, i.e. per-source attributes
+	'CHECKSUM_MD5': {
+		'type': types.StringType,
+		'required': False,
+		'default': {},
+		'extendable': False,
+		'indexable': True,
+	},
+	'PATCHES': {
+		'type': types.ListType,
+		'required': False,
+		'default': {},
+		'extendable': False,
+		'indexable': True,
 	},
 	'SOURCE_DIR': {
 		'type': types.StringType,
 		'required': False,
-		'default': None,
+		'default': {},
 		'extendable': False,
+		'indexable': True,
+	},
+	'SRC_FILENAME': {
+		'type': types.StringType,
+		'required': False,
+		'default': {},
+		'extendable': False,
+		'indexable': True,
 	},
 	'SRC_URI': {
 		'type': types.ListType,
 		'required': True,
-		'default': [],
+		'default': {},
 		'extendable': False,
+		'indexable': True,
 	},
 
 	# extendable, i.e. per-package attributes
@@ -75,78 +92,91 @@ recipeAttributes = {
 		'required': True,
 		'default': None,
 		'extendable': True,
+		'indexable': False,
 	},
 	'BUILD_PREREQUIRES': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'BUILD_REQUIRES': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'CONFLICTS': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'COPYRIGHT': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'DESCRIPTION': {
 		'type': LinesOfText,
 		'required': True,
 		'default': None,
 		'extendable': True,
+		'indexable': False,
 	},
 	'FRESHENS': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'LICENSE': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'NAME_EXTENSION': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
 		'extendable': True,
+		'indexable': False,
 	},
 	'PROVIDES': {
 		'type': types.ListType,
 		'required': True,
 		'default': None,
 		'extendable': True,
+		'indexable': False,
 	},
 	'REPLACES': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'REQUIRES': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 	'SUMMARY': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
 		'extendable': True,
+		'indexable': False,
 		'suffix': {
 			PackageType.DEVELOPMENT: ' (development files)',
 			PackageType.DEBUG: ' (debug info)',
@@ -159,5 +189,6 @@ recipeAttributes = {
 		'required': False,
 		'default': [],
 		'extendable': True,
+		'indexable': False,
 	},
 }

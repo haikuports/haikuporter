@@ -14,8 +14,8 @@ from HaikuPorter.GlobalConfig import (globalConfiguration,
 									  readGlobalConfiguration)
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit, 
-							   touchFile, warn)
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
+							   naturalCompare, sysExit, touchFile, warn)
 
 import glob
 import os
@@ -39,18 +39,6 @@ regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
 
 haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 
-
-# -- naturalCompare -----------------------------------------------------------
-
-def naturalCompare(left, right): 
-	"""performs a natural compare between the two given strings - returns:
-		-1 if left is lower than right
-		 1 if left is higher than right
-		 0 if both are equal"""
-	
-	convert = lambda text: int(text) if text.isdigit() else text.lower()
-	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
-	return cmp(alphanum_key(left), alphanum_key(right))
 
 # -- bareVersionCompare -------------------------------------------------------
 
@@ -330,7 +318,6 @@ class Main:
 			port.cleanWorkDirectory()
 
 		port.downloadSource()
-		port.checksumSource()
 		port.unpackSource()
 		if self.options.patch:
 			port.patchSource()
