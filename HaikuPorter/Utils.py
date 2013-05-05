@@ -156,8 +156,10 @@ def filteredEnvironment():
 	   variables that we export for one port leak into the shell environment 
 	   of another"""
 
-	return {
-		'LANG': os.environ['LANG'],
-		'LIBRARY_PATH': os.environ['LIBRARY_PATH'],
-		'PATH': os.environ['PATH'],
-	}
+	env = {}
+
+	for key in ['LANG', 'LIBRARY_PATH', 'PATH']:
+		if key in os.environ:
+			env[key] = os.environ[key]
+	
+	return env
