@@ -86,6 +86,7 @@ class Port:
 			'portName': self.name,
 			'portVersion': self.version,
 			'portVersionedName': self.versionedName,
+			'portBaseDir': self.baseDir,
 		}
 		self.shellVariables.update(globalShellVariables)
 		
