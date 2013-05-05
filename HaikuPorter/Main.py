@@ -324,7 +324,7 @@ class Main:
 		"""Build a single port"""
 
 		print '-' * 70
-		print port.versionedName
+		print port.category + '::' + port.versionedName
 		print '-' * 70
 		
 		# pass-on options to port
