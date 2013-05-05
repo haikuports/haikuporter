@@ -67,11 +67,13 @@ class Source(object):
 			if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$|^bzr.*$|^fossil.*$',
 						uri):
 				try:
-					self._checkout(uri)
+					self._checkout(port, uri)
 					return
-				except Exception:
-					warn('Checkout error from %s, trying next location.' % uri)
+				except Exception as e:
+					warn('Checkout error from %s:\n\t%s\ntrying next location.' 
+						 % (uri, str(e)))
 					self.checkout = None
+					continue
 
 			# The source URI may be a local file path relative to the port
 			# directory.
@@ -252,6 +254,7 @@ class Source(object):
 		# If the source-base dir exists we need to clean it out
 		if os.path.exists(self.sourceBaseDir):
 			shutil.rmtree(self.sourceBaseDir)
+		os.makedirs(self.sourceBaseDir)
 
 		print 'Source checkout: ' + uri
 
