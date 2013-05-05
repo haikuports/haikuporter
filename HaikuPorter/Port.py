@@ -46,17 +46,18 @@ class ChrootSetup:
 	def __enter__(self):
 		# execute the chroot setup scriptlet via the shell ...
 		os.chdir(self.path)
-		shellEnv = { 
+		shellEnv = filteredEnvironment()
+		shellEnv.update({ 
 			'packages': '\n'.join(self.packages), 
 			'recipeFile': self.recipeFile, 
-		}
+		})
 		check_call(['/bin/bash', '-c', setupChrootScript], env=shellEnv)
 		return self
 	
 	def __exit__(self, type, value, traceback):
 		# execute the chroot cleanup scriptlet via the shell ...
 		os.chdir(self.path)
-		shellEnv = {}
+		shellEnv = filteredEnvironment()
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
 		check_call(['/bin/bash', '-c', cleanupChrootScript], env=shellEnv)
