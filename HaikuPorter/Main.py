@@ -25,16 +25,6 @@ from subprocess import check_call
 import sys
 
 
-# -----------------------------------------------------------------------------
-
-# regex to split recipe filenames into port / version
-regExp = {}
-regExp['portname'] = '^(?P<name>[^-/=!<>]+)'
-regExp['portversion'] = '(?P<version>[\w.~]+)'
-regExp['portfullname'] = regExp['portname'] + '-' + regExp['portversion']
-regExp['recipefilename'] = regExp['portfullname'] + '\.recipe$'
-
-
 # -- path to haikuports-tree --------------------------------------------------
 
 haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
@@ -156,41 +146,56 @@ class Main:
 			self._checkSourceTree()
 			sys.exit()
 
-		# if there is no argument given, exit
-		if not args:
-			sysExit('You need to specify a search string.\n'
-					"Invoke '" + sys.argv[0] + " -h' for usage information.")
+		# if a ports-file has been given, read port specifications from it
+		# and build them all
+		self.portSpecs = []
+		if self.options.portsfile:
+			with open(self.options.portsfile, 'r') as portsFile:
+				portSpecs = [ p.strip() for p in portsFile.readlines() ]
+			portSpecs = [ p for p in portSpecs if len(p) > 0 ]
+			for portSpec in portSpecs:
+				self.portSpecs.append(
+					self._splitPortSpecIntoNameVersionAndRevision(portSpec))
+			if not self.portSpecs:
+				sysExit("The given ports-file doesn't contain any ports.")
 		else:
-			port = args[0]
-
-		# split the argument into a port name and a version
-		name, version = self._splitPortSpecIntoNameAndVersion(port)
-
-		# find the port in the HaikuPorts tree
-		category = self._getCategory(name)
-		if category == None:
-			sysExit('Port ' + name + ' not found in tree.')
-
-		baseDir = self.treePath + '/' + category + '/' + name
-
-		# if the port version was not specified, list available versions
-		if version == None:
-			versions = []
-			reRecipeFile = re.compile(regExp['recipefilename'])
-			dirList = os.listdir(baseDir)
-			for item in dirList:
-				m = reRecipeFile.match(item)
-				if m:
-					versions.append([m.group('version'), item])
-			if len(versions) > 0:
-				print 'Following versions of %s are available:' % name
-				for version in versions:
-					print '  ' + version[0]
-				sysExit('Please run haikuporter again, specifying a port '
-						+ 'version')
+			# if there is no argument given, exit
+			if not args:
+				sysExit('You need to specify a search string.\nInvoke '
+						"'" + sys.argv[0] + " -h' for usage information.")
 			else:
-				sysExit('No recipe files for %s found.' % name)
+				self.portSpecs.append(
+					self._splitPortSpecIntoNameVersionAndRevision(args[0]))
+
+		# check all port specifiers
+		for portSpec in self.portSpecs:
+			# find the port in the HaikuPorts tree
+			category = self._getCategory(portSpec['name'])
+			if category == None:
+				sysExit('Port ' + portSpec['name'] + ' not found in tree.')
 	
+			baseDir = self.treePath + '/' + category + '/' + portSpec['name']
+	
+			# if the port version was not specified, list available versions
+			if portSpec['version'] == None:
+				versions = []
+				dirList = os.listdir(baseDir)
+				for item in dirList:
+					if (not item.endswith('.recipe')):
+						continue
+					portElements = item[:-7].split('-')
+					if len(portElements) == 2:
+						versions.append(portElements[1])
+				if len(versions) > 0:
+					print('Following versions of %s are available:' 
+						  % portSpec['name'])
+					for version in versions:
+						print '  ' + version
+					sysExit('Please run haikuporter again, specifying a port '
+							+ 'version')
+				else:
+					sysExit('No recipe files for %s found.' % portSpec['name'])
+		
 		# don't build or package when not patching
 		if not self.options.patch:
 			self.options.build = False
@@ -203,24 +208,46 @@ class Main:
 		else:
 			self._populateRepository()
 			
-		# do whatever's needed to the main port
+		# collect all available ports and validate each specified port
 		allPorts = self._getAllPorts()
-		portID = name + '-' + version
-		if portID not in allPorts:
-			sysExit(portID + ' not found in tree.')
-		self._doMainPort(allPorts[portID])
+		for portSpec in self.portSpecs:
+			portID = portSpec['name'] + '-' + portSpec['version']
+			if portID not in allPorts:
+				sysExit(portID + ' not found in tree.')
+			port = allPorts[portID]
+			portSpec['id'] = portID
+			
+			# show port description, if requested
+			if self.options.about:
+				port.printDescription()
+			
+			self._validateMainPort(port, portSpec['revision'])
+			
+		# do whatever's needed to the list of ports
+		for portSpec in self.portSpecs:
+			port = allPorts[portSpec['id']]
+			
+			if self.options.build:
+				self._buildMainPort(port)
+			else:
+				self._buildPort(port, True, self.packagesPath)
 
-	def _doMainPort(self, port):
-		"""Build/Unpack/... the port requested on the cmdline"""
+			# TODO: reactivate these!
+			# if self.options.test:
+			#	port.test()
+
+	def _validateMainPort(self, port, revision):
+		"""Parse the recipe file for the given port and get any required
+		   confirmations"""
 			
 		# read data from the recipe file
-		if not port.revision:
-			port.parseRecipeFile(True)
-
-		# show port description, if requested
-		if self.options.about:
-			port.printDescription()
-			sys.exit()
+		port.parseRecipeFile(True)
+		
+		# if a specific revision has been given, check if this port matches it
+		if revision and port.revision != revision:
+			sysExit(("port %s isn't available in revision %s (found revision "
+					+ '%s instead)')
+					% (port.versionedName, revision, port.revision))
 
 		# warn when the port is not stable on this architecture
 		status = port.getStatusOnCurrentArchitecture()
@@ -246,18 +273,13 @@ class Main:
 				else:
 					sys.exit(1)
 
-		if self.options.build:
-			self._buildMainPort(port)
-		else:
-			self._buildPort(port, True, self.packagesPath)
-
-		# TODO: reactivate these!
-		# if self.options.test:
-		#	port.test()
-
 	def _buildMainPort(self, port):
-		"""Build the port given on cmdline"""
+		"""Build the given port with all its dependencies"""
 
+		print '=' * 70
+		print port.category + '::' + port.versionedName
+		print '=' * 70
+		
 		# HPKGs are usually written into the 'packages' directory, but when
 		# an obsolete port (one that's not in the repository) is being built,
 		# its packages are stored into the .obsolete subfolder of the packages
@@ -379,18 +401,17 @@ class Main:
 						and (not regExp or reSearch.search(portName))):
 						print category + '/' + portName
 
-	def _splitPortSpecIntoNameAndVersion(self, portSpec):
-		reWithVersion = re.compile(regExp['portfullname'])
-		reWithoutVersion = re.compile(regExp['portname'] + '$')
-		if reWithVersion.match(portSpec):  # with version
-			m = reWithVersion.match(portSpec)
-			return m.group('name'), m.group('version')
-		elif reWithoutVersion.match(portSpec):
-			m = reWithoutVersion.match(portSpec)
-			return m.group('name'), None
-		else:
-			# invalid argument
-			sysExit('Invalid port name ' + portSpec)
+	def _splitPortSpecIntoNameVersionAndRevision(self, portSpecString):
+		elements = portSpecString.split('-')
+		if len(elements) < 1 or len(elements) > 3:
+			sysExit('Invalid port specifier ' + portSpecString)
+		
+		return  { 
+			'specifier': portSpecString, 
+			'name': elements[0],
+			'version': elements[1] if len(elements) > 1 else None,
+			'revision': elements[2] if len(elements) > 2 else None,
+		}
 
 	def _getCategory(self, portName):
 		"""Find location of the specified port in the HaikuPorts tree"""
@@ -619,11 +640,9 @@ class Main:
 					if (not os.path.isfile(recipePath) 
 						or not recipe.endswith('.recipe')):
 						continue
-					reWithVersion = re.compile(regExp['recipefilename'])
-					m = reWithVersion.match(recipe)
-					if (m and m.group('name') and m.group('version')):
-						name = m.group('name')
-						version = m.group('version')
+					portElements = recipe[:-7].split('-')
+					if len(portElements) == 2:
+						name, version = portElements
 						if name not in self._portVersionsByName:
 							self._portVersionsByName[name] = [ version ]
 						else:

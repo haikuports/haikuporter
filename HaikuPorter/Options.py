@@ -91,6 +91,11 @@ def parseOptions():
 					  help="don't clear any flags when a changed recipe file "
 						   "is detected")
 	
+	parser.add_option('-P', '--portsfile', 
+					  action='store', type='string', dest='portsfile', 
+					  default='', 
+					  help="handle all ports in the given file")
+	
 	parser.add_option('-c', '--clean', 
 					  action='store_true', dest='clean', default=False, 
 					  help="clean the working directory of the specified port")
