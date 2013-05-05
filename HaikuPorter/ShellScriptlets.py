@@ -3,6 +3,18 @@
 
 # -----------------------------------------------------------------------------
 
+# A list of all the commands/packages that are prerequired in the chroot, such
+# that these scriptlets have all the commands available that they are using.
+scriptletPrerequirements = r'''
+	coreutils
+	cmd:bash
+	cmd:grep
+	cmd:readelf
+	cmd:sed
+'''
+
+# -----------------------------------------------------------------------------
+
 # Shell scriptlet that is used to execute a config file and output all the 
 # configuration values (in the form of environment variables) which have been
 # set explicitly in the configuration file. The first placeholder is substituted 

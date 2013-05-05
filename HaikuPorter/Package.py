@@ -13,6 +13,7 @@
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
+from HaikuPorter.ShellScriptlets import scriptletPrerequirements
 from HaikuPorter.Utils import (escapeForPackageInfo, naturalCompare, sysExit, 
 							   systemDir, unpackArchive)
 
@@ -263,7 +264,14 @@ class Package(object):
 	
 			requires = []
 			for requiresKey in requiresToUse:
-				requires += self.recipeKeys[requiresKey]
+				if requiresKey == 'SCRIPTLET_PREREQUIRES':
+					# add prerequirements for executing chroot scriptlets
+					requires += [
+						r for r in scriptletPrerequirements.splitlines()
+						if len(r)
+					]
+				else:
+					requires += self.recipeKeys[requiresKey]
 	
 			if fakeEmptyProvides:
 				infoFile.write('provides {\n\tfaked_' + self.name + ' = ' 

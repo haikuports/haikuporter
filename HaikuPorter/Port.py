@@ -634,8 +634,9 @@ class Port:
 		for package in self.packages:
 			packageInfoFile = (package.packageInfoDir + '/' 
 							   + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(packageInfoFile, 
-													   ['BUILD_PREREQUIRES'])
+			package.generatePackageInfoWithoutProvides(
+				packageInfoFile, 
+				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 		
 		# Determine the prerequired packages, allowing "host" packages, but
@@ -647,7 +648,7 @@ class Port:
 		prereqPackages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'build prerequirements')
 		prereqPackages = [ 
-			package for package in prereqPackages 
+			package for package in prereqPackages
 			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
 		]
 
@@ -661,9 +662,10 @@ class Port:
 		for package in self.packages:
 			packageInfoFile = (package.packageInfoDir + '/' 
 							   + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(packageInfoFile, 
-													   [ 'BUILD_REQUIRES', 
-													     'BUILD_PREREQUIRES' ])
+			package.generatePackageInfoWithoutProvides(
+				packageInfoFile, 
+				[ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 
+				  'SCRIPTLET_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 
 		# Determine the build requirements.
