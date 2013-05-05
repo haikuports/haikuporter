@@ -316,8 +316,8 @@ class Source(object):
 			self.checkout['type'] = 'git'
 			checkoutCommand = 'git clone %s %s' % (realUri, checkoutDir)
 			if rev:
-				checkoutCommand += (' && cd %s'
-									' && git checkout %s' % (checkoutDir, rev))
+				checkoutCommand += (' && cd %s && git checkout -q %s' 
+									% (checkoutDir, rev))
 
 		check_call(checkoutCommand, shell=True, cwd=self.sourceBaseDir)
 
