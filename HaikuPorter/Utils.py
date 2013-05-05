@@ -128,7 +128,6 @@ def touchFile(file):
 
 # -- ensureCommandIsAvailable -------------------------------------------------
 availableCommands = {}
-
 def ensureCommandIsAvailable(command):
 	"""checks if the given command is available and bails if not"""
 
@@ -141,7 +140,6 @@ def ensureCommandIsAvailable(command):
 			sysExit("'" + command + "' is not available, please install it")
 
 # -- naturalCompare -----------------------------------------------------------
-
 def naturalCompare(left, right): 
 	"""performs a natural compare between the two given strings - returns:
 		-1 if left is lower than right
@@ -151,3 +149,15 @@ def naturalCompare(left, right):
 	convert = lambda text: int(text) if text.isdigit() else text.lower()
 	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
 	return cmp(alphanum_key(left), alphanum_key(right))
+
+# -- filteredEnvironment ------------------------------------------------------
+def filteredEnvironment():
+	"""returns a filtered version of os.environ, such that none of the 
+	   variables that we export for one port leak into the shell environment 
+	   of another"""
+
+	return {
+		'LANG': os.environ['LANG'],
+		'LIBRARY_PATH': os.environ['LIBRARY_PATH'],
+		'PATH': os.environ['PATH'],
+	}

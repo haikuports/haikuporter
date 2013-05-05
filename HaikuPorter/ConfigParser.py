@@ -5,7 +5,7 @@
 
 from HaikuPorter.RecipeTypes import *
 from HaikuPorter.ShellScriptlets import configFileEvaluatorScript
-from HaikuPorter.Utils import check_output, sysExit, warn
+from HaikuPorter.Utils import check_output, filteredEnvironment, sysExit, warn
 
 import os
 from subprocess import CalledProcessError
@@ -21,8 +21,7 @@ class ConfigParser:
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
-		shellEnv = {}
-		shellEnv.update(os.environ)
+		shellEnv = filteredEnvironment()
 		shellEnv.update(shellVariables)
 
 		shellEnv['recipePhases'] = ' '.join(Phase.getAllowedValues())

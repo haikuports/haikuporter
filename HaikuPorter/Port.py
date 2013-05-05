@@ -19,8 +19,9 @@ from HaikuPorter.ShellScriptlets import (setupChrootScript,
 										 cleanupChrootScript,
 										 recipeActionScript)
 from HaikuPorter.Source import Source
-from HaikuPorter.Utils import (check_output, naturalCompare, symlinkFiles, 
-							   symlinkGlob, sysExit, systemDir, touchFile, warn)
+from HaikuPorter.Utils import (check_output, filteredEnvironment, 
+							   naturalCompare, symlinkFiles, symlinkGlob, 
+							   sysExit, systemDir, touchFile, warn)
 
 import os
 import shutil
@@ -795,7 +796,7 @@ class Port:
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
-		shellEnv = os.environ
+		shellEnv = filteredEnvironment()
 		shellEnv.update(self.shellVariables)
 
 		# execute the requested action via a shell ....
