@@ -340,17 +340,17 @@ class Port:
 		packageInfoFiles = []
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfoWithoutProvides(packageInfoFile, 
-													   ['BUILD_PREREQUIRES'])
+			package.generatePackageInfoWithoutProvides(
+				packageInfoFile, [ 'BUILD_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 		
-		# determine the prerequired packages, allowing "host" packages, but
+		# determine the prerequired packages, allowing host packages, but
 		# filter our system packages, as those are irrelevant.
 		repositories = [ packagesPath, workRepositoryPath,
 						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		prereqPackages = self._resolveDependenciesViaPkgman(
-			packageInfoFiles, repositories, 'build prerequirements')
+			packageInfoFiles, repositories, 'prerequired ports')
 		prereqPackages = [ 
 			package for package in prereqPackages 
 			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
@@ -366,7 +366,7 @@ class Port:
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
 			package.generatePackageInfo(packageInfoFile, 
-										['BUILD_REQUIRES'], True)
+										[ 'BUILD_REQUIRES' ], True)
 			packageInfoFiles.append(packageInfoFile)
 
 		# Determine the build requirements, this time only allowing system
@@ -374,7 +374,7 @@ class Port:
 		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		packages = self._resolveDependenciesViaPkgman(
-			packageInfoFiles, repositories, 'build requirements')
+			packageInfoFiles, repositories, 'required ports')
 
 		shutil.rmtree(workRepositoryPath)
 		shutil.rmtree(prereqRepositoryPath)
@@ -639,14 +639,14 @@ class Port:
 				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 		
-		# Determine the prerequired packages, allowing "host" packages, but
+		# Determine the prerequired packages, allowing host packages, but
 		# filter out system packages, as they will be linked into the chroot
 		# anyway.
 		repositories = [ packagesPath,
 						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		prereqPackages = self._resolveDependenciesViaPkgman(
-			packageInfoFiles, repositories, 'build prerequirements')
+			packageInfoFiles, repositories, 'prerequired packages for build')
 		prereqPackages = [ 
 			package for package in prereqPackages
 			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
@@ -672,7 +672,7 @@ class Port:
 		repositories = [ packagesPath, prereqRepositoryPath, 
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		packages = self._resolveDependenciesViaPkgman(
-			packageInfoFiles, repositories, 'build requirements')
+			packageInfoFiles, repositories, 'required packages for build')
 
 		# Filter out system packages, they will be linked into the chroot
 		# anyway.
