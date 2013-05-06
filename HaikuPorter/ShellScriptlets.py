@@ -302,7 +302,8 @@ fi
 # recipe file.
 setupChrootScript = r'''
 
-# stop on every error
+# ignore sigint but stop on every error
+trap '' SIGINT
 set -e
 
 mkdir -p \
@@ -366,6 +367,9 @@ mount -t bindfs -p "source $portDir" port
 # Invoked with $buildOk indicating if the build has worked and thus all paths 
 # required for building only should be wiped.
 cleanupChrootScript = r'''
+
+# ignore sigint
+trap '' SIGINT
 
 # try to make sure we really are in a work directory
 if ! echo $(basename $PWD) | grep -qE '^work-'; then 
