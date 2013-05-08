@@ -96,6 +96,12 @@ def parseOptions():
 					  default='', 
 					  help="handle all ports in the given file")
 	
+	parser.add_option('-w', '--why', 
+					  action='store', type='string', dest='why', 
+					  default='', 
+					  help='determine why the given port is pulled in as a '
+					  	   'dependency of the port to be built')
+	
 	parser.add_option('-c', '--clean', 
 					  action='store_true', dest='clean', default=False, 
 					  help="clean the working directory of the specified port")

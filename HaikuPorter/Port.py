@@ -328,47 +328,13 @@ class Port:
 		   error here.
 		"""
 
-		# First create a work-repository by symlinking all package-infos from
-		# the haikuports-repository - we need to overwrite the package-infos
-		# for this port, so we do that in a private directory.
 		workRepositoryPath = self.workDir + '/repository'
-		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
-		
-		# For each package, generate a PackageInfo-file containing only the 
-		# prerequirements for building the package and no own provides (if a
-		# port prerequires itself, we want to pull in the "host" package)
-		packageInfoFiles = []
-		for package in self.packages:
-			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfoWithoutProvides(
-				packageInfoFile, [ 'BUILD_PREREQUIRES' ])
-			packageInfoFiles.append(packageInfoFile)
-		
-		# determine the prerequired packages, allowing host packages, but
-		# filter our system packages, as those are irrelevant.
-		repositories = [ packagesPath, workRepositoryPath,
-						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
-						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
-		prereqPackages = self._resolveDependenciesViaPkgman(
-			packageInfoFiles, repositories, 'prerequired ports')
-		prereqPackages = [ 
-			package for package in prereqPackages 
-			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
-		]
-
-		# Populate a directory with those prerequired packages.
 		prereqRepositoryPath = self.workDir + '/prereq-repository'
-		symlinkFiles(prereqPackages, prereqRepositoryPath)
-
-		# For each package, generate a PackageInfo-file containing only the 
-		# immediate  requirements for building the package:
-		packageInfoFiles = []
-		for package in self.packages:
-			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfo(packageInfoFile, 
-										[ 'BUILD_REQUIRES' ], True)
-			packageInfoFiles.append(packageInfoFile)
-
+		packageInfoFiles = self._prepareRepositories(workRepositoryPath, 
+													 prereqRepositoryPath,
+													 repositoryPath, 
+													 packagesPath)
+		
 		# Determine the build requirements, this time only allowing system
 		# packages.from the host.
 		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
@@ -384,6 +350,32 @@ class Port:
 			package for package in packages 
 			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
 		], workRepositoryPath
+
+	def whyIsPortRequired(self, repositoryPath, packagesPath, requiredPort):
+		"""Find out which package is pulling the given port in as a dependency
+		   of this port."""
+
+		workRepositoryPath = self.workDir + '/repository'
+		prereqRepositoryPath = self.workDir + '/prereq-repository'
+		packageInfoFiles = self._prepareRepositories(workRepositoryPath, 
+													 prereqRepositoryPath,
+													 repositoryPath, 
+													 packagesPath)
+
+		# drop package-infos for the required port, such that pkgman will
+		# fail with an appropriate message
+		requiredPort.removePackageInfosFromRepository(workRepositoryPath)
+		requiredPort.removePackageInfosFromRepository(prereqRepositoryPath)
+
+		# Ask pkgman to determine the build requirements, which should fail
+		# on the required port, with an error message that gives a hint
+		# about who requires it.
+		repositories = [ workRepositoryPath, prereqRepositoryPath,
+						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
+		self._resolveDependenciesViaPkgman(packageInfoFiles, repositories, 
+										   'why is port required')
+		warn("port %s doesn't seem to be required by %s"
+			 % (requiredPort.versionedName, self.versionedName))
 
 	def cleanWorkDirectory(self):
 		"""Clean the working directory"""
@@ -622,6 +614,65 @@ class Port:
 			self.shellVariables[relativeName] = value
 
 		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
+
+	def _prepareRepositories(self, workRepositoryPath, prereqRepositoryPath, 
+							 repositoryPath, packagesPath):
+		"""Resolve any other ports that need to be built before this one.
+		
+		   In order to do so, we first determine the prerequired packages for
+		   the build, for which packages from outside the haikuports-tree may 
+		   be considered. A temporary folder is then populated with only these
+		   prerequired packages and then all the build requirements of this
+		   port are determined with only the haikuports repository, the already
+		   built packages and the repository of prerequired packages active.
+		   This ensures that any build requirements a port may have that can not 
+		   be fulfilled from within the haikuports tree will be raised as an 
+		   error here.
+		   
+		   If requiredPort has been given, remove the package-infos for that
+		   port in order to find out which package is pulling in that port as a 
+		   dependency of this port."""
+
+		# First create a work-repository by symlinking all package-infos from
+		# the haikuports-repository - we need to overwrite the package-infos
+		# for this port, so we do that in a private directory.
+		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
+		
+		# For each package, generate a PackageInfo-file containing only the 
+		# prerequirements for building the package and no own provides (if a
+		# port prerequires itself, we want to pull in the "host" package)
+		packageInfoFiles = []
+		for package in self.packages:
+			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
+			package.generatePackageInfoWithoutProvides(
+				packageInfoFile, [ 'BUILD_PREREQUIRES' ])
+			packageInfoFiles.append(packageInfoFile)
+		
+		# determine the prerequired packages, allowing host packages, but
+		# filter our system packages, as those are irrelevant.
+		repositories = [ packagesPath, workRepositoryPath,
+						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
+						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
+		prereqPackages = self._resolveDependenciesViaPkgman(
+			packageInfoFiles, repositories, 'prerequired ports')
+		prereqPackages = [ 
+			package for package in prereqPackages 
+			if not package.startswith(systemDir['B_SYSTEM_PACKAGES_DIRECTORY'])
+		]
+
+		# Populate a directory with those prerequired packages.
+		symlinkFiles(prereqPackages, prereqRepositoryPath)
+
+		# For each package, generate a PackageInfo-file containing only the 
+		# immediate  requirements for building the package:
+		packageInfoFiles = []
+		for package in self.packages:
+			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
+			package.generatePackageInfo(packageInfoFile, 
+										[ 'BUILD_REQUIRES' ], True)
+			packageInfoFiles.append(packageInfoFile)
+
+		return packageInfoFiles
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the 

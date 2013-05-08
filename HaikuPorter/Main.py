@@ -227,6 +227,16 @@ class Main:
 		for portSpec in self.portSpecs:
 			port = allPorts[portSpec['id']]
 			
+			if self.options.why:
+				# find out about why another port is required
+				if self.options.why not in allPorts:
+					sysExit(self.options.why + ' not found in tree.')
+				requiredPort = allPorts[self.options.why]
+				self._validateMainPort(requiredPort)
+				port.whyIsPortRequired(self.repositoryPath, self.packagesPath,
+									   requiredPort)
+				sys.exit(0)
+
 			if self.options.build:
 				self._buildMainPort(port)
 			else:
@@ -236,7 +246,7 @@ class Main:
 			# if self.options.test:
 			#	port.test()
 
-	def _validateMainPort(self, port, revision):
+	def _validateMainPort(self, port, revision = None):
 		"""Parse the recipe file for the given port and get any required
 		   confirmations"""
 			
