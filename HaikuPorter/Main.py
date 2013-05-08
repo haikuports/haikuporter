@@ -307,18 +307,25 @@ class Main:
 											self.packagesPath)
 		allPorts = self._getAllPorts()
 		requiredPortsToBuild = []
+		requiredPortIDs = {}
 		for dependency in buildDependencies:
 			if dependency.startswith(portRepositoryPath):
 				packageInfoFileName = os.path.basename(dependency)
-				requiredPortID \
+				packageID \
 					= packageInfoFileName[:packageInfoFileName.rindex('.')]
 				try:
-					requiredPort = allPorts[requiredPortID]
-					requiredPortsToBuild.append(requiredPort)
+					if packageID in allPorts:
+						portID = packageID
+					else:
+						portID = self._getPortIdForPackageId(packageID)
+					if portID not in requiredPortIDs:
+						requiredPort = allPorts[portID]
+						requiredPortsToBuild.append(requiredPort)
+						requiredPortIDs[portID] = True
 				except KeyError:
 					sysExit('Inconsistency: ' + port.versionedName
-							 + ' requires ' + requiredPortID 
-							 + ' but that does not exist!')
+							 + ' requires ' + packageID 
+							 + ' but no corresponding port was found!')
 
 		if requiredPortsToBuild:
 			print 'The following required ports will be built first:'
@@ -596,17 +603,9 @@ class Main:
 			# what we have in portID may be a packageID instead, in which case
 			# we need to find the corresponding portID.
 			if portID not in allPorts:
-				# cut out subparts from the package name until we find a port
-				# with that name:
-				(portName, version) = portID.rsplit('-', 1)
-				(portName, unused1, unused2) = portName.rpartition('_')
-				while portName:
-					portID = portName + '-' + version
-					if portID in allPorts:
-						break
-					(portName, unused1, unused2) = portName.rpartition('_')
+				portID = self._getPortIdForPackageId(portID)
 			
-			if portID not in allPorts or portID in brokenPorts:
+			if not portID or portID not in allPorts or portID in brokenPorts:
 				print '\tremoving ' + packageInfoFileName
 				os.remove(packageInfo)
 				
@@ -626,6 +625,22 @@ class Main:
 			if not os.path.exists(obsoleteDir):
 				os.mkdir(obsoleteDir)
 			os.rename(package, obsoletePackage)
+
+	def _getPortIdForPackageId(self, packageId):
+		"""return the port-ID for the given package-ID"""
+		
+		# cut out subparts from the package name until we find a port
+		# with that name:
+		(portName, version) = packageId.rsplit('-', 1)
+		(portName, unused1, unused2) = portName.rpartition('_')
+		while portName:
+			portID = portName + '-' + version
+			if portID in self._allPorts:
+				return portID
+			(portName, unused1, unused2) = portName.rpartition('_')
+
+		# no corresponding port-ID was found			
+		return None
 
 	def _getAllPorts(self):
 		if hasattr(self, '_allPorts'):
