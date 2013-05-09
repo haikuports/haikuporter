@@ -164,10 +164,22 @@ class Package(object):
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
 			os.remove(packageFile)
-		
+
+		# mimeset the files that shall go into the package
+		print 'mimesetting files for package ' + self.hpkgName + ' ...'
+		mimeDBDir = 'data/mime_db'
+		os.chdir(self.packagingDir)
+		check_call(['mimeset', '--all', '--mimedb', mimeDBDir,
+			'--mimedb', '/boot/system/data/mime_db', '.'])
+
+		# If data/mime_db is empty, remove it.
+		if not os.listdir(mimeDBDir):
+			os.rmdir(mimeDBDir)
+			if not os.listdir('data'):
+				os.rmdir('data')
+
 		# Create the package
 		print 'creating package ' + self.hpkgName + ' ...'
-		os.chdir(self.packagingDir)
 		check_call(['package', 'create', packageFile])
 		os.chdir(self.workDir)
 
