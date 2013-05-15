@@ -470,27 +470,23 @@ class Port:
 					os._exit(0)
 
 				# parent, wait on child
-				interrupted = False
-				while True:
-					try:
-						if os.waitpid(pid, 0)[1] != 0:
-							self.unsetFlag('build')
-							sysExit('Build has failed - stopping.')
-					except KeyboardInterrupt:
-						if pid > 0:
-							print '*** interrupted - stopping child process'
-							try: 
-								os.kill(pid, signal.SIGINT)
-								os.waitpid(pid, 0)
-							except:
-								pass
-							print '*** child stopped'
-						interrupted = True
-						break;
-
-				if not interrupted:
+				try:
+					if os.waitpid(pid, 0)[1] != 0:
+						self.unsetFlag('build')
+						sysExit('Build has failed - stopping.')
+						
 					# tell the shell scriptlets that the build has succeeded
 					chrootSetup.buildOk = True
+				except KeyboardInterrupt:
+					if pid > 0:
+						print '*** interrupted - stopping child process'
+						try: 
+							os.kill(pid, signal.SIGINT)
+							os.waitpid(pid, 0)
+						except:
+							pass
+						print '*** child stopped'
+						
 		else:
 			self._executeBuild(makePackages)
 
