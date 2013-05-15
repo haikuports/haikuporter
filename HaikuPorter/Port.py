@@ -25,6 +25,7 @@ from HaikuPorter.Utils import (check_output, filteredEnvironment,
 
 import os
 import shutil
+import signal
 from subprocess import check_call, CalledProcessError
 import traceback
 
@@ -469,12 +470,27 @@ class Port:
 					os._exit(0)
 
 				# parent, wait on child
-				if os.waitpid(pid, 0)[1] != 0:
-					self.unsetFlag('build')
-					sysExit('Build has failed - stopping.')
+				interrupted = False
+				while True:
+					try:
+						if os.waitpid(pid, 0)[1] != 0:
+							self.unsetFlag('build')
+							sysExit('Build has failed - stopping.')
+					except KeyboardInterrupt:
+						if pid > 0:
+							print '*** interrupted - stopping child process'
+							try: 
+								os.kill(pid, signal.SIGINT)
+								os.waitpid(pid, 0)
+							except:
+								pass
+							print '*** child stopped'
+						interrupted = True
+						break;
 
-				# tell the shell scriptlets that the build has succeeded
-				chrootSetup.buildOk = True
+				if not interrupted:
+					# tell the shell scriptlets that the build has succeeded
+					chrootSetup.buildOk = True
 		else:
 			self._executeBuild(makePackages)
 
