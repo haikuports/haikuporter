@@ -4,8 +4,10 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.ConfigParser import ConfigParser
+from HaikuPorter.RecipeTypes import MachineArchitecture
 from HaikuPorter.Utils import sysExit
 
+import os
 import types
 
 
@@ -22,6 +24,13 @@ haikuportsAttributes = {
 	'PACKAGER': {
 		'type': types.StringType,
 		'required': True,
+		'default': None,
+		'extendable': False,
+		'indexable': False,
+	},
+	'TARGET_ARCHITECTURE': {
+		'type': MachineArchitecture,
+		'required': False,
 		'default': None,
 		'extendable': False,
 		'indexable': False,
@@ -52,3 +61,10 @@ def readGlobalConfiguration():
 			and haikuportsAttributes[key]['required']):
 			sysExit("Required value '" + key + "' not present in " 
 					+ haikuportsConf)
+
+	# determine if we are using a cross-build repository
+	if os.path.exists(globalConfiguration['TREE_PATH'] + '/.cross'):
+		globalConfiguration['IS_CROSSBUILD_REPOSITORY'] = True
+	else:
+		globalConfiguration['IS_CROSSBUILD_REPOSITORY'] = False
+		

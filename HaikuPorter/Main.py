@@ -12,8 +12,9 @@
 
 from HaikuPorter.GlobalConfig import (globalConfiguration, 
 									  readGlobalConfiguration)
+from HaikuPorter.Options import getOption
 from HaikuPorter.Port import Port
-from HaikuPorter.RecipeTypes import Status
+from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
 							   naturalCompare, sysExit, touchFile, warn)
 
@@ -392,6 +393,28 @@ class Main:
 			self.shellVariables['jobArgs'] = '-j' + str(self.options.jobs)
 		if self.options.quiet:
 			self.shellVariables['quiet'] = '1'
+			
+		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			hostMachineTriple \
+				= MachineArchitecture.getHostTripleFor(self.architecture)
+			self.shellVariables['hostMachineTriple'] = hostMachineTriple
+			self.shellVariables['hostMachineTripleAsName'] \
+				= hostMachineTriple.replace('-', '_')
+			targetArchitecture = getOption('targetArch')
+			if not targetArchitecture:
+				if 'TARGET_ARCHITECTURE' in globalConfiguration:
+					targetArchitecture \
+						= globalConfiguration['TARGET_ARCHITECTURE']
+			if not targetArchitecture:
+				sysExit('A cross-build repository is active, '
+						'you must specify a target architecture.\n'
+						'Please use --target-arch '
+						'or set TARGET_ARCHITECTURE in haikuports.conf')
+			targetMachineTriple \
+				= MachineArchitecture.getTargetTripleFor(targetArchitecture)
+			self.shellVariables['targetMachineTriple'] = targetMachineTriple
+			self.shellVariables['targetMachineTripleAsName'] \
+				= targetMachineTriple.replace('-', '_')
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""

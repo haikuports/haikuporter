@@ -11,6 +11,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.__version__ import __version__
+from HaikuPorter.RecipeTypes import MachineArchitecture
 
 from optparse import OptionParser
 
@@ -101,6 +102,12 @@ def parseOptions():
 					  default='', 
 					  help='determine why the given port is pulled in as a '
 					  	   'dependency of the port to be built')
+	
+	parser.add_option('-T', '--target-arch', 
+					  action='store', type='choice', dest='targetArch', 
+					  default=None, 
+					  choices=MachineArchitecture.getAll(),
+					  help="set target architecture for cross-building")
 	
 	parser.add_option('-c', '--clean', 
 					  action='store_true', dest='clean', default=False, 

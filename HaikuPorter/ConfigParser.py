@@ -139,6 +139,16 @@ class ConfigParser:
 							% (filename, key, valueString, 
 							   ','.join(Phase.getAllowedValues())))
 				entries[key] = valueString.upper()
+			elif type == MachineArchitecture:
+				entries[key] = {}
+				knownArchitectures = MachineArchitecture.getAll()
+				valueString = valueString.lower()
+				if valueString not in knownArchitectures:
+					architectures = ','.join(knownArchitectures)
+					sysExit('%s refers to unknown machine-architecture %s\n'
+							'known machine-architectures: %s'
+							% (filename, valueString, architectures))
+				entries[key] = valueString
 			elif type == Architectures:
 				entries[key] = {}
 				for value in [v.lower() for v in valueString.split()]:
@@ -152,7 +162,7 @@ class ConfigParser:
 					else:
 						status = Status.STABLE
 						architecture = value
-					knownArchitectures = Architectures.getArchitectures()
+					knownArchitectures = Architectures.getAll()
 					if architecture not in knownArchitectures:
 						architectures = ','.join(knownArchitectures)
 						sysExit('%s refers to unknown architecture %s\n'

@@ -1,6 +1,42 @@
 # -*- coding: utf-8 -*-
 # copyright 2013 Oliver Tappe
 
+# -- MachineArchitecture ------------------------------------------------------
+
+# Defines the set of real machines architectures that are supported.
+class MachineArchitecture(str):
+	PPC = 'ppc'
+	X86 = 'x86'
+	X86_GCC2 = 'x86_gcc2'
+	
+	@staticmethod
+	def getAll():
+		# TODO: fetch this from PackageKit?
+		return [
+			Architectures.PPC,
+			Architectures.X86,
+			Architectures.X86_GCC2,
+		]
+
+	@staticmethod
+	def getTargetTripleFor(architecture):
+		dict = {
+			Architectures.PPC: 'powerpc-apple-haiku',
+			Architectures.X86: 'i586-pc-haiku',
+			Architectures.X86_GCC2: 'i586-pc-haiku',
+		}
+		if architecture in dict:
+			return dict[architecture]
+		return None		
+
+	@staticmethod
+	def getHostTripleFor(architecture):
+		triple = MachineArchitecture.getTargetTripleFor(architecture)
+		if triple:
+			triple += '_host'
+		return triple
+
+
 # -- Architectures ------------------------------------------------------------
 
 # The ARCHITECTURES key in a recipe describes the port's status on each
@@ -12,19 +48,18 @@
 #  '!x86' -> this port is known to have problems on the 'x86' architecture
 # An architecture missing from the status specification indicates that nothing
 # is known about the status of the port on this architecture.
-class Architectures(str):
+class Architectures(MachineArchitecture):
 	ANY = 'any'
+	PPC = 'ppc'
 	X86 = 'x86'
 	X86_GCC2 = 'x86_gcc2'
 	SOURCE = 'src'
 	
 	@staticmethod
-	def getArchitectures():
+	def getAll():
 		# TODO: fetch this from PackageKit?
-		return [
+		return MachineArchitecture.getAll() + [
 			Architectures.ANY,
-			Architectures.X86,
-			Architectures.X86_GCC2,
 			Architectures.SOURCE,
 		]
 
