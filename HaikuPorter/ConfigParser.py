@@ -7,7 +7,6 @@ from HaikuPorter.RecipeTypes import *
 from HaikuPorter.ShellScriptlets import configFileEvaluatorScript
 from HaikuPorter.Utils import check_output, filteredEnvironment, sysExit, warn
 
-import os
 from subprocess import CalledProcessError
 import types
 

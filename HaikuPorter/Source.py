@@ -11,7 +11,6 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.Options import getOption
-from HaikuPorter.RecipeTypes import Phase
 from HaikuPorter.Utils import (ensureCommandIsAvailable, sysExit, unpackArchive, 
 							   warn)
 
