@@ -410,6 +410,8 @@ class Main:
 						'you must specify a target architecture.\n'
 						'Please use --target-arch '
 						'or set TARGET_ARCHITECTURE in haikuports.conf')
+			targetArchitecture = targetArchitecture.lower()
+			self.shellVariables['targetArchitecture'] = targetArchitecture
 			targetMachineTriple \
 				= MachineArchitecture.getTargetTripleFor(targetArchitecture)
 			self.shellVariables['targetMachineTriple'] = targetMachineTriple
