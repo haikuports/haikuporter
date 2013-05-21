@@ -164,39 +164,9 @@ class Main:
 			if not args:
 				sysExit('You need to specify a search string.\nInvoke '
 						"'" + sys.argv[0] + " -h' for usage information.")
-			else:
-				self.portSpecs.append(
-					self._splitPortSpecIntoNameVersionAndRevision(args[0]))
+			self.portSpecs.append(
+				self._splitPortSpecIntoNameVersionAndRevision(args[0]))
 
-		# check all port specifiers
-		for portSpec in self.portSpecs:
-			# find the port in the HaikuPorts tree
-			category = self._getCategory(portSpec['name'])
-			if category == None:
-				sysExit('Port ' + portSpec['name'] + ' not found in tree.')
-	
-			baseDir = self.treePath + '/' + category + '/' + portSpec['name']
-	
-			# if the port version was not specified, list available versions
-			if portSpec['version'] == None:
-				versions = []
-				dirList = os.listdir(baseDir)
-				for item in dirList:
-					if (not item.endswith('.recipe')):
-						continue
-					portElements = item[:-7].split('-')
-					if len(portElements) == 2:
-						versions.append(portElements[1])
-				if len(versions) > 0:
-					print('Following versions of %s are available:' 
-						  % portSpec['name'])
-					for version in versions:
-						print '  ' + version
-					sysExit('Please run haikuporter again, specifying a port '
-							+ 'version')
-				else:
-					sysExit('No recipe files for %s found.' % portSpec['name'])
-		
 		# don't build or package when not patching
 		if not self.options.patch:
 			self.options.build = False
@@ -212,6 +182,11 @@ class Main:
 		# collect all available ports and validate each specified port
 		allPorts = self._getAllPorts()
 		for portSpec in self.portSpecs:
+			if portSpec['version'] == None:
+				if portSpec['name'] not in self._portVersionsByName:
+					sysExit(portSpec['name'] + ' not found in repository')
+				portSpec['version'] \
+					= self._portVersionsByName[portSpec['name']][-1]
 			portID = portSpec['name'] + '-' + portSpec['version']
 			if portID not in allPorts:
 				sysExit(portID + ' not found in tree.')
