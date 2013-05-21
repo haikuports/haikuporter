@@ -13,7 +13,7 @@
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
-from HaikuPorter.ShellScriptlets import scriptletPrerequirements
+from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
 from HaikuPorter.Utils import (escapeForPackageInfo, naturalCompare, sysExit, 
 							   systemDir, unpackArchive)
 
@@ -82,6 +82,9 @@ class Package(object):
 		self.fullVersionedName = self.versionedName + '-' + self.architecture
 		self.fullRevisionedName = self.revisionedName + '-' + self.architecture
 		self.hpkgName = self.fullRevisionedName + '.hpkg'
+
+		self.targetMachineTripleAsName \
+			= port.shellVariables.get('targetMachineTripleAsName', '')
 
 		self.buildPackage = None
 		self.activeBuildPackage = None
@@ -277,13 +280,21 @@ class Package(object):
 			requires = []
 			for requiresKey in requiresToUse:
 				if requiresKey == 'SCRIPTLET_PREREQUIRES':
-					# add prerequirements for executing chroot scriptlets
-					requires += [
-						r for r in scriptletPrerequirements.splitlines()
-						if len(r)
-					]
+					# Add prerequirements for executing chroot scriptlets.
+					# For cross-built packages, pass in the target machine name,
+					# but take care to not do that for packages that implement
+					# the cross-building themselves (i.e. binutils and gcc),
+					# as those are running in the context of the host machine.
+					targetMachineTripleAsName = self.targetMachineTripleAsName
+					if '_cross_' in self.name:
+						targetMachineTripleAsName = ''
+					requiresForKey = getScriptletPrerequirements(
+						targetMachineTripleAsName)
 				else:
-					requires += self.recipeKeys[requiresKey]
+					requiresForKey = self.recipeKeys[requiresKey]
+				for require in requiresForKey:
+					if require not in requires:
+						requires.append(require)
 	
 			if fakeEmptyProvides:
 				infoFile.write('provides {\n\tfaked_' + self.name + ' = ' 

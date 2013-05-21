@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # copyright 2013 Oliver Tappe
 
+# -- Modules ------------------------------------------------------------------
+
+from string import Template
+
 # -----------------------------------------------------------------------------
 
 # A list of all the commands/packages that are prerequired in the chroot, such
@@ -9,9 +13,23 @@ scriptletPrerequirements = r'''
 	coreutils
 	cmd:bash
 	cmd:grep
-	cmd:readelf
+	cmd:${targetMachinePrefix}readelf
 	cmd:sed
 '''
+
+def getScriptletPrerequirements(targetMachineTripleAsName = None):
+	"""Returns the list of prerequirements for executing scriptlets.
+	   If targetMachineTriple is given, the prerequirements will be specialized
+	   for cross-building for the given target machine."""
+	
+	targetMachinePrefix \
+		= (targetMachineTripleAsName + '_') if targetMachineTripleAsName else ''
+	
+	prerequirements = Template(scriptletPrerequirements).substitute({
+		'targetMachinePrefix': targetMachinePrefix,
+	}).splitlines()
+
+	return prerequirements
 
 # -----------------------------------------------------------------------------
 
@@ -337,7 +355,7 @@ done
 cp $recipeFile port.recipe
 
 # silently unmount if needed, just to be one the safe side
-if [ -e dev/null ]; then
+if [ -e dev/console ]; then
 	unmount dev
 fi
 if [ -e boot/system/bin ]; then
