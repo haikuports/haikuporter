@@ -260,7 +260,7 @@ class Source(object):
 		check_call(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'], 
 				   cwd=self.sourceDir)
 
-	def extractPatchset(self, patchSetFilePath):
+	def extractPatchset(self, patchSetFilePath, archPatchSetFilePath):
 		"""Extract the current set of patches applied to git repository,
 		   taking care to not include the programatic changes introduced 
 		   during the patch phase"""
@@ -293,6 +293,11 @@ class Source(object):
 			# put PATCH_FUNCTION back in
 			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'master'], 
 					   cwd=self.sourceDir)
+
+		# warn if there's a correpsonding arch-specific patchset file
+		if os.path.exists(archPatchSetFilePath):
+			warn('arch-specific patchset file %s requires manual update' 
+				 % os.path.basename(archPatchSetFilePath))
 			
 		# if there's a corresponding patch file, remove it, as we now have
 		# the patchset

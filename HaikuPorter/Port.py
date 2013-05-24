@@ -125,21 +125,33 @@ class Port:
 		for s in range(1, 9):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
+				archPatchSetFileName = (self.name + '-' + self.version + '-'
+										+ self.currentArchitecture 
+										+ '.patchset')
 				patchFileName = self.name + '-' + self.version + '.patch'
 				patchesKeyName = 'PATCHES'
 			else:
 				patchSetFileName = (self.name + '-' + self.version + '-source' 
 									+ str(s) + '.patchset')
+				archPatchSetFileName = (self.name + '-' + self.version + '-'
+										+ self.currentArchitecture + '-source'
+										+ str(s) + '.patchset')
 				patchFileName = (self.name + '-' + self.version + '-source' 
 								 + str(s) + '.patch')
 				patchesKeyName = 'PATCHES_' + str(s)
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
+			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
 			patchFilePath = self.patchesDir + '/' + patchFileName
-			# prefer patchset over patch
+
+			# prefer patchsets over patch
+			patchsets = []
 			if os.path.exists(patchSetFilePath):
-				self.shellVariables[patchesKeyName] = patchSetFileName
-			elif os.path.exists(patchFilePath):
-				self.shellVariables[patchesKeyName] = patchFileName
+				patchsets.append(patchSetFileName)
+			if os.path.exists(archPatchSetFilePath):
+				patchsets.append(archPatchSetFileName)
+			if not patchsets and os.path.exists(patchFilePath):
+				patchsets.append(patchFileName)
+			self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
 		
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
@@ -450,11 +462,18 @@ class Port:
 		for source in self.sources:
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
+				archPatchSetFileName = (self.name + '-' + self.version + '-'
+										+ self.currentArchitecture 
+										+ '.patchset')
 			else:
 				patchSetFileName = (self.name + '-' + self.version + '-source' 
 									+ str(s) + '.patchset')
+				archPatchSetFileName = (self.name + '-' + self.version + '-'
+										+ self.currentArchitecture + '-source'
+										+ str(s) + '.patchset')
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
-			source.extractPatchset(patchSetFilePath)
+			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
+			source.extractPatchset(patchSetFilePath, archPatchSetFilePath)
 			s += 1
 				
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
