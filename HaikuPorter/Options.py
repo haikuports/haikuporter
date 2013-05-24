@@ -65,6 +65,12 @@ def parseOptions():
 	parser.add_option('-n', '--nopatch', 
 					  action='store_false', dest='patch', default=True, 
 					  help="don't patch the sources, just download and unpack")
+	parser.add_option('-e', '--extract-patchset', 
+					  action='store_true', dest='extractPatchset', default=False, 
+					  help='extract current patchset(s) from port source(s)')
+	parser.add_option('-G', '--init-git', 
+					  action='store_true', dest='initGitRepo', default=False, 
+					  help='create git-repo(s) for port source(s)')
 	parser.add_option('-B', '--patch-files-only', 
 					  action='store_true', dest='patchFilesOnly',
 					  default=False,
@@ -129,7 +135,8 @@ def parseOptions():
 	(__Options__, args) = parser.parse_args()
 
 	# some normalization
-	if getOption('patchFilesOnly') or not getOption('patch'):
+	if (getOption('patchFilesOnly') or not getOption('patch') 
+		or getOption('extractPatchset')):
 		setattr(__Options__, 'build', False)
 	if not getOption('build'):
 		setattr(__Options__, 'package', False)

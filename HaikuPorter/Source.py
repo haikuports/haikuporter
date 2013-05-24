@@ -10,9 +10,10 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
-from HaikuPorter.Utils import (ensureCommandIsAvailable, sysExit, unpackArchive, 
-							   warn)
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit, 
+							   unpackArchive, warn)
 
 import hashlib
 import os
@@ -56,6 +57,14 @@ class Source(object):
 		self.localFile = port.downloadDir + '/' + self.localFileName
 		self.localFileIsArchive = True
 		self.checkout = None
+		
+		self.gitEnv = {
+			'GIT_COMMITTER_EMAIL': globalConfiguration['PACKAGER_EMAIL'],
+			'GIT_COMMITTER_NAME': globalConfiguration['PACKAGER_NAME'],
+			'GIT_AUTHOR_EMAIL': globalConfiguration['PACKAGER_EMAIL'],
+			'GIT_AUTHOR_NAME': globalConfiguration['PACKAGER_NAME'],
+		}
+
 
 	def download(self, port):
 		"""Fetch the source archive or do a checkout"""
@@ -178,11 +187,25 @@ class Source(object):
 		"""Apply any patches to this source"""
 
 		# Check to see if the source has already been patched.
-		if port.checkFlag('patches', self.index) and not getOption('force'):
+		if port.checkFlag('patchset', self.index) and not getOption('force'):
 			return True
+
+		if getOption('initGitRepo'):
+			if not os.path.exists(self.sourceDir + '/.git'):
+				# import sources into pristine git repository
+				self._initGitRepo()
 
 		if not self.patches:
 			return False
+
+		# use a git repository for improved patch handling.
+		ensureCommandIsAvailable('git')
+		if not os.path.exists(self.sourceDir + '/.git'):
+			# import sources into pristine git repository
+			self._initGitRepo()
+		else:
+			# reset existing git repsitory before appling patchset(s) again
+			self.reset()
 
 		patched = False
 		try:
@@ -191,22 +214,94 @@ class Source(object):
 				if not os.path.exists(patch):
 					sysExit('patch file "' + patch + '" not found.')
 
-				print 'Applying patch "%s" ...' % patch
-				check_call(['patch', '-p0', '-i', patch], 
-						   cwd=self.sourceBaseDir)
+				if patch.endswith('.patchset'):
+					print 'Applying patchset "%s" ...' % patch
+					check_call(['git', 'am', '-3', patch], cwd=self.sourceDir)
+				else:
+					print 'Applying patch "%s" ...' % patch
+					check_call(['git', 'apply', '-p1', '--index', patch], 
+							   cwd=self.sourceDir)
+					check_call(['git', 'commit', '-q', '-m', 'applying patch %s' 
+								% os.path.basename(patch)], 
+							   cwd=self.sourceDir, env=self.gitEnv)
 				patched = True
 		except:
-			# Make sure a half-patched sources aren't considered valid.
+			# Don't leave behind half-patched sources.
 			if patched:
-				port.unsetFlag('unpack', self.index)
-				port.unsetFlag('checkout', self.index)
+				self.reset()
 			raise
 
 		if patched:
-			port.setFlag('patches', self.index)
+			port.setFlag('patchset', self.index)
 			
 		return patched
 
+	def reset(self):
+		"""Reset source to original state"""
+
+		check_call(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir)
+		check_call(['git', 'clean', '-f', '-d'], cwd=self.sourceDir)
+
+	def commitPatchPhase(self):
+		"""Commit changes done in patch phase."""
+
+		# see if there are any changes at all
+		changes = check_output(['git', 'status', '--porcelain'], 
+							   cwd=self.sourceDir)
+		if not changes:
+			print("Patch function hasn't changed anything for " 
+				  + self.localFileName)
+			return
+		
+		print('Committing changes done in patch function for ' 
+			  + self.localFileName)
+		check_call(['git', 'commit', '-a', '-q', '-m', 'patch function'], 
+				   cwd=self.sourceDir, env=self.gitEnv)
+		check_call(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'], 
+				   cwd=self.sourceDir)
+
+	def extractPatchset(self, patchSetFilePath):
+		"""Extract the current set of patches applied to git repository,
+		   taking care to not include the programatic changes introduced 
+		   during the patch phase"""
+
+		if not os.path.exists(self.sourceDir):
+			sysExit("Can't extract patchset for " + self.localFileName 
+					+ " as the source directory doesn't exist yet")
+
+		print 'Extracting patchset for ' + self.localFileName
+		needToRebase = True
+		try:
+			# check if the tag 'PATCH_FUNCTION' exists
+			with open(os.devnull, "w") as devnull:
+				check_call(['git', 'rev-parse', '--verify', 'PATCH_FUNCTION'], 
+						   stdout=devnull, stderr=devnull, cwd=self.sourceDir)
+		except:
+			# no PATCH_FUNCTION tag, so there's nothing to rebase
+			needToRebase = False
+
+		if needToRebase:			
+			# the tag exists, so we drop the respective commit
+			check_call(['git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^', 
+						'PATCH_FUNCTION', 'master'], cwd=self.sourceDir)
+			
+		with open(patchSetFilePath, 'w') as patchSetFile:
+			check_call(['git', 'format-patch', '-p', '--stdout', 'ORIGIN'], 
+					   stdout=patchSetFile, cwd=self.sourceDir)
+			
+		if needToRebase:			
+			# put PATCH_FUNCTION back in
+			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'master'], 
+					   cwd=self.sourceDir)
+			
+		# if there's a corresponding patch file, remove it, as we now have
+		# the patchset
+		patchFilePath = patchSetFilePath[:-3]
+		if os.path.exists(patchFilePath):
+			warn('removing obsolete patch file ' 
+				 + os.path.basename(patchFilePath))
+			os.remove(patchFilePath)
+			
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
 		
@@ -310,15 +405,29 @@ class Source(object):
 							   + '&& fossil open ' + checkoutDir + '.fossil')
 			if rev:
 				checkoutCommand += ' ' + rev
-		else:	# assume git
+		elif type == 'git':
 			ensureCommandIsAvailable('git')
 			self.checkout['type'] = 'git'
 			checkoutCommand = 'git clone %s %s' % (realUri, checkoutDir)
 			if rev:
-				checkoutCommand += (' && cd %s && git checkout -q %s' 
+				checkoutCommand += ((' && cd %s'
+									 + ' && git checkout -B haikuport -q %s')
 									% (checkoutDir, rev))
+			checkoutCommand += ' && git tag ORIGIN'
+		else:
+			sysExit("repository type '" + type + "' is not supported")
 
 		check_call(checkoutCommand, shell=True, cwd=self.sourceBaseDir)
 
 		# Set the 'checkout' flag to signal that the checkout is complete
 		port.setFlag('checkout', self.index)
+
+	def _initGitRepo(self):
+		"""Import sources into git repository"""
+
+		ensureCommandIsAvailable('git')
+		check_call(['git', 'init'], cwd=self.sourceDir)
+		check_call(['git', 'add', '.'], cwd=self.sourceDir)
+		check_call(['git', 'commit', '-m', 'import', '-q'], 
+				   cwd=self.sourceDir, env=self.gitEnv)
+		check_call(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir)

@@ -121,11 +121,25 @@ class Port:
 		"""Parse the recipe-file of the specified port"""
 
 		# If a patch file named like the port exists, use that as a default
-		# for "PATCHES".
-		patchFileName = self.name + '-' + self.version + '.patch'
-		patchFilePath = self.patchesDir + '/' + patchFileName
-		if os.path.exists(patchFilePath):
-			self.shellVariables['PATCHES'] = patchFileName
+		# for "PATCHES" (check this for up to 9 sources).
+		for s in range(1, 9):
+			if s == 1:
+				patchSetFileName = self.name + '-' + self.version + '.patchset'
+				patchFileName = self.name + '-' + self.version + '.patch'
+				patchesKeyName = 'PATCHES'
+			else:
+				patchSetFileName = (self.name + '-' + self.version + '-source' 
+									+ str(s) + '.patchset')
+				patchFileName = (self.name + '-' + self.version + '-source' 
+								 + str(s) + '.patch')
+				patchesKeyName = 'PATCHES_' + str(s)
+			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
+			patchFilePath = self.patchesDir + '/' + patchFileName
+			# prefer patchset over patch
+			if os.path.exists(patchSetFilePath):
+				self.shellVariables[patchesKeyName] = patchSetFileName
+			elif os.path.exists(patchFilePath):
+				self.shellVariables[patchesKeyName] = patchFileName
 		
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
@@ -409,23 +423,40 @@ class Port:
 		# Run PATCH() function in recipe, if defined.
 		if Phase.PATCH in self.definedPhases:
 			if getOption('patchFilesOnly'):
-				print 'Skipping patching ...'
-				# Make sure the half-patched sources aren't considered
-				# valid.
-				if patched:
-					for source in self.sources:
-						self.unsetFlag('unpack', source.index)
-						self.unsetFlag('checkout', source.index)
+				print 'Skipping patch function ...'
 				return
 			
 			# Check to see if the patching phase  has already been executed.
 			if self.checkFlag('patch') and not getOption('force'):
 				return
-			
-			print 'Patching ...'
-			self._doRecipeAction(Phase.PATCH, self.sourceDir)
-			self.setFlag('patch')
 
+			try:			
+				print 'Running patch function ...'
+				self._doRecipeAction(Phase.PATCH, self.sourceDir)
+				for source in self.sources:
+					source.commitPatchPhase()
+				self.setFlag('patch')
+			except:
+				# Don't leave behind half-patched sources.
+				if patched:
+					for source in self.sources:
+						source.reset()
+				raise
+
+	def extractPatchset(self):
+		"""Extract patchsets from all sources"""
+
+		s = 1
+		for source in self.sources:
+			if s == 1:
+				patchSetFileName = self.name + '-' + self.version + '.patchset'
+			else:
+				patchSetFileName = (self.name + '-' + self.version + '-source' 
+									+ str(s) + '.patchset')
+			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
+			source.extractPatchset(patchSetFilePath)
+			s += 1
+				
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package"""
 

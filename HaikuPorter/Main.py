@@ -215,6 +215,8 @@ class Main:
 
 			if self.options.build:
 				self._buildMainPort(port)
+			elif self.options.extractPatchset:
+				port.extractPatchset()
 			else:
 				self._buildPort(port, True, self.packagesPath)
 
