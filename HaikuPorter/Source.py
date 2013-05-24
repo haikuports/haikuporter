@@ -286,7 +286,7 @@ class Source(object):
 						'PATCH_FUNCTION', 'master'], cwd=self.sourceDir)
 			
 		with open(patchSetFilePath, 'w') as patchSetFile:
-			check_call(['git', 'format-patch', '-p', '--stdout', 'ORIGIN'], 
+			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'], 
 					   stdout=patchSetFile, cwd=self.sourceDir)
 			
 		if needToRebase:			
