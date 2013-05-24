@@ -8,6 +8,7 @@ from HaikuPorter.RecipeTypes import MachineArchitecture
 from HaikuPorter.Utils import sysExit
 
 import os
+import re
 import types
 
 
@@ -68,3 +69,12 @@ def readGlobalConfiguration():
 	else:
 		globalConfiguration['IS_CROSSBUILD_REPOSITORY'] = False
 		
+	# split packager into name and email:
+	m = re.match('^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', 
+				 globalConfiguration['PACKAGER'])
+	if not m:
+		sysExit("Couldn't parse name/email from PACKAGER value " 
+				+ globalConfiguration['PACKAGER'])
+	globalConfiguration['PACKAGER_NAME'] = m.group('name')
+	globalConfiguration['PACKAGER_EMAIL'] = m.group('email')
+	
