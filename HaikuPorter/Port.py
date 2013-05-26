@@ -66,7 +66,8 @@ class ChrootSetup:
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port:
-	def __init__(self, name, version, category, baseDir, globalShellVariables):
+	def __init__(self, name, version, category, baseDir, globalShellVariables,
+			policy):
 		self.name = name
 		self.version = version
 		self.versionedName = name + '-' + version
@@ -110,6 +111,9 @@ class Port:
 		self.buildPackageDir = self.workDir + '/build-packages'
 		self.packagingBaseDir = self.workDir + '/packaging'
 		self.hpkgDir = self.workDir + '/hpkgs'
+
+		self.policy = policy
+		self.policy.setPort(self)
 
 	def __enter__(self):
 		return self
@@ -187,7 +191,7 @@ class Port:
 				else:
 					name = self.name
 			packageType = PackageType.byName(extension)
-			package = packageFactory(packageType, name, self, keys)
+			package = packageFactory(packageType, name, self, keys, self.policy)
 			self.allPackages.append(package)
 			
 			status = package.getStatusOnArchitecture(self.currentArchitecture)

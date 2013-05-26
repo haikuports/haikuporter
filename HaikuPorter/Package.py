@@ -50,7 +50,7 @@ class PackageType(str):
 # -- Base class for all packages ----------------------------------------------
 
 class Package(object):
-	def __init__(self, type, name, port, recipeKeys):
+	def __init__(self, type, name, port, recipeKeys, policy):
 		self.type = type
 		self.name = name
 		self.version = port.version
@@ -62,6 +62,7 @@ class Package(object):
 		self.packagingDir = port.packagingBaseDir + '/' + self.name
 		self.hpkgDir = port.hpkgDir
 		self.recipeKeys = recipeKeys
+		self.policy = policy
 		
 		self.versionedName = self.name + '-' + self.version
 		self.fullVersion = self.version + '-' + self.revision
@@ -99,7 +100,10 @@ class Package(object):
 			  or Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']):
 			return Status.STABLE
 		return Status.UNSUPPORTED
-	
+
+	def getRecipeKeys(self):
+		return self.recipeKeys
+
 	def writePackageInfoIntoRepository(self, repositoryPath):
 		"""Write a PackageInfo-file for this package into the repository"""
 
@@ -184,9 +188,12 @@ class Package(object):
 		# Create the package
 		print 'creating package ' + self.hpkgName + ' ...'
 		check_call(['package', 'create', packageFile])
-		os.chdir(self.workDir)
+
+		# policy check
+		self.policy.checkPackage(self, packageFile)
 
 		# Clean up after ourselves
+		os.chdir(self.workDir)
 		shutil.rmtree(self.packagingDir)
 
 	def createBuildPackage(self):
@@ -412,10 +419,10 @@ class SourcePackage(Package):
 
 # -- package factory function -------------------------------------------------
 
-def packageFactory(type, name, port, recipeKeys):
+def packageFactory(type, name, port, recipeKeys, policy):
 	"""Creates a package matching the given type"""
 	
 	if type == PackageType.SOURCE:
-		return SourcePackage(type, name, port, recipeKeys)
+		return SourcePackage(type, name, port, recipeKeys, policy)
 	else:
-		return Package(type, name, port, recipeKeys)
+		return Package(type, name, port, recipeKeys, policy)

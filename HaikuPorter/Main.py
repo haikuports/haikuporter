@@ -13,6 +13,7 @@
 from HaikuPorter.GlobalConfig import (globalConfiguration, 
 									  readGlobalConfiguration)
 from HaikuPorter.Options import getOption
+from HaikuPorter.Policy import Policy
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
@@ -92,7 +93,9 @@ def versionCompare(left, right):
 class Main:
 	def __init__(self, options, args):
 		self.options = options
-		
+
+		self.policy = Policy(self.options.strictPolicy)
+
 		# read global settings
 		readGlobalConfiguration()
 		
@@ -676,7 +679,7 @@ class Main:
 							self._portVersionsByName[name].append(version)
 						self._allPorts[name + '-' + version] \
 							= Port(name, version, category, portPath, 
-								   self.shellVariables)
+								   self.shellVariables, self.policy)
 					else:
 						# invalid argument
 						print("Warning: Couldn't parse port/version info: " 

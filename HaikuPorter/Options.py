@@ -61,6 +61,10 @@ def parseOptions():
 	parser.add_option('-j', '--jobs', 
 					  action='store', type="int", dest='jobs', default=1, 
 					  help="the number of concurrent jobs to build with")
+	parser.add_option('-S', '--strict-policy',
+					  action='store_true', dest='strictPolicy', default=False,
+					  help="require strict packaging policy adherence; "
+					  	"packaging will fail on any policy violation")
 	
 	parser.add_option('-n', '--nopatch', 
 					  action='store_false', dest='patch', default=True, 
