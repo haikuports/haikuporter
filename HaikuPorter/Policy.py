@@ -109,8 +109,8 @@ class Policy(object):
 			if not os.path.exists(dir):
 				continue
 
-			for entry in os.listdir('bin'):
-				path = 'bin/' + entry
+			for entry in os.listdir(dir):
+				path = dir + '/' + entry
 				if os.path.isfile(path):
 					self._checkLibraryDependenciesOfFile(path)
 
