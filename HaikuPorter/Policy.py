@@ -3,7 +3,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Utils import (sysExit)
+from HaikuPorter.Utils import (check_output, isCommandAvailable, sysExit)
 
 import os
 import re
@@ -31,9 +31,20 @@ class Policy(object):
 	def setPort(self, port):
 		self.port = port
 
+	def setRequiredPackages(self, requiredPackages):
+		# Create a map with the packages' provides. We need that later when
+		# checking the created package.
+		self.requiredPackagesProvides = {}
+		for package in requiredPackages:
+			provides = self._getPackageProvides(package)
+			self.requiredPackagesProvides[os.path.basename(package)] = provides
+
 	def checkPackage(self, package, packageFile):
 		self.package = package
 		self.packageFile = packageFile
+
+		self.provides = self._parseResolvableExpressionListForKey('PROVIDES')
+		self.requires = self._parseResolvableExpressionListForKey('REQUIRES')
 
 		self._checkTopLevelEntries()
 		self._checkProvides()
@@ -44,18 +55,23 @@ class Policy(object):
 			if entry not in allowedTopLevelEntries:
 				_severeViolation('Invalid top-level package entry "%s"' % entry)
 
-	def _checkProvides(self):
-		# get the list of provides names (without version)
-		provides = set()
-		for item in self.package.getRecipeKeys()['PROVIDES']:
+	def _parseResolvableExpressionListForKey(self, keyName):
+		return self._parseResolvableExpressionList(
+			self.package.getRecipeKeys()[keyName])
+
+	def _parseResolvableExpressionList(self, list):
+		names = set()
+		for item in list:
 			match = re.match('[^-/=!<>\s]+', item)
 			if match:
-				provides.add(match.group(0))
+				names.add(match.group(0))
+		return names
 
+	def _checkProvides(self):
 		# everything in bin/ must be declared as cmd:*
 		for entry in os.listdir('bin'):
 			name = 'cmd:' + entry
-			if not self._hasProvidesEntry(provides, name):
+			if not self._hasProvidesEntry(name):
 				self._violation('no matching provides "%s" for "%s"'
 					% (name, 'bin/' + entry))
 
@@ -67,18 +83,135 @@ class Policy(object):
 					continue
 
 				name = 'lib:' + entry[:suffixIndex]
-				if not self._hasProvidesEntry(provides, name):
+				if not self._hasProvidesEntry(name):
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'lib/' + entry))
 
-	def _hasProvidesEntry(self, provides, name):
+	def _hasProvidesEntry(self, name):
 		# make name a valid provides name by replacing '-' with '_'
 		name = name.replace('-', '_')
-		return name in provides
+		return name in self.provides
+
+	def _hasRequiresEntry(self, name):
+		# make name a valid provides name by replacing '-' with '_'
+		name = name.replace('-', '_')
+		return name in self.requires
 
 	def _checkLibraryDependencies(self):
-		# TODO:...
-		pass
+		# If there's no readelf (i.e. no binutils), there probably aren't any
+		# executables/libraries.
+		if not isCommandAvailable('readelf'):
+			return
+
+		# check all files in bin/ and dir/
+		for dir in ['bin', 'lib']:
+			if not os.path.exists(dir):
+				continue
+
+			for entry in os.listdir('bin'):
+				path = 'bin/' + entry
+				if os.path.isfile(path):
+					self._checkLibraryDependenciesOfFile(path)
+
+	def _checkLibraryDependenciesOfFile(self, path):
+		# skip static libraries outright
+		if path.endswith('.a'):
+			return
+
+		# try to read the dynamic section of the file
+		try:
+			with open(os.devnull, "w") as devnull:
+				output = check_output(['readelf', '--dynamic', path],
+					stderr=devnull)
+		except:
+			return
+
+		# extract the library names from the "(NEEDED)" lines of the output
+		for line in output.split('\n'):
+			if line.find('(NEEDED)') >= 0:
+				match = re.match('[^[]*\[(.*)].*', line)
+				if match:
+					library = match.group(1)
+					if self._isMissingLibraryDependency(library):
+						self._violation('"%s" needs library "%s", but the '
+							'package doesn\'t seem to declare that as a '
+							'requirement' % (path, library))
+
+	def _isMissingLibraryDependency(self, library):
+		# the library might be provided by the package
+		if os.path.exists('lib/' + library):
+			return False
+
+		# not provided by the package -- check whether it is required explicitly
+		suffixIndex = library.find('.so')
+		if suffixIndex >= 0:
+			name = 'lib:' + library[:suffixIndex]
+			if self._hasRequiresEntry(name):
+				return False
+
+		# Could be required implicitly by requiring (anything from) the package
+		# that provides the library. Find the library in the file system.
+		libraryPath = None
+		for directory in ['/boot/common/lib', '/boot/system/lib']:
+			path = directory + '/' + library
+			if os.path.exists(path):
+				libraryPath = path
+				break
+
+		# Find out which package the library belongs to.
+		providingPackage = self._getPackageProvidingPath(libraryPath)
+		if not providingPackage:
+			print('Warning: failed to determine the package providing "%s"'
+				% libraryPath)
+			return False
+
+		# Check whether the package is required.
+		# Chop off ".hpkg" and the version part from the file name to get the
+		# package name.
+		packageName = providingPackage[:-5]
+		index = packageName.find('-')
+		if index >= 0:
+			packageName = packageName[:index]
+		if self._hasRequiresEntry(packageName):
+			return False
+
+		# check whether any of the package's provides are required
+		packageProvides = self.requiredPackagesProvides[providingPackage]
+		for name in packageProvides:
+			if self._hasRequiresEntry(name):
+				return False
+
+		return True
+
+	def _getPackageProvidingPath(self, path):
+		try:
+			with open(os.devnull, "w") as devnull:
+				output = check_output(['catattr', '-d', 'SYS:PACKAGE', path],
+					stderr=devnull)
+				if output.endswith('\n'):
+					output = output[:-1]
+				return output
+		except:
+			return None
+
+	def _getPackageProvides(self, package):
+		# get the package listing
+		try:
+			with open(os.devnull, "w") as devnull:
+				output = check_output(['package', 'list', package],
+					stderr=devnull)
+		except:
+			return None
+
+		# extract the provides
+		provides = []
+		for line in output.split('\n'):
+			index = line.find('provides:')
+			if index >= 0:
+				index += 9
+				provides.append(line[index:].strip())
+
+		return self._parseResolvableExpressionList(provides)
 
 	def _violation(self, message):
 		if self.strict:

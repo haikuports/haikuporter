@@ -502,6 +502,8 @@ class Port:
 
 		requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
 
+		self.policy.setRequiredPackages(requiredPackages)
+
 		if getOption('chroot'):
 			# setup chroot and keep it while executing the actions
 			with ChrootSetup(self.workDir, requiredPackages, 

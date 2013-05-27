@@ -126,18 +126,28 @@ def touchFile(file):
 		os.remove(file)
 	open(file, 'w').close()
 
-# -- ensureCommandIsAvailable -------------------------------------------------
+# -- isCommandAvailable -------------------------------------------------
 availableCommands = {}
+def isCommandAvailable(command):
+	"""returns whether the given command is available"""
+
+	if command in availableCommands:
+		return availableCommands[command]
+
+	for path in os.environ['PATH'].split(':'):
+		if os.path.exists(path + '/' + command):
+			availableCommands[command] = True
+			return True
+
+	availableCommands[command] = False
+	return False
+
+# -- ensureCommandIsAvailable -------------------------------------------------
 def ensureCommandIsAvailable(command):
 	"""checks if the given command is available and bails if not"""
 
-	if command not in availableCommands:
-		for path in os.environ['PATH'].split(':'):
-			if os.path.exists(path + '/' + command):
-				availableCommands[command] = True
-				break
-		else:
-			sysExit("'" + command + "' is not available, please install it")
+	if not isCommandAvailable(command):
+		sysExit("'" + command + "' is not available, please install it")
 
 # -- naturalCompare -----------------------------------------------------------
 def naturalCompare(left, right): 
