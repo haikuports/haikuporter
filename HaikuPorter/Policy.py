@@ -69,11 +69,12 @@ class Policy(object):
 
 	def _checkProvides(self):
 		# everything in bin/ must be declared as cmd:*
-		for entry in os.listdir('bin'):
-			name = 'cmd:' + entry
-			if not self._hasProvidesEntry(name):
-				self._violation('no matching provides "%s" for "%s"'
-					% (name, 'bin/' + entry))
+		if os.path.exists('bin'):
+			for entry in os.listdir('bin'):
+				name = 'cmd:' + entry
+				if not self._hasProvidesEntry(name):
+					self._violation('no matching provides "%s" for "%s"'
+						% (name, 'bin/' + entry))
 
 		# library entries in lib/ must be declared as lib:*
 		if os.path.exists('lib'):
