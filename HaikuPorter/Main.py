@@ -187,7 +187,15 @@ class Main:
 		for portSpec in self.portSpecs:
 			if portSpec['version'] == None:
 				if portSpec['name'] not in self._portVersionsByName:
-					sysExit(portSpec['name'] + ' not found in repository')
+					if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+						sysExit(portSpec['name'] + ' not found in repository')
+					# for cross-build repository, try to add target architecture
+					nameWithTargetArch \
+						= (portSpec['name'] + '_' 
+						   + self.shellVariables['targetArchitecture'])
+					if nameWithTargetArch not in self._portVersionsByName:
+						sysExit(portSpec['name'] + ' not found in repository')
+					portSpec['name'] = nameWithTargetArch
 				portSpec['version'] \
 					= self._portVersionsByName[portSpec['name']][-1]
 			portID = portSpec['name'] + '-' + portSpec['version']
