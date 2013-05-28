@@ -317,6 +317,14 @@ class Package(object):
 			self._writePackageInfoListByKey(infoFile, 'REPLACES', 'replaces')
 	
 			infoFile.write('urls\t\t\t"' + self.recipeKeys['HOMEPAGE'] + '"\n')
+
+			self._writePackageInfoListByKey(infoFile, 'GLOBAL_SETTINGS_FILES',
+				'global-settings-files')
+			self._writePackageInfoListByKey(infoFile, 'USER_SETTINGS_FILES',
+				'user-settings-files')
+			self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS', 'users')
+			self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS',
+				'groups')
 	
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.

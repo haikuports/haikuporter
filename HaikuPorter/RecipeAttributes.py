@@ -136,6 +136,20 @@ recipeAttributes = {
 		'extendable': True,
 		'indexable': False,
 	},
+	'GLOBAL_SETTINGS_FILES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+		'indexable': False,
+	},
+	'PACKAGE_GROUPS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+		'indexable': False,
+	},
 	'LICENSE': {
 		'type': types.ListType,
 		'required': False,
@@ -185,6 +199,20 @@ recipeAttributes = {
 		}
 	},
 	'SUPPLEMENTS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+		'indexable': False,
+	},
+	'USER_SETTINGS_FILES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': True,
+		'indexable': False,
+	},
+	'PACKAGE_USERS': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
