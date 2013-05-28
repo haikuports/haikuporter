@@ -18,6 +18,7 @@ from HaikuPorter.Utils import (escapeForPackageInfo, naturalCompare, sysExit,
 							   systemDir, unpackArchive)
 
 import os
+import re
 import shutil
 from subprocess import check_call
 
@@ -318,10 +319,11 @@ class Package(object):
 	
 			infoFile.write('urls\t\t\t"' + self.recipeKeys['HOMEPAGE'] + '"\n')
 
-			self._writePackageInfoListByKey(infoFile, 'GLOBAL_SETTINGS_FILES',
+			self._writePackageInfoListQuotePaths(infoFile,
+				self.recipeKeys['GLOBAL_SETTINGS_FILES'],
 				'global-settings-files')
-			self._writePackageInfoListByKey(infoFile, 'USER_SETTINGS_FILES',
-				'user-settings-files')
+			self._writePackageInfoListQuotePaths(infoFile,
+				self.recipeKeys['USER_SETTINGS_FILES'], 'user-settings-files')
 			self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS', 'users')
 			self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS',
 				'groups')
@@ -372,6 +374,53 @@ class Package(object):
 			for item in list:
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
+
+	def _writePackageInfoListQuotePaths(self, infoFile, list, keyword):
+		if list:
+			infoFile.write(keyword + ' {\n')
+			for item in list:
+				# quote unquoted components that look like paths
+				components = self._splitItem(item)
+				item = ''
+				for component in components:
+					if component[0] != '"' and component.find('/') >= 0:
+						component = '"' + component + '"'
+					if item:
+						item += ' '
+					item += component
+				infoFile.write('\t' + item + '\n')
+			infoFile.write('}\n')
+
+	def _splitItem(self, string):
+		components = []
+		if not string:
+			return components
+
+		component = ''
+		inQuote = False
+		for c in string:
+			if inQuote:
+				component += c
+				if c == '"':
+					inQuote = False
+				continue
+					
+			if c.isspace():
+				if component:
+					components.append(component)
+					component = ''
+				continue
+
+			component += c
+			if c == '"':
+				inQuote = True
+				
+		if component:
+			components.append(component)
+			component = ''
+
+		return components
+				
 
 # -- A source package ---------------------------------------------------------
 
