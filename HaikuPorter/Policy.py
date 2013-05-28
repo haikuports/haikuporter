@@ -53,7 +53,8 @@ class Policy(object):
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir('.'):
 			if entry not in allowedTopLevelEntries:
-				_severeViolation('Invalid top-level package entry "%s"' % entry)
+				self._severeViolation('Invalid top-level package entry "%s"'
+					% entry)
 
 	def _parseResolvableExpressionListForKey(self, keyName):
 		return self._parseResolvableExpressionList(
