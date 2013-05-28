@@ -413,12 +413,24 @@ class Source(object):
 		elif type == 'git':
 			ensureCommandIsAvailable('git')
 			self.checkout['type'] = 'git'
-			checkoutCommand = 'git clone %s %s' % (realUri, checkoutDir)
 			if rev:
-				checkoutCommand += ((' && cd %s'
-									 + ' && git checkout -B haikuport -q %s')
-									% (checkoutDir, rev))
-			checkoutCommand += ' && git tag ORIGIN'
+				checkoutCommand = (('''
+					set -e
+					git clone -n %s %s
+					cd %s
+					if git branch | grep -q '* haikuport'; then
+						# point HEAD to something else than the 'haikuport'
+						# branch, as we are going to try and update that branch
+						# with the following checkout, which would fail if
+						# 'haikuport' is the current branch
+						git symbolic-ref HEAD refs/origin/HEAD
+					fi
+					echo "checking out tree for %s ..."
+					git checkout -B haikuport -q %s''')
+					% (realUri, checkoutDir, checkoutDir, rev, rev))
+			else:
+				checkoutCommand = 'git clone %s %s' % (realUri, checkoutDir)
+			checkoutCommand += '\ngit tag -f ORIGIN'
 		else:
 			sysExit("repository type '" + type + "' is not supported")
 
