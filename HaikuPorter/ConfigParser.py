@@ -192,3 +192,34 @@ class ConfigParser:
 
 	def getDefinedPhases(self):
 		return self.definedPhases
+
+	@staticmethod
+	def splitItem(string):
+		components = []
+		if not string:
+			return components
+
+		component = ''
+		inQuote = False
+		for c in string:
+			if inQuote:
+				component += c
+				if c == '"':
+					inQuote = False
+				continue
+					
+			if c.isspace():
+				if component:
+					components.append(component)
+					component = ''
+				continue
+
+			component += c
+			if c == '"':
+				inQuote = True
+				
+		if component:
+			components.append(component)
+			component = ''
+
+		return components

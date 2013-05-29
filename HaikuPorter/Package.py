@@ -10,6 +10,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
@@ -380,7 +381,7 @@ class Package(object):
 			infoFile.write(keyword + ' {\n')
 			for item in list:
 				# quote unquoted components that look like paths
-				components = self._splitItem(item)
+				components = ConfigParser.splitItem(item)
 				item = ''
 				for component in components:
 					if component[0] != '"' and component.find('/') >= 0:
@@ -390,36 +391,6 @@ class Package(object):
 					item += component
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
-
-	def _splitItem(self, string):
-		components = []
-		if not string:
-			return components
-
-		component = ''
-		inQuote = False
-		for c in string:
-			if inQuote:
-				component += c
-				if c == '"':
-					inQuote = False
-				continue
-					
-			if c.isspace():
-				if component:
-					components.append(component)
-					component = ''
-				continue
-
-			component += c
-			if c == '"':
-				inQuote = True
-				
-		if component:
-			components.append(component)
-			component = ''
-
-		return components
 				
 
 # -- A source package ---------------------------------------------------------
