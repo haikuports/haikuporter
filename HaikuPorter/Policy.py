@@ -181,7 +181,8 @@ class Policy(object):
 			return False
 
 		# check whether any of the package's provides are required
-		packageProvides = self.requiredPackagesProvides[providingPackage]
+		packageProvides = self.requiredPackagesProvides.get(providingPackage, 
+															[])
 		for name in packageProvides:
 			if self._hasRequiresEntry(name):
 				return False
