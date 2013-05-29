@@ -23,10 +23,21 @@ class MachineArchitecture(str):
 		dict = {
 			Architectures.PPC: 'powerpc-apple-haiku',
 			Architectures.X86: 'i586-pc-haiku',
-			Architectures.X86_GCC2: 'i586-pc-haiku',
+			Architectures.X86_GCC2: 'i586-pc-haiku_legacy',
 		}
 		if architecture in dict:
 			return dict[architecture]
+		return None		
+
+	@staticmethod
+	def getForTargetTriple(triple):
+		dict = {
+			'powerpc-apple-haiku': Architectures.PPC,
+			'i586-pc-haiku': Architectures.X86,
+			'i586-pc-haiku_legacy': Architectures.X86_GCC2,
+		}
+		if triple in dict:
+			return dict[triple]
 		return None		
 
 	@staticmethod
