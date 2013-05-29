@@ -223,3 +223,13 @@ class ConfigParser:
 			component = ''
 
 		return components
+
+	@staticmethod
+	def splitItemAndUnquote(string):
+		components = ConfigParser.splitItem(string)
+		unquotedComponents = []
+		for component in components:
+			if component and component[0] == '"' and component[-1] == '"':
+				component = component[1:-1]
+			unquotedComponents.append(component)
+		return unquotedComponents

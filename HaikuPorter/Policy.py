@@ -3,6 +3,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.Package import PackageType
 from HaikuPorter.Utils import (check_output, isCommandAvailable, sysExit)
 
@@ -55,6 +56,7 @@ class Policy(object):
 		self._checkTopLevelEntries()
 		self._checkProvides()
 		self._checkLibraryDependencies()
+		self._checkGlobalSettingsFiles()
 
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir('.'):
@@ -220,6 +222,46 @@ class Policy(object):
 				provides.append(line[index:].strip())
 
 		return self._parseResolvableExpressionList(provides)
+
+	def _checkGlobalSettingsFiles(self):
+		# Create a map for the declared global settings files and check them
+		# while at it.
+		globalSettingsFiles = {}
+		for item in self.package.getRecipeKeys()['GLOBAL_SETTINGS_FILES']:
+			components = ConfigParser.splitItemAndUnquote(item)
+			if components:
+				if not components[0].startswith('settings/'):
+					self._violation('Package declares invalid global settings '
+						'file "%s"' % components[0])
+
+				if len(components) > 1:
+					globalSettingsFiles[components[0]] = components[1]
+					if not os.path.exists(components[0]):
+						self._violation('Package declares non-existent global '
+							'settings file "%s" as included' % components[0])
+				else:
+					globalSettingsFiles[components[0]] = None
+
+		# iterate through the settings files in the package
+		if os.path.exists('settings'):
+			self._checkGlobalSettingsFilesRecursively(globalSettingsFiles,
+				'settings')
+
+	def _checkGlobalSettingsFilesRecursively(self, globalSettingsFiles, path):
+		if not os.path.isdir(path):
+			if path in globalSettingsFiles:
+				if not globalSettingsFiles[path]:
+					self._violation('File "%s" declared as not included global '
+						'settings file' % path)
+			else:
+				self._violation('File "%s" not declared as global settings '
+					'file' % path)
+			return
+
+		# path is a directory -- recurse
+		for entry in os.listdir(path):
+			self._checkGlobalSettingsFilesRecursively(globalSettingsFiles,
+				path + '/' + entry)
 
 	def _violation(self, message):
 		if self.strict:
