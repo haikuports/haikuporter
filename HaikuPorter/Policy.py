@@ -57,6 +57,7 @@ class Policy(object):
 		self._checkProvides()
 		self._checkLibraryDependencies()
 		self._checkGlobalSettingsFiles()
+		self._checkUserSettingsFiles()
 
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir('.'):
@@ -262,6 +263,22 @@ class Policy(object):
 		for entry in os.listdir(path):
 			self._checkGlobalSettingsFilesRecursively(globalSettingsFiles,
 				path + '/' + entry)
+
+	def _checkUserSettingsFiles(self):
+		for item in self.package.getRecipeKeys()['USER_SETTINGS_FILES']:
+			components = ConfigParser.splitItemAndUnquote(item)
+			if not components:
+				continue
+
+			if not components[0].startswith('settings/'):
+				self._violation('Package declares invalid user settings '
+					'file "%s"' % components[0])
+
+			if len(components) > 2:
+				if not os.path.exists(components[2]):
+					self._violation('Package declares non-existent template '
+						'"%s" for user settings file "%s" as included'
+						% (components[2], components[0]))
 
 	def _violation(self, message):
 		if self.strict:
