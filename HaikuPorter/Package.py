@@ -412,7 +412,7 @@ class SourcePackage(Package):
 				targetDir = targetBaseDir + '/source-' + source.index
 				
 			if not os.path.exists(targetDir):
-				os.mkdir(targetDir)
+				os.makedirs(targetDir)
 	
 			if source.localFile:
 				# unpack the archive into source package's directory
