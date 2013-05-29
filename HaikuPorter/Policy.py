@@ -4,7 +4,6 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.Package import PackageType
 from HaikuPorter.Utils import (check_output, isCommandAvailable, sysExit)
 
 import os
@@ -42,11 +41,6 @@ class Policy(object):
 			self.requiredPackagesProvides[os.path.basename(package)] = provides
 
 	def checkPackage(self, package, packageFile):
-		# TODO: Also check source packages once their directory layout has been
-		# fixed.
-		if package.type == PackageType.SOURCE:
-			return
-
 		self.package = package
 		self.packageFile = packageFile
 
