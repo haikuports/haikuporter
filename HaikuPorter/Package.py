@@ -401,11 +401,13 @@ class SourcePackage(Package):
 
 		print "Populating source package ..."
 
+		targetBaseDir = (self.packagingDir + '/develop/sources/' 
+						 + port.revisionedName)
 		for source in port.sources:
 			if source.index == '1':
-				targetDir = self.packagingDir + '/source'
+				targetDir = targetBaseDir + '/source'
 			else:
-				targetDir = self.packagingDir + '/source-' + source.index
+				targetDir = targetBaseDir + '/source-' + source.index
 				
 			if not os.path.exists(targetDir):
 				os.mkdir(targetDir)
@@ -433,7 +435,7 @@ class SourcePackage(Package):
 	
 			if source.patches:
 				# copy and apply patches
-				patchesDir = self.packagingDir + '/patches'
+				patchesDir = targetBaseDir + '/patches'
 				os.mkdir(patchesDir)
 				for patch in source.patches:
 					shutil.copy(patch, patchesDir)
@@ -443,7 +445,7 @@ class SourcePackage(Package):
 									 + 'been applied to the sources.\n')
 
 		# copy recipe file
-		shutil.copy(port.recipeFilePath, self.packagingDir)
+		shutil.copy(port.recipeFilePath, targetBaseDir)
 
 # -- package factory function -------------------------------------------------
 
