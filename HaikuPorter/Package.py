@@ -249,7 +249,7 @@ class Package(object):
 			self.buildPackage = None
 
 	def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
-							fakeEmptyProvides):
+							 fakeEmptyProvides):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 		
@@ -294,8 +294,10 @@ class Package(object):
 					# but take care to not do that for packages that implement
 					# the cross-building themselves (i.e. binutils and gcc),
 					# as those are running in the context of the host machine.
+					# TODO: fix relying on the names of the ports!
 					targetMachineTripleAsName = self.targetMachineTripleAsName
-					if '_cross_' in self.name:
+					if ('gcc_cross_' in self.name 
+						or 'binutils_cross' in self.name):
 						targetMachineTripleAsName = ''
 					requiresForKey = getScriptletPrerequirements(
 						targetMachineTripleAsName)
