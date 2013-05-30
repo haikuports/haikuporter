@@ -10,6 +10,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
 from HaikuPorter.GlobalConfig import (globalConfiguration, 
 									  readGlobalConfiguration)
 from HaikuPorter.Options import getOption
@@ -100,6 +101,8 @@ class Main:
 					self._splitPortSpecIntoNameVersionAndRevision(portSpec))
 			if not self.portSpecs:
 				sysExit("The given ports-file doesn't contain any ports.")
+		elif self.options.analyzeDependencies:
+			pass
 		else:
 			# if there is no argument given, exit
 			if not args:
@@ -117,6 +120,10 @@ class Main:
 		self.repository = Repository(self.treePath, self.packagesPath,
 			self.shellVariables, self.policy, self.options.preserveFlags)
 
+		if self.options.analyzeDependencies:
+			DependencyAnalyzer(self.repository)
+			return
+			
 		# collect all available ports and validate each specified port
 		allPorts = self.repository.getAllPorts()
 		portVersionsByName = self.repository.getPortVersionsByName()

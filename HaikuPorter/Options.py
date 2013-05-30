@@ -112,6 +112,11 @@ def parseOptions():
 					  default='', 
 					  help='determine why the given port is pulled in as a '
 					  	   'dependency of the port to be built')
+	parser.add_option('-D', '--analyze-dependencies', 
+					  action='store_true', dest='analyzeDependencies',
+					  default=False, 
+					  help="analyze dependencies between ports and print "
+					  	"information; no port parameter required")
 	
 	parser.add_option('-T', '--target-arch', 
 					  action='store', type='choice', dest='targetArch', 
