@@ -116,7 +116,7 @@ class Main:
 		# create/update repository
 		self.repository = Repository(self.treePath, self.packagesPath,
 			self.shellVariables, self.policy, self.options.preserveFlags)
-			
+
 		# collect all available ports and validate each specified port
 		allPorts = self.repository.getAllPorts()
 		portVersionsByName = self.repository.getPortVersionsByName()
