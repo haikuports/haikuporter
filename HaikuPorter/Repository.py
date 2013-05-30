@@ -9,6 +9,7 @@ from HaikuPorter.Utils import (naturalCompare, touchFile)
 
 import glob
 import os
+import shutil
 import sys
 
 # -- bareVersionCompare -------------------------------------------------------

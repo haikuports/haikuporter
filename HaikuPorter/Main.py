@@ -14,7 +14,6 @@ from HaikuPorter.GlobalConfig import (globalConfiguration,
 									  readGlobalConfiguration)
 from HaikuPorter.Options import getOption
 from HaikuPorter.Policy import Policy
-from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Repository import Repository
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
@@ -22,7 +21,6 @@ from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable,
 
 import os
 import re
-import shutil
 from subprocess import check_call
 import sys
 

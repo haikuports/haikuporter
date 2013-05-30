@@ -19,7 +19,6 @@ from HaikuPorter.Utils import (escapeForPackageInfo, naturalCompare, sysExit,
 							   systemDir, unpackArchive)
 
 import os
-import re
 import shutil
 from subprocess import check_call
 
