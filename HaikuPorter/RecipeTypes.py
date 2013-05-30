@@ -64,7 +64,7 @@ class Architectures(MachineArchitecture):
 	PPC = 'ppc'
 	X86 = 'x86'
 	X86_GCC2 = 'x86_gcc2'
-	SOURCE = 'src'
+	SOURCE = 'source'
 	
 	@staticmethod
 	def getAll():

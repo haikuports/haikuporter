@@ -71,12 +71,12 @@ class Package(object):
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
-		if port.currentArchitecture in self.recipeKeys['ARCHITECTURES']:
+		if type == PackageType.SOURCE:
+			self.architecture = Architectures.SOURCE
+		elif port.currentArchitecture in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = port.currentArchitecture
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
-		elif Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']:
-			self.architecture = Architectures.SOURCE
 		else:
 			sysExit('package %s can not be built on architecture %s'
 					% (self.versionedName, port.currentArchitecture))
