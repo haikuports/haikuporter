@@ -37,28 +37,56 @@ class PortNode(object):
 		self.portID = portID
 		self.port = port
 		self.areDependenciesResolved = False
+		self.packageNodes = set()
 		self.requires = set()
 		self.buildRequires = set()
 		self.buildPrerequires = set()
 		self.indegree = 0
 
-	def isSystemPackage(self):
-		return not self.port
+	def getName(self):
+		return self.portID
 
-	def getBuildDependencies(self):
+	def getDependencies(self):
 		return self.buildRequires | self.buildPrerequires
 
-	def doesBuildDependOn(self, node):
-		return node in self.buildRequires or node in self.buildPrerequires
+	def isPort(self):
+		return True
 
-	def addRequires(self, elements):
-		self.requires |= elements
+	def doesBuildDependOnSelf(self):
+		return not (self.buildRequires.isdisjoint(self.packageNodes)
+			and self.buildPrerequires.isdisjoint(self.packageNodes))
 
 	def addBuildRequires(self, elements):
 		self.buildRequires |= elements
 
 	def addBuildPrerequires(self, elements):
 		self.buildPrerequires |= elements
+
+# -- PackageNode class ---------------------------------------------------------
+
+class PackageNode(object):
+	def __init__(self, portNode, packageID):
+		self.portNode = portNode
+		self.packageID = packageID
+		self.requires = set()
+		self.indegree = 0
+
+	def getName(self):
+		return self.packageID
+
+	def isPort(self):
+		return False
+
+	def getDependencies(self):
+		dependencies = self.requires
+		dependencies.add(self.portNode)
+		return dependencies
+
+	def isSystemPackage(self):
+		return not self.portNode
+
+	def addRequires(self, elements):
+		self.requires |= elements
 
 # -- DependencyAnalyzer class --------------------------------------------------
 
@@ -125,11 +153,17 @@ class DependencyAnalyzer(object):
 
 		os.rmdir(self.emptyDirectory)
 
-		# iterate through the packages and resolve dependencies
-		print 'Resolving requires ...'
+		# Iterate through the packages and resolve dependencies. We build a
+		# dependency graph with two different node types: port nodes and package
+		# nodes. A port is something we want to build, a package is a what we
+		# depend on. A package automatically depends on the port it belongs to.
+		# Furthermore it depends on the packages its requires specify. Build
+		# requires and build prerequires are dependencies for a port.
+		print 'Resolving dependencies ...'
 
 		allPorts = self.repository.getAllPorts()
 		self.portNodes = {}
+		self.packageNodes = {}
 		self.allRequires = {}
 		for packageID in packageIDs:
 			# get the port ID for the package
@@ -141,10 +175,12 @@ class DependencyAnalyzer(object):
 			if portNode.areDependenciesResolved:
 				continue
 
-			portNode.port.parseRecipeFile(False)
 			for package in portNode.port.packages:
+				packageID = package.name + '-' + portNode.port.version
+				packageNode = self._getPackageNode(packageID)
+
 				recipeKeys = package.getRecipeKeys()
-				portNode.addRequires(
+				packageNode.addRequires(
 					self._resolveRequiresList(recipeKeys['REQUIRES']))
 				portNode.addBuildRequires(
 					self._resolveRequiresList(recipeKeys['BUILD_REQUIRES']))
@@ -156,52 +192,43 @@ class DependencyAnalyzer(object):
 		# print the needed system packages
 		print 'Required system packages:'
 
-		nonSystemPortNodes = []
+		nonSystemPortNodes = set()
 
-		for portNode in self.portNodes.itervalues():
-			if portNode.isSystemPackage():
-				print '  %s' % portNode.portID
+		for packageNode in self.packageNodes.itervalues():
+			if packageNode.isSystemPackage():
+				print '  %s' % packageNode.getName()
 			else:
-				nonSystemPortNodes.append(portNode)
-
-#		# print the immediate dependencies of each port
-#		print 'Immediate port build dependencies:'
-#
-#		for portNode in self.portNodes.itervalues():
-#			if portNode.isSystemPackage():
-#				continue
-#			print '  %s:' % portNode.portID
-#			for dependency in portNode.getBuildDependencies():
-#				print '    %s' % dependency.portID
+				nonSystemPortNodes.add(packageNode.portNode)
 
 		# print the self-depending ports
 		print 'Self depending ports:'
 
-		portNodes = set()
+		nodes = set()
 
 		for portNode in nonSystemPortNodes:
-			if portNode.doesBuildDependOn(portNode):
+			if portNode.doesBuildDependOnSelf():
 				print '  %s' % portNode.portID
 			else:
-				portNodes.add(portNode)
+				nodes.add(portNode)
+				nodes |= portNode.packageNodes
 
-		# compute the in-degrees of the port nodes
-		for portNode in portNodes:
-			for dependency in portNode.getBuildDependencies():
-				if dependency in portNodes:
+		# compute the in-degrees of the nodes
+		for node in nodes:
+			for dependency in node.getDependencies():
+				if dependency in nodes:
 					dependency.indegree += 1
 
 		indegreeZeroStack = []
-		for portNode in portNodes:
-			if portNode.indegree == 0:
-				indegreeZeroStack.append(portNode)
+		for node in nodes:
+			if node.indegree == 0:
+				indegreeZeroStack.append(node)
 
 		# remove the acyclic part of the graph
 		while indegreeZeroStack:
-			portNode = indegreeZeroStack.pop()
-			portNodes.remove(portNode)
-			for dependency in portNode.getBuildDependencies():
-				if dependency in portNodes:
+			node = indegreeZeroStack.pop()
+			nodes.remove(node)
+			for dependency in node.getDependencies():
+				if dependency in nodes:
 					dependency.indegree -= 1
 					if dependency.indegree == 0:
 						indegreeZeroStack.append(dependency)
@@ -209,8 +236,9 @@ class DependencyAnalyzer(object):
 		# print the remaining cycle(s)
 		print 'Ports depending cyclically on each other:'
 
-		for portNode in portNodes:
-			print '  %s' % portNode.portID
+		for node in nodes:
+			if node.isPort():
+				print '  %s' % node.getName()
 
 		# clean up
 		shutil.rmtree(self.noRequiresRepositoryPath)
@@ -266,20 +294,19 @@ class DependencyAnalyzer(object):
 		if not lines:
 			return None
 		if len(lines) > 1:
-			print 'Warning: Got multiple result for requires "%s"' % requires
+			print 'Warning: Got multiple results for requires "%s"' % requires
 
 		packageID = os.path.basename(lines[0])
 		suffix = '.PackageInfo'
 		if packageID.endswith(suffix):
 			packageID = packageID[:-len(suffix)]
+		packageIDComponents = packageID.split('-')
+		if len(packageIDComponents) > 1:
+			packageID = packageIDComponents[0] + '-' + packageIDComponents[1]
+		else:
+			packageID = packageIDComponents[0]
 
-		if isSystemPackage:
-			return self._getPortNode(packageID, True)
-
-		portID = packageID
-		if portID not in self.repository.getAllPorts():
-			portID = self.repository.getPortIdForPackageId(portID)
-		return self._getPortNode(portID)
+		return self._getPackageNode(packageID, isSystemPackage)
 
 	def _isPackageInfoValid(self, packageInfoPath):
 		args = [ '/bin/pkgman', 'resolve-dependencies', packageInfoPath,
@@ -291,15 +318,44 @@ class DependencyAnalyzer(object):
 		except CalledProcessError:
 			return False
 
-	def _getPortNode(self, portID, isSystemPackage = False):
+	def _getPortNode(self, portID):
 		if portID in self.portNodes:
 			return self.portNodes[portID]
-		port = None
-		if not isSystemPackage:
-			port = self.repository.getAllPorts()[portID]
+
+		# get the port and create the port node
+		port = self.repository.getAllPorts()[portID]
 		portNode = PortNode(portID, port)
 		self.portNodes[portID] = portNode
+
+		# also create nodes for all of the port's packages
+		portNode.port.parseRecipeFile(False)
+		for package in port.packages:
+			packageID = package.name + '-' + port.version
+			packageNode = PackageNode(portNode, packageID)
+			self.packageNodes[packageID] = packageNode
+			portNode.packageNodes.add(packageNode)
+
 		return portNode
+
+	def _getPackageNode(self, packageID, isSystemPackage = False):
+		if packageID in self.packageNodes:
+			return self.packageNodes[packageID]
+
+		if isSystemPackage:
+			packageNode = PackageNode(None, packageID)
+			self.packageNodes[packageID] = packageNode
+			return packageNode
+
+		# get the port -- that will also create nodes for all of the port's
+		# packages
+		portID = packageID
+		if portID not in self.repository.getAllPorts():
+			portID = self.repository.getPortIdForPackageId(portID)
+		self._getPortNode(portID)
+
+		if not packageID in self.packageNodes:
+			sysExit('package "%s" doesn\'t seem to exist' % packageID)
+		return self.packageNodes[packageID]
 
 	def _stripRequiresFromPackageInfo(self, sourcePath, destinationPath):
 		with open(sourcePath, 'r') as sourceFile:
