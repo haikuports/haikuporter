@@ -11,6 +11,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.ConfigParser import ConfigParser
+from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
@@ -919,6 +920,11 @@ class Port:
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = filteredEnvironment()
+		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			# include cross development tools in path automatically
+			shellEnv['PATH'] \
+				= '/boot/common/develop/tools/bin:' + shellEnv['PATH']
+
 		shellEnv.update(self.shellVariables)
 
 		# execute the requested action via a shell ....
