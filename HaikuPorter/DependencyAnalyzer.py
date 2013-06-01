@@ -3,8 +3,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Port import Port
-from HaikuPorter.Utils import (check_output, sysExit)
+from HaikuPorter.Utils import check_output
 
 import glob
 import os
