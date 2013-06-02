@@ -410,6 +410,7 @@ if [[ $buildOk ]]; then
 		package-infos \
 		packages \
 		packaging \
+		prereq-repository \
 		repository
 	rm -f \
 		.PackageInfo \
