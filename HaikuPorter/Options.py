@@ -118,12 +118,6 @@ def parseOptions():
 					  help="analyze dependencies between ports and print "
 					  	"information; no port parameter required")
 	
-	parser.add_option('-T', '--target-arch', 
-					  action='store', type='choice', dest='targetArch', 
-					  default=None, 
-					  choices=MachineArchitecture.getAll(),
-					  help="set target architecture for cross-building")
-	
 	parser.add_option('-c', '--clean', 
 					  action='store_true', dest='clean', default=False, 
 					  help="clean the working directory of the specified port")

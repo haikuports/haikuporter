@@ -74,7 +74,7 @@ class Port:
 		self.versionedName = name + '-' + version
 		self.category = category			
 		self.baseDir = baseDir
-		self.currentArchitecture = globalShellVariables['architecture']
+
 		self.recipeFilePath \
 			= self.baseDir + '/' + self.name + '-' + self.version + '.recipe'
 		
@@ -85,6 +85,16 @@ class Port:
 		self.revisionedName = None
 		
 		self.definedPhases = []
+
+		self.buildArchitecture = globalShellVariables['buildArchitecture']
+		# any port that implements crossing between host and target border needs
+		# to use the build architecture, not the host architecture
+		if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
+			and '_cross_' in name):
+			self.hostArchitecture = globalShellVariables['buildArchitecture']
+		else:
+			self.hostArchitecture = globalShellVariables['hostArchitecture']
+		self.targetArchitecture = globalShellVariables['targetArchitecture']
 
 		# build dictionary of variables to inherit to shell
 		self.shellVariables = {
@@ -126,12 +136,13 @@ class Port:
 		"""Parse the recipe-file of the specified port"""
 
 		# If a patch file named like the port exists, use that as a default
-		# for "PATCHES" (check this for up to 9 sources).
+		# for "PATCHES" (check this for up to 9 sources). Support a second 
+		# patchset which is specific to target-architecture, too.
 		for s in range(1, 9):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.currentArchitecture 
+										+ self.targetArchitecture 
 										+ '.patchset')
 				patchFileName = self.name + '-' + self.version + '.patch'
 				patchesKeyName = 'PATCHES'
@@ -139,7 +150,7 @@ class Port:
 				patchSetFileName = (self.name + '-' + self.version + '-source' 
 									+ str(s) + '.patchset')
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.currentArchitecture + '-source'
+										+ self.targetArchitecture + '-source'
 										+ str(s) + '.patchset')
 				patchFileName = (self.name + '-' + self.version + '-source' 
 								 + str(s) + '.patch')
@@ -195,8 +206,10 @@ class Port:
 			package = packageFactory(packageType, name, self, keys, self.policy)
 			self.allPackages.append(package)
 			
-			status = package.getStatusOnArchitecture(self.currentArchitecture)
-			if status == Status.STABLE:
+			status = package.getStatusOnArchitecture(self.targetArchitecture)
+			if (status == Status.STABLE 
+				or (status == Status.UNTESTED 
+					and globalConfiguration['ALLOW_UNTESTED'])):
 				self.packages.append(package)
 
 		self.sourceDir = self.sources[0].sourceDir
@@ -316,7 +329,7 @@ class Port:
 			print 'PACKAGE: %s' % package.versionedName
 			print 'SUMMARY: %s' % package.recipeKeys['SUMMARY']
 			print('STATUS: %s' 
-				  % package.getStatusOnArchitecture(self.currentArchitecture))
+				  % package.getStatusOnArchitecture(self.targetArchitecture))
 			print 'ARCHITECTURE: %s' % package.architecture
 		print '*' * 80
 
@@ -325,7 +338,7 @@ class Port:
 		
 		if self.allPackages:
 			return self.allPackages[0].getStatusOnArchitecture(
-				self.currentArchitecture)
+				self.targetArchitecture)
 		return Status.UNSUPPORTED
 	
 	def writePackageInfosIntoRepository(self, repositoryPath):
@@ -368,7 +381,7 @@ class Port:
 													 packagesPath)
 		
 		# Determine the build requirements, this time only allowing system
-		# packages.from the host.
+		# packages.from the build machine.
 		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
 		packages = self._resolveDependenciesViaPkgman(
@@ -468,13 +481,13 @@ class Port:
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.currentArchitecture 
+										+ self.targetArchitecture 
 										+ '.patchset')
 			else:
 				patchSetFileName = (self.name + '-' + self.version + '-source' 
 									+ str(s) + '.patchset')
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.currentArchitecture + '-source'
+										+ self.targetArchitecture + '-source'
 										+ str(s) + '.patchset')
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
 			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
@@ -709,16 +722,18 @@ class Port:
 		
 		# For each package, generate a PackageInfo-file containing only the 
 		# prerequirements for building the package and no own provides (if a
-		# port prerequires itself, we want to pull in the "host" package)
+		# port prerequires itself, we want to pull in the real package from the
+		# build machine)
 		packageInfoFiles = []
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfoWithoutProvides(
-				packageInfoFile, [ 'BUILD_PREREQUIRES' ])
+			package.generatePackageInfoWithoutProvides(packageInfoFile, 					
+													   [ 'BUILD_PREREQUIRES' ], 
+													   self.buildArchitecture)
 			packageInfoFiles.append(packageInfoFile)
 		
-		# determine the prerequired packages, allowing host packages, but
-		# filter our system packages, as those are irrelevant.
+		# determine the prerequired packages, allowing build machine packages, 
+		# but leave out system packages, as those are irrelevant.
 		repositories = [ packagesPath, workRepositoryPath,
 						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
 						 systemDir['B_SYSTEM_PACKAGES_DIRECTORY'] ]
@@ -738,7 +753,8 @@ class Port:
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
 			package.generatePackageInfo(packageInfoFile, 
-										[ 'BUILD_REQUIRES' ], True)
+										[ 'BUILD_REQUIRES' ], True,
+										self.buildArchitecture)
 			packageInfoFiles.append(packageInfoFile)
 
 		return packageInfoFiles
@@ -749,18 +765,20 @@ class Port:
 		
 		# For each package, generate a PackageInfo-file containing only the 
 		# prerequirements for building the package and no own provides (if a
-		# port prerequires itself, we want to pull in the "host" package)
+		# port prerequires itself, we want to pull in the real package from the
+		# build machine)
 		packageInfoFiles = []
 		for package in self.packages:
 			packageInfoFile = (package.packageInfoDir + '/' 
 							   + package.packageInfoName)
 			package.generatePackageInfoWithoutProvides(
 				packageInfoFile, 
-				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ])
+				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ],
+				self.buildArchitecture)
 			packageInfoFiles.append(packageInfoFile)
 		
-		# Determine the prerequired packages, allowing host packages, but
-		# filter out system packages, as they will be linked into the chroot
+		# Determine the prerequired packages, allowing build machine packages, 
+		# but leave out system packages, as they will be linked into the chroot
 		# anyway.
 		repositories = [ packagesPath,
 						 systemDir['B_COMMON_PACKAGES_DIRECTORY'], 
@@ -785,7 +803,7 @@ class Port:
 			package.generatePackageInfoWithoutProvides(
 				packageInfoFile, 
 				[ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 
-				  'SCRIPTLET_PREREQUIRES' ])
+				  'SCRIPTLET_PREREQUIRES' ], self.buildArchitecture)
 			packageInfoFiles.append(packageInfoFile)
 
 		# Determine the build requirements.

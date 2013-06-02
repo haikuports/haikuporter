@@ -3,6 +3,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
 from HaikuPorter.Utils import (naturalCompare, touchFile)
@@ -71,7 +72,7 @@ def versionCompare(left, right):
 
 class Repository(object):
 	def __init__(self, treePath, packagesPath, shellVariables, policy,
-			preserveFlags):
+				 preserveFlags):
 		self.treePath = treePath 
 		self.path = self.treePath + '/repository'
 		self.packagesPath = packagesPath
@@ -175,7 +176,9 @@ class Repository(object):
 					sys.stdout.flush()
 					port.parseRecipeFile(False)
 					status = port.getStatusOnCurrentArchitecture()
-					if status == Status.STABLE:
+					if (status == Status.STABLE 
+						or (status == Status.UNTESTED 
+							and globalConfiguration['ALLOW_UNTESTED'])):
 						if (port.checkFlag('build') 
 							and not preserveFlags):
 							print '   [build-flag reset]'
@@ -187,7 +190,7 @@ class Repository(object):
 					else:
 						# take notice of skipped recipe file
 						touchFile(skippedDir + '/' + portID)
-						print(' is skipped, as it is %s on this architecture'
+						print(' is skipped, as it is %s on target architecture'
 							  % status)
 				except SystemExit:
 					# take notice of broken recipe file
@@ -244,10 +247,12 @@ class Repository(object):
 						continue
 					
 					status = port.getStatusOnCurrentArchitecture()
-					if status != Status.STABLE:
+					if (status == Status.STABLE 
+						or (status == Status.UNTESTED 
+							and globalConfiguration['ALLOW_UNTESTED'])):
 						touchFile(skippedDir + '/' + portID)
-						print('\t%s is still marked as %s on this architecture' 
-							  % (portID, status))
+						print(('\t%s is still marked as %s on target '
+							   + 'architecture') % (portID, status))
 						continue
 
 					higherVersionIsActive = True

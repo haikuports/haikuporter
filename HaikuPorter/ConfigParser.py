@@ -174,6 +174,12 @@ class ConfigParser:
 				if 'source' in entries[key] and len(entries[key]) > 1:
 					sysExit("%s specifies both 'source' and other architectures" 
 							% (filename))
+			elif type == YesNo:
+				valueString = valueString.lower()
+				if valueString not in YesNo.getAllowedValues():
+					sysExit("Value for %s should be 'yes' or 'no' in %s" 
+							% (key, filename))
+				entries[key] = YesNo.toBool(self, valueString)
 			else:
 				sysExit('type of key %s in file %s is unsupported'
 						% (key, filename))

@@ -19,7 +19,7 @@ class MachineArchitecture(str):
 		]
 
 	@staticmethod
-	def getTargetTripleFor(architecture):
+	def getTripleFor(architecture):
 		dict = {
 			Architectures.PPC: 'powerpc-apple-haiku',
 			Architectures.X86: 'i586-pc-haiku',
@@ -28,6 +28,13 @@ class MachineArchitecture(str):
 		if architecture in dict:
 			return dict[architecture]
 		return None		
+
+	@staticmethod
+	def getBuildTripleFor(architecture):
+		triple = MachineArchitecture.getTripleFor(architecture)
+		if triple:
+			triple += '_build'
+		return triple
 
 	@staticmethod
 	def getForTargetTriple(triple):
@@ -39,13 +46,6 @@ class MachineArchitecture(str):
 		if triple in dict:
 			return dict[triple]
 		return None		
-
-	@staticmethod
-	def getHostTripleFor(architecture):
-		triple = MachineArchitecture.getTargetTripleFor(architecture)
-		if triple:
-			triple += '_host'
-		return triple
 
 
 # -- Architectures ------------------------------------------------------------
@@ -104,3 +104,17 @@ class Phase(str):
 # Create new type 'LinesOfText', used to handle the description in a recipe
 class LinesOfText(list):
 	pass
+
+
+# -- YesNo --------------------------------------------------------------------
+
+# A string representing a boolean value.
+class YesNo(str):
+	
+	@staticmethod
+	def getAllowedValues():
+		return [ 'yes', 'no', 'true', 'false' ]
+
+	@staticmethod
+	def toBool(self, value):
+		return value.lower() == 'yes' or value.lower() == 'true'

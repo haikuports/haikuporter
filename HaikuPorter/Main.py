@@ -13,7 +13,6 @@
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
 from HaikuPorter.GlobalConfig import (globalConfiguration, 
 									  readGlobalConfiguration)
-from HaikuPorter.Options import getOption
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Repository import Repository
@@ -132,7 +131,7 @@ class Main:
 				if portSpec['name'] not in portVersionsByName:
 					if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 						sysExit(portSpec['name'] + ' not found in repository')
-					# for cross-build repository, try to add target architecture
+					# for cross-build repository, try with target arch added
 					nameWithTargetArch \
 						= (portSpec['name'] + '_' 
 						   + self.shellVariables['targetArchitecture'])
@@ -192,7 +191,9 @@ class Main:
 
 		# warn when the port is not stable on this architecture
 		status = port.getStatusOnCurrentArchitecture()
-		if status != Status.STABLE:
+		if (status != Status.STABLE 
+			and (status != Status.UNTESTED
+				 or not globalConfiguration['ALLOW_UNTESTED'])):
 			warn('This port is %s on this architecture.' % status)
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')
@@ -317,7 +318,9 @@ class Main:
 
 		self.shellVariables = {
 			'haikuVersion': self.haikuVersion,
-			'architecture': self.architecture,
+			'buildArchitecture': self.architecture,
+			'hostArchitecture': self.architecture,
+			'targetArchitecture': self.architecture,
 			'jobs': str(self.options.jobs),
 		}
 		if self.options.jobs > 1:
@@ -326,25 +329,26 @@ class Main:
 			self.shellVariables['quiet'] = '1'
 			
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			buildMachineTriple \
+				= MachineArchitecture.getBuildTripleFor(self.architecture)
+			self.shellVariables['buildMachineTriple'] = buildMachineTriple
+			self.shellVariables['buildMachineTripleAsName'] \
+				= buildMachineTriple.replace('-', '_')
+			
+			hostArchitecture \
+				= globalConfiguration['HOST_ARCHITECTURE'].lower()
+			self.shellVariables['hostArchitecture'] = hostArchitecture
 			hostMachineTriple \
-				= MachineArchitecture.getHostTripleFor(self.architecture)
+				= MachineArchitecture.getTripleFor(hostArchitecture)
 			self.shellVariables['hostMachineTriple'] = hostMachineTriple
 			self.shellVariables['hostMachineTripleAsName'] \
 				= hostMachineTriple.replace('-', '_')
-			targetArchitecture = getOption('targetArch')
-			if not targetArchitecture:
-				if 'TARGET_ARCHITECTURE' in globalConfiguration:
-					targetArchitecture \
-						= globalConfiguration['TARGET_ARCHITECTURE']
-			if not targetArchitecture:
-				sysExit('A cross-build repository is active, '
-						'you must specify a target architecture.\n'
-						'Please use --target-arch '
-						'or set TARGET_ARCHITECTURE in haikuports.conf')
-			targetArchitecture = targetArchitecture.lower()
+
+			targetArchitecture \
+				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
 			self.shellVariables['targetArchitecture'] = targetArchitecture
 			targetMachineTriple \
-				= MachineArchitecture.getTargetTripleFor(targetArchitecture)
+				= MachineArchitecture.getTripleFor(targetArchitecture)
 			self.shellVariables['targetMachineTriple'] = targetMachineTriple
 			self.shellVariables['targetMachineTripleAsName'] \
 				= targetMachineTriple.replace('-', '_')

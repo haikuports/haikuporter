@@ -75,13 +75,13 @@ class Package(object):
 			# TODO: switch to SOURCE, when support for that has been implemented
 			#       in the solver
 			self.architecture = Architectures.ANY
-		elif port.currentArchitecture in self.recipeKeys['ARCHITECTURES']:
-			self.architecture = port.currentArchitecture
+		elif port.hostArchitecture in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = port.hostArchitecture
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
 		else:
-			sysExit('package %s can not be built on architecture %s'
-					% (self.versionedName, port.currentArchitecture))
+			sysExit('package %s can not be built for architecture %s'
+					% (self.versionedName, port.targetArchitecture))
 
 		self.fullVersionedName = self.versionedName + '-' + self.architecture
 		self.fullRevisionedName = self.revisionedName + '-' + self.architecture
@@ -112,7 +112,8 @@ class Package(object):
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
 		self._generatePackageInfo(packageInfoFile, 
-								  [ 'BUILD_REQUIRES', 'REQUIRES' ], True, False)
+								  [ 'BUILD_REQUIRES', 'REQUIRES' ], True, False,
+								  self.architecture)
 					
 	def removePackageInfoFromRepository(self, repositoryPath):
 		"""Remove PackageInfo-file from repository, if it's there"""
@@ -134,17 +135,20 @@ class Package(object):
 			os.rename(packageFile, obsoletePackage)
 					
 	def generatePackageInfoWithoutProvides(self, packageInfoPath, 
-										   requiresToUse):
+										   requiresToUse, architecture):
 		"""Create a .PackageInfo file that doesn't include any provides except
 		   for the one matching the package name"""
 
-		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True)
+		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True,
+								  architecture)
 		
-	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
+	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet, 
+							architecture):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 
-		self._generatePackageInfo(packageInfoPath, requiresToUse, quiet, False)
+		self._generatePackageInfo(packageInfoPath, requiresToUse, quiet, False,
+								  architecture)
 
 	def adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
@@ -169,7 +173,8 @@ class Package(object):
 		"""Create a package suitable for distribution"""
 
 		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
-								 ['REQUIRES'], getOption('quiet'))
+								 ['REQUIRES'], getOption('quiet'), 
+								 self.architecture)
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
@@ -207,7 +212,8 @@ class Package(object):
 							+ '-build.PackageInfo')
 		self.generatePackageInfo(buildPackageInfo, 
 								 ['REQUIRES', 'BUILD_REQUIRES', 
-								  'BUILD_PREREQUIRES'], True)
+								  'BUILD_PREREQUIRES'], True, 
+								 self.architecture)
 
 		# create the build package
 		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 
@@ -250,9 +256,12 @@ class Package(object):
 			self.buildPackage = None
 
 	def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
-							 fakeEmptyProvides):
+							 fakeEmptyProvides, architecture):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
+
+		if not architecture:
+			architecture = self.architecture
 		
 		with open(packageInfoPath, 'w') as infoFile:
 			if fakeEmptyProvides:
@@ -260,7 +269,7 @@ class Package(object):
 			else:
 				infoFile.write('name\t\t\t' + self.name + '\n')
 			infoFile.write('version\t\t\t' + self.fullVersion + '\n')
-			infoFile.write('architecture\t\t' + self.architecture + '\n')
+			infoFile.write('architecture\t\t' + architecture + '\n')
 			infoFile.write('summary\t\t\t"' 
 						   + escapeForPackageInfo(self.recipeKeys['SUMMARY']) 
 						   + '"\n')
@@ -294,11 +303,10 @@ class Package(object):
 					# For cross-built packages, pass in the target machine name,
 					# but take care to not do that for packages that implement
 					# the cross-building themselves (i.e. binutils and gcc),
-					# as those are running in the context of the host machine.
-					# TODO: fix relying on the names of the ports!
+					# as those are running in the context of the build machine.
 					targetMachineTripleAsName = self.targetMachineTripleAsName
-					if ('gcc_cross_' in self.name 
-						or 'binutils_cross' in self.name):
+					if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
+						and '_cross_' in self.name):
 						targetMachineTripleAsName = ''
 					requiresForKey = getScriptletPrerequirements(
 						targetMachineTripleAsName)
