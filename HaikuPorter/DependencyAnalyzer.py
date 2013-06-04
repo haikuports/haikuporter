@@ -104,7 +104,7 @@ class DependencyAnalyzer(object):
 		# simplifies resolving the  immediate requires for all ports.
 		print 'Preparing no-requires repository ...'
 
-		self.noRequiresRepositoryPath = self.repository.path + '.no-requires'
+		self.noRequiresRepositoryPath = self.repository.path + '/.no-requires'
 
 		if os.path.exists(self.noRequiresRepositoryPath):
 			shutil.rmtree(self.noRequiresRepositoryPath)
@@ -125,7 +125,7 @@ class DependencyAnalyzer(object):
 		print 'Preparing no-requires system repository ...'
 
 		self.noRequiresSystemRepositoryPath = (self.repository.path
-			+ '.no-requires-system')
+			+ '/.no-requires-system')
 
 		if os.path.exists(self.noRequiresSystemRepositoryPath):
 			shutil.rmtree(self.noRequiresSystemRepositoryPath)
