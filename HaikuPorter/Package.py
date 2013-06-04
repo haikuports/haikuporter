@@ -169,11 +169,15 @@ class Package(object):
 		if os.path.exists(licenseDir):
 			shutil.copytree(licenseDir, self.packagingDir + '/data/licenses')
 
-	def makeHpkg(self):
+	def makeHpkg(self, requiresUpdater):
 		"""Create a package suitable for distribution"""
 
+		requiresList = self.recipeKeys['REQUIRES']
+		self.recipeKeys['UPDATED_REQUIRES'] \
+			= requiresUpdater.updateRequiresList(requiresList)
+
 		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
-								 ['REQUIRES'], getOption('quiet'), 
+								 ['UPDATED_REQUIRES'], getOption('quiet'), 
 								 self.architecture)
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName

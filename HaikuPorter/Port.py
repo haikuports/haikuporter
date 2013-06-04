@@ -16,6 +16,7 @@ from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
 from HaikuPorter.RecipeTypes import Phase, Status
+from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
 										 recipeActionScript)
@@ -517,6 +518,9 @@ class Port:
 
 		self.policy.setRequiredPackages(requiredPackages)
 
+		self.requiresUpdater = RequiresUpdater(requiredPackages,
+			not globalConfiguration['IS_CROSSBUILD_REPOSITORY'])
+
 		if getOption('chroot'):
 			# setup chroot and keep it while executing the actions
 			with ChrootSetup(self.workDir, requiredPackages, 
@@ -903,7 +907,7 @@ class Port:
 
 		# make each package
 		for package in self.packages:
-			package.makeHpkg()
+			package.makeHpkg(self.requiresUpdater)
 
 		# Clean up after ourselves
 		shutil.rmtree(self.packagingBaseDir)
