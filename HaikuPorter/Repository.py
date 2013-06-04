@@ -6,67 +6,13 @@
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
-from HaikuPorter.Utils import (naturalCompare, touchFile)
+from HaikuPorter.Utils import (versionCompare, touchFile)
 
 import glob
 import os
 import shutil
 import sys
 
-# -- bareVersionCompare -------------------------------------------------------
-
-def bareVersionCompare(left, right):
-	"""Compares two given bare versions - returns:
-		-1 if left is lower than right
-		 1 if left is higher than right
-		 0 if both versions are equal"""
-
-	leftElements = left.split('.')
-	rightElements = right.split('.')
-
-	index = 0
-	leftElementCount = len(leftElements)
-	rightElementCount = len(rightElements)
-	while True:
-		if index + 1 > leftElementCount:
-			if index + 1 > rightElementCount:
-				return 0
-			else:
-				return -1
-		elif index + 1 > rightElementCount:
-			return 1
-			
-		result = naturalCompare(leftElements[index], rightElements[index])
-		if result != 0:
-			return result
-		
-		index += 1
-		
-# -- versionCompare -----------------------------------------------------------
-
-def versionCompare(left, right):
-	"""Compares two given versions that may include a pre-release - returns 
-		-1 if left is lower than right
-		 1 if left is higher than right
-		 0 if both versions are equal"""
-
-	leftElements = left.split('~', 1)
-	rightElements = right.split('~', 1)
-
-	result = bareVersionCompare(leftElements[0], rightElements[0])
-	if result != 0:
-		return result
-	
-	if len(leftElements) < 2:
-		if len(rightElements) < 2:
-			return 0
-		else:
-			return -1
-	elif len(rightElements) < 2:
-		return 1
-	
-	# compare pre-release strings
-	return naturalCompare(leftElements[1], rightElements[1])
 
 # -- Repository class ---------------------------------------------------------
 
