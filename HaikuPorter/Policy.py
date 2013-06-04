@@ -29,9 +29,6 @@ class Policy(object):
 	def __init__(self, strict):
 		self.strict = strict
 
-	def setPort(self, port):
-		self.port = port
-
 	def setRequiredPackages(self, requiredPackages):
 		# Create a map with the packages' provides. We need that later when
 		# checking the created package.

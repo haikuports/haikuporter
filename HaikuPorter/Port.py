@@ -124,7 +124,6 @@ class Port:
 		self.hpkgDir = self.workDir + '/hpkgs'
 
 		self.policy = policy
-		self.policy.setPort(self)
 
 	def __enter__(self):
 		return self
