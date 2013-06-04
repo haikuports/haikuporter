@@ -40,6 +40,7 @@ class Policy(object):
 	def checkPackage(self, package, packageFile):
 		self.package = package
 		self.packageFile = packageFile
+		self.violationEncountered = False
 
 		self.provides = self._parseResolvableExpressionListForKey('PROVIDES')
 		self.requires = self._parseResolvableExpressionListForKey('REQUIRES')
@@ -50,11 +51,13 @@ class Policy(object):
 		self._checkGlobalSettingsFiles()
 		self._checkUserSettingsFiles()
 
+		if self.strict and self.violationEncountered:
+			sysExit("packaging policy violation(s) in strict mode")
+
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir('.'):
 			if entry not in allowedTopLevelEntries:
-				self._severeViolation('Invalid top-level package entry "%s"'
-					% entry)
+				self._violation('Invalid top-level package entry "%s"' % entry)
 
 	def _parseResolvableExpressionListForKey(self, keyName):
 		return self._parseResolvableExpressionList(
@@ -273,10 +276,8 @@ class Policy(object):
 						% (components[2], components[0]))
 
 	def _violation(self, message):
+		self.violationEncountered = True
 		if self.strict:
-			self._severeViolation(message)
+			print 'POLICY ERROR: ' + message
 		else:
 			print 'POLICY WARNING: ' + message
-
-	def _severeViolation(self, message):
-		sysExit('POLICY ERROR: ' + message)
