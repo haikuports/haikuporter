@@ -72,9 +72,7 @@ class Package(object):
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
 		if type == PackageType.SOURCE:
-			# TODO: switch to SOURCE, when support for that has been implemented
-			#       in the solver
-			self.architecture = Architectures.ANY
+			self.architecture = Architectures.SOURCE
 		elif port.hostArchitecture in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = port.hostArchitecture
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
