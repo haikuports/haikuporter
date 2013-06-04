@@ -68,7 +68,6 @@ class Architectures(MachineArchitecture):
 	
 	@staticmethod
 	def getAll():
-		# TODO: fetch this from PackageKit?
 		return MachineArchitecture.getAll() + [
 			Architectures.ANY,
 			Architectures.SOURCE,
