@@ -150,13 +150,6 @@ recipeAttributes = {
 		'extendable': True,
 		'indexable': False,
 	},
-	'NAME_EXTENSION': {
-		'type': types.StringType,
-		'required': False,
-		'default': None,
-		'extendable': True,
-		'indexable': False,
-	},
 	'PACKAGE_GROUPS': {
 		'type': types.ListType,
 		'required': False,

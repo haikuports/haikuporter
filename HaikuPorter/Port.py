@@ -192,13 +192,10 @@ class Port:
 		self.packages = []
 		for extension in sorted(self.recipeKeysByExtension.keys()):
 			keys = self.recipeKeysByExtension[extension]
-			if 'NAME_EXTENSION' in keys and keys['NAME_EXTENSION']:
-				name = keys['NAME_EXTENSION']
+			if extension:
+				name = self.name + '_' + extension
 			else:
-				if extension:
-					name = self.name + '_' + extension
-				else:
-					name = self.name
+				name = self.name
 			packageType = PackageType.byName(extension)
 			package = packageFactory(packageType, name, self, keys, self.policy)
 			self.allPackages.append(package)
