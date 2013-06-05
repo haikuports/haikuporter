@@ -188,10 +188,15 @@ prepareInstalledDevelLib()
 	sharedLib=""
 	sonameLib=""
 	soname=""
+	if [[ $isCrossRepository == true && $portName != *_cross_* ]]; then
+		readline=${targetArchitecture}-readline
+	else
+		readline=readline
+	fi
 	for lib in $libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
 			sharedLib=$lib
-			sonameLine=$(readelf --dynamic $lib | grep SONAME)
+			sonameLine=$($readelf --dynamic $lib | grep SONAME)
 			if [ -n "$sonameLine" ]; then
 				soname=$(echo "$sonameLine" | sed 's,.*\[\(.*\)\].*,\1,')
 				if [ "$soname" != "$sonameLine" ]; then
