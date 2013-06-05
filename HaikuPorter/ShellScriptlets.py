@@ -317,9 +317,11 @@ fi
 # Shell scriptlet that prepares a chroot environment for entering.
 # Invoked with $packages filled with the list of packages that should
 # be activated (via common/packages) and $recipeFilePath pointing to the
-# recipe file.
+# recipe file. 
+# Additionally, $isCrossRepository will be set to 'true' when the cross-build 
+# repository is active and $targetArchitecture will be filled with the
+# target architecture.
 setupChrootScript = r'''
-
 # ignore sigint but stop on every error
 trap '' SIGINT
 set -e
@@ -376,6 +378,20 @@ mount -t packagefs -p "type common" boot/common
 # bind-mount the port directory to port/
 portDir=$(dirname $recipeFile)
 mount -t bindfs -p "source $portDir" port
+
+# if this is a cross-build, prepare and mount the cross-build sysroot
+if [ $isCrossRepository = 'true' ]; then
+	if [ -e boot/cross/$targetArchitecture/develop ]; then
+		unmount boot/cross/$targetArchitecture
+	fi
+	# symlink haiku_cross_devel package into place
+	mkdir -p boot/cross/$targetArchitecture/packages
+	crossDevelPath=/boot/system/develop/cross
+	ln -sfn \
+		$crossDevelPath/haiku_cross_devel_sysroot_$targetArchitecture.hpkg \
+		boot/cross/$targetArchitecture/packages/haiku_cross_devel.hpkg
+	mount -t packagefs -p "type system" boot/cross/$targetArchitecture
+fi
 '''
 
 
@@ -393,6 +409,11 @@ trap '' SIGINT
 if ! echo $(basename $PWD) | grep -qE '^work-'; then 
 	echo "cleanupChroot invoked in $PWD, which doesn't seem to be a work dir!"
 	exit 1
+fi
+
+# if this is a cross-build, unmount the cross-build sysroot
+if [ $isCrossRepository = 'true' ]; then
+	unmount boot/cross/$targetArchitecture
 fi
 
 unmount dev

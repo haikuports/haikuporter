@@ -40,20 +40,16 @@ from encodings import string_escape
 
 # -- Scoped resource for chroot environments ----------------------------------
 class ChrootSetup:
-	def __init__(self, chrootPath, packagesToBeActivated, recipeFilePath):
+	def __init__(self, chrootPath, envVars):
 		self.path = chrootPath
-		self.packages = packagesToBeActivated
-		self.recipeFile = recipeFilePath
 		self.buildOk = False
+		self.envVars = envVars
 
 	def __enter__(self):
 		# execute the chroot setup scriptlet via the shell ...
 		os.chdir(self.path)
 		shellEnv = filteredEnvironment()
-		shellEnv.update({ 
-			'packages': '\n'.join(self.packages), 
-			'recipeFile': self.recipeFile, 
-		})
+		shellEnv.update(self.envVars)
 		check_call(['/bin/bash', '-c', setupChrootScript], env=shellEnv)
 		return self
 	
@@ -61,6 +57,7 @@ class ChrootSetup:
 		# execute the chroot cleanup scriptlet via the shell ...
 		os.chdir(self.path)
 		shellEnv = filteredEnvironment()
+		shellEnv.update(self.envVars)
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
 		check_call(['/bin/bash', '-c', cleanupChrootScript], env=shellEnv)
@@ -69,7 +66,7 @@ class ChrootSetup:
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port:
 	def __init__(self, name, version, category, baseDir, globalShellVariables,
-			policy):
+				 policy):
 		self.name = name
 		self.version = version
 		self.versionedName = name + '-' + version
@@ -523,8 +520,13 @@ class Port:
 
 		if getOption('chroot'):
 			# setup chroot and keep it while executing the actions
-			with ChrootSetup(self.workDir, requiredPackages, 
-							 self.recipeFilePath) as chrootSetup:
+			chrootEnvVars = {
+				'packages': '\n'.join(requiredPackages), 
+				'recipeFile': self.recipeFilePath,
+				'isCrossRepository': self.shellVariables['isCrossRepository'],
+				'targetArchitecture': self.targetArchitecture,
+			}
+			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 				if not getOption('quiet'):
 					print 'chroot has these packages active:'
 					for package in sorted(requiredPackages):

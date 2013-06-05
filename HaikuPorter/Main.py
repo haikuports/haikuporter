@@ -329,6 +329,7 @@ class Main:
 			self.shellVariables['quiet'] = '1'
 			
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			self.shellVariables['isCrossRepository'] = 'true';
 			buildMachineTriple \
 				= MachineArchitecture.getBuildTripleFor(self.architecture)
 			self.shellVariables['buildMachineTriple'] = buildMachineTriple
@@ -352,6 +353,10 @@ class Main:
 			self.shellVariables['targetMachineTriple'] = targetMachineTriple
 			self.shellVariables['targetMachineTripleAsName'] \
 				= targetMachineTriple.replace('-', '_')
+			self.shellVariables['crossSysrootDir'] \
+				= '/boot/cross/' + targetArchitecture;
+		else:
+			self.shellVariables['isCrossRepository'] = 'false';
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""
