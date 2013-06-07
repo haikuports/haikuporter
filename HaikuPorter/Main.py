@@ -354,7 +354,7 @@ class Main:
 			self.shellVariables['targetMachineTripleAsName'] \
 				= targetMachineTriple.replace('-', '_')
 			self.shellVariables['crossSysrootDir'] \
-				= '/boot/cross/' + targetArchitecture;
+				= '/boot/cross-sysroot/' + targetArchitecture;
 		else:
 			self.shellVariables['isCrossRepository'] = 'false';
 

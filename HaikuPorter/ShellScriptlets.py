@@ -375,6 +375,21 @@ if [ -e port/work* ]; then
 	unmount port
 fi
 
+# if this is a cross-build, mount the cross-build sysroot
+if [ $isCrossRepository = 'true' ]; then
+	sysrootDir=boot/cross-sysroot/$targetArchitecture/
+	if [ -e $sysrootDir/boot/system/develop ]; then
+		unmount $sysrootDir/boot/system
+	fi
+	# symlink haiku_cross_devel package into place
+	mkdir -p $sysrootDir/boot/system/packages
+	crossDevelPath=/boot/system/develop/cross
+	ln -sfn \
+		$crossDevelPath/haiku_cross_devel_sysroot_$targetArchitecture.hpkg \
+		$sysrootDir/boot/system/packages/haiku_cross_devel_sysroot.hpkg
+	mount -t packagefs -p "type system" $sysrootDir/boot/system
+fi
+
 # mount dev, system-packagefs and common-packagefs
 mount -t bindfs -p "source /dev" dev
 mount -t packagefs -p "type system" boot/system
@@ -384,19 +399,6 @@ mount -t packagefs -p "type common" boot/common
 portDir=$(dirname $recipeFile)
 mount -t bindfs -p "source $portDir" port
 
-# if this is a cross-build, prepare and mount the cross-build sysroot
-if [ $isCrossRepository = 'true' ]; then
-	if [ -e boot/cross/$targetArchitecture/develop ]; then
-		unmount boot/cross/$targetArchitecture
-	fi
-	# symlink haiku_cross_devel package into place
-	mkdir -p boot/cross/$targetArchitecture/packages
-	crossDevelPath=/boot/system/develop/cross
-	ln -sfn \
-		$crossDevelPath/haiku_cross_devel_sysroot_$targetArchitecture.hpkg \
-		boot/cross/$targetArchitecture/packages/haiku_cross_devel.hpkg
-	mount -t packagefs -p "type system" boot/cross/$targetArchitecture
-fi
 '''
 
 
@@ -418,7 +420,7 @@ fi
 
 # if this is a cross-build, unmount the cross-build sysroot
 if [ $isCrossRepository = 'true' ]; then
-	unmount boot/cross/$targetArchitecture
+	unmount boot/cross-sysroot/$targetArchitecture/boot/system
 fi
 
 unmount dev
