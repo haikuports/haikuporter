@@ -336,8 +336,8 @@ class Package(object):
 			infoFile.write('urls\t\t\t"' + self.recipeKeys['HOMEPAGE'] + '"\n')
 
 			self._writePackageInfoListQuotePaths(infoFile,
-				self.recipeKeys['GLOBAL_SETTINGS_FILES'],
-				'global-settings-files')
+				self.recipeKeys['GLOBAL_WRITABLE_FILES'],
+				'global-writable-files')
 			self._writePackageInfoListQuotePaths(infoFile,
 				self.recipeKeys['USER_SETTINGS_FILES'], 'user-settings-files')
 			self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS', 'users')

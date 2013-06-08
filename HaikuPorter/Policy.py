@@ -48,7 +48,7 @@ class Policy(object):
 		self._checkTopLevelEntries()
 		self._checkProvides()
 		self._checkLibraryDependencies()
-		self._checkGlobalSettingsFiles()
+		self._checkGlobalWritableFiles()
 		self._checkUserSettingsFiles()
 
 		if self.strict and self.violationEncountered:
@@ -219,44 +219,44 @@ class Policy(object):
 
 		return self._parseResolvableExpressionList(provides)
 
-	def _checkGlobalSettingsFiles(self):
-		# Create a map for the declared global settings files and check them
+	def _checkGlobalWritableFiles(self):
+		# Create a map for the declared global writable files and check them
 		# while at it.
-		globalSettingsFiles = {}
-		for item in self.package.getRecipeKeys()['GLOBAL_SETTINGS_FILES']:
+		globalWritableFiles = {}
+		for item in self.package.getRecipeKeys()['GLOBAL_WRITABLE_FILES']:
 			components = ConfigParser.splitItemAndUnquote(item)
 			if components:
 				if not components[0].startswith('settings/'):
-					self._violation('Package declares invalid global settings '
+					self._violation('Package declares invalid global writable '
 						'file "%s"' % components[0])
 
 				if len(components) > 1:
-					globalSettingsFiles[components[0]] = components[1]
+					globalWritableFiles[components[0]] = components[1]
 					if not os.path.exists(components[0]):
 						self._violation('Package declares non-existent global '
-							'settings file "%s" as included' % components[0])
+							'writable file "%s" as included' % components[0])
 				else:
-					globalSettingsFiles[components[0]] = None
+					globalWritableFiles[components[0]] = None
 
 		# iterate through the settings files in the package
 		if os.path.exists('settings'):
-			self._checkGlobalSettingsFilesRecursively(globalSettingsFiles,
+			self._checkGlobalWritableFilesRecursively(globalWritableFiles,
 				'settings')
 
-	def _checkGlobalSettingsFilesRecursively(self, globalSettingsFiles, path):
+	def _checkGlobalWritableFilesRecursively(self, globalWritableFiles, path):
 		if not os.path.isdir(path):
-			if path in globalSettingsFiles:
-				if not globalSettingsFiles[path]:
+			if path in globalWritableFiles:
+				if not globalWritableFiles[path]:
 					self._violation('File "%s" declared as not included global '
-						'settings file' % path)
+						'writable file' % path)
 			else:
-				self._violation('File "%s" not declared as global settings '
+				self._violation('File "%s" not declared as global writable '
 					'file' % path)
 			return
 
 		# path is a directory -- recurse
 		for entry in os.listdir(path):
-			self._checkGlobalSettingsFilesRecursively(globalSettingsFiles,
+			self._checkGlobalWritableFilesRecursively(globalWritableFiles,
 				path + '/' + entry)
 
 	def _checkUserSettingsFiles(self):

@@ -136,7 +136,7 @@ recipeAttributes = {
 		'extendable': True,
 		'indexable': False,
 	},
-	'GLOBAL_SETTINGS_FILES': {
+	'GLOBAL_WRITABLE_FILES': {
 		'type': types.ListType,
 		'required': False,
 		'default': [],
