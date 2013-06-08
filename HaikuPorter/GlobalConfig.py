@@ -29,13 +29,6 @@ haikuportsAttributes = {
 		'extendable': False,
 		'indexable': False,
 	},
-	'HOST_ARCHITECTURE': {
-		'type': MachineArchitecture,
-		'required': False,
-		'default': None,
-		'extendable': False,
-		'indexable': False,
-	},
 	'PACKAGER': {
 		'type': types.StringType,
 		'required': True,
@@ -84,12 +77,9 @@ def readGlobalConfiguration():
 	# determine if we are using a cross-build repository
 	if os.path.exists(globalConfiguration['TREE_PATH'] + '/.cross'):
 		globalConfiguration['IS_CROSSBUILD_REPOSITORY'] = True
-		if 'HOST_ARCHITECTURE' not in globalConfiguration:
-			sysExit('For a cross-build repository, HOST_ARCHITECTURE needs to '
-					'be set in ' + haikuportsConf)
 		if 'TARGET_ARCHITECTURE' not in globalConfiguration:
-			globalConfiguration['TARGET_ARCHITECTURE'] \
-				= globalConfiguration['HOST_ARCHITECTURE']
+			sysExit('For a cross-build repository, TARGET_ARCHITECTURE needs '
+					'to be set in ' + haikuportsConf)
 	else:
 		globalConfiguration['IS_CROSSBUILD_REPOSITORY'] = False
 		

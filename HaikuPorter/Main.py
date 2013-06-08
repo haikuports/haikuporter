@@ -319,7 +319,6 @@ class Main:
 		self.shellVariables = {
 			'haikuVersion': self.haikuVersion,
 			'buildArchitecture': self.architecture,
-			'hostArchitecture': self.architecture,
 			'targetArchitecture': self.architecture,
 			'jobs': str(self.options.jobs),
 		}
@@ -331,20 +330,11 @@ class Main:
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 			self.shellVariables['isCrossRepository'] = 'true';
 			buildMachineTriple \
-				= MachineArchitecture.getBuildTripleFor(self.architecture)
+				= MachineArchitecture.getTripleFor(self.architecture)
 			self.shellVariables['buildMachineTriple'] = buildMachineTriple
 			self.shellVariables['buildMachineTripleAsName'] \
 				= buildMachineTriple.replace('-', '_')
 			
-			hostArchitecture \
-				= globalConfiguration['HOST_ARCHITECTURE'].lower()
-			self.shellVariables['hostArchitecture'] = hostArchitecture
-			hostMachineTriple \
-				= MachineArchitecture.getTripleFor(hostArchitecture)
-			self.shellVariables['hostMachineTriple'] = hostMachineTriple
-			self.shellVariables['hostMachineTripleAsName'] \
-				= hostMachineTriple.replace('-', '_')
-
 			targetArchitecture \
 				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
 			self.shellVariables['targetArchitecture'] = targetArchitecture

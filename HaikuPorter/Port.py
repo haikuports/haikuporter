@@ -15,7 +15,7 @@ from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
-from HaikuPorter.RecipeTypes import Phase, Status
+from HaikuPorter.RecipeTypes import MachineArchitecture, Phase, Status
 from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
@@ -84,16 +84,6 @@ class Port:
 		
 		self.definedPhases = []
 
-		self.buildArchitecture = globalShellVariables['buildArchitecture']
-		# any port that implements crossing between host and target border needs
-		# to use the build architecture, not the host architecture
-		if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
-			and '_cross_' in name):
-			self.hostArchitecture = globalShellVariables['buildArchitecture']
-		else:
-			self.hostArchitecture = globalShellVariables['hostArchitecture']
-		self.targetArchitecture = globalShellVariables['targetArchitecture']
-
 		# build dictionary of variables to inherit to shell
 		self.shellVariables = {
 			'portName': self.name,
@@ -103,6 +93,27 @@ class Port:
 		}
 		self.shellVariables.update(globalShellVariables)
 		
+		self.buildArchitecture = self.shellVariables['buildArchitecture']
+		self.targetArchitecture = self.shellVariables['targetArchitecture']
+		if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
+			and '_cross_' in name):
+			# we are building cross-tools ((binutils or compiler), if build-
+			# and target-architecture are the same, force a cross-build by
+			# faking the build-machine triple.as something different (which is
+			# still being treated identically by the actual build process).
+			if self.buildArchitecture == self.targetArchitecture:
+				buildMachineTriple = MachineArchitecture.getBuildTripleFor(
+					self.buildArchitecture)
+				self.shellVariables['buildMachineTriple'] = buildMachineTriple
+				self.shellVariables['buildMachineTripleAsName'] \
+					= buildMachineTriple.replace('-', '_')
+
+			# the cross-tools need to run on the build architecture, not the 
+			# target architecture
+			self.hostArchitecture = self.shellVariables['buildArchitecture']
+		else:
+			self.hostArchitecture = self.shellVariables['targetArchitecture']
+
 		# Each port creates at least two packages: the base package (which will 
 		# share its name with the port), and a source package.
 		# Additional packages can be declared in the recipe, too. All packages
