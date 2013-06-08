@@ -36,17 +36,6 @@ class MachineArchitecture(str):
 			triple += '_build'
 		return triple
 
-	@staticmethod
-	def getForTargetTriple(triple):
-		dict = {
-			'powerpc-apple-haiku': Architectures.PPC,
-			'i586-pc-haiku': Architectures.X86,
-			'i586-pc-haiku_gcc2': Architectures.X86_GCC2,
-		}
-		if triple in dict:
-			return dict[triple]
-		return None		
-
 
 # -- Architectures ------------------------------------------------------------
 
