@@ -13,7 +13,7 @@ import types
 
 # -- /etc/haikuports.conf and *.recipe parser --------------------------------
 
-class ConfigParser:
+class ConfigParser(object):
 	def __init__(self, filename, attributes, shellVariables={}):
 		self.entriesByExtension = {}
 		self.definedPhases = []

@@ -11,7 +11,6 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.__version__ import __version__
-from HaikuPorter.RecipeTypes import MachineArchitecture
 
 from optparse import OptionParser
 

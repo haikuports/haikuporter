@@ -3,14 +3,11 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
 from HaikuPorter.Utils import (check_output, versionCompare, sysExit)
 
-import glob
 import os
 import re
-import shutil
-from subprocess import check_call, CalledProcessError
+from subprocess import CalledProcessError
 
 # -- ProvidesInfo class -------------------------------------------------------
 

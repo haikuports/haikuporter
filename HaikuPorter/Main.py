@@ -31,7 +31,7 @@ haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 
 # -- Main Class ---------------------------------------------------------------
 
-class Main:
+class Main(object):
 	def __init__(self, options, args):
 		self.options = options
 

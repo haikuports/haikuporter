@@ -39,7 +39,7 @@ from encodings import string_escape
 
 
 # -- Scoped resource for chroot environments ----------------------------------
-class ChrootSetup:
+class ChrootSetup(object):
 	def __init__(self, chrootPath, envVars):
 		self.path = chrootPath
 		self.buildOk = False
@@ -64,7 +64,7 @@ class ChrootSetup:
 
 
 # -- A single port with its recipe, allows to execute actions -----------------
-class Port:
+class Port(object):
 	def __init__(self, name, version, category, baseDir, globalShellVariables,
 				 policy):
 		self.name = name
