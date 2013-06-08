@@ -9,6 +9,12 @@ from HaikuPorter.Utils import (check_output, isCommandAvailable, sysExit)
 import os
 import re
 
+allowedWritableTopLevelDirectories = [
+	'cache',
+	'settings',
+	'var'
+]
+
 allowedTopLevelEntries = [
 	'.PackageInfo',
 	'add-ons',
@@ -19,9 +25,8 @@ allowedTopLevelEntries = [
 	'develop',
 	'documentation',
 	'lib',
-	'preferences',
-	'settings'
-]
+	'preferences'
+] + allowedWritableTopLevelDirectories
 
 # -- Policy checker class -----------------------------------------------------
 
@@ -222,45 +227,78 @@ class Policy(object):
 	def _checkGlobalWritableFiles(self):
 		# Create a map for the declared global writable files and check them
 		# while at it.
+		types = { False: 'file', True: 'directory' }
 		globalWritableFiles = {}
+		fileTypes = {}
 		for item in self.package.getRecipeKeys()['GLOBAL_WRITABLE_FILES']:
+			if item.strip().startswith('#'):
+				continue
+
 			components = ConfigParser.splitItemAndUnquote(item)
 			if components:
-				if not components[0].startswith('settings/'):
-					self._violation('Package declares invalid global writable '
-						'file "%s"' % components[0])
+				path = components[0]
+				directory = path
+				index = path.find('/')
+				if index >= 0:
+					directory = path[0:index]
 
+				isDirectory = False
+				updateType = None
 				if len(components) > 1:
-					globalWritableFiles[components[0]] = components[1]
-					if not os.path.exists(components[0]):
+					if components[1] == 'directory':
+						isDirectory = True
+						if len(components) > 2:
+							updateType = components[2]
+					else:
+						updateType = components[1]
+
+				fileType = types[isDirectory]
+				fileTypes[components[0]] = fileType
+
+				if not directory in allowedWritableTopLevelDirectories:
+					self._violation('Package declares invalid global writable '
+						'%s "%s"' % (fileType, components[0]))
+
+				globalWritableFiles[components[0]] = updateType
+
+				if updateType:
+					if not os.path.exists(path):
 						self._violation('Package declares non-existent global '
-							'writable file "%s" as included' % components[0])
-				else:
-					globalWritableFiles[components[0]] = None
+							'writable %s "%s" as included' % (fileType, path))
+					elif os.path.isdir(path) != isDirectory:
+						self._violation('Package declares non-existent global '
+							'writable %s "%s", but it\'s a %s'
+							% (fileType, path, types[not isDirectory]))
 
-		# iterate through the settings files in the package
-		if os.path.exists('settings'):
-			self._checkGlobalWritableFilesRecursively(globalWritableFiles,
-				'settings')
+		# iterate through the writable directories in the package
+		for directory in allowedWritableTopLevelDirectories:
+			if os.path.exists(directory):
+				self._checkGlobalWritableFilesRecursively(globalWritableFiles,
+					fileTypes, directory)
 
-	def _checkGlobalWritableFilesRecursively(self, globalWritableFiles, path):
-		if not os.path.isdir(path):
-			if path in globalWritableFiles:
-				if not globalWritableFiles[path]:
-					self._violation('File "%s" declared as not included global '
-						'writable file' % path)
-			else:
-				self._violation('File "%s" not declared as global writable '
-					'file' % path)
+	def _checkGlobalWritableFilesRecursively(self, globalWritableFiles,
+			fileTypes, path):
+		if path in globalWritableFiles:
+			if not globalWritableFiles[path]:
+				self._violation('Included "%s" declared as not included global '
+					'writable %s' % (path, fileTypes[path]))
 			return
 
-		# path is a directory -- recurse
+		if not os.path.isdir(path):
+			self._violation('Included file "%s" not declared as global '
+				'writable file' % path)
+			return
+
+		# entry is a directory -- recurse
 		for entry in os.listdir(path):
 			self._checkGlobalWritableFilesRecursively(globalWritableFiles,
-				path + '/' + entry)
+				fileTypes, path + '/' + entry)
 
 	def _checkUserSettingsFiles(self):
 		for item in self.package.getRecipeKeys()['USER_SETTINGS_FILES']:
+			if item.strip().startswith('#'):
+				continue
+
 			components = ConfigParser.splitItemAndUnquote(item)
 			if not components:
 				continue
@@ -268,6 +306,8 @@ class Policy(object):
 			if not components[0].startswith('settings/'):
 				self._violation('Package declares invalid user settings '
 					'file "%s"' % components[0])
+			if len(components) > 1 and components[1] == 'directory':
+				continue
 
 			if len(components) > 2:
 				if not os.path.exists(components[2]):
