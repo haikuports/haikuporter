@@ -193,8 +193,8 @@ class Repository(object):
 						continue
 					
 					status = port.getStatusOnCurrentArchitecture()
-					if (status == Status.STABLE 
-						or (status == Status.UNTESTED 
+					if (status != Status.STABLE 
+						and not (status == Status.UNTESTED 
 							and globalConfiguration['ALLOW_UNTESTED'])):
 						touchFile(skippedDir + '/' + portID)
 						print(('\t%s is still marked as %s on target '
