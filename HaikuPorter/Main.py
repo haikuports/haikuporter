@@ -329,14 +329,24 @@ class Main(object):
 			
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 			self.shellVariables['isCrossRepository'] = 'true';
-			buildMachineTriple \
-				= MachineArchitecture.getTripleFor(self.architecture)
+
+			buildArchitecture = self.architecture
+			targetArchitecture \
+				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
+			# if build- and target-architecture are the same, force a 
+			# cross-build by faking the build-machine triple.as something 
+			# different (which is still being treated identically by the actual 
+			# build process).
+			if buildArchitecture == targetArchitecture:
+				buildMachineTriple \
+					= MachineArchitecture.getBuildTripleFor(buildArchitecture)
+			else:
+				buildMachineTriple \
+					= MachineArchitecture.getTripleFor(buildArchitecture)
 			self.shellVariables['buildMachineTriple'] = buildMachineTriple
 			self.shellVariables['buildMachineTripleAsName'] \
 				= buildMachineTriple.replace('-', '_')
 			
-			targetArchitecture \
-				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
 			self.shellVariables['targetArchitecture'] = targetArchitecture
 			targetMachineTriple \
 				= MachineArchitecture.getTripleFor(targetArchitecture)

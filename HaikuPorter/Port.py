@@ -97,19 +97,8 @@ class Port(object):
 		self.targetArchitecture = self.shellVariables['targetArchitecture']
 		if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
 			and '_cross_' in name):
-			# we are building cross-tools ((binutils or compiler), if build-
-			# and target-architecture are the same, force a cross-build by
-			# faking the build-machine triple.as something different (which is
-			# still being treated identically by the actual build process).
-			if self.buildArchitecture == self.targetArchitecture:
-				buildMachineTriple = MachineArchitecture.getBuildTripleFor(
-					self.buildArchitecture)
-				self.shellVariables['buildMachineTriple'] = buildMachineTriple
-				self.shellVariables['buildMachineTripleAsName'] \
-					= buildMachineTriple.replace('-', '_')
-
-			# the cross-tools need to run on the build architecture, not the 
-			# target architecture
+			# the cross-tools (binutils and gcc) need to run on the build 
+			# architecture, not the target architecture
 			self.hostArchitecture = self.shellVariables['buildArchitecture']
 		else:
 			self.hostArchitecture = self.shellVariables['targetArchitecture']
