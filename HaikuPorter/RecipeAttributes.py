@@ -11,7 +11,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.Package import PackageType
-from HaikuPorter.RecipeTypes import (Architectures, LinesOfText, Phase)
+from HaikuPorter.RecipeTypes import (Architectures, LinesOfText, Phase, YesNo)
 
 import types
 
@@ -24,6 +24,13 @@ recipeAttributes = {
 		'type': Phase,
 		'required': False,
 		'default': Phase('BUILD'),
+		'extendable': False,
+		'indexable': False,
+	},
+	'DISABLE_SOURCE_PACKAGE': {
+		'type': YesNo,
+		'required': False,
+		'default': False,
 		'extendable': False,
 		'indexable': False,
 	},

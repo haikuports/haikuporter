@@ -196,6 +196,7 @@ class Port(object):
 		# create packages
 		self.allPackages = []
 		self.packages = []
+		haveSourcePackage = False
 		for extension in sorted(self.recipeKeysByExtension.keys()):
 			keys = self.recipeKeysByExtension[extension]
 			if extension:
@@ -206,11 +207,43 @@ class Port(object):
 			package = packageFactory(packageType, name, self, keys, self.policy)
 			self.allPackages.append(package)
 			
+			if packageType == PackageType.SOURCE:
+				haveSourcePackage = True
+			
 			status = package.getStatusOnArchitecture(self.targetArchitecture)
 			if (status == Status.STABLE 
 				or (status == Status.UNTESTED 
 					and globalConfiguration['ALLOW_UNTESTED'])):
 				self.packages.append(package)
+
+		# create source package if it hasn't been specified or disabled:
+		if not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']:
+			# copy all recipe attributes from base package, but set defaults
+			# for everything that's package-specific:
+			sourceKeys = {}
+			baseKeys = self.recipeKeysByExtension['']
+			for key in baseKeys.keys():
+				if recipeAttributes[key]['extendable']:
+					sourceKeys[key] = recipeAttributes[key]['default']
+				else:
+					sourceKeys[key] = baseKeys[key]
+					
+			# a source package shares some attributes with the base package,
+			# just provides itself and has no requires:
+			name = self.name + '_source'
+			sourceKeys.update({
+				'ARCHITECTURES': baseKeys['ARCHITECTURES'],
+				'COPYRIGHT': baseKeys['COPYRIGHT'],
+				'DESCRIPTION': baseKeys['DESCRIPTION'],
+				'HOMEPAGE': baseKeys['HOMEPAGE'],
+				'LICENSE': baseKeys['LICENSE'],
+				'PROVIDES': [ name + ' = ' + self.version ],
+				'SUMMARY': baseKeys['SUMMARY'],
+			})
+			package = packageFactory(PackageType.SOURCE, name, self, sourceKeys, 
+									 self.policy)
+			self.allPackages.append(package)
+			self.packages.append(package)
 
 		self.sourceDir = self.sources[0].sourceDir
 
