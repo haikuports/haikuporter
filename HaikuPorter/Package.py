@@ -427,37 +427,7 @@ class SourcePackage(Package):
 			if not os.path.exists(targetDir):
 				os.makedirs(targetDir)
 	
-			if source.localFile:
-				# unpack the archive into source package's directory
-				unpackArchive(source.localFile, targetDir)
-			elif source.checkout:
-				# Start building the command to perform the checkout
-				type = source.checkout['type']
-				rev = source.checkout['rev']
-				os.chdir(source.sourceDir)
-				if type == 'svn':
-					command = 'svn export -r %s . "%s"' % (rev, targetDir)
-				elif type == 'hg':
-					command \
-						= 'hg archive -r %s -t files "%s"' % (rev, targetDir)
-				elif type == 'git':
-					command \
-						= 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
-				else:
-					sysExit('Exporting sources from checkout has not been '
-						    + ' implemented yet for vcs-type ' + type)
-				check_call(command, shell=True)
-	
-			if source.patches:
-				# copy and apply patches
-				patchesDir = targetBaseDir + '/patches'
-				os.mkdir(patchesDir)
-				for patch in source.patches:
-					shutil.copy(patch, patchesDir)
-					check_call(['patch', '-p0', '-i', patch], cwd=targetDir)
-				with open(patchesDir + '/ReadMe', 'w') as readmeFile:
-					readmeFile.write('The patches in this folder have already '
-									 + 'been applied to the sources.\n')
+			source.exportPatchedSources(targetDir)
 
 		# copy recipe file
 		shutil.copy(port.recipeFilePath, targetBaseDir)

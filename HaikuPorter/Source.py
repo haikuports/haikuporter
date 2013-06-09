@@ -190,14 +190,6 @@ class Source(object):
 		if port.checkFlag('patchset', self.index) and not getOption('force'):
 			return True
 
-		if getOption('initGitRepo'):
-			if not os.path.exists(self.sourceDir + '/.git'):
-				# import sources into pristine git repository
-				self._initGitRepo()
-
-		if not self.patches:
-			return False
-
 		# use a git repository for improved patch handling.
 		ensureCommandIsAvailable('git')
 		if not os.path.exists(self.sourceDir + '/.git'):
@@ -314,6 +306,25 @@ class Source(object):
 				 + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 			
+	def exportPatchedSources(self, targetDir):
+		"""Export patched sources into a folder"""
+
+		if self.checkout:
+			# export sources via vcs
+			type = self.checkout['type']
+			rev = self.checkout['rev']
+			if type == 'hg':
+				command = 'hg archive -r %s -t files "%s"' % (rev, targetDir)
+			elif type == 'git':
+				command = 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
+			else:
+				sysExit('Exporting sources from checkout has not been '
+					    + ' implemented yet for vcs-type ' + type)
+		else:
+			# export from implicit git repo
+			command = 'git archive haikuport | tar -x -C "%s"' % targetDir
+		check_call(command, cwd=self.sourceDir, shell=True)
+
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
 		
