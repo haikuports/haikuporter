@@ -53,7 +53,6 @@ class RequiresUpdater(object):
 					self._getPackageProvides(systemDirectory + '/' + package)
 
 	def updateRequiresList(self, requiresList):
-		print 'updateRequiresList: %s' % requiresList
 		result = []
 		for requires in requiresList:
 			requires = requires.strip()
