@@ -451,6 +451,8 @@ class Source(object):
 
 		ensureCommandIsAvailable('git')
 		check_call(['git', 'init'], cwd=self.sourceDir)
+		check_call(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'], 
+				   cwd=self.sourceDir)
 		check_call(['git', 'add', '.'], cwd=self.sourceDir)
 		check_call(['git', 'commit', '-m', 'import', '-q'], 
 				   cwd=self.sourceDir, env=self.gitEnv)
