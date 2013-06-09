@@ -88,7 +88,7 @@ class RequiresUpdater(object):
 			matches = {
 				'<':	lambda cmp: cmp < 0,
 				'<=':	lambda cmp: cmp <= 0,
-				'=':	lambda cmp: cmp == 0,
+				'==':	lambda cmp: cmp == 0,
 				'!=':	lambda cmp: cmp != 0,
 				'>=':	lambda cmp: cmp >= 0,
 				'>':	lambda cmp: cmp > 0,
