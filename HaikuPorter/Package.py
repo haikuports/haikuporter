@@ -416,6 +416,8 @@ class SourcePackage(Package):
 
 		print "Populating source package ..."
 
+		super(SourcePackage, self).prepopulatePackagingDir(port)
+
 		targetBaseDir = (self.packagingDir + '/develop/sources/' 
 						 + port.revisionedName)
 		for source in port.sources:
