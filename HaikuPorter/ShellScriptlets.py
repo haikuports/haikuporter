@@ -189,9 +189,9 @@ prepareInstalledDevelLib()
 	sonameLib=""
 	soname=""
 	if [[ $isCrossRepository == true && $portName != *_cross_* ]]; then
-		readline=${targetArchitecture}-readline
+		readelf=${targetArchitecture}-readelf
 	else
-		readline=readline
+		readelf=readelf
 	fi
 	for lib in $libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
