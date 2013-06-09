@@ -793,9 +793,8 @@ class Port(object):
 		packageInfoFiles = []
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfo(packageInfoFile, 
-										[ 'BUILD_REQUIRES' ], True,
-										self.buildArchitecture)
+			package.generatePackageInfoWithoutProvides(packageInfoFile, 
+				[ 'BUILD_REQUIRES' ], self.buildArchitecture)
 			packageInfoFiles.append(packageInfoFile)
 
 		return packageInfoFiles
