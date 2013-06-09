@@ -306,6 +306,13 @@ class Source(object):
 			warn('removing obsolete patch file ' 
 				 + os.path.basename(patchFilePath))
 			os.remove(patchFilePath)
+		# if there's a corresponding diff file, remove it, as we now have
+		# the patchset
+		diffFilePath = patchFilePath[:-6] + '.diff'
+		if os.path.exists(diffFilePath):
+			warn('removing obsolete diff file ' 
+				 + os.path.basename(diffFilePath))
+			os.remove(diffFilePath)
 			
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""

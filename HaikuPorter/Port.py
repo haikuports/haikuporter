@@ -153,6 +153,7 @@ class Port(object):
 										+ self.targetArchitecture 
 										+ '.patchset')
 				patchFileName = self.name + '-' + self.version + '.patch'
+				diffFileName = self.name + '-' + self.version + '.diff'
 				patchesKeyName = 'PATCHES'
 			else:
 				patchSetFileName = (self.name + '-' + self.version + '-source' 
@@ -162,10 +163,13 @@ class Port(object):
 										+ str(s) + '.patchset')
 				patchFileName = (self.name + '-' + self.version + '-source' 
 								 + str(s) + '.patch')
+				diffFileName = (self.name + '-' + self.version + '-source' 
+								+ str(s) + '.diff')
 				patchesKeyName = 'PATCHES_' + str(s)
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
 			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
 			patchFilePath = self.patchesDir + '/' + patchFileName
+			diffFilePath = self.patchesDir + '/' + diffFileName
 
 			# prefer patchsets over patch
 			patchsets = []
@@ -175,6 +179,8 @@ class Port(object):
 				patchsets.append(archPatchSetFileName)
 			if not patchsets and os.path.exists(patchFilePath):
 				patchsets.append(patchFileName)
+			if not patchsets and os.path.exists(diffFilePath):
+				patchsets.append(diffFileName)
 			self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
 		
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
