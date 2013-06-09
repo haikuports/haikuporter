@@ -98,6 +98,21 @@ class Policy(object):
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'lib/' + entry))
 
+		# library entries in develop/lib must be declared as devel:*
+		if os.path.exists('develop/lib'):
+			for entry in os.listdir('develop/lib'):
+				suffixIndex = entry.find('.so')
+				if suffixIndex < 0:
+					suffixIndex = entry.find('.a')
+					if suffixIndex < 0:
+						continue
+
+				name = self._normalizeResolvableName(
+					'devel:' + entry[:suffixIndex])
+				if not name in self.provides:
+					self._violation('no matching provides "%s" for "%s"'
+						% (name, 'develop/lib/' + entry))
+
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
 		return name.replace('-', '_')
