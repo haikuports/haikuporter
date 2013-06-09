@@ -80,8 +80,8 @@ class Policy(object):
 		# everything in bin/ must be declared as cmd:*
 		if os.path.exists('bin'):
 			for entry in os.listdir('bin'):
-				name = 'cmd:' + entry
-				if not self._hasProvidesEntry(name):
+				name = self._normalizeResolvableName('cmd:' + entry)
+				if not name in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'bin/' + entry))
 
@@ -92,20 +92,15 @@ class Policy(object):
 				if suffixIndex < 0:
 					continue
 
-				name = 'lib:' + entry[:suffixIndex]
-				if not self._hasProvidesEntry(name):
+				name = self._normalizeResolvableName(
+					'lib:' + entry[:suffixIndex])
+				if not name in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'lib/' + entry))
 
-	def _hasProvidesEntry(self, name):
-		# make name a valid provides name by replacing '-' with '_'
-		name = name.replace('-', '_')
-		return name in self.provides
-
-	def _hasRequiresEntry(self, name):
-		# make name a valid provides name by replacing '-' with '_'
-		name = name.replace('-', '_')
-		return name in self.requires
+	def _normalizeResolvableName(self, name):
+		# make name a valid resolvable name by replacing '-' with '_'
+		return name.replace('-', '_')
 
 	def _checkLibraryDependencies(self):
 		# If there's no readelf (i.e. no binutils), there probably aren't any
@@ -155,8 +150,8 @@ class Policy(object):
 		# not provided by the package -- check whether it is required explicitly
 		suffixIndex = library.find('.so')
 		if suffixIndex >= 0:
-			name = 'lib:' + library[:suffixIndex]
-			if self._hasRequiresEntry(name):
+			name = self._normalizeResolvableName('lib:' + library[:suffixIndex])
+			if name in self.requires:
 				return False
 
 		# Could be required implicitly by requiring (anything from) the package
@@ -182,14 +177,14 @@ class Policy(object):
 		index = packageName.find('-')
 		if index >= 0:
 			packageName = packageName[:index]
-		if self._hasRequiresEntry(packageName):
+		if packageName in self.requires:
 			return False
 
 		# check whether any of the package's provides are required
 		packageProvides = self.requiredPackagesProvides.get(providingPackage, 
 															[])
 		for name in packageProvides:
-			if self._hasRequiresEntry(name):
+			if name in self.requires:
 				return False
 
 		return True
