@@ -188,6 +188,7 @@ class Source(object):
 
 		# Check to see if the source has already been patched.
 		if port.checkFlag('patchset', self.index) and not getOption('force'):
+			print 'Skipping patchset for ' + self.localFileName
 			return True
 
 		# use a git repository for improved patch handling.
@@ -195,7 +196,7 @@ class Source(object):
 		if not os.path.exists(self.sourceDir + '/.git'):
 			# import sources into pristine git repository
 			self._initGitRepo()
-		else:
+		elif self.patches:
 			# reset existing git repsitory before appling patchset(s) again
 			self.reset()
 
