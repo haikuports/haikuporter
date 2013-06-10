@@ -330,8 +330,9 @@ class Package(object):
 			self._writePackageInfoListByKey(infoFile, 'CONFLICTS', 'conflicts')
 			self._writePackageInfoListByKey(infoFile, 'FRESHENS', 'freshens')
 			self._writePackageInfoListByKey(infoFile, 'REPLACES', 'replaces')
-	
-			infoFile.write('urls\t\t\t"' + self.recipeKeys['HOMEPAGE'] + '"\n')
+
+			self._writePackageInfoListQuotePaths(infoFile,
+				self.recipeKeys['HOMEPAGE'], 'urls')
 
 			self._writePackageInfoListQuotePaths(infoFile,
 				self.recipeKeys['GLOBAL_WRITABLE_FILES'],

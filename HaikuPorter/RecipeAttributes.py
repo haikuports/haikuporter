@@ -35,7 +35,7 @@ recipeAttributes = {
 		'indexable': False,
 	},
 	'HOMEPAGE': {
-		'type': types.StringType,
+		'type': types.ListType,
 		'required': True,
 		'default': None,
 		'extendable': False,
