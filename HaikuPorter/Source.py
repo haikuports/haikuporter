@@ -261,7 +261,7 @@ class Source(object):
 		   during the patch phase"""
 
 		if not os.path.exists(self.sourceDir):
-			sysExit("Can't extract patchset for " + self.localFileName 
+			sysExit("Can't extract patchset for " + self.sourceDir 
 					+ " as the source directory doesn't exist yet")
 
 		print 'Extracting patchset for ' + self.localFileName
