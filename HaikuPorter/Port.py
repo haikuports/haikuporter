@@ -551,7 +551,7 @@ class Port(object):
 
 		requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
 
-		self.policy.setRequiredPackages(requiredPackages)
+		self.policy.setPort(self, requiredPackages)
 
 		self.requiresUpdater = RequiresUpdater(requiredPackages,
 			not globalConfiguration['IS_CROSSBUILD_REPOSITORY'])

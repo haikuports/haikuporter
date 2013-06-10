@@ -34,7 +34,17 @@ class Policy(object):
 	def __init__(self, strict):
 		self.strict = strict
 
-	def setRequiredPackages(self, requiredPackages):
+	def setPort(self, port, requiredPackages):
+		self.port = port
+
+		# Get the provides of all of the port's packages. We need them to find
+		# dependencies between packages of the port.
+		self.portPackagesProvides = {}
+		for package in port.packages:
+			self.portPackagesProvides[package.name] = (
+				self._parseResolvableExpressionList(
+					package.getRecipeKeys()['PROVIDES']))
+
 		# Create a map with the packages' provides. We need that later when
 		# checking the created package.
 		self.requiredPackagesProvides = {}
@@ -164,40 +174,54 @@ class Policy(object):
 
 		# not provided by the package -- check whether it is required explicitly
 		suffixIndex = library.find('.so')
+		resolvableName = None
 		if suffixIndex >= 0:
-			name = self._normalizeResolvableName('lib:' + library[:suffixIndex])
-			if name in self.requires:
+			resolvableName = self._normalizeResolvableName(
+				'lib:' + library[:suffixIndex])
+			if resolvableName in self.requires:
 				return False
 
-		# Could be required implicitly by requiring (anything from) the package
-		# that provides the library. Find the library in the file system.
-		libraryPath = None
-		for directory in ['/boot/common/lib', '/boot/system/lib']:
-			path = directory + '/' + library
-			if os.path.exists(path):
-				libraryPath = path
+		# The library might be provided by a sibling package.
+		providingPackage = None
+		for packageName in self.portPackagesProvides.iterkeys():
+			packageProvides = self.portPackagesProvides[packageName]
+			if resolvableName in packageProvides:
+				providingPackage = packageName
 				break
 
-		# Find out which package the library belongs to.
-		providingPackage = self._getPackageProvidingPath(libraryPath)
 		if not providingPackage:
-			print('Warning: failed to determine the package providing "%s"'
-				% libraryPath)
-			return False
+			# Could be required implicitly by requiring (anything from) the
+			# package that provides the library. Find the library in the file
+			# system.
+			libraryPath = None
+			for directory in ['/boot/common/lib', '/boot/system/lib']:
+				path = directory + '/' + library
+				if os.path.exists(path):
+					libraryPath = path
+					break
+
+			# Find out which package the library belongs to.
+			providingPackage = self._getPackageProvidingPath(libraryPath)
+			if not providingPackage:
+				print('Warning: failed to determine the package providing "%s"'
+					% libraryPath)
+				return False
+
+			# Chop off ".hpkg" and the version part from the file name to get
+			# the package name.
+			packageName = providingPackage[:-5]
+			index = packageName.find('-')
+			if index >= 0:
+				packageName = packageName[:index]
+
+			packageProvides = self.requiredPackagesProvides.get(
+				providingPackage, [])
 
 		# Check whether the package is required.
-		# Chop off ".hpkg" and the version part from the file name to get the
-		# package name.
-		packageName = providingPackage[:-5]
-		index = packageName.find('-')
-		if index >= 0:
-			packageName = packageName[:index]
 		if packageName in self.requires:
 			return False
 
 		# check whether any of the package's provides are required
-		packageProvides = self.requiredPackagesProvides.get(providingPackage, 
-															[])
 		for name in packageProvides:
 			if name in self.requires:
 				return False
