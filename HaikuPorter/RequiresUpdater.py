@@ -62,13 +62,19 @@ class RequiresUpdater(object):
 
 	def _updateRequires(self, requires):
 		# split the requires string
-		match = re.match('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)', requires)
+		requires = requires.strip()
+		partialRequires = requires
+		isBase = requires.endswith('base')
+		if isBase:
+			partialRequires = requires[:-4].rstrip()
+
+		match = re.match('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)', partialRequires)
 		if match:
 			name = match.group(1)
 			operator = match.group(2)
 			version = match.group(3)
 		else:
-			name = requires.strip()
+			name = partialRequires
 			operator = None
 			version = None
 
@@ -107,7 +113,11 @@ class RequiresUpdater(object):
 
 		if not matchingProvides.version:
 			return requires
-		return '%s >= %s' % (matchingProvides.name, matchingProvides.version)
+
+		result = '%s >= %s' % (matchingProvides.name, matchingProvides.version)
+		if isBase:
+			result += ' base'
+		return result
 
 	def _getPackageProvides(self, package):
 		# list the package and extract the provides from the output
