@@ -350,6 +350,10 @@ class Package(object):
 								cmp=naturalCompare):
 				uricount = 1
 				for uri in self.recipeKeys['SRC_URI'][index]:
+					if 'file://' in uri:
+						# skip local URIs
+						continue
+					
 					if uricount < 2:
 						infoFile.write('\t"Download <' + uri + '>"\n')
 					else:
