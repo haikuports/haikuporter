@@ -15,7 +15,7 @@ from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
-from HaikuPorter.RecipeTypes import MachineArchitecture, Phase, Status
+from HaikuPorter.RecipeTypes import Phase, Status
 from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
@@ -217,7 +217,8 @@ class Port(object):
 				self.packages.append(package)
 
 		# create source package if it hasn't been specified or disabled:
-		if not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']:
+		if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
+			and getOption('sourcePackageByDefault')):
 			# copy all recipe attributes from base package, but set defaults
 			# for everything that's package-specific:
 			sourceKeys = {}

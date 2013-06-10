@@ -86,6 +86,10 @@ def parseOptions():
 	parser.add_option('-p', '--nopackage', 
 					  action='store_false', dest='package', default=True, 
 					  help="don't create package, stop after build")
+	parser.add_option('--nosrcpackage', 
+					  action='store_false', dest='sourcePackageByDefault', 
+					  default=True, 
+					  help="don't create a source package by default")
 	parser.add_option('--test', 
 					  action='store_true', dest='test', default=False, 
 					  help="run tests on resulting binaries")
