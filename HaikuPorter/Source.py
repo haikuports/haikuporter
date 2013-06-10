@@ -26,7 +26,7 @@ from subprocess import check_call
 
 class Source(object):
 	def __init__(self, port, index, uris, localFileName, checksum, sourceDir, 
-				 patches):
+				 sourceExportSubdir, patches):
 		self.index = index
 		self.uris = uris
 		self.localFileName = localFileName
@@ -42,6 +42,8 @@ class Source(object):
 			self.sourceDir = self.sourceBaseDir + '/' + sourceDir
 		else:
 			self.sourceDir = self.sourceBaseDir
+
+		self.sourceExportSubdir = sourceExportSubdir
 
 		# If explicit PATCHES were specified, set our patches list accordingly.
 		if self.patches:
@@ -315,15 +317,29 @@ class Source(object):
 			type = self.checkout['type']
 			rev = self.checkout['rev']
 			if type == 'hg':
-				command = 'hg archive -r %s -t files "%s"' % (rev, targetDir)
+				if self.sourceExportSubdir:
+					command = ('hg archive -I "%s" -r %s -t files "%s"' 
+							   % (self.sourceExportSubdir, rev, targetDir))
+				else:
+					command = ('hg archive -r %s -t files "%s"' 
+							   % (rev, targetDir))
 			elif type == 'git':
-				command = 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
+				if self.sourceExportSubdir:
+					command = ('git archive %s "%s" | tar -x -C "%s"' 
+							   % (rev, self.sourceExportSubdir, targetDir))
+				else:
+					command = ('git archive %s | tar -x -C "%s"' 
+							   % (rev, targetDir))
 			else:
 				sysExit('Exporting sources from checkout has not been '
 					    + ' implemented yet for vcs-type ' + type)
 		else:
 			# export from implicit git repo
-			command = 'git archive haikuport | tar -x -C "%s"' % targetDir
+			if self.sourceExportSubdir:
+				command = ('git archive haikuport "%s" | tar -x -C "%s"' 
+						   % (self.sourceExportSubdir, targetDir))
+			else:
+				command = 'git archive haikuport | tar -x -C "%s"' % targetDir
 		check_call(command, cwd=self.sourceDir, shell=True)
 
 	def adjustToChroot(self, port):
