@@ -13,6 +13,14 @@ import tarfile
 import zipfile
 
 
+# -- path to haikuports-tree --------------------------------------------------
+
+haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
+
+# -- path to haikuporter-tree --------------------------------------------------
+
+haikuporterRepoUrl = 'git@bitbucket.org:haikuports/haikuporter.git'
+
 # -- capture output of shell command -----------------------------------------
 def check_output(*popenargs, **kwargs):
 	"""local clone of subprocess.check_output() provided by python-2.7

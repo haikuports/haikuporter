@@ -16,18 +16,14 @@ from HaikuPorter.GlobalConfig import (globalConfiguration,
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Repository import Repository
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
-							   sysExit, warn)
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable,
+							   haikuportsRepoUrl, sysExit, warn)
 
 import os
 import re
 from subprocess import check_call
 import sys
 
-
-# -- path to haikuports-tree --------------------------------------------------
-
-haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 
 # -- Main Class ---------------------------------------------------------------
 

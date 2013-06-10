@@ -15,8 +15,9 @@ from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
-from HaikuPorter.Utils import (escapeForPackageInfo, naturalCompare, sysExit, 
-							   systemDir, unpackArchive)
+from HaikuPorter.Utils import (check_output, escapeForPackageInfo, 
+							   haikuporterRepoUrl, haikuportsRepoUrl,
+							   naturalCompare, sysExit, systemDir)
 
 import os
 import shutil
@@ -431,9 +432,36 @@ class SourcePackage(Package):
 				
 			if not os.path.exists(targetDir):
 				os.makedirs(targetDir)
-	
-			source.exportPatchedSources(targetDir)
 
+			# export unchanged sources	
+			source.exportPristineSources(targetDir)
+
+		# copy patches, if there are any
+		if os.path.exists(port.patchesDir):
+			patchesTargetDir = targetBaseDir + '/patches'
+			for patchFileName in os.listdir(port.patchesDir):
+				if not (patchFileName.startswith(port.versionedName + '.')
+						or patchFileName.startswith(port.versionedName + '-')):
+					continue
+				if not os.path.exists(patchesTargetDir):
+					os.mkdir(patchesTargetDir)
+				patchFilePath = port.patchesDir + '/' + patchFileName
+				shutil.copy(patchFilePath, patchesTargetDir)
+
+		# add ReadMe
+		haikuportsRev = check_output([ 'git', 'rev-parse', '--short', 'HEAD' ], 
+									 cwd=globalConfiguration['TREE_PATH'])
+		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
+			readmeFile.write((
+				'These are the sources (and optionally patches) that were\n'
+				'used to build the "%s"-package(s).\n\n'
+				'In order to build them, please checkout the haikuports tree\n'
+				'and use the haikuporter tool to run the build for you.\n\n'
+				'haikuports-URL: %s (revision %s)\n'
+				'haikuporter-URL: %s\n')
+				% (port.name, haikuportsRepoUrl, haikuportsRev.strip(), 
+				   haikuporterRepoUrl))
+					
 		# copy recipe file
 		shutil.copy(port.recipeFilePath, targetBaseDir)
 

@@ -309,14 +309,17 @@ class Source(object):
 				 + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 			
-	def exportPatchedSources(self, targetDir):
-		"""Export patched sources into a folder"""
+	def exportPristineSources(self, targetDir):
+		"""Export pristine (unpatched) sources into a folder"""
 
 		if self.checkout:
 			# export sources via vcs
 			type = self.checkout['type']
 			rev = self.checkout['rev']
-			if type == 'hg':
+			if type == 'svn':
+				# apparently, svn doesn't support exporting only a subdir
+				command = 'svn export -r %s . "%s"' % (rev, targetDir)
+			elif type == 'hg':
 				if self.sourceExportSubdir:
 					command = ('hg archive -I "%s" -r %s -t files "%s"' 
 							   % (self.sourceExportSubdir, rev, targetDir))
@@ -332,14 +335,14 @@ class Source(object):
 							   % (rev, targetDir))
 			else:
 				sysExit('Exporting sources from checkout has not been '
-					    + ' implemented yet for vcs-type ' + type)
+					    + ' implemented yet for VCS-type ' + type)
 		else:
 			# export from implicit git repo
 			if self.sourceExportSubdir:
-				command = ('git archive haikuport "%s" | tar -x -C "%s"' 
+				command = ('git archive ORIGIN "%s" | tar -x -C "%s"' 
 						   % (self.sourceExportSubdir, targetDir))
 			else:
-				command = 'git archive haikuport | tar -x -C "%s"' % targetDir
+				command = 'git archive ORIGIN | tar -x -C "%s"' % targetDir
 		check_call(command, cwd=self.sourceDir, shell=True)
 
 	def adjustToChroot(self, port):
@@ -456,8 +459,8 @@ class Source(object):
 					if git branch | grep -q '* haikuport'; then
 						# point HEAD to something else than the 'haikuport'
 						# branch, as we are going to try and update that branch
-						# with the following checkout, which would fail if
-						# 'haikuport' is the current branch
+						# during checkout, which would fail if it is the current
+						# branch
 						git symbolic-ref HEAD refs/origin/HEAD
 					fi
 					echo "checking out tree for %s ..."
