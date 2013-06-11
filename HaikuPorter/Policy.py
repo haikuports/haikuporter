@@ -200,6 +200,10 @@ class Policy(object):
 					libraryPath = path
 					break
 
+			if not libraryPath:
+				self._violation('can\'t find used library "%s"' % library)
+				return False
+
 			# Find out which package the library belongs to.
 			providingPackage = self._getPackageProvidingPath(libraryPath)
 			if not providingPackage:
