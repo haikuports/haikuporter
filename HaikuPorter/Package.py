@@ -28,8 +28,8 @@ from subprocess import check_call
 
 class PackageType(str):
 	DEBUG = 'debug'
-	DEVELOPMENT = 'development'
-	DOCUMENTATION = 'documentation'
+	DEVELOPMENT = 'devel'
+	DOCUMENTATION = 'doc'
 	GENERAL = 'general'
 	SOURCE = 'source'
 
