@@ -11,6 +11,7 @@ import re
 
 allowedWritableTopLevelDirectories = [
 	'cache',
+	'non-packaged',
 	'settings',
 	'var'
 ]
