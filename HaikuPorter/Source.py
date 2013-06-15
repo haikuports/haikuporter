@@ -195,7 +195,7 @@ class Source(object):
 
 		# use a git repository for improved patch handling.
 		ensureCommandIsAvailable('git')
-		if not os.path.exists(self.sourceDir + '/.git'):
+		if not self._isInGitWorkingDirectory(self.sourceDir):
 			# import sources into pristine git repository
 			self._initGitRepo()
 		elif self.patches:
@@ -488,3 +488,17 @@ class Source(object):
 		check_call(['git', 'commit', '-m', 'import', '-q'], 
 				   cwd=self.sourceDir, env=self.gitEnv)
 		check_call(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir)
+
+	def _isInGitWorkingDirectory(self, path):
+		"""Returns whether the given source directory path is in a git working
+		   directory. path must be under self.sourceBaseDir."""
+
+		while (path == self.sourceBaseDir
+				or path.startswith(self.sourceBaseDir + '/')):
+			if os.path.exists(path + '/.git'):
+				return True
+			if path == self.sourceBaseDir:
+				return False;
+			path = path[0:path.rfind('/')]
+
+		return False
