@@ -64,6 +64,7 @@ class Policy(object):
 		self._checkTopLevelEntries()
 		self._checkProvides()
 		self._checkLibraryDependencies()
+		self._checkMisplacedDevelopLibraries()
 		self._checkGlobalWritableFiles()
 		self._checkUserSettingsFiles()
 
@@ -134,7 +135,7 @@ class Policy(object):
 		if not isCommandAvailable('readelf'):
 			return
 
-		# check all files in bin/ and dir/
+		# check all files in bin/ and lib/
 		for dir in ['bin', 'lib']:
 			if not os.path.exists(dir):
 				continue
@@ -262,6 +263,19 @@ class Policy(object):
 				provides.append(line[index:].strip())
 
 		return self._parseResolvableExpressionList(provides)
+
+	def _checkMisplacedDevelopLibraries(self):
+		libDir = 'lib'
+		if not os.path.exists(libDir):
+			return
+
+		for entry in os.listdir(libDir):
+			if not entry.endswith('.a') and not entry.endswith('.la'):
+				continue
+
+			path = libDir + '/' + entry
+			self._violation('development library entry "%s" should be placed '
+				'in "develop/lib"' % path)
 
 	def _checkGlobalWritableFiles(self):
 		# Create a map for the declared global writable files and check them
