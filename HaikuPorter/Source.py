@@ -12,12 +12,13 @@
 
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit, 
-							   unpackArchive, warn)
+from HaikuPorter.SourceFetcher import createSourceFetcher
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
+							   readStringFromFile, storeStringInFile, sysExit, 
+							   warn)
 
 import hashlib
 import os
-import re
 import shutil
 from subprocess import check_call
 
@@ -25,11 +26,11 @@ from subprocess import check_call
 # -- A source archive (or checkout) -------------------------------------------
 
 class Source(object):
-	def __init__(self, port, index, uris, localFileName, checksum, sourceDir, 
+	def __init__(self, port, index, uris, fetchTargetName, checksum, sourceDir, 
 				 sourceExportSubdir, patches):
 		self.index = index
 		self.uris = uris
-		self.localFileName = localFileName
+		self.fetchTargetName = fetchTargetName
 		self.checksum = checksum
 		self.patches = patches
 		
@@ -50,16 +51,17 @@ class Source(object):
 			self.patches = [ port.patchesDir + '/' + p for p in self.patches ]
 			
 		# set local filename from URI, unless specified explicitly
-		if not self.localFileName:
+		if not self.fetchTargetName:
 			uri = self.uris[0]
-			self.localFileName = uri[uri.rindex('/') + 1:]
-		if self.localFileName.endswith('#noarchive'):
-			self.localFileName = self.localFileName[:-10]
+			hashPos = uri.find('#')
+			if hashPos >= 0:
+				uri = uri[:hashPos]
+			self.fetchTargetName = uri[uri.rindex('/') + 1:]
 
-		self.localFile = port.downloadDir + '/' + self.localFileName
-		self.localFileIsArchive = True
-		self.checkout = None
-		
+		self.sourceFetcher = None
+		self.fetchTarget = port.downloadDir + '/' + self.fetchTargetName
+		self.fetchTargetIsArchive = True
+
 		self.gitEnv = {
 			'GIT_COMMITTER_EMAIL': globalConfiguration['PACKAGER_EMAIL'],
 			'GIT_COMMITTER_NAME': globalConfiguration['PACKAGER_NAME'],
@@ -67,72 +69,79 @@ class Source(object):
 			'GIT_AUTHOR_NAME': globalConfiguration['PACKAGER_NAME'],
 		}
 
+	def fetch(self, port):
+		"""Fetch the source from one of the URIs given in the recipe.
+		   If the sources have already been fetched, setup an appropriate
+		   source fetcher object
+		"""
 
-	def download(self, port):
-		"""Fetch the source archive or do a checkout"""
-
+		# create download dir
+		downloadDir = os.path.dirname(self.fetchTarget)
+		if not os.path.exists(downloadDir):
+			os.mkdir(downloadDir)
+			
 		for uri in self.uris:
-			# Examine the URI to determine if we need to perform a checkout
-			# instead of download
-			if re.match('^cvs.*$|^svn.*$|^hg.*$|^git.*$|^bzr.*$|^fossil.*$',
-						uri):
-				try:
-					self._checkout(port, uri)
-					return
-				except Exception as e:
-					warn('Checkout error from %s:\n\t%s\ntrying next location.' 
-						 % (uri, str(e)))
-					self.checkout = None
-					continue
-
-			# The source URI may be a local file path relative to the port
-			# directory.
-			if not ':' in uri:
-				filePath = port.baseDir + '/' + uri
-				if not os.path.isfile(filePath):
-					print ("SRC_URI %s looks like a local file path, but "
-						   + "doesn't refer to a file, trying next location.\n"
-						   % uri)
-					continue
-
-				self.localFile = filePath
-				return
-
 			try:
-				if uri.endswith('#noarchive'):
-					self.localFileIsArchive = False
-				if os.path.isfile(self.localFile):
-					print 'Skipping download of ' + self.localFileName
-				else:
-					# create download dir and cd into it
-					downloadDir = os.path.dirname(self.localFile)
-					if not os.path.exists(downloadDir):
-						os.mkdir(downloadDir)
-					os.chdir(downloadDir)
+				uriFile = self.fetchTarget + '.uri'
+				if os.path.exists(self.fetchTarget):
+					if os.path.exists(uriFile):
+						# we need to look at the URI that the fetch-target came 
+						# from in order to create an appropriate source fetcher
+						uri = readStringFromFile(uriFile)
+						self.sourceFetcher \
+							= createSourceFetcher(uri, self.fetchTarget)
+						print ('Skipping download of source ' 
+							   + (self.index if self.index != '1' else ''))
+						return
+					else:
+						# Remove the fetch target, as it isn't complete
+						if os.path.isdir(self.fetchTarget):
+							shutil.rmtree(self.fetchTarget)
+						else:
+							os.remove(self.fetchTarget)
 
-					print '\nDownloading: ' + uri + ' ...'
-					ensureCommandIsAvailable('wget')
-					args = ['wget', '-c', '--tries=3', '-O', self.localFile, 
-							uri]
-					if uri.startswith('https://'):
-						args.insert(3, '--no-check-certificate')
-					check_call(args)
-
-				# successfully downloaded source or it was already there
+				print '\nDownloading: ' + uri + ' ...'
+				sourceFetcher = createSourceFetcher(uri, self.fetchTarget)
+				sourceFetcher.fetch()
+				
+				# ok, fetching the source was successful, we keep the source 
+				# fetcher and store the URI that the source came from for 
+				# later runs
+				self.sourceFetcher = sourceFetcher
+				storeStringInFile(uri, self.fetchTarget + '.uri')
 				return
-			except Exception:
-				warn('Download error from %s, trying next location.' % uri)
+			except Exception as e:
+				warn(('Unable to fetch source from %s (error: %s), '
+					  + 'trying next location.') % (uri, e))
 
 		# failed to fetch source
-		sysExit('Failed to download source package from all locations.')
+		sysExit('Failed to fetch source from all known locations.')
+
+	def unpack(self, port):
+		"""Unpack the source into the source directory"""
+
+		# Check to see if the source was already unpacked.
+		if port.checkFlag('unpack', self.index) and not getOption('force'):
+			print 'Skipping unpack of ' + self.fetchTargetName
+			return
+
+		# re-create source directory
+		if os.path.exists(self.sourceBaseDir):
+			shutil.rmtree(self.sourceBaseDir)
+		os.makedirs(self.sourceDir)
+
+		print 'Unpacking source of ' + self.fetchTargetName
+		self.sourceFetcher.unpack(self.sourceDir, self.sourceExportSubdir)
+
+		port.setFlag('unpack', self.index)
 
 	def validateChecksum(self, port):
 		"""Make sure that the MD5-checksum matches the expectations"""
 
 		if self.checksum:
-			print 'Validating MD5 checksum of ' + self.localFileName
+			print 'Validating MD5 checksum of ' + self.fetchTargetName
 			h = hashlib.md5()
-			f = open(self.localFile, 'rb')
+			f = open(self.fetchTarget, 'rb')
 			while True:
 				d = f.read(16384)
 				if not d:
@@ -143,61 +152,25 @@ class Source(object):
 				sysExit('Expected: ' + self.checksum + '\n'
 						+ 'Found: ' + h.hexdigest())
 		else:
-			# The checkout flag only gets set when a source checkout is 
-			# performed. If it exists we don't need to warn about the missing 
-			# recipe field
-			if not port.checkFlag('checkout', self.index):
+			# Warn about missing checksum in recipe only when the source
+			# fetcher indicates that validation makes sense
+			if self.sourceFetcher.sourceShouldBeValidated:
 				warn('No CHECKSUM_MD5 key found in recipe for ' 
-					 + self.localFileName)
-
-	def unpackSource(self, port):
-		"""Unpack the source archive (into the work directory)"""
-
-		# Skip the unpack step if the source came from a vcs
-		if port.checkFlag('checkout', self.index):
-			return
-
-		# Check to see if the source archive was already unpacked.
-		if port.checkFlag('unpack', self.index) and not getOption('force'):
-			print 'Skipping unpack of ' + self.localFileName
-			return
-
-		# re-create target directory for this source
-		if os.path.exists(self.sourceBaseDir):
-			shutil.rmtree(self.sourceBaseDir)
-		os.makedirs(self.sourceBaseDir)
-
-		# unpack source archive or simply copy source file
-		if not self.localFileIsArchive:
-			shutil.copy(self.localFile, self.sourceBaseDir)
-		else:
-			print 'Unpacking ' + self.localFileName
-			unpackArchive(self.localFile, self.sourceBaseDir)
-
-		# automatically try to rename archive folders containing '-':
-		if not os.path.exists(self.sourceDir):
-			maybeSourceDirName \
-				= os.path.basename(self.sourceDir).replace('_', '-')
-			maybeSourceDir = (os.path.dirname(self.sourceDir) + '/'
-							  + maybeSourceDirName)
-			if os.path.exists(maybeSourceDir):
-				os.rename(maybeSourceDir, self.sourceDir)
-
-		port.setFlag('unpack', self.index)
+					 + self.fetchTargetName)
 
 	def patch(self, port):
 		"""Apply any patches to this source"""
 
 		# Check to see if the source has already been patched.
 		if port.checkFlag('patchset', self.index) and not getOption('force'):
-			print 'Skipping patchset for ' + self.localFileName
+			print 'Skipping patchset for ' + self.fetchTargetName
 			return True
 
-		# use a git repository for improved patch handling.
+		# use an implicit git repository for improved patch handling.
 		ensureCommandIsAvailable('git')
 		if not self._isInGitWorkingDirectory(self.sourceDir):
 			# import sources into pristine git repository
-			self._initGitRepo()
+			self._initImplicitGitRepo()
 		elif self.patches:
 			# reset existing git repsitory before appling patchset(s) again
 			self.reset()
@@ -245,11 +218,11 @@ class Source(object):
 							   cwd=self.sourceDir)
 		if not changes:
 			print("Patch function hasn't changed anything for " 
-				  + self.localFileName)
+				  + self.fetchTargetName)
 			return
 		
 		print('Committing changes done in patch function for ' 
-			  + self.localFileName)
+			  + self.fetchTargetName)
 		check_call(['git', 'commit', '-a', '-q', '-m', 'patch function'], 
 				   cwd=self.sourceDir, env=self.gitEnv)
 		check_call(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'], 
@@ -264,7 +237,7 @@ class Source(object):
 			sysExit("Can't extract patchset for " + self.sourceDir 
 					+ " as the source directory doesn't exist yet")
 
-		print 'Extracting patchset for ' + self.localFileName
+		print 'Extracting patchset for ' + self.fetchTargetName
 		needToRebase = True
 		try:
 			# check if the tag 'PATCH_FUNCTION' exists
@@ -312,172 +285,21 @@ class Source(object):
 	def exportPristineSources(self, targetDir):
 		"""Export pristine (unpatched) sources into a folder"""
 
-		if self.checkout:
-			# export sources via vcs
-			type = self.checkout['type']
-			rev = self.checkout['rev']
-			if type == 'svn':
-				# apparently, svn doesn't support exporting only a subdir
-				command = 'svn export -r %s . "%s"' % (rev, targetDir)
-			elif type == 'hg':
-				if self.sourceExportSubdir:
-					command = ('hg archive -I "%s" -r %s -t files "%s"' 
-							   % (self.sourceExportSubdir, rev, targetDir))
-				else:
-					command = ('hg archive -r %s -t files "%s"' 
-							   % (rev, targetDir))
-			elif type == 'git':
-				if self.sourceExportSubdir:
-					command = ('git archive %s "%s" | tar -x -C "%s"' 
-							   % (rev, self.sourceExportSubdir, targetDir))
-				else:
-					command = ('git archive %s | tar -x -C "%s"' 
-							   % (rev, targetDir))
-			else:
-				sysExit('Exporting sources from checkout has not been '
-					    + ' implemented yet for VCS-type ' + type)
-		else:
-			# export from implicit git repo
-			if self.sourceExportSubdir:
-				command = ('git archive ORIGIN "%s" | tar -x -C "%s"' 
-						   % (self.sourceExportSubdir, targetDir))
-			else:
-				command = 'git archive ORIGIN | tar -x -C "%s"' % targetDir
+		# export from implicit git repo
+		command = 'git archive ORIGIN | tar -x -C "%s"' % targetDir
 		check_call(command, cwd=self.sourceDir, shell=True)
 
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
 		
-		self.localFile = None
+		self.fetchTarget = None
 
 		# adjust all relevant directories
 		pathLengthToCut = len(port.workDir)
 		self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
 		self.sourceDir = self.sourceDir[pathLengthToCut:]
 				
-	def _checkout(self, port, uri):
-		"""Parse the URI and execute the appropriate command to check out the
-		   source."""
-
-		# Attempt to parse a URI with a + in it. ex: hg+http://blah
-		# If it doesn't find the 'type' it should extract 'real_uri' and 'rev'
-		m = re.match('^((?P<type>\w*)\+)?(?P<realUri>.+?)(#(?P<rev>.+))?$', uri)
-		if not m or not m.group('realUri'):
-			sysExit("Couldn't parse repository URI " + uri)
-
-		type = m.group('type')
-		realUri = m.group('realUri')
-		rev = m.group('rev')
-
-		# Attempt to parse a URI without a + in it. ex: svn://blah
-		if not type:
-			m = re.match("^(\w*).*$", realUri)
-			if m:
-				type = m.group(1)
-
-		if not type:
-			sysExit("Couldn't parse repository type from URI " + realUri)
-
-		self.checkout = {
-			'type': type,
-			'uri': realUri,
-			'rev': rev,
-		}
-
-		if port.checkFlag('checkout', self.index) and not getOption('force'):
-			print 'Source already checked out. Skipping ...'
-			return
-
-		# If the source-base dir exists we need to clean it out
-		if os.path.exists(self.sourceBaseDir):
-			shutil.rmtree(self.sourceBaseDir)
-		os.makedirs(self.sourceBaseDir)
-
-		print 'Source checkout: ' + uri
-
-		# Set the name of the directory to check out sources into
-		checkoutDir = self.sourceBaseDir + '/' + port.versionedName
-
-		# Start building the command to perform the checkout
-		if type == 'cvs':
-			# Chop off the leading cvs:// part of the uri
-			realUri = realUri[realUri.index('cvs://') + 6:]
-
-			# Extract the cvs module from the uri and remove it from real_uri
-			module = realUri[realUri.rfind('/') + 1:]
-			realUri = realUri[:realUri.rfind('/')]
-			ensureCommandIsAvailable('cvs')
-			checkoutCommand = 'cvs -d' + realUri + ' co -P'
-			if rev:
-				# For CVS 'rev' may specify a date or a revision/tag name. If it
-				# looks like a date, we assume it is one.
-				dateRegExp = re.compile('^\d{1,2}/\d{1,2}/\d{2,4}$')
-				if dateRegExp.match(rev):
-					checkoutCommand += ' -D' + rev
-				else:
-					checkoutCommand += ' -r' + rev
-			checkoutCommand += ' -d ' + port.versionedName + ' ' + module
-		elif type == 'svn':
-			ensureCommandIsAvailable('svn')
-			checkoutCommand \
-				= 'svn co --non-interactive --trust-server-cert'
-			if rev:
-				checkoutCommand += ' -r ' + rev
-			checkoutCommand += ' ' + realUri + ' ' + checkoutDir
-		elif type == 'hg':
-			ensureCommandIsAvailable('hg')
-			checkoutCommand = 'hg clone'
-			if rev:
-				checkoutCommand += ' -r ' + rev
-			checkoutCommand += ' ' + realUri + ' ' + checkoutDir
-		elif type == 'bzr':
-			# http://doc.bazaar.canonical.com/bzr-0.10/bzr_man.htm#bzr-branch-from-location-to-location
-			ensureCommandIsAvailable('bzr')
-			checkoutCommand = 'bzr checkout --lightweight'
-			if rev:
-				checkoutCommand += ' -r ' + rev
-			checkoutCommand += ' ' + realUri + ' ' + checkoutDir
-		elif type == 'fossil':
-			# http://fossil-scm.org/index.html/doc/trunk/www/quickstart.wiki
-			if os.path.exists(checkoutDir + '.fossil'):
-				shutil.rmtree(checkoutDir + '.fossil')
-			ensureCommandIsAvailable('fossil')
-			checkoutCommand = ('fossil clone ' + realUri 
-							   + ' ' + checkoutDir + '.fossil '
-							   + '&& mkdir -p ' + checkoutDir + ' '
-							   + '&& fossil open ' + checkoutDir + '.fossil')
-			if rev:
-				checkoutCommand += ' ' + rev
-		elif type == 'git':
-			ensureCommandIsAvailable('git')
-			self.checkout['type'] = 'git'
-			if rev:
-				checkoutCommand = (('''
-					set -e
-					git clone -n %s %s
-					cd %s
-					if git branch | grep -q '* haikuport'; then
-						# point HEAD to something else than the 'haikuport'
-						# branch, as we are going to try and update that branch
-						# during checkout, which would fail if it is the current
-						# branch
-						git symbolic-ref HEAD refs/origin/HEAD
-					fi
-					echo "checking out tree for %s ..."
-					git checkout -B haikuport -q %s''')
-					% (realUri, checkoutDir, checkoutDir, rev, rev))
-			else:
-				checkoutCommand = 'git clone %s %s' % (realUri, checkoutDir)
-			checkoutCommand += '\ngit tag -f ORIGIN'
-		else:
-			sysExit("repository type '" + type + "' is not supported")
-
-		check_call(checkoutCommand, shell=True, cwd=self.sourceBaseDir)
-
-		# Set the 'checkout' flag to signal that the checkout is complete
-		port.setFlag('checkout', self.index)
-
-	def _initGitRepo(self):
+	def _initImplicitGitRepo(self):
 		"""Import sources into git repository"""
 
 		ensureCommandIsAvailable('git')

@@ -468,14 +468,14 @@ class Port(object):
 		"""Fetch the source archives and validate their checksum"""
 
 		for source in self.sources:
-			source.download(self)
+			source.fetch(self)
 			source.validateChecksum(self)
 
 	def unpackSource(self):
 		"""Unpack the source archive(s)"""
 
 		for source in self.sources:
-			source.unpackSource(self)
+			source.unpack(self)
 
 	def patchSource(self):
 		"""Apply the Haiku patches to the source(s)"""
@@ -540,10 +540,19 @@ class Port(object):
 			self.unsetFlag('build')
 
 		# Delete and re-create a couple of directories
-		for directory in [self.packageInfoDir, self.packagingBaseDir, 
-						  self.buildPackageDir, self.hpkgDir]:
-			if os.path.exists(directory):
+		directoriesToCreate = [	
+			self.packageInfoDir, self.packagingBaseDir, 
+			self.buildPackageDir, self.hpkgDir 
+		]
+		directoriesToRemove = [ 
+			directory for directory in directoriesToCreate 
+			if os.path.exists(directory)
+		]
+		if directoriesToRemove:
+			print 'Cleaning up remains of last build ...'
+			for directory in directoriesToRemove:
 				shutil.rmtree(directory, True)
+		for directory in directoriesToCreate:
 			os.mkdir(directory)
 		for package in self.packages:
 			os.mkdir(package.packagingDir)
