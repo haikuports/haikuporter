@@ -416,7 +416,7 @@ class Source(object):
 					checkoutCommand += ' -D' + rev
 				else:
 					checkoutCommand += ' -r' + rev
-			checkoutCommand += ' -d ' + checkoutDir + ' ' + module
+			checkoutCommand += ' -d ' + port.versionedName + ' ' + module
 		elif type == 'svn':
 			ensureCommandIsAvailable('svn')
 			checkoutCommand \
