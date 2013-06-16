@@ -265,7 +265,12 @@ class Package(object):
 
 		if not architecture:
 			architecture = self.architecture
-		
+
+		# If it exists, remove the file first. Otherwise we might write to the
+		# wrong file, if it is a symlink.
+		if os.path.exists(packageInfoPath):
+			os.remove(packageInfoPath)
+
 		with open(packageInfoPath, 'w') as infoFile:
 			if fakeEmptyProvides:
 				infoFile.write('name\t\t\tfaked_' + self.name + '\n')
