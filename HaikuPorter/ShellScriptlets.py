@@ -259,6 +259,32 @@ fixPkgconfig()
 	rm -r $sourcePkgconfigDir
 }
 
+addAppDeskbarSymlink()
+{
+	# Usage: addAppDeskbarSymlink <appPath> [ <entryName> ]
+	# Creates a Deskbar symlink for an application.
+	# <appPath> is the absolute path to the application executable.
+	# <entryName> is the name of the application as it shall appear in the
+	# Deskbar. Can be omitted, in which case the name of the application
+	# executable is used.
+	if [ $# -lt 1 ]; then
+		echo >&2 "Usage: addAppDeskbarSymlink <appPath> [ <entryName> ]"
+		exit 1
+	fi
+
+	appPath="$1"
+	shift 1
+	if [ $# -lt 1 ]; then
+		entryName="$(basename "$appPath")"
+	else
+		entryName=$1
+	fi
+
+	targetDir=$dataDir/deskbar/menu/Applications
+	mkdir -p $targetDir
+	ln -s "$appPath" "$targetDir/$entryName"
+}
+
 packageEntries()
 {
 	# Usage: packageEntries <packageSuffix> <entry> ...
