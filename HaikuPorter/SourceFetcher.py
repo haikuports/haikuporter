@@ -57,6 +57,19 @@ def unpackCheckoutWithTar(checkoutDir, sourceDir, subdir):
 		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
 	check_call(command, cwd=checkoutDir, shell=True)
 
+	if subdir:
+		foldSubdirIntoSourceDir(subdir, sourceDir)
+
+# -----------------------------------------------------------------------------
+
+def foldSubdirIntoSourceDir(subdir, sourceDir):
+	"""Move contents of subdir into sourceDir and remove subdir"""
+	
+	fullSubdirPath = sourceDir + '/' + subdir
+	for fileName in os.listdir(fullSubdirPath):
+		os.rename(fullSubdirPath + '/' + fileName, sourceDir + '/' + fileName)
+	os.removedirs(fullSubdirPath)
+	
 # -- Fetches sources via bzr --------------------------------------------------
 
 class SourceFetcherForBazaar(object):
@@ -132,7 +145,11 @@ class SourceFetcherForDownload(object):
 			else:
 				shutil.copy(self.fetchTarget, sourceDir)
 		else:
-			unpackArchive(self.fetchTarget, os.path.dirname(sourceDir))
+			unpackArchive(self.fetchTarget, os.path.dirname(sourceDir), subdir)
+			if subdir:
+				# leave out topmost directory from subdir, as that is the
+				# name of sourceDir
+				foldSubdirIntoSourceDir(subdir[subdir.find('/'):], sourceDir)
 
 # -- Fetches sources via fossil -----------------------------------------------
 
@@ -180,9 +197,7 @@ class SourceFetcherForGit(object):
 		check_call(command, shell=True, cwd=self.fetchTarget)
 
 		if subdir:
-			# move everything in subdir directly into source-dir
-			command = 'mv %s/* . && rm -r %s' % (subdir, subdir)
-			check_call(command, shell=True, cwd=sourceDir)
+			foldSubdirIntoSourceDir(subdir, sourceDir)
 
 # -- Fetches sources from local disk ------------------------------------------
 
@@ -208,7 +223,11 @@ class SourceFetcherForLocalFile(object):
 			else:
 				shutil.copy(self.fetchTarget, sourceDir)
 		else:
-			unpackArchive(self.fetchTarget, os.path.dirname(sourceDir))
+			unpackArchive(self.fetchTarget, os.path.dirname(sourceDir), subdir)
+			if subdir:
+				# leave out topmost directory from subdir, as that is the
+				# name of sourceDir
+				foldSubdirIntoSourceDir(subdir[subdir.find('/'):], sourceDir)
 
 # -- Fetches sources via hg ---------------------------------------------------
 
@@ -235,9 +254,7 @@ class SourceFetcherForMercurial(object):
 		check_call(command, shell=True, cwd=self.fetchTarget)
 
 		if subdir:
-			# move everything in subdir directly into source-dir
-			command = 'mv %s/* . && rm -r %s' % (subdir, subdir)
-			check_call(command, shell=True, cwd=sourceDir)
+			foldSubdirIntoSourceDir(subdir, sourceDir)
 
 # -- Fetches sources via svn --------------------------------------------------
 

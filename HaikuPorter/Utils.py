@@ -77,17 +77,31 @@ def escapeForPackageInfo(string):
 	return string.replace('\\', '\\\\').replace('"', '\\"')
 
 # -- unpackArchive ------------------------------------------------------------
-def unpackArchive(archiveFile, targetBaseDir):
+def unpackArchive(archiveFile, targetBaseDir, subdir):
 	"""Unpack archive into a directory"""
 
+	if subdir and not subdir.endswith('/'):
+		subdir += '/'
 	# unpack source archive
 	if tarfile.is_tarfile(archiveFile):
 		tarFile = tarfile.open(archiveFile, 'r')
-		tarFile.extractall(targetBaseDir)
+		members = None
+		if subdir:
+			members = [ 
+				member for member in tarFile.getmembers() 
+				if member.name.startswith(subdir)
+			]
+		tarFile.extractall(targetBaseDir, members)
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
-		zipFile.extractall(targetBaseDir)
+		names = None
+		if subdir:
+			names = [ 
+				name for name in zipFile.namelist() 
+				if name.startswith(subdir)
+			]
+		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
 	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
 		ensureCommandIsAvailable('xz')
@@ -95,6 +109,14 @@ def unpackArchive(archiveFile, targetBaseDir):
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
 			tarFile = tarfile.open(tar, 'r')
+			members = None
+			if subdir:
+				if not subdir.endswith('/'):
+					subdir += '/'
+				members = [ 
+					member for member in tarFile.getmembers() 
+					if member.name.startswith(subdir)
+				]
 			tarFile.extractall(targetBaseDir)
 			tarFile.close()
 	else:
