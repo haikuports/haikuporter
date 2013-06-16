@@ -131,10 +131,25 @@ def touchFile(file):
 	"""Touches given file, making sure that its modification date is bumped"""
 	
 	if os.path.exists(file):
-		os.remove(file)
-	open(file, 'w').close()
+		os.utime(file)
+	else:
+		open(file, 'w').close()
 
-# -- isCommandAvailable -------------------------------------------------
+# -- storeStringInFile --------------------------------------------------------
+def storeStringInFile(string, file):
+	"""Stores the given string in the file with the given name"""
+	
+	with open(file, 'w') as fo:
+		fo.write(string)
+
+# -- readStringFromFile--------------------------------------------------------
+def readStringFromFile(file):
+	"""Returns the contents of the file with the given name as a string"""
+	
+	with open(file, 'r') as fo:
+		return fo.read()
+
+# -- isCommandAvailable -------------------------------------------------------
 availableCommands = {}
 def isCommandAvailable(command):
 	"""returns whether the given command is available"""
