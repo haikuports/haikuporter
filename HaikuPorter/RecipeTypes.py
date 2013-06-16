@@ -106,3 +106,19 @@ class YesNo(str):
 	@staticmethod
 	def toBool(self, value):
 		return value.lower() == 'yes' or value.lower() == 'true'
+
+# -- Extendable ---------------------------------------------------------------
+
+# Defines the possible values for the 'extendable' attribute of recipe
+# attributes:
+#   NO         -> The attribute is not extendable, i.e. it is per-port.
+#   INHERITED  -> The attribute is extendable (i.e. per-package) and when not
+#                 specified for a package, the attribute value for the main
+#                 package is inherited.
+#   DEFAULT    -> The attribute is extendable (i.e. per-package) and when not
+#                 specified for a package, the attribute get the default value.
+class Extendable(str):
+	NO			= 'no',
+	INHERITED	= 'inherited',
+	DEFAULT		= 'default'
+

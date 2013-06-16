@@ -15,7 +15,7 @@ from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
-from HaikuPorter.RecipeTypes import Phase, Status
+from HaikuPorter.RecipeTypes import Extendable, Phase, Status
 from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.ShellScriptlets import (setupChrootScript, 
 										 cleanupChrootScript,
@@ -225,7 +225,7 @@ class Port(object):
 			sourceKeys = {}
 			baseKeys = self.recipeKeysByExtension['']
 			for key in baseKeys.keys():
-				if recipeAttributes[key]['extendable']:
+				if recipeAttributes[key]['extendable'] != Extendable.NO:
 					sourceKeys[key] = recipeAttributes[key]['default']
 				else:
 					sourceKeys[key] = baseKeys[key]
@@ -281,17 +281,21 @@ class Port(object):
 				if extension:
 					key = baseKey + '_' + extension
 					# inherit any missing attribute from the respective base 
-					# value
+					# value or set the default
 					if key not in entries:
 						attributes = recipeAttributes[baseKey]
-						if ('suffix' in attributes
-							and extension in attributes['suffix']):
-							recipeKeys[baseKey] = (
-								baseEntries[baseKey] 
-								+ attributes['suffix'][extension])
+						if attributes['extendable'] == Extendable.DEFAULT:
+							recipeKeys[baseKey] = attributes['default']
 						else:
-							recipeKeys[baseKey] = baseEntries[baseKey]
-						continue	# inherited values don't need to be checked
+							if ('suffix' in attributes
+								and extension in attributes['suffix']):
+								recipeKeys[baseKey] = (
+									baseEntries[baseKey] 
+									+ attributes['suffix'][extension])
+							else:
+								recipeKeys[baseKey] = baseEntries[baseKey]
+							continue
+								# inherited values don't need to be checked
 				else:
 					key = baseKey
 

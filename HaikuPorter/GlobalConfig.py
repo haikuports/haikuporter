@@ -4,7 +4,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.RecipeTypes import (MachineArchitecture, YesNo)
+from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, YesNo)
 from HaikuPorter.Utils import sysExit
 
 import os
@@ -26,28 +26,28 @@ haikuportsAttributes = {
 		'type': YesNo,
 		'required': False,
 		'default': False,
-		'extendable': False,
+		'extendable': Extendable.NO,
 		'indexable': False,
 	},
 	'PACKAGER': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
-		'extendable': False,
+		'extendable': Extendable.NO,
 		'indexable': False,
 	},
 	'TARGET_ARCHITECTURE': {
 		'type': MachineArchitecture,
 		'required': False,
 		'default': None,
-		'extendable': False,
+		'extendable': Extendable.NO,
 		'indexable': False,
 	},
 	'TREE_PATH': {
 		'type': types.StringType,
 		'required': True,
 		'default': None,
-		'extendable': False,
+		'extendable': Extendable.NO,
 		'indexable': False,
 	},
 }

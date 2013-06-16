@@ -58,7 +58,7 @@ class ConfigParser(object):
 					subKey = subKeys.pop(0)
 					baseKey += ('_' if baseKey else '') + subKey
 					if baseKey in attributes:
-						if attributes[baseKey]['extendable']:
+						if attributes[baseKey]['extendable'] != Extendable.NO:
 							extension = '_'.join(subKeys)
 							break
 						if attributes[baseKey]['indexable']:
