@@ -189,16 +189,17 @@ class SourceFetcherForGit(object):
 class SourceFetcherForLocalFile(object):
 	# TODO; this implementation is untested, so it may require fixing
 	def __init__(self, uri, fetchTarget):
+		self.fetchTarget = fetchTarget
 		self.uri = uri
 		self.sourceShouldBeValidated = False
-		portBaseDir = os.path.dirname(os.path.dirname(fetchTarget))
-		self.fetchTarget = portBaseDir + '/' + self.uri
-		if not os.path.isfile(self.fetchTarget):
-			raise NameError("source %s doesn't exist" % self.fetchTarget)
 		
 	def fetch(self):
-		# no need to fetch anything - the file is already on the local disk
-		pass
+		# just symlink the local file to fetchTarget (if it exists)
+		portBaseDir = os.path.dirname(os.path.dirname(self.fetchTarget))
+		localFile = portBaseDir + '/' + self.uri
+		if not os.path.isfile(localFile):
+			raise NameError("source %s doesn't exist" % localFile)
+		os.symlink(localFile, self.fetchTarget)
 
 	def unpack(self, sourceDir, subdir):
 		if self.uri.endswith('#noarchive'):
