@@ -377,9 +377,9 @@ fi
 # Invoked with $packages filled with the list of packages that should
 # be activated (via common/packages) and $recipeFilePath pointing to the
 # recipe file. 
-# Additionally, $isCrossRepository will be set to 'true' when the cross-build 
-# repository is active and $targetArchitecture will be filled with the
-# target architecture.
+# Additionally, $crossSysrootDir will be set to the cross-sysroot directory 
+# when the cross-build repository is active and $targetArchitecture will be 
+# filled with the target architecture.
 setupChrootScript = r'''
 # ignore sigint but stop on every error
 trap '' SIGINT
@@ -429,19 +429,18 @@ if [ -e port/work* ]; then
 	unmount port
 fi
 
-# if this is a cross-build, mount the cross-build sysroot
-if [ $isCrossRepository = 'true' ]; then
-	sysrootDir=boot/cross-sysroot/$targetArchitecture/
-	if [ -e $sysrootDir/boot/system/develop ]; then
-		unmount $sysrootDir/boot/system
+# if it has been defined, mount the cross-build sysroot
+if [[ -n $crossSysrootDir ]]; then
+	if [ -e $crossSysrootDir/boot/system/develop ]; then
+		unmount $crossSysrootDir/boot/system
 	fi
 	# symlink haiku_cross_devel package into place
-	mkdir -p $sysrootDir/boot/system/packages
+	mkdir -p $crossSysrootDir/boot/system/packages
 	crossDevelPath=/boot/system/develop/cross
 	ln -sfn \
 		$crossDevelPath/haiku_cross_devel_sysroot_$targetArchitecture.hpkg \
-		$sysrootDir/boot/system/packages/haiku_cross_devel_sysroot.hpkg
-	mount -t packagefs -p "type system" $sysrootDir/boot/system
+		$crossSysrootDir/boot/system/packages/haiku_cross_devel_sysroot.hpkg
+	mount -t packagefs -p "type system" $crossSysrootDir/boot/system
 fi
 
 # mount dev, system-packagefs and common-packagefs
@@ -472,9 +471,9 @@ if ! echo $(basename $PWD) | grep -qE '^work-'; then
 	exit 1
 fi
 
-# if this is a cross-build, unmount the cross-build sysroot
-if [ $isCrossRepository = 'true' ]; then
-	unmount boot/cross-sysroot/$targetArchitecture/boot/system
+# if it is defined, unmount the cross-build sysroot
+if [[ -n $crossSysrootDir && -e $crossSysrootDir/boot/system/develop ]]; then
+	unmount $crossSysrootDir/boot/system
 fi
 
 unmount dev

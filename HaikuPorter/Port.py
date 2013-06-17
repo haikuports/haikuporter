@@ -576,9 +576,11 @@ class Port(object):
 			chrootEnvVars = {
 				'packages': '\n'.join(requiredPackages), 
 				'recipeFile': self.recipeFilePath,
-				'isCrossRepository': self.shellVariables['isCrossRepository'],
 				'targetArchitecture': self.targetArchitecture,
 			}
+			if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+				chrootEnvVars['crossSysrootDir'] \
+					= self.workDir + self.shellVariables['crossSysrootDir']
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 				if not getOption('quiet'):
 					print 'chroot has these packages active:'
