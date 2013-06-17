@@ -566,7 +566,7 @@ class Port(object):
 
 		self.policy.setPort(self, requiredPackages)
 
-		self.requiresUpdater = RequiresUpdater(requiredPackages,
+		self.requiresUpdater = RequiresUpdater(self.packages, requiredPackages,
 			not globalConfiguration['IS_CROSSBUILD_REPOSITORY'])
 
 		if getOption('chroot'):

@@ -36,12 +36,18 @@ class ProvidesInfo(object):
 # -- RequiresUpdater class ----------------------------------------------------
 
 class RequiresUpdater(object):
-	def __init__(self, packages, addSystemPackages = True):
-		self.packages = packages
+	def __init__(self, portPackages, requiredPackages,
+			addSystemPackages = True):
 		self.providesMap = {}
 
-		# get the provides for the packages
-		for package in packages:
+		# get the provides for the port packages
+		for package in portPackages:
+			for providesString in package.getRecipeKeys()['PROVIDES']:
+				self._addPackageProvidesInfo(package.revisionedName,
+					providesString)
+
+		# get the provides for the required packages
+		for package in requiredPackages:
 			if package.endswith('.hpkg'):
 				self._getPackageProvides(package)
 
@@ -132,8 +138,11 @@ class RequiresUpdater(object):
 			index = line.find('provides:')
 			if index < 0:
 				continue
-			provides = ProvidesInfo(package, line[index + 9:].strip())
-			if provides.name in self.providesMap:
-				self.providesMap[provides.name].append(provides)
-			else:
-				self.providesMap[provides.name] = [ provides ]
+			self._addPackageProvidesInfo(package, line[index + 9:])
+
+	def _addPackageProvidesInfo(self, package, providesString):
+		provides = ProvidesInfo(package, providesString.strip())
+		if provides.name in self.providesMap:
+			self.providesMap[provides.name].append(provides)
+		else:
+			self.providesMap[provides.name] = [ provides ]
