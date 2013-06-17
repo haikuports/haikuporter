@@ -69,6 +69,7 @@ class Policy(object):
 		self._checkMisplacedDevelopLibraries()
 		self._checkGlobalWritableFiles()
 		self._checkUserSettingsFiles()
+		self._checkPostInstallScripts()
 
 		if self.strict and self.violationEncountered:
 			sysExit("packaging policy violation(s) in strict mode")
@@ -369,6 +370,32 @@ class Policy(object):
 					self._violation('Package declares non-existent template '
 						'"%s" for user settings file "%s" as included'
 						% (components[2], components[0]))
+
+	def _checkPostInstallScripts(self):
+		# check whether declared files exist
+		declaredFiles = set()
+		for file in self.package.getRecipeKeys()['POST_INSTALL_SCRIPTS']:
+			if file.lstrip().startswith('#'):
+				continue
+
+			components = ConfigParser.splitItemAndUnquote(file)
+			if not components:
+				continue
+			file = components[0]
+			declaredFiles.add(file)
+
+			if not os.path.exists(file):
+				self._violation('Package declares non-existent post-install '
+					'script "%s"' % file)
+
+		# check whether existing files are declared
+		postInstallDir='boot/post_install'
+		if os.path.exists(postInstallDir):
+			for file in os.listdir(postInstallDir):
+				path = postInstallDir + '/' + file
+				if not path in declaredFiles:
+					self._violation('file "%s" not declared as post-install '
+						'script' % path)
 
 	def _violation(self, message):
 		self.violationEncountered = True
