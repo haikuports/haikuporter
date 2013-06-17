@@ -94,6 +94,7 @@ class Port(object):
 			'portBaseDir': self.baseDir,
 		}
 		self.shellVariables.update(globalShellVariables)
+		self._updateShellVariables(True)
 		
 		self.buildArchitecture = self.shellVariables['buildArchitecture']
 		self.targetArchitecture = self.shellVariables['targetArchitecture']
@@ -667,19 +668,28 @@ class Port(object):
 		"""Fill dictionary with variables that will be inherited to the shell
 		   when executing recipe actions
 		"""
-		self.shellVariables.update({
-			'portRevision': self.revision,
-			'portFullVersion': self.fullVersion,
-			'portRevisionedName': self.revisionedName,
-			'portDir': '/port',
-		})
-		
-		for source in self.sources:
-			if source.index == '1':
-				sourceDirKey = 'sourceDir'
-			else:
-				sourceDirKey = 'sourceDir' + source.index
-			self.shellVariables[sourceDirKey] = source.sourceDir
+		self._updateShellVariables(False)
+
+	def _updateShellVariables(self, forParsing):
+		"""Fill dictionary with variables that will be inherited to the shell
+		   when executing recipe actions repectively for parsing the recipe.
+		   If forParsing is True, only a subset of variables is set (i.e.
+		   only those that don't depend on stuff defined in the recipe).
+		"""
+		if not forParsing:
+			self.shellVariables.update({
+				'portRevision': self.revision,
+				'portFullVersion': self.fullVersion,
+				'portRevisionedName': self.revisionedName,
+				'portDir': '/port',
+			})
+
+			for source in self.sources:
+				if source.index == '1':
+					sourceDirKey = 'sourceDir'
+				else:
+					sourceDirKey = 'sourceDir' + source.index
+				self.shellVariables[sourceDirKey] = source.sourceDir
 
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)
@@ -711,29 +721,32 @@ class Port(object):
 		# --pdfdir=DIR            pdf documentation [DOCDIR]
 		# --psdir=DIR             ps documentation [DOCDIR]
 
-		portPackageLinksDir = (systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/'
-			+ self.revisionedName)
-		prefix = portPackageLinksDir + '/.self'
-
-		configureDirs = {
-			'prefix':		prefix,
-			'sysconfDir':	portPackageLinksDir + '/.settings',
-		}
 		for name, value in relativeConfigureDirs.iteritems():
-			configureDirs[name] = prefix + '/' + value
 			relativeName = 'relative' + name[0].upper() + name[1:]
 			self.shellVariables[relativeName] = value
 
-		self.shellVariables.update(configureDirs)
+		if not forParsing:
+			portPackageLinksDir = (systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/'
+				+ self.revisionedName)
+			prefix = portPackageLinksDir + '/.self'
 
-		# add one more variable containing all the dir args for configure:
-		self.shellVariables['configureDirArgs'] \
-			= ' '.join(['--%s=%s' % (k.lower(), v) 
-					   for k, v in configureDirs.iteritems()])
+			configureDirs = {
+				'prefix':		prefix,
+				'sysconfDir':	portPackageLinksDir + '/.settings',
+			}
+			for name, value in relativeConfigureDirs.iteritems():
+				configureDirs[name] = prefix + '/' + value
 
-		# add another one with the list of possible variable
-		self.shellVariables['configureDirVariables'] \
-			= ' '.join(configureDirs.iterkeys())
+			self.shellVariables.update(configureDirs)
+
+			# add one more variable containing all the dir args for configure:
+			self.shellVariables['configureDirArgs'] \
+				= ' '.join(['--%s=%s' % (k.lower(), v) 
+						   for k, v in configureDirs.iteritems()])
+
+			# add another one with the list of possible variables
+			self.shellVariables['configureDirVariables'] \
+				= ' '.join(configureDirs.iterkeys())
 
 		# Add variables for other standard directories. Consequently, we should
 		# use finddir to get them (also for the configure variables above), but
@@ -752,11 +765,14 @@ class Port(object):
 		}
 
 		for name, value in relativeOtherDirs.iteritems():
-			self.shellVariables[name] = prefix + '/' + value
 			relativeName = 'relative' + name[0].upper() + name[1:]
 			self.shellVariables[relativeName] = value
 
-		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
+		if not forParsing:
+			for name, value in relativeOtherDirs.iteritems():
+				self.shellVariables[name] = prefix + '/' + value
+
+			self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
 	def _prepareRepositories(self, workRepositoryPath, prereqRepositoryPath, 
 							 repositoryPath, packagesPath):
