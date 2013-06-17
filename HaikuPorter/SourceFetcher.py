@@ -202,7 +202,6 @@ class SourceFetcherForGit(object):
 # -- Fetches sources from local disk ------------------------------------------
 
 class SourceFetcherForLocalFile(object):
-	# TODO; this implementation is untested, so it may require fixing
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
