@@ -350,6 +350,8 @@ class Package(object):
 			self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS', 'users')
 			self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS',
 				'groups')
+			self._writePackageInfoListQuotePaths(infoFile,
+				self.recipeKeys['POST_INSTALL_SCRIPTS'], 'post-install-scripts')
 	
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.

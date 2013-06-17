@@ -187,6 +187,13 @@ recipeAttributes = {
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
+	'POST_INSTALL_SCRIPTS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.DEFAULT,
+		'indexable': False,
+	},
 	'REPLACES': {
 		'type': types.ListType,
 		'required': False,
