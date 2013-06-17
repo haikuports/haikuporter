@@ -746,6 +746,7 @@ class Port(object):
 			'developLibDir':	'develop/lib',
 			'documentationDir':	'documentation',
 			'fontsDir':			'data/fonts',
+			'postInstallDir':	'boot/post_install',
 			'preferencesDir':	'preferences',
 			'settingsDir':		'settings',
 		}
