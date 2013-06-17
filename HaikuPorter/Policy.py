@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-# copyright 2013 Ingo Weinhold
+#
+# Copyright 2013 Ingo Weinhold
+# Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
 

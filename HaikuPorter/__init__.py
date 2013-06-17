@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
-# copyright 2013 Oliver Tappe
+#
+# Copyright 2013 Oliver Tappe
+# Distributed under the terms of the MIT License.
 
 from __version__ import *

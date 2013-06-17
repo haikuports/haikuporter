@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-# copyright 2007-2011 Brecht Machiels
-# copyright 2009-2010 Chris Roberts
-# copyright 2009-2011 Scott McCreary
-# copyright 2009 Alexander Deynichenko
-# copyright 2009 HaikuBot (aka RISC)
-# copyright 2010-2011 Jack Laxson (Jrabbit)
-# copyright 2011 Ingo Weinhold
-# copyright 2013 Oliver Tappe
+#
+# Copyright 2007-2011 Brecht Machiels
+# Copyright 2009-2010 Chris Roberts
+# Copyright 2009-2011 Scott McCreary
+# Copyright 2009 Alexander Deynichenko
+# Copyright 2009 HaikuBot (aka RISC)
+# Copyright 2010-2011 Jack Laxson (Jrabbit)
+# Copyright 2011 Ingo Weinhold
+# Copyright 2013 Oliver Tappe
+# Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
 
