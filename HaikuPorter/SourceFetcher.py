@@ -115,7 +115,7 @@ class SourceFetcherForCvs(object):
 				command += ' -D' + self.rev
 			else:
 				command += ' -r' + self.rev
-		command += ' ' + self.module
+		command += ' "%s"' % self.module
 		check_call(command, shell=True, cwd=baseDir)
 
 	def unpack(self, sourceDir, subdir):
