@@ -953,6 +953,16 @@ class Port(object):
 			if not os.listdir(settingsDir):
 				os.rmdir(settingsDir)
 		
+		# For the main package remove certain empty directories. Typically
+		# contents is moved from the main package installation directory tree to
+		# the packaging directories of sibling packages, which may leave empty
+		# directories behind.
+		for dirName in [ 'add-ons', 'apps', 'bin', 'data', 'develop',
+				'documentation', 'lib', 'preferences' ]:
+			dir = self.packagingBaseDir + '/' + self.name + '/' + dirName
+			if os.path.exists(dir) and not os.listdir(dir):
+				os.rmdir(dir)
+
 		# create hpkg-directory if needed
 		if not os.path.exists(self.hpkgDir):
 			os.mkdir(self.hpkgDir)
