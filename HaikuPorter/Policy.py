@@ -389,7 +389,7 @@ class Policy(object):
 					'script "%s"' % file)
 
 		# check whether existing files are declared
-		postInstallDir='boot/post_install'
+		postInstallDir='boot/post-install'
 		if os.path.exists(postInstallDir):
 			for file in os.listdir(postInstallDir):
 				path = postInstallDir + '/' + file
