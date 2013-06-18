@@ -155,7 +155,7 @@ def touchFile(file):
 	"""Touches given file, making sure that its modification date is bumped"""
 	
 	if os.path.exists(file):
-		os.utime(file)
+		os.utime(file, None)
 	else:
 		open(file, 'w').close()
 
