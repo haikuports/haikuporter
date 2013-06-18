@@ -80,13 +80,6 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': True,
 	},
-	'SOURCE_EXPORT_SUBDIR': {
-		'type': types.StringType,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
 	'SRC_FILENAME': {
 		'type': types.StringType,
 		'required': False,

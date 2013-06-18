@@ -193,7 +193,6 @@ class Port(object):
 							keys['SRC_FILENAME'].get(index, None),
 							keys['CHECKSUM_MD5'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
-							keys['SOURCE_EXPORT_SUBDIR'].get(index, None),
 							keys['PATCHES'].get(index, []))
 			self.sources.append(source)
 

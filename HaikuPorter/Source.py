@@ -29,7 +29,7 @@ from subprocess import check_call
 
 class Source(object):
 	def __init__(self, port, index, uris, fetchTargetName, checksum, sourceDir, 
-				 sourceExportSubdir, patches):
+				 patches):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
@@ -42,11 +42,16 @@ class Source(object):
 			self.sourceBaseDir = port.sourceBaseDir + '-' + index
 		
 		if sourceDir:
+			index = sourceDir.find('/')
+			if index > 0:
+				self.sourceExportSubdir = sourceDir[index + 1:]
+				sourceDir = sourceDir[:index]
+			else:
+				self.sourceExportSubdir = None
 			self.sourceDir = self.sourceBaseDir + '/' + sourceDir
 		else:
 			self.sourceDir = self.sourceBaseDir
-
-		self.sourceExportSubdir = sourceExportSubdir
+			self.sourceExportSubdir = None
 
 		# If explicit PATCHES were specified, set our patches list accordingly.
 		if self.patches:
