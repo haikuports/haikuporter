@@ -64,6 +64,24 @@ def unpackCheckoutWithTar(checkoutDir, sourceDir, subdir):
 
 # -----------------------------------------------------------------------------
 
+def unpackFile(uri, fetchTarget, sourceDir, subdir):
+	"""Move contents of subdir into sourceDir and remove subdir"""
+	
+	if uri.endswith('#noarchive'):
+		if os.path.isdir(fetchTarget):
+			shutil.copytree(fetchTarget, sourceDir, symlinks=True)
+		else:
+			shutil.copy(fetchTarget, sourceDir)
+	else:
+		sourceSubdir = os.path.basename(sourceDir)
+		if subdir:
+			sourceSubdir += '/' + subdir
+		unpackArchive(fetchTarget, os.path.dirname(sourceDir), sourceSubdir)
+		if subdir:
+			foldSubdirIntoSourceDir(subdir, sourceDir)
+	
+# -----------------------------------------------------------------------------
+
 def foldSubdirIntoSourceDir(subdir, sourceDir):
 	"""Move contents of subdir into sourceDir and remove subdir"""
 	
@@ -141,17 +159,7 @@ class SourceFetcherForDownload(object):
 		check_call(args)
 
 	def unpack(self, sourceDir, subdir):
-		if self.uri.endswith('#noarchive'):
-			if os.path.isdir(self.fetchTarget):
-				shutil.copytree(self.fetchTarget, sourceDir, symlinks=True)
-			else:
-				shutil.copy(self.fetchTarget, sourceDir)
-		else:
-			unpackArchive(self.fetchTarget, os.path.dirname(sourceDir), subdir)
-			if subdir:
-				# leave out topmost directory from subdir, as that is the
-				# name of sourceDir
-				foldSubdirIntoSourceDir(subdir[subdir.find('/'):], sourceDir)
+		unpackFile(self.uri, self.fetchTarget, sourceDir, subdir)
 
 # -- Fetches sources via fossil -----------------------------------------------
 
@@ -218,17 +226,7 @@ class SourceFetcherForLocalFile(object):
 		os.symlink(localFile, self.fetchTarget)
 
 	def unpack(self, sourceDir, subdir):
-		if self.uri.endswith('#noarchive'):
-			if os.path.isdir(self.fetchTarget):
-				shutil.copytree(self.fetchTarget, sourceDir, symlinks=True)
-			else:
-				shutil.copy(self.fetchTarget, sourceDir)
-		else:
-			unpackArchive(self.fetchTarget, os.path.dirname(sourceDir), subdir)
-			if subdir:
-				# leave out topmost directory from subdir, as that is the
-				# name of sourceDir
-				foldSubdirIntoSourceDir(subdir[subdir.find('/'):], sourceDir)
+		unpackFile(self.uri, self.fetchTarget, sourceDir, subdir)
 
 # -- Fetches sources via hg ---------------------------------------------------
 
