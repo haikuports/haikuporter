@@ -84,8 +84,12 @@ def unpackFile(uri, fetchTarget, sourceDir, subdir):
 
 def foldSubdirIntoSourceDir(subdir, sourceDir):
 	"""Move contents of subdir into sourceDir and remove subdir"""
-	
-	fullSubdirPath = sourceDir + '/' + subdir
+
+	# rename subdir to something unique in order to avoid potential problems
+	# if it contains an identically named file or folder.
+	fullSubdirPath = sourceDir + '/subdir-to-be-folded-by-haikuporter'
+	os.rename(sourceDir + '/' + subdir, fullSubdirPath)
+	# now move all contents from the subdir into the source directory
 	for fileName in os.listdir(fullSubdirPath):
 		os.rename(fullSubdirPath + '/' + fileName, sourceDir + '/' + fileName)
 	os.removedirs(fullSubdirPath)
