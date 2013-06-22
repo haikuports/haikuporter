@@ -97,8 +97,8 @@ class Source(object):
 						uri = readStringFromFile(uriFile)
 						self.sourceFetcher \
 							= createSourceFetcher(uri, self.fetchTarget)
-						print ('Skipping download of source ' 
-							   + (self.index if self.index != '1' else ''))
+						print ('Skipping download of source for ' 
+							   + self.fetchTargetName)
 						return
 					else:
 						# Remove the fetch target, as it isn't complete
@@ -134,6 +134,7 @@ class Source(object):
 
 		# re-create source directory
 		if os.path.exists(self.sourceBaseDir):
+			print 'Cleaning source dir for ' + self.fetchTargetName
 			shutil.rmtree(self.sourceBaseDir)
 		os.makedirs(self.sourceDir)
 
