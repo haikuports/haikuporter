@@ -134,23 +134,51 @@ class Main(object):
 		allPorts = self.repository.getAllPorts()
 		portVersionsByName = self.repository.getPortVersionsByName()
 		for portSpec in self.portSpecs:
-			if portSpec['version'] == None:
-				if portSpec['name'] not in portVersionsByName:
-					if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
-						sysExit(portSpec['name'] + ' not found in repository')
-					# for cross-build repository, try with target arch added
-					nameWithTargetArch \
-						= (portSpec['name'] + '_' 
-						   + self.shellVariables['targetArchitecture'])
-					if nameWithTargetArch not in portVersionsByName:
-						sysExit(portSpec['name'] + ' not found in repository')
-					portSpec['name'] = nameWithTargetArch
-				portSpec['version'] = portVersionsByName[portSpec['name']][-1]
-			portID = portSpec['name'] + '-' + portSpec['version']
-			if portID not in allPorts:
-				sysExit(portID + ' not found in tree.')
-			port = allPorts[portID]
-			portSpec['id'] = portID
+
+			# validate name of port			
+			if portSpec['name'] not in portVersionsByName:
+				if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+					sysExit(portSpec['name'] + ' not found in repository')
+				# for cross-build repository, try with target arch added
+				nameWithTargetArch \
+					= (portSpec['name'] + '_' 
+					   + self.shellVariables['targetArchitecture'])
+				if nameWithTargetArch not in portVersionsByName:
+					sysExit(portSpec['name'] + ' not found in repository')
+				portSpec['name'] = nameWithTargetArch
+			
+			# use specific version if given, otherwise try with all available
+			# versions
+			versions = []
+			if portSpec['version']:
+				versions.append(portSpec['version'])
+			else:
+				versions = portVersionsByName[portSpec['name']]
+				
+			# try to find a version of the current port that is buildable
+			for version in versions:
+				portID = portSpec['name'] + '-' + version
+				if portID not in allPorts:
+					sysExit(portID + ' not found in tree.')
+				port = allPorts[portID]
+				status = port.getStatusOnTargetArchitecture()
+				if (status != Status.STABLE 
+					and (status != Status.UNTESTED
+						or not globalConfiguration['ALLOW_UNTESTED'])):
+					warn('skipping %s, as it is %s on the target architecture.'
+						 % (portID, status))
+					continue
+				
+				# notice ID of buildable port version
+				portSpec['id'] = portID
+				break
+			else:
+				if portSpec['version']:
+					sysExit(portSpec['name'] + '-' + portSpec['version']
+							+ " can't be built")
+				else:
+					sysExit('No version of ' + portSpec['name'] 
+							+ ' can be built')
 			
 			# show port description, if requested
 			if self.options.about:
