@@ -235,6 +235,8 @@ class Port(object):
 			# a source package shares some attributes with the base package,
 			# just provides itself and has no requires:
 			name = self.name + '_source'
+			sourceSuffix \
+				= recipeAttributes['SUMMARY']['suffix'][PackageType.SOURCE]
 			sourceKeys.update({
 				'ARCHITECTURES': baseKeys['ARCHITECTURES'],
 				'COPYRIGHT': baseKeys['COPYRIGHT'],
@@ -242,7 +244,7 @@ class Port(object):
 				'HOMEPAGE': baseKeys['HOMEPAGE'],
 				'LICENSE': baseKeys['LICENSE'],
 				'PROVIDES': [ name + ' = ' + self.version ],
-				'SUMMARY': baseKeys['SUMMARY'],
+				'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
 			})
 			package = packageFactory(PackageType.SOURCE, name, self, sourceKeys, 
 									 self.policy)
