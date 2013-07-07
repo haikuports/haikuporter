@@ -202,7 +202,7 @@ class Main(object):
 					% (port.versionedName, revision, port.revision))
 
 		# warn when the port is not stable on this architecture
-		status = port.getStatusOnCurrentArchitecture()
+		status = port.getStatusOnTargetArchitecture()
 		if (status != Status.STABLE 
 			and (status != Status.UNTESTED
 				 or not globalConfiguration['ALLOW_UNTESTED'])):

@@ -376,8 +376,8 @@ class Port(object):
 			print 'ARCHITECTURE: %s' % package.architecture
 		print '*' * 80
 
-	def getStatusOnCurrentArchitecture(self):
-		"""Return the status of this port on the current architecture"""
+	def getStatusOnTargetArchitecture(self):
+		"""Return the status of this port on the target architecture"""
 		
 		if self.allPackages:
 			return self.allPackages[0].getStatusOnArchitecture(

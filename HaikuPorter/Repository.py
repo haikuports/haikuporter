@@ -142,7 +142,7 @@ class Repository(object):
 						sys.stdout.write('\r\t%s' % port.versionedName)
 						sys.stdout.flush()
 					port.parseRecipeFile(False)
-					status = port.getStatusOnCurrentArchitecture()
+					status = port.getStatusOnTargetArchitecture()
 					if (status == Status.STABLE 
 						or (status == Status.UNTESTED 
 							and globalConfiguration['ALLOW_UNTESTED'])):
@@ -219,7 +219,7 @@ class Repository(object):
 							break
 						continue
 					
-					status = port.getStatusOnCurrentArchitecture()
+					status = port.getStatusOnTargetArchitecture()
 					if (status != Status.STABLE 
 						and not (status == Status.UNTESTED 
 							and globalConfiguration['ALLOW_UNTESTED'])):
