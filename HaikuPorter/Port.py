@@ -378,11 +378,15 @@ class Port(object):
 
 	def getStatusOnTargetArchitecture(self):
 		"""Return the status of this port on the target architecture"""
-		
-		if self.allPackages:
+
+		try:
+			if not hasattr(self, 'recipeKeys'):
+				self.parseRecipeFile(False)
+
 			return self.allPackages[0].getStatusOnArchitecture(
 				self.targetArchitecture)
-		return Status.UNSUPPORTED
+		except:
+			return Status.UNSUPPORTED
 	
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""
