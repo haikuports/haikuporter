@@ -593,20 +593,26 @@ class Port(object):
 					try:
 						os.chroot(self.workDir)
 						self._adjustToChroot()
-						self._executeBuild(makePackages)
+						if getOption('enterChroot'):
+							self._openShell()
+						else:
+							self._executeBuild(makePackages)
 					except:
-						traceback.print_exc()
-						os._exit(1)
+						if not getOption('enterChroot'):
+							traceback.print_exc()
+							os._exit(1)
 					os._exit(0)
 
 				# parent, wait on child
 				try:
-					if os.waitpid(pid, 0)[1] != 0:
-						self.unsetFlag('build')
-						sysExit('Build has failed - stopping.')
-						
-					# tell the shell scriptlets that the build has succeeded
-					chrootSetup.buildOk = True
+					childStatus = os.waitpid(pid, 0)[1]
+					if not getOption('enterChroot'):
+						if childStatus != 0:
+							self.unsetFlag('build')
+							sysExit('Build has failed - stopping.')
+							
+						# tell the shell scriptlets that the build has succeeded
+						chrootSetup.buildOk = True
 				except KeyboardInterrupt:
 					if pid > 0:
 						print '*** interrupted - stopping child process'
@@ -620,7 +626,7 @@ class Port(object):
 		else:
 			self._executeBuild(makePackages)
 
-		if makePackages:
+		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
 			for package in self.packages:
 				packageFile = self.hpkgDir + '/' + package.hpkgName
@@ -1020,6 +1026,13 @@ class Port(object):
 	def _doRecipeAction(self, action, dir):
 		"""Run the specified action, as defined in the recipe file"""
 
+		# execute the requested action via a shell ....
+		wrapperScript = recipeActionScript % (self.recipeFilePath, action)
+		self._openShell(['-c', wrapperScript], dir)
+
+	def _openShell(self, params = [], dir = '/'):
+		"""Sets up environment and runs a shell with the given parameters"""
+		
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = filteredEnvironment()
@@ -1030,10 +1043,11 @@ class Port(object):
 
 		shellEnv.update(self.shellVariables)
 
-		# execute the requested action via a shell ....
-		wrapperScript = recipeActionScript % (self.recipeFilePath, action)
-		check_call(['/bin/bash', '-c', wrapperScript], cwd=dir, env=shellEnv)
-
+		# execute the requested action via a shell ...
+		args = [ '/bin/bash' ]
+		args += params
+		check_call(args, cwd=dir, env=shellEnv)
+			
 	def _resolveDependenciesViaPkgman(self, packageInfoFiles, repositories,
 									  description):
 		"""Invoke pkgman to resolve dependencies of one or more package-infos"""

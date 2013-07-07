@@ -99,6 +99,9 @@ def parseOptions():
 					  action='store_false', dest='chroot', default=True, 
 					  help="build without a chroot()-environment - meant "
 						   "for debugging the build/install process")
+	parser.add_option('-E', '--enter-chroot', 
+					  action='store_true', dest='enterChroot', default=False, 
+					  help="just enter the chroot()-environment, do not build")
 	parser.add_option('-f', '--force', 
 					  action='store_true', dest='force', default=False, 
 					  help="force to perform the steps (unpack, patch, build)")
@@ -148,5 +151,7 @@ def parseOptions():
 		setattr(__Options__, 'build', False)
 	if not getOption('build'):
 		setattr(__Options__, 'package', False)
+	if getOption('enterChroot'):
+		setattr(__Options__, 'sourcePackageByDefault', False)
 
 	return (__Options__, args)
