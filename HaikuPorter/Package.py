@@ -76,8 +76,8 @@ class Package(object):
 
 		if type == PackageType.SOURCE:
 			self.architecture = Architectures.SOURCE
-		elif port.hostArchitecture in self.recipeKeys['ARCHITECTURES']:
-			self.architecture = port.hostArchitecture
+		elif port.targetArchitecture in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = port.targetArchitecture
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
 		else:
