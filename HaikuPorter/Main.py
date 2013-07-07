@@ -34,6 +34,8 @@ class Main(object):
 		self.options = options
 
 		self.policy = Policy(self.options.strictPolicy)
+		
+		self.repository = None
 
 		# read global settings
 		readGlobalConfiguration()
@@ -47,29 +49,6 @@ class Main(object):
 		self.packagesPath = self.treePath + '/packages'
 		if not os.path.exists(self.packagesPath):
 			os.mkdir(self.packagesPath)
-
-		# if requested, list all ports in the HaikuPorts tree
-		if self.options.list:
-			self._searchPorts(None)
-			sys.exit()
-
-		# if requested, search for a port
-		if self.options.search:
-			if not args:
-				sysExit('You need to specify a search string.\n'
-						"Invoke '" + sys.argv[0] + " -h' for usage "
-						"information.")
-			self._searchPorts(args[0])
-			sys.exit()
-		
-		if self.options.location:
-			if not args:
-				sysExit('You need to specify a search string.\n'
-						"Invoke '" + sys.argv[0] + " -h' for usage "
-						"information.")
-			# Provide the installed location of a port (for quick editing)
-			print os.path.join(self.treePath, self.searchPorts(args[0]))
-			sys.exit()
 
 		# if requested, checkout or update ports tree
 		if self.options.get:
@@ -85,6 +64,40 @@ class Main(object):
 		if self.options.lint:
 			self._checkSourceTree()
 			sys.exit()
+
+		# if requested, list all ports in the HaikuPorts tree
+		if self.options.list:
+			self._createRepositoryIfNeeded(True)
+			allPortNames = self.repository.searchPorts(None)
+			for portName in allPortNames:
+				print portName
+			sys.exit()
+
+		# if requested, search for a port
+		if self.options.search:
+			if not args:
+				sysExit('You need to specify a search string.\n'
+						"Invoke '" + sys.argv[0] + " -h' for usage "
+						"information.")
+			self._createRepositoryIfNeeded(True)
+			portNames = self.repository.searchPorts(args[0])
+			for portName in portNames:
+				print portName
+			sys.exit()
+		
+		if self.options.location:
+			if not args:
+				sysExit('You need to specify a search string.\n'
+						"Invoke '" + sys.argv[0] + " -h' for usage "
+						"information.")
+			# Provide the installed location of a port (for quick editing)
+			self._createRepositoryIfNeeded(True)
+			portNames = self.repository.searchPorts(args[0])
+			for portName in portNames:
+				print os.path.join(self.treePath, portName)
+			sys.exit()
+
+		self._createRepositoryIfNeeded()
 
 		# if a ports-file has been given, read port specifications from it
 		# and build them all
@@ -112,10 +125,6 @@ class Main(object):
 		if not self.options.patch:
 			self.options.build = False
 			self.options.package = False
-
-		# create/update repository
-		self.repository = Repository(self.treePath, self.packagesPath,
-			self.shellVariables, self.policy, self.options.preserveFlags)
 
 		if self.options.analyzeDependencies:
 			DependencyAnalyzer(self.repository)
@@ -145,8 +154,13 @@ class Main(object):
 			
 			# show port description, if requested
 			if self.options.about:
+				try:
+					port.parseRecipeFile(False)
+				except:
+					pass
 				port.printDescription()
-			
+				sys.exit(0)
+
 			self._validateMainPort(port, portSpec['revision'])
 			
 		# do whatever's needed to the list of ports
@@ -356,6 +370,13 @@ class Main(object):
 		else:
 			self.shellVariables['isCrossRepository'] = 'false';
 
+	def _createRepositoryIfNeeded(self, quiet = False):
+		"""create/update repository"""
+		if self.repository:
+			return
+		self.repository = Repository(self.treePath, self.packagesPath,
+			self.shellVariables, self.policy, self.options.preserveFlags, quiet)
+
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""
 		print 'Refreshing the port tree: %s' % self.treePath
@@ -364,22 +385,6 @@ class Main(object):
 			check_call(['git', 'pull'], cwd = self.treePath)
 		else:
 			check_call(['git', 'clone', haikuportsRepoUrl, self.treePath])
-
-	def _searchPorts(self, regExp):
-		"""Search for a port in the HaikuPorts tree"""
-		if regExp:
-			reSearch = re.compile(regExp)
-		os.chdir(self.treePath)
-		dirList = os.listdir(self.treePath)
-		for category in dirList:
-			if os.path.isdir(category) and category[0] != '.':
-				subdirList = os.listdir(category)
-				# remove items starting with '.'
-				subdirList.sort()
-				for portName in subdirList:
-					if (portName[0][0] != '.' 
-						and (not regExp or reSearch.search(portName))):
-						print category + '/' + portName
 
 	def _splitPortSpecIntoNameVersionAndRevision(self, portSpecString):
 		elements = portSpecString.split('-')

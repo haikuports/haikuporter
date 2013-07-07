@@ -12,6 +12,7 @@ from HaikuPorter.Utils import (versionCompare, touchFile)
 
 import glob
 import os
+import re
 import shutil
 import sys
 
@@ -20,12 +21,13 @@ import sys
 
 class Repository(object):
 	def __init__(self, treePath, packagesPath, shellVariables, policy,
-				 preserveFlags):
+				 preserveFlags, quiet = False):
 		self.treePath = treePath 
 		self.path = self.treePath + '/repository'
 		self.packagesPath = packagesPath
 		self.shellVariables = shellVariables
 		self.policy = policy
+		self.quiet = quiet
 
 		# update repository if it exists and isn't empty, populate it otherwise
 		if (os.path.isdir(self.path) 
@@ -60,6 +62,20 @@ class Repository(object):
 			self._initAllPorts()
 		return self._portVersionsByName
 
+	def searchPorts(self, regExp):
+		"""Search for one or more ports in the HaikuPorts tree, returning
+		   a list of found matches"""
+		if regExp:
+			reSearch = re.compile(regExp)
+			
+		ports = []
+		portNames = self.getPortVersionsByName().keys()
+		for portName in portNames:
+			if not regExp or reSearch.search(portName):
+				ports.append(portName)
+				
+		return ports
+
 	def _initAllPorts(self):
 		# For now, we collect all ports into a dictionary that can be keyed
 		# by name + '-' + version. Additionally, we keep a sorted list of 
@@ -92,8 +108,9 @@ class Repository(object):
 								   self.shellVariables, self.policy)
 					else:
 						# invalid argument
-						print("Warning: Couldn't parse port/version info: " 
-							  + recipe)
+						if not self.quiet:
+							print("Warning: Couldn't parse port/version info: " 
+								  + recipe)
 
 		# Sort version list of each port
 		for portName in self._portVersionsByName.keys():
@@ -111,7 +128,8 @@ class Repository(object):
 		os.mkdir(newRepositoryPath)
 		skippedDir = newRepositoryPath + '/.skipped'
 		os.mkdir(skippedDir)
-		print 'Populating repository ...'
+		if not self.quiet:
+			print 'Populating repository ...'
 
 		allPorts = self.getAllPorts()
 		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
@@ -119,9 +137,10 @@ class Repository(object):
 				portID = portName + '-' + version
 				port = allPorts[portID]
 				try:
-					sys.stdout.write(' ' * 60)
-					sys.stdout.write('\r\t%s' % port.versionedName)
-					sys.stdout.flush()
+					if not self.quiet:
+						sys.stdout.write(' ' * 60)
+						sys.stdout.write('\r\t%s' % port.versionedName)
+						sys.stdout.flush()
 					port.parseRecipeFile(False)
 					status = port.getStatusOnCurrentArchitecture()
 					if (status == Status.STABLE 
@@ -129,21 +148,25 @@ class Repository(object):
 							and globalConfiguration['ALLOW_UNTESTED'])):
 						if (port.checkFlag('build') 
 							and not preserveFlags):
-							print '   [build-flag reset]'
+							if not self.quiet:
+								print '   [build-flag reset]'
 							port.unsetFlag('build')
 						else:
-							print
+							if not self.quiet:
+								print
 						port.writePackageInfosIntoRepository(newRepositoryPath)
 						break
 					else:
 						# take notice of skipped recipe file
 						touchFile(skippedDir + '/' + portID)
-						print(' is skipped, as it is %s on target architecture'
-							  % status)
+						if not self.quiet:
+							print((' is skipped, as it is %s on target '
+								  + 'architecture') % status)
 				except SystemExit:
 					# take notice of broken recipe file
 					touchFile(skippedDir + '/' + portID)
-					sys.stdout.write('\r')
+					if not self.quiet:
+						sys.stdout.write('\r')
 					pass
 		os.rename(newRepositoryPath, self.path)
 
@@ -155,7 +178,8 @@ class Repository(object):
 		brokenPorts = []
 
 		# check for all known ports if their recipe has been changed
-		print 'Checking if any package-infos need to be updated ...'
+		if not self.quiet:
+			print 'Checking if any package-infos need to be updated ...'
 		skippedDir = self.path + '/.skipped'
 		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
 			higherVersionIsActive = False
@@ -187,8 +211,9 @@ class Repository(object):
 					if higherVersionIsActive:
 						# remove package infos from lower version, if it exists
 						if os.path.exists(mainPackageInfoFile):
-							print('\tremoving package-infos for ' + portID
-								  + ', as newer version is active')
+							if not self.quiet:
+								print('\tremoving package-infos for ' + portID
+									  + ', as newer version is active')
 							port.removePackageInfosFromRepository(self.path)
 							port.obsoletePackages(self.packagesPath)
 							break
@@ -199,15 +224,17 @@ class Repository(object):
 						and not (status == Status.UNTESTED 
 							and globalConfiguration['ALLOW_UNTESTED'])):
 						touchFile(skippedDir + '/' + portID)
-						print(('\t%s is still marked as %s on target '
-							   + 'architecture') % (portID, status))
+						if not self.quiet:
+							print(('\t%s is still marked as %s on target '
+								   + 'architecture') % (portID, status))
 						continue
 
 					higherVersionIsActive = True
 					if os.path.exists(skippedDir + '/' + portID):
 						os.remove(skippedDir + '/' + portID)
 						
-					print '\tupdating package infos of ' + portID
+					if not self.quiet:
+						print '\tupdating package infos of ' + portID
 					port.writePackageInfosIntoRepository(self.path)
 					
 				except SystemExit:
@@ -217,7 +244,8 @@ class Repository(object):
 						if os.path.exists(mainPackageInfoFile):
 							brokenPorts.append(portID)
 						else:
-							print '\trecipe for %s is still broken' % portID
+							if not self.quiet:
+								print '\trecipe for %s is still broken' % portID
 
 		self._removeStalePackageInfos(brokenPorts)
 
@@ -227,7 +255,8 @@ class Repository(object):
 		
 		allPorts = self.getAllPorts()
 
-		print "Looking for stale package-infos ..."
+		if not self.quiet:
+			print "Looking for stale package-infos ..."
 		packageInfos = glob.glob(self.path + '/*.PackageInfo')
 		for packageInfo in packageInfos:
 			packageInfoFileName = os.path.basename(packageInfo)
@@ -240,7 +269,8 @@ class Repository(object):
 				portID = self.getPortIdForPackageId(portID)
 			
 			if not portID or portID not in allPorts or portID in brokenPorts:
-				print '\tremoving ' + packageInfoFileName
+				if not self.quiet:
+					print '\tremoving ' + packageInfoFileName
 				os.remove(packageInfo)
 				
 				# obsolete corresponding package, if any
@@ -254,7 +284,8 @@ class Repository(object):
 		obsoleteDir = self.packagesPath + '/.obsolete'
 		for package in packages:
 			packageFileName = os.path.basename(package)
-			print '\tobsoleting package ' + packageFileName
+			if not self.quiet:
+				print '\tobsoleting package ' + packageFileName
 			obsoletePackage = obsoleteDir + '/' + packageFileName
 			if not os.path.exists(obsoleteDir):
 				os.mkdir(obsoleteDir)
