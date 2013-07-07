@@ -77,7 +77,11 @@ class Package(object):
 		if type == PackageType.SOURCE:
 			self.architecture = Architectures.SOURCE
 		elif port.targetArchitecture in self.recipeKeys['ARCHITECTURES']:
-			self.architecture = port.targetArchitecture
+			# if this package can be built for the current target architecture,
+			# we do so and create a package for the host architecture (which
+			# is the same as the target architecture, except for "_cross_"
+			# packages, which are built for the host on which the build runs.
+			self.architecture = port.hostArchitecture
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
 		else:
