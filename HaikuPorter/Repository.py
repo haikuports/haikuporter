@@ -74,7 +74,7 @@ class Repository(object):
 			if not regExp or reSearch.search(portName):
 				ports.append(portName)
 				
-		return ports
+		return sorted(ports)
 
 	def _initAllPorts(self):
 		# For now, we collect all ports into a dictionary that can be keyed
