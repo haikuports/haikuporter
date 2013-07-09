@@ -209,7 +209,7 @@ recipeAttributes = {
 		'indexable': False,
 		'suffix': {
 			PackageType.DEVELOPMENT: ' (development files)',
-			PackageType.DEBUG: ' (debug info)',
+			PackageType.DEBUG_INFO: ' (debug info)',
 			PackageType.DOCUMENTATION: ' (documentation)',
 			PackageType.SOURCE: ' (source files)',
 		}

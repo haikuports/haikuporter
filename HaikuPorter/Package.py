@@ -29,7 +29,7 @@ from subprocess import check_call
 # -- The supported package types ----------------------------------------------
 
 class PackageType(str):
-	DEBUG = 'debug'
+	DEBUG_INFO = 'debuginfo'
 	DEVELOPMENT = 'devel'
 	DOCUMENTATION = 'doc'
 	GENERAL = 'general'
@@ -39,8 +39,8 @@ class PackageType(str):
 	def byName(name):
 		"""Lookup the type by name"""
 		
-		if name == PackageType.DEBUG:
-			return PackageType.DEBUG
+		if name == PackageType.DEBUG_INFO:
+			return PackageType.DEBUG_INFO
 		elif name == PackageType.DEVELOPMENT:
 			return PackageType.DEVELOPMENT
 		elif name == PackageType.DOCUMENTATION:
