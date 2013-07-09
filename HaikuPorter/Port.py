@@ -765,6 +765,7 @@ class Port(object):
 		relativeOtherDirs = {
 			'addOnsDir':		'add-ons',
 			'appsDir':			'apps',
+			'debugInfoDir':		'develop/debug',
 			'developDir':		'develop',
 			'developDocDir':	'develop/documentation/'  + self.name,
 			'developLibDir':	'develop/lib',
