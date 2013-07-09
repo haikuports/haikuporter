@@ -33,6 +33,27 @@ def getScriptletPrerequirements(targetMachineTripleAsName = None):
 
 	return prerequirements
 
+def getShellVariableSetters(shellVariables):
+	"""Converts a dict {variableName -> value} to a string with shell code to
+	   set the variables to the respective value."""
+	if not shellVariables:
+		return ''
+
+	result = '\n'.join("%s='%s'" % (k, v)
+		for k, v in shellVariables.iteritems()) + '\n'
+
+	# Add a variable "revisionVariables" that contains the name of all
+	# variables that need to be reevaluated after the revision is known.
+	revisionVariables = []
+	for name, value in shellVariables.iteritems():
+		if '$REVISION' in value:
+			revisionVariables.append(name)
+	if revisionVariables:
+		result += 'revisionVariables="' + ' '.join(revisionVariables) + '"\n'
+
+	return result
+
+
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that is used to execute a config file and output all the 
@@ -45,6 +66,15 @@ configFileEvaluatorScript = r'''# wrapper script for evaluating config/recipe
 
 # stop on every error
 set -e
+
+updateRevisionVariables()
+{
+	local variable
+	for variable in $revisionVariables; do
+		eval "${variable}=\"${!variable}\""
+	done
+	unset revisionVariables
+}
 
 # source the configuration file
 . %s >/dev/null
@@ -95,6 +125,11 @@ INSTALL()
 }
 
 TEST()
+{
+	true
+}
+
+updateRevisionVariables()
 {
 	true
 }
@@ -411,9 +446,6 @@ ln -s /boot/system/packages/*.hpkg boot/system/packages/
 for pkg in $packages; do 
 	ln -sfn "$pkg" boot/common/packages/
 done
-
-# copy recipe file into the chroot
-cp $recipeFile port.recipe
 
 # silently unmount if needed, just to be one the safe side
 if [ -e dev/console ]; then

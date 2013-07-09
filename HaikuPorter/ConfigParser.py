@@ -6,7 +6,8 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.RecipeTypes import *
-from HaikuPorter.ShellScriptlets import configFileEvaluatorScript
+from HaikuPorter.ShellScriptlets import (configFileEvaluatorScript,
+										 getShellVariableSetters)
 from HaikuPorter.Utils import check_output, filteredEnvironment, sysExit, warn
 
 from subprocess import CalledProcessError
@@ -23,14 +24,12 @@ class ConfigParser(object):
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = filteredEnvironment()
-		shellEnv.update(shellVariables)
-
 		shellEnv['recipePhases'] = ' '.join(Phase.getAllowedValues())
 
 		# execute the config file via the shell ....
 		supportedKeysString = '|'.join(attributes.keys())
-		wrapperScript = configFileEvaluatorScript % (filename, 
-													 supportedKeysString)
+		wrapperScript = (getShellVariableSetters(shellVariables)
+			+ configFileEvaluatorScript % (filename, supportedKeysString))
 		try:
 			output = check_output(['/bin/bash', '-c', wrapperScript], 
 								  env=shellEnv)

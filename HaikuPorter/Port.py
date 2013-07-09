@@ -19,9 +19,10 @@ from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
 from HaikuPorter.RecipeTypes import Extendable, Phase, Status
 from HaikuPorter.RequiresUpdater import RequiresUpdater
-from HaikuPorter.ShellScriptlets import (setupChrootScript, 
-										 cleanupChrootScript,
-										 recipeActionScript)
+from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
+										 getShellVariableSetters,
+										 recipeActionScript,
+										 setupChrootScript)
 from HaikuPorter.Source import Source
 from HaikuPorter.Utils import (check_output, filteredEnvironment, 
 							   naturalCompare, symlinkFiles, symlinkGlob, 
@@ -123,6 +124,8 @@ class Port(object):
 		self.buildPackageDir = self.workDir + '/build-packages'
 		self.packagingBaseDir = self.workDir + '/packaging'
 		self.hpkgDir = self.workDir + '/hpkgs'
+
+		self.preparedRecipeFile = self.workDir + '/port.recipe'
 
 		self.policy = policy
 
@@ -263,7 +266,17 @@ class Port(object):
 		if not os.path.exists(self.recipeFilePath):
 			sysExit(self.name + ' version ' + self.version + ' not found.')
 
-		recipeConfig = ConfigParser(self.recipeFilePath, recipeAttributes, 
+		# copy the recipe file and prepare it for use
+		if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
+			os.mkdir(os.path.dirname(self.preparedRecipeFile))
+
+		prepareRecipeCommand = [ '/bin/bash', '-c',
+			'sed \'s,^\\(REVISION="[^"]*"\\),\\1; updateRevisionVariables ,\' '
+				+ self.recipeFilePath + ' > ' + self.preparedRecipeFile]
+		check_call(prepareRecipeCommand)
+
+		# parse the recipe file
+		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes, 
 							  		self.shellVariables)
 		extensions = recipeConfig.getExtensions()
 		self.definedPhases = recipeConfig.getDefinedPhases()
@@ -581,7 +594,7 @@ class Port(object):
 			# setup chroot and keep it while executing the actions
 			chrootEnvVars = {
 				'packages': '\n'.join(requiredPackages), 
-				'recipeFile': self.recipeFilePath,
+				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
 			}
 			if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
@@ -684,27 +697,33 @@ class Port(object):
 	def _updateShellVariables(self, forParsing):
 		"""Fill dictionary with variables that will be inherited to the shell
 		   when executing recipe actions repectively for parsing the recipe.
-		   If forParsing is True, only a subset of variables is set (i.e.
-		   only those that don't depend on stuff defined in the recipe).
+		   If forParsing is True, only a subset of variables is set and some
+		   others need reevaluation in the shell script after the revision is
+		   known.
 		"""
-		if not forParsing:
-			self.shellVariables.update({
-				'portRevision': self.revision,
-				'portFullVersion': self.fullVersion,
-				'portRevisionedName': self.revisionedName,
-				'portDir': '/port',
-			})
+		if forParsing:
+			revision = '$REVISION'
+			fullVersion = self.version + '-' + revision
+			revisionedName = self.name + '-' + fullVersion
+		else:
+			revision = self.revision
+			fullVersion = self.fullVersion
+			revisionedName = self.revisionedName
 
+		self.shellVariables.update({
+			'portRevision': revision,
+			'portFullVersion': fullVersion,
+			'portRevisionedName': revisionedName,
+			'portDir': '/port',
+		})
+
+		if not forParsing:
 			for source in self.sources:
 				if source.index == '1':
 					sourceDirKey = 'sourceDir'
 				else:
 					sourceDirKey = 'sourceDir' + source.index
 				self.shellVariables[sourceDirKey] = source.sourceDir
-
-		# force POSIX locale, as otherwise strange things may happen for some
-		# build (e.g. gcc)
-		self.shellVariables['LC_ALL'] = 'POSIX'
 
 		relativeConfigureDirs = {
 			'dataDir':			'data',
@@ -732,32 +751,32 @@ class Port(object):
 		# --pdfdir=DIR            pdf documentation [DOCDIR]
 		# --psdir=DIR             ps documentation [DOCDIR]
 
+		portPackageLinksDir = (systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/'
+			+ revisionedName)
+		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
+
+		prefix = portPackageLinksDir + '/.self'
+
+		configureDirs = {
+			'prefix':		prefix,
+			'sysconfDir':	portPackageLinksDir + '/.settings',
+		}
+
 		for name, value in relativeConfigureDirs.iteritems():
 			relativeName = 'relative' + name[0].upper() + name[1:]
 			self.shellVariables[relativeName] = value
+			configureDirs[name] = prefix + '/' + value
 
-		if not forParsing:
-			portPackageLinksDir = (systemDir['B_PACKAGE_LINKS_DIRECTORY'] + '/'
-				+ self.revisionedName)
-			prefix = portPackageLinksDir + '/.self'
+		self.shellVariables.update(configureDirs)
 
-			configureDirs = {
-				'prefix':		prefix,
-				'sysconfDir':	portPackageLinksDir + '/.settings',
-			}
-			for name, value in relativeConfigureDirs.iteritems():
-				configureDirs[name] = prefix + '/' + value
+		# add one more variable containing all the dir args for configure:
+		self.shellVariables['configureDirArgs'] \
+			= ' '.join('--%s=%s' % (k.lower(), v)
+					   for k, v in configureDirs.iteritems())
 
-			self.shellVariables.update(configureDirs)
-
-			# add one more variable containing all the dir args for configure:
-			self.shellVariables['configureDirArgs'] \
-				= ' '.join(['--%s=%s' % (k.lower(), v) 
-						   for k, v in configureDirs.iteritems()])
-
-			# add another one with the list of possible variables
-			self.shellVariables['configureDirVariables'] \
-				= ' '.join(configureDirs.iterkeys())
+		# add another one with the list of possible variables
+		self.shellVariables['configureDirVariables'] \
+			= ' '.join(configureDirs.iterkeys())
 
 		# Add variables for other standard directories. Consequently, we should
 		# use finddir to get them (also for the configure variables above), but
@@ -779,12 +798,7 @@ class Port(object):
 		for name, value in relativeOtherDirs.iteritems():
 			relativeName = 'relative' + name[0].upper() + name[1:]
 			self.shellVariables[relativeName] = value
-
-		if not forParsing:
-			for name, value in relativeOtherDirs.iteritems():
-				self.shellVariables[name] = prefix + '/' + value
-
-			self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
+			self.shellVariables[name] = prefix + '/' + value
 
 	def _prepareRepositories(self, workRepositoryPath, prereqRepositoryPath, 
 							 repositoryPath, packagesPath):
@@ -935,6 +949,7 @@ class Port(object):
 		self.downloadDir = None
 		
 		# the recipe file has a fixed same name in the chroot
+		self.preparedRecipeFile = '/port.recipe'
 		self.recipeFilePath = '/port.recipe'
 
 		# adjust all relevant directories
@@ -1034,7 +1049,8 @@ class Port(object):
 		"""Run the specified action, as defined in the recipe file"""
 
 		# execute the requested action via a shell ....
-		wrapperScript = recipeActionScript % (self.recipeFilePath, action)
+		wrapperScript = (getShellVariableSetters(self.shellVariables)
+			+ (recipeActionScript % (self.preparedRecipeFile, action)))
 		self._openShell(['-c', wrapperScript], dir)
 
 	def _openShell(self, params = [], dir = '/'):
@@ -1048,7 +1064,9 @@ class Port(object):
 			shellEnv['PATH'] \
 				= '/boot/common/develop/tools/bin:' + shellEnv['PATH']
 
-		shellEnv.update(self.shellVariables)
+		# force POSIX locale, as otherwise strange things may happen for some
+		# build (e.g. gcc)
+		shellEnv['LC_ALL'] = 'POSIX'
 
 		# execute the requested action via a shell ...
 		args = [ '/bin/bash' ]
