@@ -58,9 +58,9 @@ def getShellVariableSetters(shellVariables):
 
 # Shell scriptlet that is used to execute a config file and output all the 
 # configuration values (in the form of environment variables) which have been
-# set explicitly in the configuration file. The first placeholder is substituted 
-# with the configuration file, the second with a '|'-separated list of 
-# supported configuration keys.
+# set explicitly in the configuration file. The shell variables "fileToParse"
+# and "supportedKeysPattern" must be set to the configuration file respectively
+# a '|'-separated list of  supported configuration keys.
 # Note: this script requires bash, it won't work with any other shells
 configFileEvaluatorScript = r'''# wrapper script for evaluating config/recipe
 
@@ -77,11 +77,12 @@ updateRevisionVariables()
 }
 
 # source the configuration file
-. %s >/dev/null
+. $fileToParse >/dev/null
 
 # select all environment vars we are interested in, which are all vars that
 # match the given keys plus the ones that extend a given key by '_<something>'
-supportedKeys=$(set | grep -E -o '^(%s)(_[0-9a-zA-Z_]+)?=' | cut -d= -f1)
+supportedKeys=$(set | grep -E -o "^($supportedKeysPattern)(_[0-9a-zA-Z_]+)?=" \
+	| cut -d= -f1)
 
 # output the supported environment vars which have been set, quoting any 
 # newlines in their values
@@ -106,8 +107,8 @@ done
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that is used to trigger one of the actions defined in a build
-# recipe. The first placeholder is substituted with the configuration file, the 
-# second one with the action to be invoked.
+# recipe. The shell variables "fileToParse" and "recipeAction" must be set to
+# the recipe file respectively the name of the action to be invoked.
 recipeActionScript = r'''# wrapper scriptlet for running an action
 
 # stop on every error
@@ -394,14 +395,13 @@ packageEntries()
 }
 
 # source the configuration file
-. %s >/dev/null
+. $fileToParse >/dev/null
 
 # invoke the requested action
-action='%s'
 if [[ $quiet ]]; then
-	$action >/dev/null
+	$recipeAction >/dev/null
 else
-	$action
+	$recipeAction
 fi
 '''
 

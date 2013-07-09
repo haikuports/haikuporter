@@ -1048,9 +1048,12 @@ class Port(object):
 	def _doRecipeAction(self, action, dir):
 		"""Run the specified action, as defined in the recipe file"""
 
-		# execute the requested action via a shell ....
+		# execute the requested action via a shell ...
+		shellVariables = self.shellVariables.copy()
+		shellVariables['fileToParse'] = self.preparedRecipeFile
+		shellVariables['recipeAction'] = action
 		wrapperScript = (getShellVariableSetters(self.shellVariables)
-			+ (recipeActionScript % (self.preparedRecipeFile, action)))
+			+ recipeActionScript)
 		self._openShell(['-c', wrapperScript], dir)
 
 	def _openShell(self, params = [], dir = '/'):

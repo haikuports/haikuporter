@@ -28,8 +28,12 @@ class ConfigParser(object):
 
 		# execute the config file via the shell ....
 		supportedKeysString = '|'.join(attributes.keys())
+		shellVariables = shellVariables.copy()
+		shellVariables['supportedKeysPattern'] = supportedKeysString
+		shellVariables['fileToParse'] = filename
+		
 		wrapperScript = (getShellVariableSetters(shellVariables)
-			+ configFileEvaluatorScript % (filename, supportedKeysString))
+			+ configFileEvaluatorScript)
 		try:
 			output = check_output(['/bin/bash', '-c', wrapperScript], 
 								  env=shellEnv)
