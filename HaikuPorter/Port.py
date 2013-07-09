@@ -1052,7 +1052,7 @@ class Port(object):
 		shellVariables = self.shellVariables.copy()
 		shellVariables['fileToParse'] = self.preparedRecipeFile
 		shellVariables['recipeAction'] = action
-		wrapperScript = (getShellVariableSetters(self.shellVariables)
+		wrapperScript = (getShellVariableSetters(shellVariables)
 			+ recipeActionScript)
 		self._openShell(['-c', wrapperScript], dir)
 
