@@ -15,8 +15,10 @@ scriptletPrerequirements = r'''
 	coreutils
 	cmd:bash
 	cmd:grep
+	cmd:${targetMachinePrefix}objcopy
 	cmd:${targetMachinePrefix}readelf
 	cmd:sed
+	cmd:${targetMachinePrefix}strip
 '''
 
 def getScriptletPrerequirements(targetMachineTripleAsName = None):
@@ -56,16 +58,96 @@ def getShellVariableSetters(shellVariables):
 
 # -----------------------------------------------------------------------------
 
+# Shell scriptlet that is used to trigger one of the actions defined in a build
+commonRecipeScriptHead = r'''
+
+# stop on every error
+set -e
+
+# common utility functions
+
+getPackagePrefix()
+{
+	# Usage: getPackagePrefix <packageSuffix>
+	local packageSuffix="$1"
+
+	local packageLinksDir="$(dirname $portPackageLinksDir)"
+	local packageName="${portName}_$packageSuffix"
+	local linksDir="$packageLinksDir/$packageName-$portFullVersion"
+	local packagePrefix="$linksDir/.self"
+
+	if [ ! -e "$packagePrefix" ]; then
+		echo >&2 "packagePrefix: error: \"$packageSuffix\" doesn't seem to be"
+		echo >&2 "a valid package suffix."
+		exit 1
+	fi
+
+	echo $packagePrefix
+}
+
+defineDebugInfoPackage()
+{
+	# Usage: defineDebugInfoPackage [ --directory <toDirectory> ]
+	#	<basePackageName> <path> ...
+	if [ $# -lt 2 -o "$1" = "--directory" -a $# -lt 4 ]; then
+		echo >&2 "Usage: defineDebugInfoPackage [ --directory <toDirectory> ]"
+			"<packageSuffix> <path> ..."
+		exit 1
+	fi
+
+	local destDir=$debugInfoDir
+	local debugInfoSuffix="($portRevisionedName)"
+	if [ "$1" = "--directory" ]; then
+		destDir="$2"
+		shift 2
+	fi
+
+	local basePackageName=$1
+	shift 1
+
+	local packageName=${basePackageName}_debuginfo
+	local packageSuffix=$(echo $packageName | sed s,[^_]*_,,)
+
+	local provides=PROVIDES_$packageSuffix
+	local requires=REQUIRES_$packageSuffix
+	printf -v $provides "%s" "${packageName} = $portVersion"
+	printf -v $requires "%s" "${basePackageName} == $portVersion base"
+
+	# Use two array variables for a path->debugInfo map. An associative array
+	# would be nicer, but we can't declare that to be global before bash 4.2
+	# (declare option -g).
+	local paths=DEBUG_INFO_PATHS_$packageSuffix
+	local debugInfos=DEBUG_INFO_DEBUG_INFOS_$packageSuffix
+
+	DEBUG_INFO_PACKAGES="$DEBUG_INFO_PACKAGES $packageSuffix"
+
+	while [ $# -ge 1 ]; do
+		local path=$1
+		shift
+
+		local providesEntity="debuginfo:$(basename $path)($basePackageName)"
+		printf -v $provides "%s\n%s" "${!provides}" \
+			"\"$providesEntity\" = $portVersion"
+
+		local debugInfo="$destDir/$(basename $path)$debugInfoSuffix.debuginfo"
+		eval "local count=\${#$paths[*]}"
+		eval "$paths[$count]=\"$path\""
+		eval "$debugInfos[$count]=\"$debugInfo\""
+	done
+}
+'''
+
+
+# -----------------------------------------------------------------------------
+
 # Shell scriptlet that is used to execute a config file and output all the 
 # configuration values (in the form of environment variables) which have been
 # set explicitly in the configuration file. The shell variables "fileToParse"
 # and "supportedKeysPattern" must be set to the configuration file respectively
 # a '|'-separated list of  supported configuration keys.
 # Note: this script requires bash, it won't work with any other shells
-configFileEvaluatorScript = r'''# wrapper script for evaluating config/recipe
+configFileEvaluatorScript = commonRecipeScriptHead + r'''
 
-# stop on every error
-set -e
 
 updateRevisionVariables()
 {
@@ -109,10 +191,7 @@ done
 # Shell scriptlet that is used to trigger one of the actions defined in a build
 # recipe. The shell variables "fileToParse" and "recipeAction" must be set to
 # the recipe file respectively the name of the action to be invoked.
-recipeActionScript = r'''# wrapper scriptlet for running an action
-
-# stop on every error
-set -e
+recipeActionScript = commonRecipeScriptHead + r'''
 
 # provide defaults for every action
 BUILD()
@@ -361,13 +440,10 @@ packageEntries()
 		exit 1
 	fi
 
-	packageSuffix="$1"
+	local packageSuffix="$1"
 	shift 1
 
-	packageLinksDir="$(dirname $portPackageLinksDir)"
-	packageName="${portName}_$packageSuffix"
-	packagePackageLinksDir="$packageLinksDir/$packageName-$portFullVersion"
-	packagePrefix="$packagePackageLinksDir/.self"
+	local packagePrefix=$(getPackagePrefix $packageSuffix)
 
 	if [ ! -e "$packagePrefix" ]; then
 		echo >&2 "packageEntries: error: \"$packageSuffix\" doesn't seem to be"
@@ -391,6 +467,46 @@ packageEntries()
 		targetDir=$(dirname "$packagePrefix/$file")
 		mkdir -p "$targetDir"
 		mv "$prefix/$file" "$targetDir"
+	done
+}
+
+extractDebugInfo()
+{
+	# Usage: extractDebugInfo <path> <debugInfoPath>
+	if [ $# -ne 2 ]; then
+		echo >&2 "Usage: extractDebugInfo <path> <debugInfoPath>"
+		exit 1
+	fi
+
+	local path="$1"
+	local debugInfoPath="$2"
+
+	mkdir -p "$(dirname $debugInfoPath)"
+
+	objcopy --only-keep-debug "$path" "$debugInfoPath"
+	strip --strip-debug "$path"
+	objcopy --add-gnu-debuglink="$debugInfoPath" "$path"
+}
+
+packageDebugInfos()
+{
+	local packageSuffix
+	for packageSuffix in $DEBUG_INFO_PACKAGES; do
+		local paths=DEBUG_INFO_PATHS_$packageSuffix
+		local debugInfos=DEBUG_INFO_DEBUG_INFOS_$packageSuffix
+
+		eval "local count=\${#$paths[*]}"
+		local i
+		for i in $(seq 0 $[$count - 1]); do
+			eval "local path=\${$paths[$i]}"
+			eval "local debugInfo=\${$debugInfos[$i]}"
+			extractDebugInfo "$path" "$debugInfo"
+			packageEntries $packageSuffix "$debugInfo"
+
+			# remove debug info directory, if empty, now
+			local directory=$(dirname "$debugInfo")
+			rmdir $directory 2> /dev/null || true
+		done
 	done
 }
 
