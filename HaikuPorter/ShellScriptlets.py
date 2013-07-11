@@ -519,6 +519,12 @@ if [[ $quiet ]]; then
 else
 	$recipeAction
 fi
+
+# post-INSTALL work
+if [ $recipeAction = "INSTALL" ]; then
+	packageDebugInfos
+fi
+
 '''
 
 
