@@ -122,7 +122,12 @@ class RequiresUpdater(object):
 		if not matchingProvides.version:
 			return requires
 
-		result = '%s >= %s' % (matchingProvides.name, matchingProvides.version)
+		# Enforce the minimum found version, if the requires has no version
+		# requirement or also a minimum. Otherwise enforce the exact version
+		# found.
+		resultOperator = '>=' if operator in [None, '> ', '>='] else '=='
+		result = '%s %s %s' \
+			% (matchingProvides.name, resultOperator, matchingProvides.version)
 		if isBase:
 			result += ' base'
 		return result
