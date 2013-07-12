@@ -17,9 +17,9 @@ from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
-from HaikuPorter.Utils import (check_output, escapeForPackageInfo, 
-							   haikuporterRepoUrl, haikuportsRepoUrl,
-							   naturalCompare, sysExit, systemDir)
+from HaikuPorter.Utils import (check_output, escapeForPackageInfo,
+							   findDirectory, haikuporterRepoUrl,
+							   haikuportsRepoUrl, naturalCompare, sysExit)
 
 import os
 import shutil
@@ -235,7 +235,7 @@ class Package(object):
 		"""Activate the build package"""
 		
 		# activate the build package
-		packagesDir = systemDir['B_COMMON_PACKAGES_DIRECTORY']
+		packagesDir = findDirectory('B_COMMON_PACKAGES_DIRECTORY')
 		activeBuildPackage \
 			= packagesDir + '/' + os.path.basename(self.buildPackage)
 		if os.path.exists(activeBuildPackage):

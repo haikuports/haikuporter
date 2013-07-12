@@ -55,22 +55,15 @@ def warn(message):
 
 
 # -- findDirectory ------------------------------------------------------------
+findDirectoryCache = {}
+
 def findDirectory(aDir):
-	"""wraps invocation of 'finddir'"""
-	
-	return check_output(['/bin/finddir', aDir]).rstrip()  # drop newline
+	"""wraps invocation of 'finddir', uses caching"""
+	if not aDir in findDirectoryCache:
+		findDirectoryCache[aDir] \
+			= check_output(['/bin/finddir', aDir]).rstrip()  # drop newline
+	return findDirectoryCache[aDir]
 
-
-# -- frequently used directories ----------------------------------------------
-systemDir = {
-	'B_COMMON_DIRECTORY': None,
-	'B_COMMON_PACKAGES_DIRECTORY': None,
-	'B_PACKAGE_LINKS_DIRECTORY': None,
-	'B_SYSTEM_DIRECTORY': None,
-	'B_SYSTEM_PACKAGES_DIRECTORY': None,
-}
-for key in systemDir.keys():
-	systemDir[key] = findDirectory(key)
 
 # -- escapeForPackageInfo -----------------------------------------------------
 def escapeForPackageInfo(string):
