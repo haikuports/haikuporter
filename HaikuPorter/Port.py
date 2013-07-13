@@ -12,6 +12,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
@@ -24,8 +25,8 @@ from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 recipeActionScript,
 										 setupChrootScript)
 from HaikuPorter.Source import Source
-from HaikuPorter.Utils import (check_output, filteredEnvironment, findDirectory,
-							   naturalCompare, symlinkFiles, symlinkGlob, 
+from HaikuPorter.Utils import (check_output, filteredEnvironment,
+							   naturalCompare, symlinkFiles, symlinkGlob,
 							   sysExit, touchFile, warn)
 
 import os
@@ -443,7 +444,7 @@ class Port(object):
 		# Determine the build requirements, this time only allowing system
 		# packages.from the build machine.
 		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
-						 findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
 		packages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'required ports')
 
@@ -454,7 +455,7 @@ class Port(object):
 		return [ 
 			package for package in packages 
 			if not package.startswith(
-				findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		], workRepositoryPath
 
 	def whyIsPortRequired(self, repositoryPath, packagesPath, requiredPort):
@@ -477,7 +478,7 @@ class Port(object):
 		# on the required port, with an error message that gives a hint
 		# about who requires it.
 		repositories = [ workRepositoryPath, prereqRepositoryPath,
-						 findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
 		self._resolveDependenciesViaPkgman(packageInfoFiles, repositories, 
 										   'why is port required')
 		warn("port %s doesn't seem to be required by %s"
@@ -752,7 +753,8 @@ class Port(object):
 		# --pdfdir=DIR            pdf documentation [DOCDIR]
 		# --psdir=DIR             ps documentation [DOCDIR]
 
-		portPackageLinksDir = (findDirectory('B_PACKAGE_LINKS_DIRECTORY')
+		portPackageLinksDir = (buildPlatform.findDirectory(
+				'B_PACKAGE_LINKS_DIRECTORY')
 			+ '/' + revisionedName)
 		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
@@ -839,14 +841,14 @@ class Port(object):
 		# determine the prerequired packages, allowing build machine packages, 
 		# but leave out system packages, as those are irrelevant.
 		repositories = [ packagesPath, workRepositoryPath,
-						 findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
-						 findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
+			buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
 		prereqPackages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'prerequired ports')
 		prereqPackages = [ 
 			package for package in prereqPackages 
 			if not package.startswith(
-				findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		]
 
 		# Populate a directory with those prerequired packages.
@@ -885,14 +887,14 @@ class Port(object):
 		# but leave out system packages, as they will be linked into the chroot
 		# anyway.
 		repositories = [ packagesPath,
-						 findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
-						 findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
+			buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
 		prereqPackages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'prerequired packages for build')
 		prereqPackages = [ 
 			package for package in prereqPackages
 			if not package.startswith(
-				findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		]
 
 		# Populate a directory with those prerequired packages.
@@ -913,7 +915,7 @@ class Port(object):
 
 		# Determine the build requirements.
 		repositories = [ packagesPath, prereqRepositoryPath, 
-						 findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
 		packages = self._resolveDependenciesViaPkgman(
 			packageInfoFiles, repositories, 'required packages for build')
 
@@ -922,7 +924,7 @@ class Port(object):
 		return [ 
 			package for package in packages 
 			if not package.startswith(
-				findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		]
 
 	def _executeBuild(self, makePackages):

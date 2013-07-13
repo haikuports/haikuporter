@@ -12,9 +12,12 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
 from HaikuPorter.GlobalConfig import (globalConfiguration, 
 									  readGlobalConfiguration)
+from HaikuPorter.Options import getOption
+from HaikuPorter.PackageInfo import PackageInfo
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Repository import Repository
@@ -39,7 +42,10 @@ class Main(object):
 
 		# read global settings
 		readGlobalConfiguration()
-		
+
+		# init build platform
+		buildPlatform.init()
+
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
 	
@@ -339,57 +345,56 @@ class Main(object):
 	
 
 	def _initGlobalShellVariables(self):
-		# extract the package info from the system package
-		output = check_output('package list /system/packages/haiku.hpkg'
-			+ ' | grep -E "^[[:space:]]*[[:alpha:]]+:[[:space:]]+"', 
-			shell=True)
+		# get the target haiku version and architecture
+		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			targetArchitecture \
+				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
+			targetHaikuPackage = getOption('crossDevelPackage')
+			if not targetHaikuPackage:
+				if not buildPlatform.isHaiku():
+					sysExit('On this platform a haiku cross devel package must '
+			 			'be specified (via --cross-devel-package)')
+				targetHaikuPackage = ('/boot/system/develop/cross/'
+					+ 'haiku_cross_devel_sysroot_%s.hpkg') % targetArchitecture
 
-		# get the haiku version
-		match = re.search(r"provides:\s*haiku\s+=\s*(\S+)", output)
-		if not match:
-			sysExit('Failed to get Haiku version!')
-		self.haikuVersion = match.group(1)
-
-		# get the architecture
-		match = re.search(r"architecture:\s*(\S+)", output)
-		if not match:
-			sysExit('Failed to get Haiku architecture!')
-		self.architecture = match.group(1)
+			targetHaikuPackageInfo = PackageInfo(targetHaikuPackage)
+			targetHaikuVersion = targetHaikuPackageInfo.getVersion()
+		else:
+			if not buildPlatform.isHaiku():
+				sysExit('Native building not supported on this platform (%s)'
+					% buildPlatform.getName())
+			targetHaikuVersion = buildPlatform.getHaikuVersion()
+			targetArchitecture = buildPlatform.getArchitecture()
 
 		self.shellVariables = {
-			'haikuVersion': self.haikuVersion,
-			'buildArchitecture': self.architecture,
-			'targetArchitecture': self.architecture,
+			'haikuVersion': targetHaikuVersion,
+			'buildArchitecture': buildPlatform.getArchitecture(),
+			'targetArchitecture': targetArchitecture,
 			'jobs': str(self.options.jobs),
 		}
 		if self.options.jobs > 1:
 			self.shellVariables['jobArgs'] = '-j' + str(self.options.jobs)
 		if self.options.quiet:
 			self.shellVariables['quiet'] = '1'
-			
+
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 			self.shellVariables['isCrossRepository'] = 'true';
 
-			buildArchitecture = self.architecture
-			targetArchitecture \
-				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
-			# if build- and target-architecture are the same, force a 
-			# cross-build by faking the build-machine triple.as something 
-			# different (which is still being treated identically by the actual 
+			buildMachineTriple = buildPlatform.getMachineTriple()
+			targetMachineTriple \
+				= MachineArchitecture.getTripleFor(targetArchitecture)
+
+			# If build- and target machine triple are the same, force a
+			# cross-build by faking the build-machine triple as something
+			# different (which is still being treated identically by the actual
 			# build process).
-			if buildArchitecture == targetArchitecture:
-				buildMachineTriple \
-					= MachineArchitecture.getBuildTripleFor(buildArchitecture)
-			else:
-				buildMachineTriple \
-					= MachineArchitecture.getTripleFor(buildArchitecture)
+			if buildMachineTriple == targetMachineTriple:
+				buildMachineTriple += '_build'
+
 			self.shellVariables['buildMachineTriple'] = buildMachineTriple
 			self.shellVariables['buildMachineTripleAsName'] \
 				= buildMachineTriple.replace('-', '_')
-			
 			self.shellVariables['targetArchitecture'] = targetArchitecture
-			targetMachineTriple \
-				= MachineArchitecture.getTripleFor(targetArchitecture)
 			self.shellVariables['targetMachineTriple'] = targetMachineTriple
 			self.shellVariables['targetMachineTripleAsName'] \
 				= targetMachineTriple.replace('-', '_')

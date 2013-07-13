@@ -146,6 +146,14 @@ def parseOptions():
 					  default='/etc/haikuports.conf',
 					  help='specifies the location of the global config file; '
 					  	   'the default is "/etc/haikuports.conf"')
+	parser.add_option('--cross-devel-package',
+					  action='store', type='string', dest='crossDevelPackage',
+					  default=None,
+					  help='path to the cross development package (the actual '
+					  	   '"sysroot" package); the default (when '
+					  	   'cross-building at all) is the one to be found in '
+					  	   '"/boot/system/develop/cross" matching the target '
+					  	   'architecture')
 	parser.add_option('--command-package',
 					  action='store', type='string', dest='commandPackage',
 					  default='package',

@@ -31,13 +31,6 @@ class MachineArchitecture(str):
 			return dict[architecture]
 		return None		
 
-	@staticmethod
-	def getBuildTripleFor(architecture):
-		triple = MachineArchitecture.getTripleFor(architecture)
-		if triple:
-			triple += '_build'
-		return triple
-
 
 # -- Architectures ------------------------------------------------------------
 

@@ -54,17 +54,6 @@ def warn(message):
 	print(message)
 
 
-# -- findDirectory ------------------------------------------------------------
-findDirectoryCache = {}
-
-def findDirectory(aDir):
-	"""wraps invocation of 'finddir', uses caching"""
-	if not aDir in findDirectoryCache:
-		findDirectoryCache[aDir] \
-			= check_output(['/bin/finddir', aDir]).rstrip()  # drop newline
-	return findDirectoryCache[aDir]
-
-
 # -- escapeForPackageInfo -----------------------------------------------------
 def escapeForPackageInfo(string):
 	"""escapes string to be used within "" quotes in a .PackageInfo file"""
