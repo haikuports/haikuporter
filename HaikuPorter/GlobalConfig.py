@@ -6,18 +6,13 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.ConfigParser import ConfigParser
+from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, YesNo)
 from HaikuPorter.Utils import sysExit
 
 import os
 import re
 import types
-
-
-# -- HaikuPorts options -------------------------------------------------------
-
-# location of haikuports.conf
-haikuportsConf = '/etc/haikuports.conf'
 
 
 # -----------------------------------------------------------------------------
@@ -61,7 +56,7 @@ globalConfiguration = {}
 
 # -- read global configuration ------------------------------------------------
 def readGlobalConfiguration():
-		
+	haikuportsConf = getOption('configFile')
 	configParser = ConfigParser(haikuportsConf, haikuportsAttributes)
 	globalConfiguration.update(configParser.getEntriesForExtension(''))
 

@@ -141,6 +141,12 @@ def parseOptions():
 					  action='store_true', dest='lint', default=False, 
 					  help="scan the ports tree for problems")
 
+	parser.add_option('--config',
+					  action='store', type='string', dest='configFile',
+					  default='/etc/haikuports.conf',
+					  help='specifies the location of the global config file; '
+					  	   'the default is "/etc/haikuports.conf"')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()
