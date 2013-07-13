@@ -5,6 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import PackageInfo
 from HaikuPorter.Utils import (check_output, sysExit)
 
@@ -59,6 +60,9 @@ class BuildPlatformHaiku(BuildPlatform):
 	def getHaikuVersion(self):
 		return self.haikuVersion
 
+	def usesChroot(self):
+		return getOption('chroot')
+
 	def findDirectory(self, which):
 		"""wraps invocation of 'finddir', uses caching"""
 		if not which in self.findDirectoryCache:
@@ -87,6 +91,9 @@ class BuildPlatformUnix(BuildPlatform):
 		pass
 
 	def isHaiku(self):
+		return False
+
+	def usesChroot(self):
 		return False
 
 	def findDirectory(self, which):

@@ -594,7 +594,7 @@ class Port(object):
 		self.requiresUpdater = RequiresUpdater(self.packages, requiredPackages,
 			not globalConfiguration['IS_CROSSBUILD_REPOSITORY'])
 
-		if getOption('chroot'):
+		if buildPlatform.usesChroot():
 			# setup chroot and keep it while executing the actions
 			chrootEnvVars = {
 				'packages': '\n'.join(requiredPackages), 
@@ -654,7 +654,7 @@ class Port(object):
 			for package in self.packages:
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
-					if not getOption('chroot'):
+					if not buildPlatform.usesChroot():
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue

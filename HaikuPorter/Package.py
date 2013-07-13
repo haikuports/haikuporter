@@ -246,7 +246,7 @@ class Package(object):
 		if os.path.exists(activeBuildPackage):
 			os.remove(activeBuildPackage)
 			
-		if not getOption('chroot'):
+		if not buildPlatform.usesChroot():
 			# may have to cross devices, so better use a symlink
 			os.symlink(self.buildPackage, activeBuildPackage)
 		else:
