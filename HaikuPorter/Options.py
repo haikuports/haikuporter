@@ -146,6 +146,11 @@ def parseOptions():
 					  default='/etc/haikuports.conf',
 					  help='specifies the location of the global config file; '
 					  	   'the default is "/etc/haikuports.conf"')
+	parser.add_option('--command-package',
+					  action='store', type='string', dest='commandPackage',
+					  default='package',
+					  help='specifies the "package" command; '
+					  	   'the default is "package"')
 
 	global __Options__
 

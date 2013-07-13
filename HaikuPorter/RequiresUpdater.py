@@ -5,6 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.Options import getOption
 from HaikuPorter.Utils import (check_output, versionCompare, sysExit)
 
 import os
@@ -134,7 +135,7 @@ class RequiresUpdater(object):
 
 	def _getPackageProvides(self, package):
 		# list the package and extract the provides from the output
-		args = [ '/bin/package', 'list', package ]
+		args = [ getOption('commandPackage'), 'list', package ]
 		try:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(args, stderr=devnull)

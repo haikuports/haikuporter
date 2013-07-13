@@ -252,7 +252,8 @@ class Policy(object):
 		# get the package listing
 		try:
 			with open(os.devnull, "w") as devnull:
-				output = check_output(['package', 'list', package],
+				output = check_output(
+					[getOption('commandPackage'), 'list', package],
 					stderr=devnull)
 		except:
 			return None

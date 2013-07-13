@@ -204,7 +204,7 @@ class Package(object):
 
 		# Create the package
 		print 'creating package ' + self.hpkgName + ' ...'
-		check_call(['package', 'create', packageFile])
+		check_call([getOption('commandPackage'), 'create', packageFile])
 
 		# policy check
 		self.policy.checkPackage(self, packageFile)
@@ -227,8 +227,8 @@ class Package(object):
 		# create the build package
 		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 
 						+ '-build.hpkg')
-		cmdlineArgs = ['package', 'create', '-bi', buildPackageInfo, '-I',
-					   self.packagingDir, buildPackage]
+		cmdlineArgs = [getOption('commandPackage'), 'create', '-bi',
+			buildPackageInfo, '-I', self.packagingDir, buildPackage]
 		if getOption('quiet'):
 			cmdlineArgs.insert(2, '-q')
 		check_call(cmdlineArgs)
