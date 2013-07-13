@@ -154,6 +154,12 @@ def parseOptions():
 					  	   'cross-building at all) is the one to be found in '
 					  	   '"/boot/system/develop/cross" matching the target '
 					  	   'architecture')
+	parser.add_option('--licenses',
+					  action='store', type='string', dest='licensesDirectory',
+					  default=None,
+					  help='path to the directory containing the well-known '
+					  	   'licenses; the default is '
+					  	   '"<systemDir>/data/licenses"')
 	parser.add_option('--command-package',
 					  action='store', type='string', dest='commandPackage',
 					  default='package',

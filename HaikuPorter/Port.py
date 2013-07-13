@@ -342,8 +342,10 @@ class Port(object):
 						fileList = []
 						recipeLicense = entries['LICENSE']
 						for item in recipeLicense:
-							dirname = (findDirectory('B_SYSTEM_DIRECTORY') 
-									   + '/data/licenses')
+							dirname = getOption('licensesDirectory')
+							if not dirname:
+								dirname = buildPlatform.findDirectory(
+									'B_SYSTEM_DIRECTORY') + '/data/licenses'
 							haikuLicenseList = fileList = os.listdir(dirname)
 							if item not in fileList:
 								fileList = []
