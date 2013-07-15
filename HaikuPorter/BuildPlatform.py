@@ -139,6 +139,10 @@ class BuildPlatformHaiku(BuildPlatform):
 			os.rename(packagePath, activeBuildPackage)
 		return activeBuildPackage
 
+	def deactivateBuildPackage(self, workDir, activeBuildPackage):
+		if os.path.exists(activeBuildPackage):
+			os.remove(activeBuildPackage)
+
 	def getCrossToolsBinPath(self, workDir):
 		return '/boot/common/develop/tools/bin'
 
@@ -297,6 +301,10 @@ class BuildPlatformUnix(BuildPlatform):
 		os.symlink(installPath, packageLinksDir + '/.self')
 
 		return packageLinksDir
+
+	def deactivateBuildPackage(self, workDir, activeBuildPackage):
+		if os.path.exists(activeBuildPackage):
+			shutil.rmtree(activeBuildPackage)
 
 	def getCrossToolsBinPath(self, workDir):
 		return self._getCrossToolsPath(workDir) + '/bin'

@@ -241,8 +241,9 @@ class Package(object):
 	def removeBuildPackage(self):
 		"""Deactivate and remove the build package"""
 		
-		if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
-			shutil.rmtree(self.activeBuildPackage)
+		if self.activeBuildPackage:
+			buildPlatform.deactivateBuildPackage(self.workDir,
+				self.activeBuildPackage)
 			self.activeBuildPackage = None
 		if self.buildPackage and os.path.exists(self.buildPackage):
 			os.remove(self.buildPackage)
