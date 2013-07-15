@@ -439,12 +439,11 @@ class Port(object):
 													 prereqRepositoryPath,
 													 repositoryPath, 
 													 packagesPath)
-		
-		# Determine the build requirements, this time only allowing system
-		# packages.from the build machine.
-		repositories = [ packagesPath, workRepositoryPath, prereqRepositoryPath,
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
-		packages = self._resolveDependenciesViaPkgman(
+
+		# Determine the build requirements.
+		repositories = [ packagesPath, workRepositoryPath,
+			prereqRepositoryPath ]
+		packages = self._resolveDependencies(
 			packageInfoFiles, repositories, 'required ports')
 
 		shutil.rmtree(workRepositoryPath)
@@ -452,9 +451,8 @@ class Port(object):
 
 		# Filter out system packages, as they are irrelevant.
 		return [ 
-			package for package in packages 
-			if not package.startswith(
-				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+			package for package in packages
+				if not buildPlatform.isSystemPackage(package)
 		], workRepositoryPath
 
 	def whyIsPortRequired(self, repositoryPath, packagesPath, requiredPort):
@@ -476,10 +474,9 @@ class Port(object):
 		# Ask pkgman to determine the build requirements, which should fail
 		# on the required port, with an error message that gives a hint
 		# about who requires it.
-		repositories = [ workRepositoryPath, prereqRepositoryPath,
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
-		self._resolveDependenciesViaPkgman(packageInfoFiles, repositories, 
-										   'why is port required')
+		repositories = [ workRepositoryPath, prereqRepositoryPath ]
+		self._resolveDependencies(packageInfoFiles, repositories,
+			'why is port required')
 		warn("port %s doesn't seem to be required by %s"
 			 % (requiredPort.versionedName, self.versionedName))
 
@@ -816,11 +813,7 @@ class Port(object):
 		   built packages and the repository of prerequired packages active.
 		   This ensures that any build requirements a port may have that can not 
 		   be fulfilled from within the haikuports tree will be raised as an 
-		   error here.
-		   
-		   If requiredPort has been given, remove the package-infos for that
-		   port in order to find out which package is pulling in that port as a 
-		   dependency of this port."""
+		   error here."""
 
 		# First create a work-repository by symlinking all package-infos from
 		# the haikuports-repository - we need to overwrite the package-infos
@@ -837,18 +830,15 @@ class Port(object):
 			package.generatePackageInfoWithoutProvides(packageInfoFile,
 				[ 'BUILD_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
-		
-		# determine the prerequired packages, allowing build machine packages, 
+
+		# Determine the prerequired packages, allowing build machine packages,
 		# but leave out system packages, as those are irrelevant.
-		repositories = [ packagesPath, workRepositoryPath,
-			buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
-		prereqPackages = self._resolveDependenciesViaPkgman(
+		repositories = [ packagesPath, workRepositoryPath ]
+		prereqPackages = self._resolvePrerequiredDependencies(
 			packageInfoFiles, repositories, 'prerequired ports')
-		prereqPackages = [ 
-			package for package in prereqPackages 
-			if not package.startswith(
-				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		prereqPackages = [
+			package for package in prereqPackages
+				if not buildPlatform.isSystemPackage(package)
 		]
 
 		# Populate a directory with those prerequired packages.
@@ -884,15 +874,12 @@ class Port(object):
 		# Determine the prerequired packages, allowing build machine packages, 
 		# but leave out system packages, as they will be linked into the chroot
 		# anyway.
-		repositories = [ packagesPath,
-			buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
-		prereqPackages = self._resolveDependenciesViaPkgman(
+		repositories = [ packagesPath ]
+		prereqPackages = self._resolvePrerequiredDependencies(
 			packageInfoFiles, repositories, 'prerequired packages for build')
 		prereqPackages = [ 
 			package for package in prereqPackages
-			if not package.startswith(
-				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				if not buildPlatform.isSystemPackage(package)
 		]
 
 		# Populate a directory with those prerequired packages.
@@ -911,17 +898,15 @@ class Port(object):
 			packageInfoFiles.append(packageInfoFile)
 
 		# Determine the build requirements.
-		repositories = [ packagesPath, prereqRepositoryPath, 
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY') ]
-		packages = self._resolveDependenciesViaPkgman(
+		repositories = [ packagesPath, prereqRepositoryPath ]
+		packages = self._resolveDependencies(
 			packageInfoFiles, repositories, 'required packages for build')
 
 		# Filter out system packages, they will be linked into the chroot
 		# anyway.
 		return [ 
 			package for package in packages 
-			if not package.startswith(
-				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				if not buildPlatform.isSystemPackage(package)
 		]
 
 	def _executeBuild(self, makePackages):
@@ -1078,25 +1063,25 @@ class Port(object):
 		args = [ '/bin/bash' ]
 		args += params
 		check_call(args, cwd=dir, env=shellEnv)
-			
-	def _resolveDependenciesViaPkgman(self, packageInfoFiles, repositories,
-									  description):
-		"""Invoke pkgman to resolve dependencies of one or more package-infos"""
+
+	def _resolveDependencies(self, packageInfoFiles, repositories, description,
+			isPrerequired = False):
+		"""Resolve dependencies of one or more package-infos"""
 
 		args = ([ '/bin/pkgman', 'resolve-dependencies' ]
 				+ packageInfoFiles + repositories)
 		try:
-			with open(os.devnull, "w") as devnull:
-				output = check_output(args, stderr=devnull)
-			return output.splitlines()
-		except CalledProcessError:
-			try:
-				check_call(args)
-			except:
-				pass
+			return buildPlatform.resolveDependencies(packageInfoFiles,
+				repositories, isPrerequired)
+		except (CalledProcessError, LookupError):
 			sysExit(('unable to resolve %s for %s\n'
 					 + '\tpackage-infos:\n\t\t%s\n'
 					 + '\trepositories:\n\t\t%s\n')
 					% (description, self.versionedName, 
 					   '\n\t\t'.join(packageInfoFiles),
 					   '\n\t\t'.join(repositories)))
+
+	def _resolvePrerequiredDependencies(self, packageInfoFiles, repositories,
+			description):
+		return self._resolveDependencies(packageInfoFiles, repositories,
+			description, True)
