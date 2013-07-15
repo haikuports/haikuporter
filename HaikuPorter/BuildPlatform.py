@@ -14,6 +14,7 @@ from HaikuPorter.Utils import (check_output, printError, sysExit)
 
 import os
 import platform
+import shutil
 from subprocess import check_call, CalledProcessError
 
 
@@ -123,6 +124,34 @@ class BuildPlatformHaiku(BuildPlatform):
 		return packagePath.startswith(
 			findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
+	def activateBuildPackage(self, workDir, packagePath):
+		# activate the build package
+		packagesDir = buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY')
+		activeBuildPackage = packagesDir + '/' + os.path.basename(packagePath)
+		if os.path.exists(activeBuildPackage):
+			os.remove(activeBuildPackage)
+
+		if not buildPlatform.usesChroot():
+			# may have to cross devices, so better use a symlink
+			os.symlink(packagePath, activeBuildPackage)
+		else:
+			# symlinking a package won't work in chroot, but in this
+			# case we are sure that the move won't cross devices
+			os.rename(packagePath, activeBuildPackage)
+		return activeBuildPackage
+
+	def getCrossToolsBinPath(self, workDir):
+		return '/boot/common/develop/tools/bin'
+
+	def getInstallDestDir(self, workDir):
+		return None
+
+	def setupNonChrootBuildEnvironment(self, workDir, requiredPackages):
+		sysExit('setupNonChrootBuildEnvironment() not supported on Haiku')
+
+	def cleanNonChrootBuildEnvironment(self, workDir, buildOK):
+		sysExit('cleanNonChrootBuildEnvironment() not supported on Haiku')
+
 
 # -- BuildPlatformUnix class --------------------------------------------------
 
@@ -157,6 +186,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'B_COMMON_PACKAGES_DIRECTORY': '/boot/common/packages',
 			}
 
+		self.crossDevelPackage = getOption('crossDevelPackage')
 		targetArchitecture = globalConfiguration['TARGET_ARCHITECTURE'].lower()
 		self.targetMachineTriple \
 			= MachineArchitecture.getTripleFor(targetArchitecture)
@@ -246,6 +276,133 @@ class BuildPlatformUnix(BuildPlatform):
 	def isSystemPackage(self, packagePath):
 		return False
 
+	def activateBuildPackage(self, workDir, packagePath):
+		# get the package info
+		packageInfo = PackageInfo(packagePath)
+		installPath = packageInfo.getInstallPath()
+		if not installPath:
+			sysExit('Build package "%s" doesn\'t have an install path'
+				% packagePath)
+
+		# create the package links directory for the package and the .self
+		# symlink
+		packageLinksDir = (self.getInstallDestDir(workDir) + '/packages/'
+			+ packageInfo.getName() + '-' + packageInfo.getVersion())
+		os.mkdir(packageLinksDir)
+		os.symlink(installPath, packageLinksDir + '/.self')
+
+		return packageLinksDir
+
+	def getCrossToolsBinPath(self, workDir):
+		return self._getCrossToolsPath(workDir) + '/bin'
+
+	def getInstallDestDir(self, workDir):
+		return workDir + '/cross-sysroot'
+
+	def setupNonChrootBuildEnvironment(self, workDir, requiredPackages):
+		# re-init the global work dir
+		sysrootDir = self.getInstallDestDir(workDir)
+		if os.path.exists(sysrootDir):
+			shutil.rmtree(sysrootDir)
+		os.mkdir(sysrootDir)
+
+		os.mkdir(sysrootDir + '/packages')
+		os.mkdir(sysrootDir + '/boot')
+		os.mkdir(sysrootDir + '/boot/system')
+		os.mkdir(sysrootDir + '/boot/common')
+
+		crossToolsDir = self._getCrossToolsPath(workDir)
+		os.mkdir(crossToolsDir)
+
+		toolsMachineTriple = self._getCrossToolsMachineTriple()
+
+		# prepare the system include and library directories
+		toolsMachineDir = self.originalCrossToolsDir + '/' + toolsMachineTriple
+		machineDir = crossToolsDir + '/' + self.targetMachineTriple
+		os.mkdir(machineDir)
+
+		toolsIncludeDir = toolsMachineDir + '/sys-include'
+		includeDir = machineDir + '/sys-include'
+		os.symlink(sysrootDir + '/boot/system/develop/headers', includeDir)
+
+		toolsLibDir = toolsMachineDir + '/lib'
+		libDir = machineDir + '/lib'
+		os.symlink(sysrootDir + '/boot/system/develop/lib', libDir)
+
+		# Prepare the bin dir -- it will be added to PATH and must contain the
+		# tools with the expected machine triple prefix.
+		toolsBinDir = self.originalCrossToolsDir + '/bin'
+		binDir = crossToolsDir + '/bin'
+		if toolsMachineTriple != self.targetMachineTriple:
+			os.mkdir(binDir)
+			for tool in os.listdir(toolsBinDir):
+				toolLink = tool
+				if tool.startswith(toolsMachineTriple):
+					toolLink = tool.replace(toolsMachineTriple,
+						self.targetMachineTriple, 1)
+				os.symlink(toolsBinDir + '/' + tool, binDir + '/' + toolLink)
+		else:
+			os.symlink(toolsBinDir, binDir)
+
+		# Symlink the include and lib dirs back to the cross-tools machine
+		# directory. These are the path that are built into the tools.
+		if os.path.lexists(toolsIncludeDir):
+			os.remove(toolsIncludeDir)
+		os.symlink(includeDir, toolsIncludeDir)
+
+		if os.path.lexists(toolsLibDir):
+			if os.path.isdir(toolsLibDir):
+				# That's the original lib dir -- rename it.
+				os.rename(toolsLibDir, toolsLibDir + '.orig')
+			else:
+				os.remove(toolsLibDir)
+		os.symlink(libDir, toolsLibDir)
+
+		# extract the haiku_cross_devel_sysroot package
+		args = [ getOption('commandPackage'), 'extract', '-C',
+			sysrootDir + '/boot/system', self.crossDevelPackage ]
+		check_call(args)
+
+		# extract the required packages
+		for package in requiredPackages:
+			args = [ getOption('commandPackage'), 'extract', '-C',
+				sysrootDir + '/boot/common', package ]
+			check_call(args)
+
+	def cleanNonChrootBuildEnvironment(self, workDir, buildOK):
+		# remove the symlinks we created in the cross tools tree
+		sysrootDir = self.getInstallDestDir(workDir)
+		toolsMachineTriple = self._getCrossToolsMachineTriple()
+		toolsMachineDir = self.originalCrossToolsDir + '/' + toolsMachineTriple
+
+		toolsIncludeDir = toolsMachineDir + '/sys-include'
+		if os.path.lexists(toolsIncludeDir):
+			os.remove(toolsIncludeDir)
+
+		toolsLibDir = toolsMachineDir + '/lib'
+		if os.path.lexists(toolsLibDir):
+			os.remove(toolsLibDir)
+			# rename back the original lib dir
+			originalToolsLibDir = toolsLibDir + '.orig'
+			if os.path.lexists(originalToolsLibDir):
+				os.rename(originalToolsLibDir, toolsLibDir)
+
+		# remove the global work dir, if the build went fine
+		if buildOK and os.path.exists(sysrootDir):
+			shutil.rmtree(sysrootDir)
+
+	def _getCrossToolsMachineTriple(self):
+		# In case of gcc2 our machine triple doesn't agree with that of the
+		# cross tools.
+		if self.targetMachineTriple == 'i586-pc-haiku_gcc2':
+			return 'i586-pc-haiku'
+		return self.targetMachineTriple
+
+	def _getCrossToolsPath(self, workDir):
+		return self.getInstallDestDir(workDir) + '/cross-tools'
+
+
+# -----------------------------------------------------------------------------
 
 # init buildPlatform
 if platform.system() == 'Haiku':

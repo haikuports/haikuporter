@@ -234,28 +234,15 @@ class Package(object):
 
 	def activateBuildPackage(self):
 		"""Activate the build package"""
-		
-		# activate the build package
-		packagesDir = buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY')
-		activeBuildPackage \
-			= packagesDir + '/' + os.path.basename(self.buildPackage)
-		if os.path.exists(activeBuildPackage):
-			os.remove(activeBuildPackage)
-			
-		if not buildPlatform.usesChroot():
-			# may have to cross devices, so better use a symlink
-			os.symlink(self.buildPackage, activeBuildPackage)
-		else:
-			# symlinking a package won't work in chroot, but in this
-			# case we are sure that the move won't cross devices
-			os.rename(self.buildPackage, activeBuildPackage)
-		self.activeBuildPackage = activeBuildPackage
+
+		self.activeBuildPackage = buildPlatform.activateBuildPackage(
+			self.workDir, self.buildPackage)
 
 	def removeBuildPackage(self):
 		"""Deactivate and remove the build package"""
 		
 		if self.activeBuildPackage and os.path.exists(self.activeBuildPackage):
-			os.remove(self.activeBuildPackage)
+			shutil.rmtree(self.activeBuildPackage)
 			self.activeBuildPackage = None
 		if self.buildPackage and os.path.exists(self.buildPackage):
 			os.remove(self.buildPackage)

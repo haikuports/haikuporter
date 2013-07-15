@@ -76,6 +76,7 @@ class Port(object):
 		self.versionedName = name + '-' + version
 		self.category = category			
 		self.baseDir = baseDir
+		self.workDir = self.baseDir + '/work-' + self.version
 
 		self.recipeFilePath \
 			= self.baseDir + '/' + self.name + '-' + self.version + '.recipe'
@@ -119,7 +120,6 @@ class Port(object):
 		# create full paths for the directories
 		self.downloadDir = self.baseDir + '/download'
 		self.patchesDir = self.baseDir + '/patches'
-		self.workDir = self.baseDir + '/work-' + self.version
 		self.sourceBaseDir = self.workDir + '/sources'
 		self.packageInfoDir = self.workDir + '/package-infos'
 		self.buildPackageDir = self.workDir + '/build-packages'
@@ -641,16 +641,29 @@ class Port(object):
 						except:
 							pass
 						print '*** child stopped'
-						
 		else:
-			self._executeBuild(makePackages)
+			if not getOption('quiet'):
+				print 'non-chroot has these packages active:'
+				for package in sorted(requiredPackages):
+					print '\t' + package
+
+			buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
+				requiredPackages)
+			try:
+				self._executeBuild(makePackages)
+			except:
+				buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
+					False)
+				raise
+			buildPlatform.cleanNonChrootBuildEnvironment(self.workDir, True)
 
 		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
 			for package in self.packages:
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
-					if not buildPlatform.usesChroot():
+					if not (buildPlatform.usesChroot()
+						or globalConfiguration['IS_CROSSBUILD_REPOSITORY']):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
@@ -724,6 +737,11 @@ class Port(object):
 				else:
 					sourceDirKey = 'sourceDir' + source.index
 				self.shellVariables[sourceDirKey] = source.sourceDir
+
+		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			installDestDir = buildPlatform.getInstallDestDir(self.workDir)
+			if installDestDir:
+				self.shellVariables['installDestDir'] = installDestDir
 
 		relativeConfigureDirs = {
 			'dataDir':			'data',
@@ -1052,8 +1070,8 @@ class Port(object):
 		shellEnv = filteredEnvironment()
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 			# include cross development tools in path automatically
-			shellEnv['PATH'] \
-				= '/boot/common/develop/tools/bin:' + shellEnv['PATH']
+			crossToolsPath = buildPlatform.getCrossToolsBinPath(self.workDir)
+			shellEnv['PATH'] = crossToolsPath + ':' + shellEnv['PATH']
 
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)
