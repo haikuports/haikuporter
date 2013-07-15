@@ -168,8 +168,6 @@ class BuildPlatformUnix(BuildPlatform):
 
 		# compute/guess architecture from the machine
 		index = machine.find('-')
-		if index >= 0:
-			return machine[:index]
 		architecture = machine[:index] if index >= 0 else machine
 
 		super(BuildPlatformUnix, self).init(treePath, architecture, machine)
