@@ -18,8 +18,13 @@ buildPlatform = None
 # -- BuildPlatform class ------------------------------------------------------
 
 class BuildPlatform(object):
-	def __init__(self, machineTriple):
+	def __init__(self):
+		pass
+
+	def init(self, treePath, machineTriple):
 		self.machineTriple = machineTriple
+
+		self.treePath = treePath
 
 	def getName(self):
 		return platform.system()
@@ -45,6 +50,9 @@ class BuildPlatform(object):
 
 class BuildPlatformHaiku(BuildPlatform):
 	def __init__(self):
+		super(BuildPlatformHaiku, self).__init__()
+
+	def init(self, treePath):
 		# get system haiku package version and architecture
 		haikuPackageInfo = PackageInfo('/system/packages/haiku.hpkg')
 		self.haikuVersion = haikuPackageInfo.getVersion()
@@ -54,12 +62,9 @@ class BuildPlatformHaiku(BuildPlatform):
 			sysExit('Unsupported Haiku build platform architecture %s'
 				% haikuPackageInfo.getArchitecture())
 
-		super(BuildPlatformHaiku, self).__init__(machine)
+		super(BuildPlatformHaiku, self).init(treePath, machine)
 
 		self.findDirectoryCache = {}
-
-	def init(self):
-		pass
 
 	def isHaiku(self):
 		return True
@@ -82,10 +87,13 @@ class BuildPlatformHaiku(BuildPlatform):
 
 class BuildPlatformUnix(BuildPlatform):
 	def __init__(self):
+		super(BuildPlatformUnix, self).__init__()
+
+	def init(self, treePath):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).strip()
 
-		super(BuildPlatformUnix, self).__init__(machine)
+		super(BuildPlatformUnix, self).init(treePath, machine)
 
 		self.findDirectoryMap = {
 			'B_PACKAGE_LINKS_DIRECTORY': '/packages',
@@ -94,8 +102,6 @@ class BuildPlatformUnix(BuildPlatform):
 			'B_COMMON_PACKAGES_DIRECTORY': '/boot/common/packages',
 			}
 
-	def init(self):
-		pass
 
 	def isHaiku(self):
 		return False

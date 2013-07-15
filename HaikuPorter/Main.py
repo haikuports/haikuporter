@@ -43,14 +43,14 @@ class Main(object):
 		# read global settings
 		readGlobalConfiguration()
 
+		self.treePath = globalConfiguration['TREE_PATH'].rstrip('/')
+
 		# init build platform
-		buildPlatform.init()
+		buildPlatform.init(self.treePath)
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
 	
-		self.treePath = globalConfiguration['TREE_PATH'].rstrip('/')
-		
 		# create path where built packages will be collected
 		self.packagesPath = self.treePath + '/packages'
 		if not os.path.exists(self.packagesPath):
