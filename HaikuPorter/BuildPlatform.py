@@ -33,6 +33,13 @@ class BuildPlatform(object):
 			return self.machineTriple[:index]
 		return self.machineTriple
 
+	def getLicensesDirectory(self):
+		directory = getOption('licensesDirectory')
+		if not directory:
+			directory = (self.findDirectory('B_SYSTEM_DIRECTORY')
+				+ '/data/licenses')
+		return directory
+
 
 # -- BuildPlatformHaiku class -------------------------------------------------
 
