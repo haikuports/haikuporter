@@ -191,8 +191,8 @@ class Package(object):
 		print 'mimesetting files for package ' + self.hpkgName + ' ...'
 		mimeDBDir = 'data/mime_db'
 		os.chdir(self.packagingDir)
-		check_call(['mimeset', '--all', '--mimedb', mimeDBDir,
-			'--mimedb', '/boot/system/data/mime_db', '.'])
+		check_call([getOption('commandMimeset'), '--all', '--mimedb', mimeDBDir,
+			'--mimedb', buildPlatform.getSystemMimeDbDirectory(), '.'])
 
 		# If data/mime_db is empty, remove it.
 		if not os.listdir(mimeDBDir):

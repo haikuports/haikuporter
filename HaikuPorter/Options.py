@@ -160,6 +160,16 @@ def parseOptions():
 					  help='path to the directory containing the well-known '
 					  	   'licenses; the default is '
 					  	   '"<systemDir>/data/licenses"')
+	parser.add_option('--system-mimedb',
+					  action='store', type='string', dest='systemMimeDB',
+					  default='',
+					  help='path to the directory containing the system '
+					  	   'MIME DB; the default is "<systemDir>/data/mime_db"')
+	parser.add_option('--command-mimeset',
+					  action='store', type='string', dest='commandMimeset',
+					  default='mimeset',
+					  help='specifies the "mimeset" command; '
+					  	   'the default is "mimeset"')
 	parser.add_option('--command-package',
 					  action='store', type='string', dest='commandPackage',
 					  default='package',

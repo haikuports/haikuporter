@@ -45,6 +45,13 @@ class BuildPlatform(object):
 				+ '/data/licenses')
 		return directory
 
+	def getSystemMimeDbDirectory(self):
+		directory = getOption('systemMimeDB')
+		if not directory:
+			directory = (self.findDirectory('B_SYSTEM_DIRECTORY')
+				+ '/data/mime_db')
+		return directory
+
 
 # -- BuildPlatformHaiku class -------------------------------------------------
 
