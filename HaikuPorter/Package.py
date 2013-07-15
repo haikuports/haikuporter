@@ -117,10 +117,9 @@ class Package(object):
 		"""Write a PackageInfo-file for this package into the repository"""
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		self._generatePackageInfo(packageInfoFile, 
-								  [ 'BUILD_REQUIRES', 'REQUIRES' ], True, False,
-								  self.architecture)
-					
+		self.generatePackageInfo(packageInfoFile,
+			[ 'BUILD_REQUIRES', 'REQUIRES' ], True)
+
 	def removePackageInfoFromRepository(self, repositoryPath):
 		"""Remove PackageInfo-file from repository, if it's there"""
 
@@ -140,21 +139,20 @@ class Package(object):
 				os.mkdir(obsoleteDir)
 			os.rename(packageFile, obsoletePackage)
 					
-	def generatePackageInfoWithoutProvides(self, packageInfoPath, 
-										   requiresToUse, architecture):
+	def generatePackageInfoWithoutProvides(self, packageInfoPath,
+			requiresToUse):
 		"""Create a .PackageInfo file that doesn't include any provides except
 		   for the one matching the package name"""
 
 		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True,
-								  architecture)
+								  Architectures.ANY)
 		
-	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet, 
-							architecture):
+	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 
 		self._generatePackageInfo(packageInfoPath, requiresToUse, quiet, False,
-								  architecture)
+								  self.architecture)
 
 	def adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
@@ -183,8 +181,7 @@ class Package(object):
 			= requiresUpdater.updateRequiresList(requiresList)
 
 		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
-								 ['UPDATED_REQUIRES'], getOption('quiet'), 
-								 self.architecture)
+								 ['UPDATED_REQUIRES'], getOption('quiet'))
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
@@ -222,8 +219,7 @@ class Package(object):
 							+ '-build.PackageInfo')
 		self.generatePackageInfo(buildPackageInfo, 
 								 ['REQUIRES', 'BUILD_REQUIRES', 
-								  'BUILD_PREREQUIRES'], True, 
-								 self.architecture)
+								  'BUILD_PREREQUIRES'], True)
 
 		# create the build package
 		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 

@@ -834,9 +834,8 @@ class Port(object):
 		packageInfoFiles = []
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfoWithoutProvides(packageInfoFile, 					
-													   [ 'BUILD_PREREQUIRES' ], 
-													   self.buildArchitecture)
+			package.generatePackageInfoWithoutProvides(packageInfoFile,
+				[ 'BUILD_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 		
 		# determine the prerequired packages, allowing build machine packages, 
@@ -860,8 +859,8 @@ class Port(object):
 		packageInfoFiles = []
 		for package in self.packages:
 			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfoWithoutProvides(packageInfoFile, 
-				[ 'BUILD_REQUIRES' ], self.buildArchitecture)
+			package.generatePackageInfoWithoutProvides(packageInfoFile,
+				[ 'BUILD_REQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 
 		return packageInfoFiles
@@ -878,10 +877,8 @@ class Port(object):
 		for package in self.packages:
 			packageInfoFile = (package.packageInfoDir + '/' 
 							   + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(
-				packageInfoFile, 
-				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ],
-				self.buildArchitecture)
+			package.generatePackageInfoWithoutProvides(packageInfoFile,
+				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 		
 		# Determine the prerequired packages, allowing build machine packages, 
@@ -908,10 +905,9 @@ class Port(object):
 		for package in self.packages:
 			packageInfoFile = (package.packageInfoDir + '/' 
 							   + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(
-				packageInfoFile, 
-				[ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 
-				  'SCRIPTLET_PREREQUIRES' ], self.buildArchitecture)
+			package.generatePackageInfoWithoutProvides(packageInfoFile,
+				[ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
+				  'SCRIPTLET_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
 
 		# Determine the build requirements.
