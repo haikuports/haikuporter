@@ -6,6 +6,8 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.Options import getOption
+from HaikuPorter.PackageInfo import (PackageInfo, Resolvable,
+									 ResolvableExpression)
 from HaikuPorter.Utils import (check_output, versionCompare, sysExit)
 
 import os
@@ -14,33 +16,18 @@ from subprocess import CalledProcessError
 
 # -- ProvidesInfo class -------------------------------------------------------
 
-class ProvidesInfo(object):
+class ProvidesInfo(Resolvable):
 	def __init__(self, package, providesString):
+		super(ProvidesInfo, self).__init__(providesString)
 		self.package = package
 
-		# split the string
-		# <name> [ <op> <version> ] [ "compatible >= " <version> ")" ]
-		if providesString.endswith(')'):
-			index = providesString.rfind('(')
-			versionIndex = providesString.rfind('>=')
-			self.compatibleVersion = providesString[versionIndex + 2:-1].strip()
-			providesString = providesString[:index].rstrip()
-		else:
-			self.compatibleVersion = None
-
-		match = re.match('([^\s=]+)\s*=\s*([^\s]+)', providesString)
-		if match:
-			self.name = match.group(1)
-			self.version = match.group(2)
-		else:
-			self.name = providesString
-			self.version = None
+	def getPackage(self):
+		return self.package
 
 # -- RequiresUpdater class ----------------------------------------------------
 
 class RequiresUpdater(object):
-	def __init__(self, portPackages, requiredPackages,
-			addSystemPackages = True):
+	def __init__(self, portPackages, requiredPackages):
 		self.providesMap = {}
 
 		# get the provides for the port packages
@@ -52,14 +39,21 @@ class RequiresUpdater(object):
 		# get the provides for the required packages
 		for package in requiredPackages:
 			if package.endswith('.hpkg'):
-				self._getPackageProvides(package)
+				self.addPackageFile(package)
 
-		# ... and for the system packages
-		if addSystemPackages:
-			systemDirectory = '/boot/system/packages'
-			for package in os.listdir(systemDirectory):
-				if package.endswith('.hpkg'):
-					self._getPackageProvides(systemDirectory + '/' + package)
+	def addPackageFile(self, package):
+		try:
+			packageInfo = PackageInfo(package, True)
+		except CalledProcessError:
+			sysExit('failed to get provides for package "%s"' % package)
+
+		for provides in packageInfo.getProvides():
+			self._addPackageProvidesInfo(package, str(provides))
+
+	def addPackages(self, directory):
+		for package in os.listdir(directory):
+			if package.endswith('.hpkg') or package.endswith('.PackageInfo'):
+				self.addPackageFile(directory + '/' + package)
 
 	def updateRequiresList(self, requiresList):
 		result = []
@@ -69,35 +63,19 @@ class RequiresUpdater(object):
 				result.append(self._updateRequires(requires))
 		return result
 
-	def _updateRequires(self, requires):
-		# split the requires string
-		requires = requires.strip()
-		partialRequires = requires
-		isBase = requires.endswith('base')
-		if isBase:
-			partialRequires = requires[:-4].rstrip()
+	def getMatchingProvides(self, resolvableExpression):
+		name = resolvableExpression.getName()
+		operator = resolvableExpression.getOperator()
+		version = resolvableExpression.getVersion()
 
-		match = re.match('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)', partialRequires)
-		if match:
-			name = match.group(1)
-			operator = match.group(2)
-			version = match.group(3)
-		else:
-			name = partialRequires
-			operator = None
-			version = None
-
-		# check whether there's a matching provides and, if so, replace the
-		# given requires
 		if not name in self.providesMap:
-			return requires
+			return None
 
 		providesList = self.providesMap[name]
 		matchingProvides = None
 		for provides in providesList:
 			if not operator:
-				matchingProvides = provides
-				break;
+				return provides
 			if not provides.version:
 				continue
 			matches = {
@@ -114,11 +92,29 @@ class RequiresUpdater(object):
 				and versionCompare(provides.compatibleVersion, version)
 					> 0):
 				continue
-			matchingProvides = provides
+			return provides
+		return None
 
+	def _updateRequires(self, requires):
+		# split the requires string
+		requires = requires.strip()
+		partialRequires = requires
+		isBase = requires.endswith('base')
+		if isBase:
+			partialRequires = requires[:-4].rstrip()
+
+		resolvableExpression = ResolvableExpression(partialRequires)
+		name = resolvableExpression.getName()
+		operator = resolvableExpression.getOperator()
+
+		# check whether there's a matching provides and, if so, replace the
+		# given requires
+		matchingProvides = self.getMatchingProvides(resolvableExpression)
 		if not matchingProvides:
-			sysExit('found provides for "%s", but none matching the '
-				'version requirement' % requires)
+			if self.getMatchingProvides(ResolvableExpression(name)):
+				sysExit('found provides for "%s", but none matching the '
+					'version requirement' % requires)
+			return requires
 
 		if not matchingProvides.version:
 			return requires
@@ -132,21 +128,6 @@ class RequiresUpdater(object):
 		if isBase:
 			result += ' base'
 		return result
-
-	def _getPackageProvides(self, package):
-		# list the package and extract the provides from the output
-		args = [ getOption('commandPackage'), 'list', package ]
-		try:
-			with open(os.devnull, "w") as devnull:
-				output = check_output(args, stderr=devnull)
-		except CalledProcessError:
-			sysExit('failed to get provides for package "%s"' % package)
-
-		for line in output.splitlines():
-			index = line.find('provides:')
-			if index < 0:
-				continue
-			self._addPackageProvidesInfo(package, line[index + 9:])
 
 	def _addPackageProvidesInfo(self, package, providesString):
 		provides = ProvidesInfo(package, providesString.strip())

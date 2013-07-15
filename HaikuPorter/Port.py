@@ -588,8 +588,10 @@ class Port(object):
 
 		self.policy.setPort(self, requiredPackages)
 
-		self.requiresUpdater = RequiresUpdater(self.packages, requiredPackages,
-			not globalConfiguration['IS_CROSSBUILD_REPOSITORY'])
+		self.requiresUpdater = RequiresUpdater(self.packages, requiredPackages)
+		if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			self.requiresUpdater.addPackages(
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 		if buildPlatform.usesChroot():
 			# setup chroot and keep it while executing the actions
