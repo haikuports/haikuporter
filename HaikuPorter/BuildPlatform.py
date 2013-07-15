@@ -27,9 +27,9 @@ class BuildPlatform(object):
 	def __init__(self):
 		pass
 
-	def init(self, treePath, machineTriple):
+	def init(self, treePath, architecture, machineTriple):
+		self.architecture = architecture
 		self.machineTriple = machineTriple
-
 		self.treePath = treePath
 
 	def getName(self):
@@ -39,10 +39,7 @@ class BuildPlatform(object):
 		return self.machineTriple
 
 	def getArchitecture(self):
-		index = self.machineTriple.find('-')
-		if index >= 0:
-			return self.machineTriple[:index]
-		return self.machineTriple
+		return self.architecture
 
 	def getLicensesDirectory(self):
 		directory = getOption('licensesDirectory')
@@ -75,7 +72,8 @@ class BuildPlatformHaiku(BuildPlatform):
 			sysExit('Unsupported Haiku build platform architecture %s'
 				% haikuPackageInfo.getArchitecture())
 
-		super(BuildPlatformHaiku, self).init(treePath, machine)
+		super(BuildPlatformHaiku, self).init(treePath,
+			haikuPackageInfo.getArchitecture(), machine)
 
 		self.findDirectoryCache = {}
 
@@ -164,7 +162,13 @@ class BuildPlatformUnix(BuildPlatform):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).strip()
 
-		super(BuildPlatformUnix, self).init(treePath, machine)
+		# compute/guess architecture from the machine
+		index = machine.find('-')
+		if index >= 0:
+			return machine[:index]
+		architecture = machine[:index] if index >= 0 else machine
+
+		super(BuildPlatformUnix, self).init(treePath, architecture, machine)
 
 		if getOption('commandPackage') == 'package':
 			sysExit('--command-package must be specified on this build '
