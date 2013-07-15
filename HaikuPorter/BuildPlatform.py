@@ -100,7 +100,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		# When resolving pre-requirements, also consider the build host's
 		# common package directory. In either case add the system packages
 		# directory.
-		repositories = repositories.copy()
+		repositories = list(repositories)
 		if isPrerequired:
 			repositories.append(
 				buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'))
@@ -119,10 +119,11 @@ class BuildPlatformHaiku(BuildPlatform):
 				check_call(args)
 			except:
 				pass
+			raise
 
 	def isSystemPackage(self, packagePath):
 		return packagePath.startswith(
-			findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 	def activateBuildPackage(self, workDir, packagePath):
 		# activate the build package
