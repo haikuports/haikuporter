@@ -54,6 +54,13 @@ def warn(message):
 	print(message)
 
 
+# -- printError ---------------------------------------------------------------
+def printError(*args):
+	"""print a to stderr"""
+
+	sys.stderr.write(' '.join(map(str, args)) + '\n')
+
+
 # -- escapeForPackageInfo -----------------------------------------------------
 def escapeForPackageInfo(string):
 	"""escapes string to be used within "" quotes in a .PackageInfo file"""
