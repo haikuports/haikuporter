@@ -102,6 +102,20 @@ class BuildPlatformUnix(BuildPlatform):
 
 		super(BuildPlatformUnix, self).init(treePath, machine)
 
+		if getOption('commandPackage') == 'package':
+			sysExit('--command-package must be specified on this build '
+				'platform!')
+		if getOption('commandMimeset') == 'mimeset':
+			sysExit('--command-mimeset must be specified on this build '
+				'platform!')
+		if not getOption('systemMimeDB'):
+			sysExit('--system-mimedb must be specified on this build '
+				'platform!')
+
+		if not getOption('crossTools'):
+			sysExit('--cross-tools must be specified on this build platform!')
+		self.originalCrossToolsDir = getOption('crossTools')
+
 		self.findDirectoryMap = {
 			'B_PACKAGE_LINKS_DIRECTORY': '/packages',
 			'B_SYSTEM_DIRECTORY': '/boot/system',
