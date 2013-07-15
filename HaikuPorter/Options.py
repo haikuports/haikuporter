@@ -175,6 +175,12 @@ def parseOptions():
 					  default='package',
 					  help='specifies the "package" command; '
 					  	   'the default is "package"')
+	parser.add_option('--cross-tools',
+					  action='store', type='string', dest='crossTools',
+					  default=None,
+					  help='specifies the path to the cross-tools directory '
+					  	   'created by the Haiku build system\'s configure '
+					  	   'script')
 
 	global __Options__
 
