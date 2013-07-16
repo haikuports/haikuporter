@@ -43,7 +43,7 @@ class RequiresUpdater(object):
 
 	def addPackageFile(self, package):
 		try:
-			packageInfo = PackageInfo(package, True)
+			packageInfo = PackageInfo(package)
 		except CalledProcessError:
 			sysExit('failed to get provides for package "%s"' % package)
 
