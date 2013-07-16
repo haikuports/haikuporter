@@ -196,6 +196,8 @@ class SourceFetcherForGit(object):
 		self.sourceShouldBeValidated = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
+		if not self.rev:
+			self.rev = 'HEAD'
 		
 	def fetch(self):
 		ensureCommandIsAvailable('git')
@@ -204,10 +206,10 @@ class SourceFetcherForGit(object):
 
 	def unpack(self, sourceDir, subdir):
 		if subdir:
-			command = ('git archive HEAD "%s" | tar -x -C "%s"' 
-					   % (subdir, sourceDir))
+			command = ('git archive %s "%s" | tar -x -C "%s"' 
+					   % (self.rev, subdir, sourceDir))
 		else:
-			command = 'git archive HEAD | tar -x -C "%s"' % sourceDir
+			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
 		check_call(command, shell=True, cwd=self.fetchTarget)
 
 		if subdir:
