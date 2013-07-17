@@ -3,6 +3,8 @@
 # Copyright 2013 Oliver Tappe
 # Distributed under the terms of the MIT License.
 
+import re
+
 # -- MachineArchitecture ------------------------------------------------------
 
 # Defines the set of real machines architectures that are supported.
@@ -30,6 +32,26 @@ class MachineArchitecture(str):
 		if architecture in dict:
 			return dict[architecture]
 		return None		
+
+	@staticmethod
+	def findMatch(architecture):
+		"""Find a matching packaging architecture for the given architecture
+		   string that may e.g. be an architecture that uname() reports."""
+
+		architecture = architecture.lower()
+		if architecture in MachineArchitecture.getAll():
+			return architecture
+
+		# map "i*8" to "x86"
+		match = re.match('i.86', architecture)
+		if match and match.group(0) == architecture:
+			return MachineArchitecture.X86
+
+		# map "powerpc" to "ppc"
+		if architecture == 'powerpc':
+			return MachineArchitecture.PPC
+
+		return None
 
 
 # -- Architectures ------------------------------------------------------------
