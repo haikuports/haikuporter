@@ -372,14 +372,14 @@ fixPkgconfig()
 	sourcePkgconfigDir=$installDestDir$libDir/pkgconfig
 	targetPkgconfigDir=$installDestDir$developLibDir/pkgconfig
 
-	if [ ! -d $installDestDir$sourcePkgconfigDir ]; then
+	if [ ! -d $sourcePkgconfigDir ]; then
 		return
 	fi
 
 
-	mkdir -p $installDestDir$targetPkgconfigDir
+	mkdir -p $targetPkgconfigDir
 
-	for file in $installDestDir$sourcePkgconfigDir/*; do
+	for file in $sourcePkgconfigDir/*; do
 		name=$(basename $file)
 		sed -e 's,^libdir=\(.*\),libdir=${prefix}/develop/lib,' \
 			-e 's,^includedir=\(.*\),includedir=${prefix}/develop/headers,' \
