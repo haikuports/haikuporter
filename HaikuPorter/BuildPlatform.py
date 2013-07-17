@@ -166,9 +166,16 @@ class BuildPlatformUnix(BuildPlatform):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).strip()
 
+		# When building in a linux32 environment gcc still says "x86_64", so we
+		# replace the architecture part of the machine triple with what uname()
+		# says.
+		machineArchitecture = os.uname()[4].lower()
+		machine = machineArchitecture + '-' + machine[machine.find('-') + 1:]
+
 		# compute/guess architecture from the machine
-		index = machine.find('-')
-		architecture = machine[:index] if index >= 0 else machine
+		architecture = MachineArchitecture.findMatch(machineArchitecture)
+		if not architecture:
+			architecture = Architectures.ANY
 
 		super(BuildPlatformUnix, self).init(treePath, architecture, machine)
 
