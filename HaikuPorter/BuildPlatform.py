@@ -217,6 +217,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:automake',
 			'cmd:autoreconf',
 			'cmd:bash',
+			'cmd:cmake',
 			'cmd:flex',
 			'cmd:gcc',
 			'cmd:grep',
