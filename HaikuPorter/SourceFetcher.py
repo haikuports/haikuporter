@@ -201,7 +201,7 @@ class SourceFetcherForGit(object):
 		
 	def fetch(self):
 		ensureCommandIsAvailable('git')
-		command = 'git clone -n %s %s' % (self.uri, self.fetchTarget)
+		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
 		check_call(command, shell=True)
 
 	def unpack(self, sourceDir, subdir):
