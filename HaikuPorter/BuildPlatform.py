@@ -8,7 +8,7 @@
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import PackageInfo
-from HaikuPorter.RecipeTypes import MachineArchitecture
+from HaikuPorter.RecipeTypes import Architectures, MachineArchitecture
 from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.Utils import (check_output, printError, sysExit)
 
