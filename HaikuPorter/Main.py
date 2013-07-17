@@ -346,9 +346,8 @@ class Main(object):
 
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture
+		targetArchitecture = buildPlatform.getTargetArchitecture()
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
-			targetArchitecture \
-				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
 			targetHaikuPackage = getOption('crossDevelPackage')
 			if not targetHaikuPackage:
 				if not buildPlatform.isHaiku():
@@ -364,7 +363,6 @@ class Main(object):
 				sysExit('Native building not supported on this platform (%s)'
 					% buildPlatform.getName())
 			targetHaikuVersion = buildPlatform.getHaikuVersion()
-			targetArchitecture = buildPlatform.getArchitecture()
 
 		self.shellVariables = {
 			'haikuVersion': targetHaikuVersion,
@@ -398,10 +396,8 @@ class Main(object):
 			self.shellVariables['targetMachineTriple'] = targetMachineTriple
 			self.shellVariables['targetMachineTripleAsName'] \
 				= targetMachineTriple.replace('-', '_')
-			self.shellVariables['crossSysrootDir'] \
-				= '/boot/cross-sysroot/' + targetArchitecture;
 		else:
-			self.shellVariables['isCrossRepository'] = 'false';
+			self.shellVariables['isCrossRepository'] = 'false'
 
 	def _createRepositoryIfNeeded(self, quiet = False):
 		"""create/update repository"""

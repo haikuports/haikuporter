@@ -599,7 +599,7 @@ class Port(object):
 			}
 			if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 				chrootEnvVars['crossSysrootDir'] \
-					= self.workDir + self.shellVariables['crossSysrootDir']
+					= self.shellVariables['crossSysrootDir']
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 				if not getOption('quiet'):
 					print 'chroot has these packages active:'
@@ -742,6 +742,9 @@ class Port(object):
 			installDestDir = buildPlatform.getInstallDestDir(self.workDir)
 			if installDestDir:
 				self.shellVariables['installDestDir'] = installDestDir
+
+			self.shellVariables['crossSysrootDir'] \
+				= buildPlatform.getCrossSysrootDirectory(self.workDir)
 
 		relativeConfigureDirs = {
 			'dataDir':			'data',

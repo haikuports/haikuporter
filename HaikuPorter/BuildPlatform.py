@@ -32,6 +32,13 @@ class BuildPlatform(object):
 		self.machineTriple = machineTriple
 		self.treePath = treePath
 
+		self.targetArchitecture = self.architecture
+		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			self.targetArchitecture \
+				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
+
+		self.crossSysrootDir = '/boot/cross-sysroot/' + self.targetArchitecture
+
 	def getName(self):
 		return platform.system()
 
@@ -40,6 +47,9 @@ class BuildPlatform(object):
 
 	def getArchitecture(self):
 		return self.architecture
+
+	def getTargetArchitecture(self):
+		return self.targetArchitecture
 
 	def getLicensesDirectory(self):
 		directory = getOption('licensesDirectory')
@@ -55,6 +65,10 @@ class BuildPlatform(object):
 				+ '/data/mime_db')
 		return directory
 
+	def getCrossSysrootDirectory(self, workDir):
+		if not workDir:
+			return self.crossSysrootDir
+		return workDir + self.crossSysrootDir
 
 # -- BuildPlatformHaiku class -------------------------------------------------
 
@@ -320,14 +334,14 @@ class BuildPlatformUnix(BuildPlatform):
 		return self._getCrossToolsPath(workDir) + '/bin'
 
 	def getInstallDestDir(self, workDir):
-		return workDir + '/cross-sysroot'
+		return self.getCrossSysrootDirectory(workDir)
 
 	def setupNonChrootBuildEnvironment(self, workDir, requiredPackages):
 		# re-init the global work dir
-		sysrootDir = self.getInstallDestDir(workDir)
+		sysrootDir = self.getCrossSysrootDirectory(workDir)
 		if os.path.exists(sysrootDir):
 			shutil.rmtree(sysrootDir)
-		os.mkdir(sysrootDir)
+		os.makedirs(sysrootDir)
 
 		os.mkdir(sysrootDir + '/packages')
 		os.mkdir(sysrootDir + '/boot')
@@ -394,7 +408,7 @@ class BuildPlatformUnix(BuildPlatform):
 
 	def cleanNonChrootBuildEnvironment(self, workDir, buildOK):
 		# remove the symlinks we created in the cross tools tree
-		sysrootDir = self.getInstallDestDir(workDir)
+		sysrootDir = self.getCrossSysrootDirectory(workDir)
 		toolsMachineTriple = self._getCrossToolsMachineTriple()
 		toolsMachineDir = self.originalCrossToolsDir + '/' + toolsMachineTriple
 
@@ -422,7 +436,7 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.targetMachineTriple
 
 	def _getCrossToolsPath(self, workDir):
-		return self.getInstallDestDir(workDir) + '/cross-tools'
+		return self.getCrossSysrootDirectory(workDir) + '/cross-tools'
 
 
 # -----------------------------------------------------------------------------
