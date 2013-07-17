@@ -71,7 +71,7 @@ getPackagePrefix()
 	# Usage: getPackagePrefix <packageSuffix>
 	local packageSuffix="$1"
 
-	local packageLinksDir="$(dirname $portPackageLinksDir)"
+	local packageLinksDir="$(dirname $installDestDir$portPackageLinksDir)"
 	local packageName="${portName}_$packageSuffix"
 	local linksDir="$packageLinksDir/$packageName-$portFullVersion"
 	local packagePrefix="$linksDir/.self"
@@ -291,33 +291,33 @@ prepareInstalledDevelLib()
 		echo >&2 "      The glob pattern to be used to enumerate all library"
 		echo >&2 '      entries. Is appended to $libDir/${libBaseName} to form'
 		echo >&2 '      the complete pattern. Defaults to ".*".'
-		
+
 		exit 1
 	fi
 
-	mkdir -p $developLibDir
+	mkdir -p $installDestDir$developLibDir
 
-	libBaseName=$1
-	soPattern=$2
-	pattern=$3
+	local libBaseName=$1
+	local soPattern=$2
+	local pattern=$3
 
 	# find the shared library file and get its soname
-	sharedLib=""
-	sonameLib=""
-	soname=""
 	if [[ $isCrossRepository == true && $portName != *_cross_* ]]; then
 		readelf=${targetArchitecture}-readelf
 	else
 		readelf=readelf
 	fi
-	for lib in $libDir/${libBaseName}${soPattern:-.so*}; do
+	local sharedLib=""
+	local sonameLib=""
+	local soname=""
+	for lib in $installDestDir$libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
 			sharedLib=$lib
 			sonameLine=$($readelf --dynamic $lib | grep SONAME)
 			if [ -n "$sonameLine" ]; then
 				soname=$(echo "$sonameLine" | sed 's,.*\[\(.*\)\].*,\1,')
 				if [ "$soname" != "$sonameLine" ]; then
-					sonameLib=$libDir/$soname
+					sonameLib=$installDestDir$libDir/$soname
 				else
 					soname=""
 				fi
@@ -330,18 +330,18 @@ prepareInstalledDevelLib()
 	# Move things/create symlinks: The shared library file and the symlink for
 	# the soname remain where they are, but we create respective symlinks in the
 	# development directory. Everything else is moved there.
-	for lib in $libDir/${libBaseName}${pattern:-.*}; do
+	for lib in $installDestDir$libDir/${libBaseName}${pattern:-.*}; do
 		if [ "$lib" = "$sharedLib" ]; then
-			ln -s ../../lib/$(basename $lib) $developLibDir/
+			ln -s ../../lib/$(basename $lib) $installDestDir$developLibDir/
 		elif [ "$lib" = "$sonameLib" ]; then
-			ln -s $(basename $sharedLib) $developLibDir/$soname
+			ln -s $(basename $sharedLib) $installDestDir$developLibDir/$soname
 		else
 			# patch .la files before moving
 			if [[ "$lib" = *.la ]]; then
 				fixDevelopLibDirReferences $lib
 			fi
 
-			mv $lib $developLibDir/
+			mv $lib $installDestDir$developLibDir/
 		fi
 	done
 }
@@ -356,17 +356,17 @@ prepareInstalledDevelLibs()
 
 fixPkgconfig()
 {
-	sourcePkgconfigDir=$libDir/pkgconfig
-	targetPkgconfigDir=$developLibDir/pkgconfig
+	sourcePkgconfigDir=$installDestDir$libDir/pkgconfig
+	targetPkgconfigDir=$installDestDir$developLibDir/pkgconfig
 
-	if [ ! -d $sourcePkgconfigDir ]; then
+	if [ ! -d $installDestDir$sourcePkgconfigDir ]; then
 		return
 	fi
 
 
-	mkdir -p $targetPkgconfigDir
+	mkdir -p $installDestDir$targetPkgconfigDir
 
-	for file in $sourcePkgconfigDir/*; do
+	for file in $installDestDir$sourcePkgconfigDir/*; do
 		name=$(basename $file)
 		sed -e 's,^libdir=\(.*\),libdir=${prefix}/develop/lib,' \
 			-e 's,^includedir=\(.*\),includedir=${prefix}/develop/headers,' \
@@ -455,18 +455,18 @@ packageEntries()
 	for file in $*; do
 		# If absolute, resolve to relative file name.
 		if [[ "$file" = /* ]]; then
-			if [[ "$file" =~ $prefix/(.*) ]]; then
+			if [[ "$file" =~ $installDestDir$prefix/(.*) ]]; then
 				file=${BASH_REMATCH[1]}
 			else
 				echo >&2 "packageEntries: error: absolute entry \"$file\""
-				echo >&2 "doesn't appear to be in \"$prefix\"."
+				echo >&2 "doesn't appear to be in \"$installDestDir$prefix\"."
 			fi
 		fi
 
 		# make sure target containing directory exists and move there
 		targetDir=$(dirname "$packagePrefix/$file")
 		mkdir -p "$targetDir"
-		mv "$prefix/$file" "$targetDir"
+		mv "$installDestDir$prefix/$file" "$targetDir"
 	done
 }
 
