@@ -214,6 +214,23 @@ updateRevisionVariables()
 	true
 }
 
+getTargetArchitectureCommand()
+{
+	# Usage: getTargetArchitectureCommand <command>
+	if [ $# -lt 1 ]; then
+		echo >&2 "Usage: getTargetArchitectureCommand <command>"
+		exit 1
+	fi
+
+	local command=$1
+
+	if [[ $isCrossRepository == true && $portName != *_cross_* ]]; then
+		echo ${targetMachineTriple}-$command
+	else
+		echo $command
+	fi
+}
+
 # helper function to invoke a configure script with the correct directory
 # arguments
 runConfigure()
@@ -302,14 +319,10 @@ prepareInstalledDevelLib()
 	local pattern=$3
 
 	# find the shared library file and get its soname
-	if [[ $isCrossRepository == true && $portName != *_cross_* ]]; then
-		readelf=${targetArchitecture}-readelf
-	else
-		readelf=readelf
-	fi
 	local sharedLib=""
 	local sonameLib=""
 	local soname=""
+	local readelf=$(getTargetArchitectureCommand readelf)
 	for lib in $installDestDir$libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
 			sharedLib=$lib
@@ -483,9 +496,11 @@ extractDebugInfo()
 
 	mkdir -p "$(dirname $debugInfoPath)"
 
-	objcopy --only-keep-debug "$path" "$debugInfoPath"
-	strip --strip-debug "$path"
-	objcopy --add-gnu-debuglink="$debugInfoPath" "$path"
+	local objcopy=$(getTargetArchitectureCommand objcopy)
+	local strip=$(getTargetArchitectureCommand strip)
+	$objcopy --only-keep-debug "$path" "$debugInfoPath"
+	$strip --strip-debug "$path"
+	$objcopy --add-gnu-debuglink="$debugInfoPath" "$path"
 }
 
 packageDebugInfos()
