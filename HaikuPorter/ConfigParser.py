@@ -104,13 +104,13 @@ class ConfigParser(object):
 				if not baseKey in entries:
 					entries[baseKey] = {}
 				
-			type = attributes[baseKey]['type']
-			if type == types.StringType:
+			attrType = attributes[baseKey]['type']
+			if attrType == types.StringType:
 				if attributes[baseKey]['indexable']:
 					entries[baseKey][index] = valueString
 				else:
 					entries[key] = valueString
-			elif type == types.IntType:
+			elif attrType == types.IntType:
 				try:
 					if attributes[baseKey]['indexable']:
 						entries[baseKey][index] = int(valueString)
@@ -120,14 +120,14 @@ class ConfigParser(object):
 					sysExit('evaluating file %s produced illegal value '
 							'"%s" for key %s, expected an <integer> value'
 							% (filename, key, valueString))
-			elif type == types.ListType:
+			elif attrType == types.ListType:
 				values = [v.strip() for v in valueString.splitlines()]
 				values = [v for v in values if len(v) > 0]
 				if attributes[baseKey]['indexable']:
 					entries[baseKey][index] = values
 				else:
 					entries[key] = values
-			elif type == LinesOfText:
+			elif attrType == LinesOfText:
 				# like a list, but only strip empty lines in front of and
 				# after the text
 				values = [v.strip() for v in valueString.splitlines()]
@@ -136,14 +136,14 @@ class ConfigParser(object):
 				while values and len(values[-1]) == 0:
 					values.pop()
 				entries[key] = values
-			elif type == Phase:
+			elif attrType == Phase:
 				if valueString.upper() not in Phase.getAllowedValues():
 					sysExit('evaluating file %s\nproduced illegal value "%s" '
 							'for key %s\nexpected one of: %s'
 							% (filename, key, valueString, 
 							   ','.join(Phase.getAllowedValues())))
 				entries[key] = valueString.upper()
-			elif type == MachineArchitecture:
+			elif attrType == MachineArchitecture:
 				entries[key] = {}
 				knownArchitectures = MachineArchitecture.getAll()
 				valueString = valueString.lower()
@@ -153,7 +153,7 @@ class ConfigParser(object):
 							'known machine-architectures: %s'
 							% (filename, valueString, architectures))
 				entries[key] = valueString
-			elif type == Architectures:
+			elif attrType == Architectures:
 				entries[key] = {}
 				for value in [v.lower() for v in valueString.split()]:
 					architecture = ''
@@ -179,7 +179,7 @@ class ConfigParser(object):
 				if 'source' in entries[key] and len(entries[key]) > 1:
 					sysExit("%s specifies both 'source' and other architectures" 
 							% (filename))
-			elif type == YesNo:
+			elif attrType == YesNo:
 				valueString = valueString.lower()
 				if valueString not in YesNo.getAllowedValues():
 					sysExit("Value for %s should be 'yes' or 'no' in %s" 

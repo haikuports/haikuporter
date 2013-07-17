@@ -57,7 +57,7 @@ class ChrootSetup(object):
 		check_call(['/bin/bash', '-c', setupChrootScript], env=shellEnv)
 		return self
 	
-	def __exit__(self, type, value, traceback):
+	def __exit__(self, ignoredType, value, traceback):
 		# execute the chroot cleanup scriptlet via the shell ...
 		os.chdir(self.path)
 		shellEnv = filteredEnvironment()

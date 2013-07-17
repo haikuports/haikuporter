@@ -32,20 +32,20 @@ def parseCheckoutUri(uri):
 	if not m or not m.group('realUri'):
 		sysExit("Couldn't parse repository URI " + uri)
 
-	type = m.group('type')
+	uriType = m.group('type')
 	realUri = m.group('realUri')
 	rev = m.group('rev')
 
 	# Attempt to parse a URI without a + in it. ex: svn://blah
-	if not type:
+	if not uriType:
 		m = re.match("^(\w*).*$", realUri)
 		if m:
-			type = m.group(1)
+			uriType = m.group(1)
 
-	if not type:
+	if not uriType:
 		sysExit("Couldn't parse repository type from URI " + realUri)
 
-	return (type, realUri, rev)
+	return (uriType, realUri, rev)
 
 # -----------------------------------------------------------------------------
 

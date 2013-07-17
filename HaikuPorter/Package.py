@@ -55,8 +55,8 @@ class PackageType(str):
 # -- Base class for all packages ----------------------------------------------
 
 class Package(object):
-	def __init__(self, type, name, port, recipeKeys, policy):
-		self.type = type
+	def __init__(self, packageType, name, port, recipeKeys, policy):
+		self.type = packageType
 		self.name = name
 		self.version = port.version
 		self.revision = port.revision
@@ -75,7 +75,7 @@ class Package(object):
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
-		if type == PackageType.SOURCE:
+		if packageType == PackageType.SOURCE:
 			self.architecture = Architectures.SOURCE
 		elif port.targetArchitecture in self.recipeKeys['ARCHITECTURES']:
 			# if this package can be built for the current target architecture,
@@ -465,10 +465,10 @@ class SourcePackage(Package):
 
 # -- package factory function -------------------------------------------------
 
-def packageFactory(type, name, port, recipeKeys, policy):
+def packageFactory(packageType, name, port, recipeKeys, policy):
 	"""Creates a package matching the given type"""
 	
-	if type == PackageType.SOURCE:
-		return SourcePackage(type, name, port, recipeKeys, policy)
+	if packageType == PackageType.SOURCE:
+		return SourcePackage(packageType, name, port, recipeKeys, policy)
 	else:
-		return Package(type, name, port, recipeKeys, policy)
+		return Package(packageType, name, port, recipeKeys, policy)
