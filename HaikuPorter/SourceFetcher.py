@@ -12,7 +12,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Utils import (ensureCommandIsAvailable, sysExit, unpackArchive)
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit, 
+							   unpackArchive, warn)
 
 import os
 import re
@@ -111,6 +112,10 @@ class SourceFetcherForBazaar(object):
 		command += ' ' + self.uri + ' ' + self.fetchTarget
 		check_call(command, shell=True)
 
+	def updateToRev(self, rev):
+		warn("Updating of a Bazaar repository to a specific revision has "
+			 "not been implemented yet, sorry")
+
 	def unpack(self, sourceDir, subdir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
 
@@ -142,6 +147,10 @@ class SourceFetcherForCvs(object):
 		command += ' "%s"' % self.module
 		check_call(command, shell=True, cwd=baseDir)
 
+	def updateToRev(self, rev):
+		warn("Updating of a CVS repository to a specific revision has "
+			 "not been implemented yet, sorry")
+
 	def unpack(self, sourceDir, subdir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
 
@@ -161,6 +170,9 @@ class SourceFetcherForDownload(object):
 		if self.uri.startswith('https://'):
 			args.insert(3, '--no-check-certificate')
 		check_call(args)
+
+	def updateToRev(self, rev):
+		pass
 
 	def unpack(self, sourceDir, subdir):
 		unpackFile(self.uri, self.fetchTarget, sourceDir, subdir)
@@ -185,6 +197,10 @@ class SourceFetcherForFossil(object):
 			command += ' ' + self.rev
 		check_call(command, shell=True)
 
+	def updateToRev(self, rev):
+		warn("Updating of a Fossil repository to a specific revision has "
+			 "not been implemented yet, sorry")
+
 	def unpack(self, sourceDir, subdir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
 
@@ -195,6 +211,7 @@ class SourceFetcherForGit(object):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
 
+		print uri
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 		if not self.rev:
 			self.rev = 'HEAD'
@@ -203,6 +220,21 @@ class SourceFetcherForGit(object):
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
 		check_call(command, shell=True)
+
+	def updateToRev(self, rev):
+		ensureCommandIsAvailable('git')
+		
+		self.rev = rev
+		command = 'git rev-parse --verify %s &>/dev/null' % self.rev
+		try:
+			check_call(command, shell=True, cwd=self.fetchTarget)
+		except:
+			print 'trying to fetch revision %s from upstream' % self.rev
+			command = "git branch | grep '*' | cut -d' ' -f2"
+			currentBranch = \
+				check_output(command, shell=True, cwd=self.fetchTarget).strip()
+			command = 'git fetch origin %s:%s' % (currentBranch, currentBranch)
+			check_call(command, shell=True, cwd=self.fetchTarget)
 
 	def unpack(self, sourceDir, subdir):
 		if subdir:
@@ -231,6 +263,9 @@ class SourceFetcherForLocalFile(object):
 			raise NameError("source %s doesn't exist" % localFile)
 		os.symlink(localFile, self.fetchTarget)
 
+	def updateToRev(self, rev):
+		pass
+
 	def unpack(self, sourceDir, subdir):
 		unpackFile(self.uri, self.fetchTarget, sourceDir, subdir)
 
@@ -250,6 +285,10 @@ class SourceFetcherForMercurial(object):
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
 		check_call(command, shell=True)
+
+	def updateToRev(self, rev):
+		warn("Updating of a Mercurial repository to a specific revision has "
+			 "not been implemented yet, sorry")
 
 	def unpack(self, sourceDir, subdir):
 		if subdir:
@@ -277,6 +316,10 @@ class SourceFetcherForSubversion(object):
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
 		check_call(command, shell=True)
+
+	def updateToRev(self, rev):
+		warn("Updating of a Subversion repository to a specific revision has "
+			 "not been implemented yet, sorry")
 
 	def unpack(self, sourceDir, subdir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)

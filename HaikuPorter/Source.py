@@ -14,7 +14,7 @@
 
 from HaikuPorter.GlobalConfig import globalConfiguration
 from HaikuPorter.Options import getOption
-from HaikuPorter.SourceFetcher import createSourceFetcher
+from HaikuPorter.SourceFetcher import (createSourceFetcher, parseCheckoutUri)
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, 
 							   readStringFromFile, storeStringInFile, sysExit, 
 							   warn)
@@ -86,27 +86,44 @@ class Source(object):
 		downloadDir = os.path.dirname(self.fetchTarget)
 		if not os.path.exists(downloadDir):
 			os.mkdir(downloadDir)
-			
-		for uri in self.uris:
-			try:
-				uriFile = self.fetchTarget + '.uri'
-				if os.path.exists(self.fetchTarget):
-					if os.path.exists(uriFile):
-						# we need to look at the URI that the fetch-target came 
-						# from in order to create an appropriate source fetcher
-						uri = readStringFromFile(uriFile)
+
+		# check if we've already downloaded the sources			
+		uriFile = self.fetchTarget + '.uri'
+		if os.path.exists(self.fetchTarget):
+			if os.path.exists(uriFile):
+				# create a source fetcher corresponding to the base URI found
+				# in the uri file and update to a different revision, if needed
+				storedUri = readStringFromFile(uriFile)
+				(unusedType, storedBaseUri, storedRev) \
+					= parseCheckoutUri(storedUri)
+					
+				for uri in self.uris:
+					(unusedType, baseUri, rev) = parseCheckoutUri(uri)
+					if baseUri == storedBaseUri:
 						self.sourceFetcher \
 							= createSourceFetcher(uri, self.fetchTarget)
-						print ('Skipping download of source for ' 
-							   + self.fetchTargetName)
-						return
-					else:
-						# Remove the fetch target, as it isn't complete
-						if os.path.isdir(self.fetchTarget):
-							shutil.rmtree(self.fetchTarget)
+						if rev != storedRev:
+							self.sourceFetcher.updateToRev(rev)
+							storeStringInFile(uri, self.fetchTarget + '.uri')
 						else:
-							os.remove(self.fetchTarget)
+							print ('Skipping download of source for ' 
+								   + self.fetchTargetName)
+						break
+				else:
+					warn("Stored SRC_URI is no longer in recipe, automatic "
+						 "repository update won't work")
+					
+				return
+			else:
+				# Remove the fetch target, as it isn't complete
+				if os.path.isdir(self.fetchTarget):
+					shutil.rmtree(self.fetchTarget)
+				else:
+					os.remove(self.fetchTarget)
 
+		# download the sources
+		for uri in self.uris:
+			try:
 				print '\nDownloading: ' + uri + ' ...'
 				sourceFetcher = createSourceFetcher(uri, self.fetchTarget)
 				sourceFetcher.fetch()
