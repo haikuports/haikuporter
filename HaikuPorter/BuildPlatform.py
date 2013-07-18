@@ -267,23 +267,20 @@ class BuildPlatformUnix(BuildPlatform):
 
 	def resolveDependencies(self, packageInfoFiles, repositories,
 			isPrerequired):
-		# We don't have any packages for build host dependencies. So when
-		# resolving pre-requires, we just check that they are available
-		# implicitly.
-		if isPrerequired:
-			for packageInfoFile in packageInfoFiles:
-				packageInfo = PackageInfo(packageInfoFile)
-				for requires in packageInfo.getRequires():
-					if not requires.getName() in self.implicitBuildProvides:
-						printError('requires "%s" of package "%s" could not be '
-							'resolved' % (str(requires), packageInfoFile))
-						raise LookupError()
-			return []
-
 		# Use the RequiresUpdater to resolve the dependencies.
 		requiresUpdater = RequiresUpdater([], packageInfoFiles)
 		for repository in repositories:
-			requiresUpdater.addPackages(repository)
+			for package in os.listdir(repository):
+				if not (package.endswith('.hpkg')
+						or package.endswith('.PackageInfo')):
+					continue
+				# For prerequirements consider only cross packages.
+				# TODO: Once we have a strict separation of build host and
+				# target requires, for non-prerequires only non-cross packages
+				# should be considered.
+				isCrossPackage = '_cross_' in package
+				if not isPrerequired or isCrossPackage:
+					requiresUpdater.addPackageFile(repository + '/' + package)
 
 		for packageInfoFile in packageInfoFiles:
 			requiresUpdater.addPackageFile(packageInfoFile)
@@ -296,7 +293,8 @@ class BuildPlatformUnix(BuildPlatform):
 			packageInfo = PackageInfo(package)
 			for requires in packageInfo.getRequires():
 				# TODO: Once we have a strict separation of build host and
-				# target requires, this check should be omitted.
+				# target requires, this check should be done only for
+				# prerequires.
 				if requires.getName() in self.implicitBuildProvides:
 					continue
 
