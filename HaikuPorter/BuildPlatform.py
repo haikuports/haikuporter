@@ -407,8 +407,12 @@ class BuildPlatformUnix(BuildPlatform):
 
 		# extract the required packages
 		for package in requiredPackages:
+			if '_cross_' in package:
+				packageDir = workDir + '/boot/common'
+			else:
+				packageDir = sysrootDir + '/boot/common'
 			args = [ getOption('commandPackage'), 'extract', '-C',
-				sysrootDir + '/boot/common', package ]
+				packageDir, package ]
 			check_call(args)
 
 	def cleanNonChrootBuildEnvironment(self, workDir, buildOK):
