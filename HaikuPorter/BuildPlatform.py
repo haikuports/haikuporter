@@ -157,8 +157,8 @@ class BuildPlatformHaiku(BuildPlatform):
 		if os.path.exists(activeBuildPackage):
 			os.remove(activeBuildPackage)
 
-	def getCrossToolsBinPath(self, workDir):
-		return '/boot/common/develop/tools/bin'
+	def getCrossToolsBinPaths(self, workDir):
+		return [ '/boot/common/develop/tools/bin' ]
 
 	def getInstallDestDir(self, workDir):
 		return None
@@ -335,14 +335,21 @@ class BuildPlatformUnix(BuildPlatform):
 		if os.path.exists(activeBuildPackage):
 			shutil.rmtree(activeBuildPackage)
 
-	def getCrossToolsBinPath(self, workDir):
-		return self._getCrossToolsPath(workDir) + '/bin'
+	def getCrossToolsBinPaths(self, workDir):
+		return [
+			self._getCrossToolsPath(workDir) + '/bin',
+			workDir + '/boot/common/bin'
+			]
 
 	def getInstallDestDir(self, workDir):
 		return self.getCrossSysrootDirectory(workDir)
 
 	def setupNonChrootBuildEnvironment(self, workDir, requiredPackages):
-		# re-init the global work dir
+		# init the build platform part of the work dir
+		if not os.path.exists(workDir + '/boot/common'):
+			os.makedirs(workDir + '/boot/common')
+
+		# init the sysroot dir
 		sysrootDir = self.getCrossSysrootDirectory(workDir)
 		if os.path.exists(sysrootDir):
 			shutil.rmtree(sysrootDir)

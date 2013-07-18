@@ -1073,8 +1073,8 @@ class Port(object):
 		shellEnv = filteredEnvironment()
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 			# include cross development tools in path automatically
-			crossToolsPath = buildPlatform.getCrossToolsBinPath(self.workDir)
-			shellEnv['PATH'] = crossToolsPath + ':' + shellEnv['PATH']
+			crossToolsPaths = buildPlatform.getCrossToolsBinPaths(self.workDir)
+			shellEnv['PATH'] = ':'.join(crossToolsPaths + [ shellEnv['PATH'] ])
 
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)
