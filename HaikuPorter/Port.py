@@ -738,10 +738,19 @@ class Port(object):
 					sourceDirKey = 'sourceDir' + source.index
 				self.shellVariables[sourceDirKey] = source.sourceDir
 
+		basePrefix = ''
 		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
-			installDestDir = buildPlatform.getInstallDestDir(self.workDir)
-			if installDestDir:
-				self.shellVariables['installDestDir'] = installDestDir
+			# If this is a cross package, we possibly want to use an additional
+			# base prefix. Otherwise the prefix is as if building natively on
+			# Haiku, but we may need to prepend a dest-dir in the install phase
+			# (when we don't use a chroot).
+			if '_cross_' in self.name:
+				basePrefix = \
+					buildPlatform.getCrossToolsBasePrefix(self.workDir)
+			else:
+				installDestDir = buildPlatform.getInstallDestDir(self.workDir)
+				if installDestDir:
+					self.shellVariables['installDestDir'] = installDestDir
 
 			self.shellVariables['crossSysrootDir'] \
 				= buildPlatform.getCrossSysrootDirectory(self.workDir)
@@ -772,8 +781,8 @@ class Port(object):
 		# --pdfdir=DIR            pdf documentation [DOCDIR]
 		# --psdir=DIR             ps documentation [DOCDIR]
 
-		portPackageLinksDir = (buildPlatform.findDirectory(
-				'B_PACKAGE_LINKS_DIRECTORY')
+		portPackageLinksDir = (basePrefix
+			+ buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY')
 			+ '/' + revisionedName)
 		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 

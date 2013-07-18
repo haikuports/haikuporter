@@ -70,6 +70,7 @@ class BuildPlatform(object):
 			return self.crossSysrootDir
 		return workDir + self.crossSysrootDir
 
+
 # -- BuildPlatformHaiku class -------------------------------------------------
 
 class BuildPlatformHaiku(BuildPlatform):
@@ -156,6 +157,9 @@ class BuildPlatformHaiku(BuildPlatform):
 	def deactivateBuildPackage(self, workDir, activeBuildPackage):
 		if os.path.exists(activeBuildPackage):
 			os.remove(activeBuildPackage)
+
+	def getCrossToolsBasePrefix(self, workDir):
+		return ''
 
 	def getCrossToolsBinPaths(self, workDir):
 		return [ '/boot/common/develop/tools/bin' ]
@@ -315,39 +319,31 @@ class BuildPlatformUnix(BuildPlatform):
 		return False
 
 	def activateBuildPackage(self, workDir, packagePath):
-		# get the package info
-		packageInfo = PackageInfo(packagePath)
-		installPath = packageInfo.getInstallPath()
-		if not installPath:
-			sysExit('Build package "%s" doesn\'t have an install path'
-				% packagePath)
-
-		# create the package links directory for the package and the .self
-		# symlink
-		packageLinksDir = (self.getInstallDestDir(workDir) + '/packages/'
-			+ packageInfo.getName() + '-' + packageInfo.getVersion())
-		os.mkdir(packageLinksDir)
-		os.symlink(installPath, packageLinksDir + '/.self')
-
-		return packageLinksDir
+		return self._activatePackage(packagePath,
+			self._getPackageInstallRoot(workDir, packagePath), None, True)
 
 	def deactivateBuildPackage(self, workDir, activeBuildPackage):
 		if os.path.exists(activeBuildPackage):
 			shutil.rmtree(activeBuildPackage)
 
+	def getCrossToolsBasePrefix(self, workDir):
+		return self.treePath + '/cross_tools'
+
 	def getCrossToolsBinPaths(self, workDir):
 		return [
 			self._getCrossToolsPath(workDir) + '/bin',
-			workDir + '/boot/common/bin'
+			self.getCrossToolsBasePrefix(workDir) + '/boot/system/bin'
 			]
 
 	def getInstallDestDir(self, workDir):
 		return self.getCrossSysrootDirectory(workDir)
 
 	def setupNonChrootBuildEnvironment(self, workDir, requiredPackages):
-		# init the build platform part of the work dir
-		if not os.path.exists(workDir + '/boot/common'):
-			os.makedirs(workDir + '/boot/common')
+		# init the build platform tree
+		crossToolsInstallPrefix = self.getCrossToolsBasePrefix(workDir)
+		if os.path.exists(crossToolsInstallPrefix):
+			shutil.rmtree(crossToolsInstallPrefix)
+		os.makedirs(crossToolsInstallPrefix + '/boot/system')
 
 		# init the sysroot dir
 		sysrootDir = self.getCrossSysrootDirectory(workDir)
@@ -408,19 +404,13 @@ class BuildPlatformUnix(BuildPlatform):
 		os.symlink(libDir, toolsLibDir)
 
 		# extract the haiku_cross_devel_sysroot package
-		args = [ getOption('commandPackage'), 'extract', '-C',
-			sysrootDir + '/boot/system', self.crossDevelPackage ]
-		check_call(args)
+		self._activatePackage(self.crossDevelPackage, sysrootDir,
+			'/boot/system')
 
 		# extract the required packages
 		for package in requiredPackages:
-			if '_cross_' in package:
-				packageDir = workDir + '/boot/common'
-			else:
-				packageDir = sysrootDir + '/boot/common'
-			args = [ getOption('commandPackage'), 'extract', '-C',
-				packageDir, package ]
-			check_call(args)
+			self._activatePackage(package,
+				self._getPackageInstallRoot(workDir, package), '/boot/system')
 
 	def cleanNonChrootBuildEnvironment(self, workDir, buildOK):
 		# remove the symlinks we created in the cross tools tree
@@ -440,9 +430,13 @@ class BuildPlatformUnix(BuildPlatform):
 			if os.path.lexists(originalToolsLibDir):
 				os.rename(originalToolsLibDir, toolsLibDir)
 
-		# remove the global work dir, if the build went fine
-		if buildOK and os.path.exists(sysrootDir):
-			shutil.rmtree(sysrootDir)
+		# If the the build went fine, clean up.
+		if buildOK:
+			crossToolsDir = self._getCrossToolsPath(workDir)
+			if os.path.exists(crossToolsDir):
+				shutil.rmtree(crossToolsDir)
+			if os.path.exists(sysrootDir):
+				shutil.rmtree(sysrootDir)
 
 	def _getCrossToolsMachineTriple(self):
 		# In case of gcc2 our machine triple doesn't agree with that of the
@@ -452,7 +446,41 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.targetMachineTriple
 
 	def _getCrossToolsPath(self, workDir):
-		return self.getCrossSysrootDirectory(workDir) + '/cross-tools'
+		return self.getCrossToolsBasePrefix(workDir) + '/boot/cross-tools'
+
+	def _getPackageInstallRoot(self, workDir, package):
+		package = os.path.basename(package)
+		if '_cross_' in package:
+			return self.getCrossToolsBasePrefix(workDir)
+		return self.getCrossSysrootDirectory(workDir)
+
+	def _activatePackage(self, package, installRoot, installationLocation,
+			isBuildPackage = False):
+		# get the package info
+		packageInfo = PackageInfo(package)
+
+		# extract the package, unless it is a build package
+		if not isBuildPackage:
+			installPath = installRoot + '/' + installationLocation
+			args = [ getOption('commandPackage'), 'extract', '-C', installPath,
+				package ]
+			check_call(args)
+		else:
+			installPath = packageInfo.getInstallPath()
+			if not installPath:
+				sysExit('Build package "%s" doesn\'t have an install path'
+					% package)
+
+		# create the package links directory for the package and the .self
+		# symlink
+		packageLinksDir = (installRoot + '/packages/' + packageInfo.getName()
+			+ '-' + packageInfo.getVersion())
+		if os.path.exists(packageLinksDir):
+			shutil.rmtree(packageLinksDir)
+		os.makedirs(packageLinksDir)
+		os.symlink(installPath, packageLinksDir + '/.self')
+
+		return packageLinksDir
 
 
 # -----------------------------------------------------------------------------
