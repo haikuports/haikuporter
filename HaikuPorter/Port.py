@@ -69,14 +69,15 @@ class ChrootSetup(object):
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
-	def __init__(self, name, version, category, baseDir, globalShellVariables,
-				 policy):
+	def __init__(self, name, version, category, baseDir, outputDir,
+			globalShellVariables, policy):
 		self.name = name
 		self.version = version
 		self.versionedName = name + '-' + version
 		self.category = category
 		self.baseDir = baseDir
-		self.workDir = self.baseDir + '/work-' + self.version
+		self.outputDir = outputDir
+		self.workDir = self.outputDir + '/work-' + self.version
 
 		self.recipeFilePath \
 			= self.baseDir + '/' + self.name + '-' + self.version + '.recipe'
@@ -118,7 +119,10 @@ class Port(object):
 		self.packages = []
 
 		# create full paths for the directories
-		self.downloadDir = self.baseDir + '/download'
+		if Configuration.shallDownloadInPortDirectory():
+			self.downloadDir = self.baseDir + '/download'
+		else:
+			self.downloadDir = self.outputDir + '/download'
 		self.patchesDir = self.baseDir + '/patches'
 		self.sourceBaseDir = self.workDir + '/sources'
 		self.packageInfoDir = self.workDir + '/package-infos'
@@ -269,7 +273,7 @@ class Port(object):
 
 		# copy the recipe file and prepare it for use
 		if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
-			os.mkdir(os.path.dirname(self.preparedRecipeFile))
+			os.makedirs(os.path.dirname(self.preparedRecipeFile))
 
 		prepareRecipeCommand = [ '/bin/bash', '-c',
 			'sed \'s,^\\(REVISION="[^"]*"\\),\\1; updateRevisionVariables ,\' '
@@ -965,6 +969,7 @@ class Port(object):
 		# unset directories which can't be reached from inside the chroot
 		self.baseDir = None
 		self.downloadDir = None
+		self.outputDirectory = None
 
 		# the recipe file has a fixed same name in the chroot
 		self.preparedRecipeFile = '/port.recipe'
@@ -1009,7 +1014,7 @@ class Port(object):
 		for package in self.packages:
 			settingsDir = package.packagingDir + '/settings'
 			if not os.path.exists(settingsDir):
-				os.mkdir(settingsDir)
+				os.makedirs(settingsDir)
 
 		self._doInstallStage()
 
@@ -1031,7 +1036,7 @@ class Port(object):
 
 		# create hpkg-directory if needed
 		if not os.path.exists(self.hpkgDir):
-			os.mkdir(self.hpkgDir)
+			os.makedirs(self.hpkgDir)
 
 		# make each package
 		for package in self.packages:

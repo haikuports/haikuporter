@@ -27,6 +27,16 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'allowUntested',
 	},
+
+	'DOWNLOAD_IN_PORT_DIRECTORY': {
+		'type': YesNo,
+		'required': False,
+		'default': False,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'downloadInPortDirectory',
+	},
+
 	'PACKAGER': {
 		'type': types.StringType,
 		'required': True,
@@ -111,6 +121,15 @@ haikuportsAttributes = {
 		'optionAttribute': 'crossDevelPackage',
 		'setAttribute': 'crossDevelPackage',
 	},
+
+	'OUTPUT_DIRECTORY': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'outputDirectory',
+	},
 }
 
 
@@ -127,14 +146,19 @@ class Configuration(object):
 		self.packagerName = None
 		self.packagerEmail = None
 		self.allowUntested = False
+		self.downloadInPortDirectory = False
 		self.packageCommand = None
 		self.mimesetCommand = None
 		self.systemMimeDB = None
 		self.licensesDirectory = None
 		self.crossTools = None
 		self.crossDevelPackage = None
+		self.outputDirectory = None
 
 		self._readConfigurationFile()
+
+		if not self.outputDirectory:
+			self.outputDirectory = self.treePath
 
 	@staticmethod
 	def init():
@@ -169,6 +193,10 @@ class Configuration(object):
 		return Configuration.configuration.allowUntested
 
 	@staticmethod
+	def shallDownloadInPortDirectory():
+		return Configuration.configuration.downloadInPortDirectory
+
+	@staticmethod
 	def getPackageCommand():
 		return Configuration.configuration.packageCommand
 
@@ -191,6 +219,10 @@ class Configuration(object):
 	@staticmethod
 	def getCrossDevelPackage():
 		return Configuration.configuration.crossDevelPackage
+
+	@staticmethod
+	def getOutputDirectory():
+		return Configuration.configuration.outputDirectory
 
 	def _readConfigurationFile(self):
 		haikuportsConf = getOption('configFile')

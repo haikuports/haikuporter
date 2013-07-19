@@ -42,15 +42,16 @@ class Main(object):
 		Configuration.init()
 
 		self.treePath = Configuration.getTreePath()
+		self.outputDirectory = Configuration.getOutputDirectory()
 
 		# init build platform
-		buildPlatform.init(self.treePath)
+		buildPlatform.init(self.treePath, self.outputDirectory)
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
 
 		# create path where built packages will be collected
-		self.packagesPath = self.treePath + '/packages'
+		self.packagesPath = self.outputDirectory + '/packages'
 		if not os.path.exists(self.packagesPath):
 			os.mkdir(self.packagesPath)
 
@@ -401,8 +402,9 @@ class Main(object):
 		"""create/update repository"""
 		if self.repository:
 			return
-		self.repository = Repository(self.treePath, self.packagesPath,
-			self.shellVariables, self.policy, self.options.preserveFlags, quiet)
+		self.repository = Repository(self.treePath, self.outputDirectory,
+			self.packagesPath, self.shellVariables, self.policy,
+			self.options.preserveFlags, quiet)
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""

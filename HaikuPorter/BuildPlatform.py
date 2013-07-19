@@ -27,10 +27,11 @@ class BuildPlatform(object):
 	def __init__(self):
 		pass
 
-	def init(self, treePath, architecture, machineTriple):
+	def init(self, treePath, outputDirectory, architecture, machineTriple):
 		self.architecture = architecture
 		self.machineTriple = machineTriple
 		self.treePath = treePath
+		self.outputDirectory = outputDirectory
 
 		self.targetArchitecture = self.architecture
 		if Configuration.isCrossBuildRepository():
@@ -76,7 +77,7 @@ class BuildPlatformHaiku(BuildPlatform):
 	def __init__(self):
 		super(BuildPlatformHaiku, self).__init__()
 
-	def init(self, treePath):
+	def init(self, treePath, outputDirectory):
 		# get system haiku package version and architecture
 		haikuPackageInfo = PackageInfo('/system/packages/haiku.hpkg')
 		self.haikuVersion = haikuPackageInfo.getVersion()
@@ -86,7 +87,7 @@ class BuildPlatformHaiku(BuildPlatform):
 			sysExit('Unsupported Haiku build platform architecture %s'
 				% haikuPackageInfo.getArchitecture())
 
-		super(BuildPlatformHaiku, self).init(treePath,
+		super(BuildPlatformHaiku, self).init(treePath, outputDirectory,
 			haikuPackageInfo.getArchitecture(), machine)
 
 		self.findDirectoryCache = {}
@@ -179,7 +180,7 @@ class BuildPlatformUnix(BuildPlatform):
 	def __init__(self):
 		super(BuildPlatformUnix, self).__init__()
 
-	def init(self, treePath):
+	def init(self, treePath, outputDirectory):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).strip()
 
@@ -194,7 +195,8 @@ class BuildPlatformUnix(BuildPlatform):
 		if not architecture:
 			architecture = Architectures.ANY
 
-		super(BuildPlatformUnix, self).init(treePath, architecture, machine)
+		super(BuildPlatformUnix, self).init(treePath, outputDirectory,
+			architecture, machine)
 
 		if Configuration.getPackageCommand() == 'package':
 			sysExit('--command-package must be specified on this build '
@@ -327,7 +329,7 @@ class BuildPlatformUnix(BuildPlatform):
 			shutil.rmtree(activeBuildPackage)
 
 	def getCrossToolsBasePrefix(self, workDir):
-		return self.treePath + '/cross_tools'
+		return self.outputDirectory + '/cross_tools'
 
 	def getCrossToolsBinPaths(self, workDir):
 		return [

@@ -20,10 +20,11 @@ import sys
 # -- Repository class ---------------------------------------------------------
 
 class Repository(object):
-	def __init__(self, treePath, packagesPath, shellVariables, policy,
-				 preserveFlags, quiet = False):
+	def __init__(self, treePath, outputDirectory, packagesPath, shellVariables,
+			policy, preserveFlags, quiet = False):
 		self.treePath = treePath
-		self.path = self.treePath + '/repository'
+		self.outputDirectory = outputDirectory
+		self.path = self.outputDirectory + '/repository'
 		self.packagesPath = packagesPath
 		self.shellVariables = shellVariables
 		self.policy = policy
@@ -89,6 +90,8 @@ class Repository(object):
 				continue
 			for port in sorted(os.listdir(categoryPath)):
 				portPath = categoryPath + '/' + port
+				portOutputPath = (self.outputDirectory + '/' + category + '/'
+					+ port)
 				if not os.path.isdir(portPath) or port[0] == '.':
 					continue
 				for recipe in os.listdir(portPath):
@@ -103,9 +106,9 @@ class Repository(object):
 							self._portVersionsByName[name] = [ version ]
 						else:
 							self._portVersionsByName[name].append(version)
-						self._allPorts[name + '-' + version] \
-							= Port(name, version, category, portPath,
-								   self.shellVariables, self.policy)
+						self._allPorts[name + '-' + version] = Port(name,
+							version, category, portPath, portOutputPath,
+							self.shellVariables, self.policy)
 					else:
 						# invalid argument
 						if not self.quiet:
