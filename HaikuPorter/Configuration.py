@@ -27,7 +27,24 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'allowUntested',
 	},
-
+	'CROSS_DEVEL_PACKAGE': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'crossDevelPackage',
+		'setAttribute': 'crossDevelPackage',
+	},
+	'CROSS_TOOLS': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'crossTools',
+		'setAttribute': 'crossTools',
+	},
 	'DOWNLOAD_IN_PORT_DIRECTORY': {
 		'type': YesNo,
 		'required': False,
@@ -36,7 +53,41 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'downloadInPortDirectory',
 	},
-
+	'LICENSES_DIRECTORY': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'licensesDirectory',
+		'setAttribute': 'licensesDirectory',
+	},
+	'MIMESET_COMMAND': {
+		'type': types.StringType,
+		'required': False,
+		'default': 'mimeset',
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'commandMimeset',
+		'setAttribute': 'mimesetCommand',
+	},
+	'OUTPUT_DIRECTORY': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'outputDirectory',
+	},
+	'PACKAGE_COMMAND': {
+		'type': types.StringType,
+		'required': False,
+		'default': 'package',
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'commandPackage',
+		'setAttribute': 'packageCommand',
+	},
 	'PACKAGER': {
 		'type': types.StringType,
 		'required': True,
@@ -61,27 +112,6 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'treePath',
 	},
-
-	'PACKAGE_COMMAND': {
-		'type': types.StringType,
-		'required': False,
-		'default': 'package',
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'commandPackage',
-		'setAttribute': 'packageCommand',
-	},
-
-	'MIMESET_COMMAND': {
-		'type': types.StringType,
-		'required': False,
-		'default': 'mimeset',
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'commandMimeset',
-		'setAttribute': 'mimesetCommand',
-	},
-
 	'SYSTEM_MIME_DB': {
 		'type': types.StringType,
 		'required': False,
@@ -90,45 +120,6 @@ haikuportsAttributes = {
 		'indexable': False,
 		'optionAttribute': 'systemMimeDB',
 		'setAttribute': 'systemMimeDB',
-	},
-
-	'LICENSES_DIRECTORY': {
-		'type': types.StringType,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'licensesDirectory',
-		'setAttribute': 'licensesDirectory',
-	},
-
-	'CROSS_TOOLS': {
-		'type': types.StringType,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'crossTools',
-		'setAttribute': 'crossTools',
-	},
-
-	'CROSS_DEVEL_PACKAGE': {
-		'type': types.StringType,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'crossDevelPackage',
-		'setAttribute': 'crossDevelPackage',
-	},
-
-	'OUTPUT_DIRECTORY': {
-		'type': types.StringType,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'outputDirectory',
 	},
 }
 
