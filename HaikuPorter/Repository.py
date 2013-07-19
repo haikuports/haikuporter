@@ -22,7 +22,7 @@ import sys
 class Repository(object):
 	def __init__(self, treePath, packagesPath, shellVariables, policy,
 				 preserveFlags, quiet = False):
-		self.treePath = treePath 
+		self.treePath = treePath
 		self.path = self.treePath + '/repository'
 		self.packagesPath = packagesPath
 		self.shellVariables = shellVariables
@@ -30,7 +30,7 @@ class Repository(object):
 		self.quiet = quiet
 
 		# update repository if it exists and isn't empty, populate it otherwise
-		if (os.path.isdir(self.path) 
+		if (os.path.isdir(self.path)
 			and os.listdir(self.path)):
 			self._updateRepository()
 		else:
@@ -38,7 +38,7 @@ class Repository(object):
 
 	def getPortIdForPackageId(self, packageId):
 		"""return the port-ID for the given package-ID"""
-		
+
 		# cut out subparts from the package name until we find a port
 		# with that name:
 		(portName, version) = packageId.rsplit('-', 1)
@@ -49,7 +49,7 @@ class Repository(object):
 				return portID
 			(portName, unused1, unused2) = portName.rpartition('_')
 
-		# no corresponding port-ID was found			
+		# no corresponding port-ID was found
 		return None
 
 	def getAllPorts(self):
@@ -67,18 +67,18 @@ class Repository(object):
 		   a list of found matches"""
 		if regExp:
 			reSearch = re.compile(regExp)
-			
+
 		ports = []
 		portNames = self.getPortVersionsByName().keys()
 		for portName in portNames:
 			if not regExp or reSearch.search(portName):
 				ports.append(portName)
-				
+
 		return sorted(ports)
 
 	def _initAllPorts(self):
 		# For now, we collect all ports into a dictionary that can be keyed
-		# by name + '-' + version. Additionally, we keep a sorted list of 
+		# by name + '-' + version. Additionally, we keep a sorted list of
 		# available versions for each port name.
 		self._allPorts = {}
 		self._portVersionsByName = {}
@@ -93,7 +93,7 @@ class Repository(object):
 					continue
 				for recipe in os.listdir(portPath):
 					recipePath = portPath + '/' + recipe
-					if (not os.path.isfile(recipePath) 
+					if (not os.path.isfile(recipePath)
 						or not recipe.endswith('.recipe')):
 						continue
 					portElements = recipe[:-7].split('-')
@@ -104,12 +104,12 @@ class Repository(object):
 						else:
 							self._portVersionsByName[name].append(version)
 						self._allPorts[name + '-' + version] \
-							= Port(name, version, category, portPath, 
+							= Port(name, version, category, portPath,
 								   self.shellVariables, self.policy)
 					else:
 						# invalid argument
 						if not self.quiet:
-							print("Warning: Couldn't parse port/version info: " 
+							print("Warning: Couldn't parse port/version info: "
 								  + recipe)
 
 		# Sort version list of each port
@@ -143,10 +143,10 @@ class Repository(object):
 						sys.stdout.flush()
 					port.parseRecipeFile(False)
 					status = port.getStatusOnTargetArchitecture()
-					if (status == Status.STABLE 
-						or (status == Status.UNTESTED 
+					if (status == Status.STABLE
+						or (status == Status.UNTESTED
 							and globalConfiguration['ALLOW_UNTESTED'])):
-						if (port.checkFlag('build') 
+						if (port.checkFlag('build')
 							and not preserveFlags):
 							if not self.quiet:
 								print '   [build-flag reset]'
@@ -172,9 +172,9 @@ class Repository(object):
 
 	def _updateRepository(self):
 		"""Update all PackageInfo-files in the repository as needed"""
-		
+
 		allPorts = self.getAllPorts()
-		
+
 		brokenPorts = []
 
 		# check for all known ports if their recipe has been changed
@@ -186,11 +186,11 @@ class Repository(object):
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version
 				port = allPorts[portID]
-				
-				# ignore recipes that were skipped last time unless they've 
+
+				# ignore recipes that were skipped last time unless they've
 				# been changed since then
 				if (os.path.exists(skippedDir + '/' + portID)
-					and (os.path.getmtime(port.recipeFilePath) 
+					and (os.path.getmtime(port.recipeFilePath)
 						 <= os.path.getmtime(skippedDir + '/' + portID))):
 					continue
 
@@ -199,11 +199,11 @@ class Repository(object):
 				mainPackageInfoFile = (self.path + '/' + port.packageInfoName)
 				if (os.path.exists(mainPackageInfoFile)
 					and not higherVersionIsActive
-					and (os.path.getmtime(port.recipeFilePath) 
+					and (os.path.getmtime(port.recipeFilePath)
 						 <= os.path.getmtime(mainPackageInfoFile))):
 					higherVersionIsActive = True
 					break
-				
+
 				# try tp parse updated recipe
 				try:
 					port.parseRecipeFile(False)
@@ -218,10 +218,10 @@ class Repository(object):
 							port.obsoletePackages(self.packagesPath)
 							break
 						continue
-					
+
 					status = port.getStatusOnTargetArchitecture()
-					if (status != Status.STABLE 
-						and not (status == Status.UNTESTED 
+					if (status != Status.STABLE
+						and not (status == Status.UNTESTED
 							and globalConfiguration['ALLOW_UNTESTED'])):
 						touchFile(skippedDir + '/' + portID)
 						if not self.quiet:
@@ -232,11 +232,11 @@ class Repository(object):
 					higherVersionIsActive = True
 					if os.path.exists(skippedDir + '/' + portID):
 						os.remove(skippedDir + '/' + portID)
-						
+
 					if not self.quiet:
 						print '\tupdating package infos of ' + portID
 					port.writePackageInfosIntoRepository(self.path)
-					
+
 				except SystemExit:
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
@@ -252,7 +252,7 @@ class Repository(object):
 	def _removeStalePackageInfos(self, brokenPorts):
 		"""check for any package-infos that no longer have a corresponding
 		   recipe file"""
-		
+
 		allPorts = self.getAllPorts()
 
 		if not self.quiet:
@@ -267,12 +267,12 @@ class Repository(object):
 			# we need to find the corresponding portID.
 			if portID not in allPorts:
 				portID = self.getPortIdForPackageId(portID)
-			
+
 			if not portID or portID not in allPorts or portID in brokenPorts:
 				if not self.quiet:
 					print '\tremoving ' + packageInfoFileName
 				os.remove(packageInfo)
-				
+
 				# obsolete corresponding package, if any
 				self._removePackagesForPackageInfo(packageInfo)
 

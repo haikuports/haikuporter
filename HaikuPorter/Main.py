@@ -14,7 +14,7 @@
 
 from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
-from HaikuPorter.GlobalConfig import (globalConfiguration, 
+from HaikuPorter.GlobalConfig import (globalConfiguration,
 									  readGlobalConfiguration)
 from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import PackageInfo
@@ -37,7 +37,7 @@ class Main(object):
 		self.options = options
 
 		self.policy = Policy(self.options.strictPolicy)
-		
+
 		self.repository = None
 
 		# read global settings
@@ -50,7 +50,7 @@ class Main(object):
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
-	
+
 		# create path where built packages will be collected
 		self.packagesPath = self.treePath + '/packages'
 		if not os.path.exists(self.packagesPath):
@@ -90,7 +90,7 @@ class Main(object):
 			for portName in portNames:
 				print portName
 			sys.exit()
-		
+
 		if self.options.location:
 			if not args:
 				sysExit('You need to specify a search string.\n'
@@ -135,24 +135,24 @@ class Main(object):
 		if self.options.analyzeDependencies:
 			DependencyAnalyzer(self.repository)
 			return
-			
+
 		# collect all available ports and validate each specified port
 		allPorts = self.repository.getAllPorts()
 		portVersionsByName = self.repository.getPortVersionsByName()
 		for portSpec in self.portSpecs:
 
-			# validate name of port			
+			# validate name of port
 			if portSpec['name'] not in portVersionsByName:
 				if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
 					sysExit(portSpec['name'] + ' not found in repository')
 				# for cross-build repository, try with target arch added
 				nameWithTargetArch \
-					= (portSpec['name'] + '_' 
+					= (portSpec['name'] + '_'
 					   + self.shellVariables['targetArchitecture'])
 				if nameWithTargetArch not in portVersionsByName:
 					sysExit(portSpec['name'] + ' not found in repository')
 				portSpec['name'] = nameWithTargetArch
-			
+
 			# use specific version if given, otherwise try with all available
 			# versions
 			versions = []
@@ -160,7 +160,7 @@ class Main(object):
 				versions.append(portSpec['version'])
 			else:
 				versions = portVersionsByName[portSpec['name']]
-				
+
 			# try to find a version of the current port that is buildable
 			for version in versions:
 				portID = portSpec['name'] + '-' + version
@@ -168,13 +168,13 @@ class Main(object):
 					sysExit(portID + ' not found in tree.')
 				port = allPorts[portID]
 				status = port.getStatusOnTargetArchitecture()
-				if (status != Status.STABLE 
+				if (status != Status.STABLE
 					and (status != Status.UNTESTED
 						or not globalConfiguration['ALLOW_UNTESTED'])):
 					warn('skipping %s, as it is %s on the target architecture.'
 						 % (portID, status))
 					continue
-				
+
 				# notice ID of buildable port version
 				portSpec['id'] = portID
 				break
@@ -183,9 +183,9 @@ class Main(object):
 					sysExit(portSpec['name'] + '-' + portSpec['version']
 							+ " can't be built")
 				else:
-					sysExit('No version of ' + portSpec['name'] 
+					sysExit('No version of ' + portSpec['name']
 							+ ' can be built')
-			
+
 			# show port description, if requested
 			if self.options.about:
 				try:
@@ -196,11 +196,11 @@ class Main(object):
 				sys.exit(0)
 
 			self._validateMainPort(port, portSpec['revision'])
-			
+
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:
 			port = allPorts[portSpec['id']]
-			
+
 			if self.options.why:
 				# find out about why another port is required
 				if self.options.why not in allPorts:
@@ -225,10 +225,10 @@ class Main(object):
 	def _validateMainPort(self, port, revision = None):
 		"""Parse the recipe file for the given port and get any required
 		   confirmations"""
-			
+
 		# read data from the recipe file
 		port.parseRecipeFile(True)
-		
+
 		# if a specific revision has been given, check if this port matches it
 		if revision and port.revision != revision:
 			sysExit(("port %s isn't available in revision %s (found revision "
@@ -237,7 +237,7 @@ class Main(object):
 
 		# warn when the port is not stable on this architecture
 		status = port.getStatusOnTargetArchitecture()
-		if (status != Status.STABLE 
+		if (status != Status.STABLE
 			and (status != Status.UNTESTED
 				 or not globalConfiguration['ALLOW_UNTESTED'])):
 			warn('This port is %s on this architecture.' % status)
@@ -267,7 +267,7 @@ class Main(object):
 		print '=' * 70
 		print port.category + '::' + port.versionedName
 		print '=' * 70
-		
+
 		# HPKGs are usually written into the 'packages' directory, but when
 		# an obsolete port (one that's not in the repository) is being built,
 		# its packages are stored into the .obsolete subfolder of the packages
@@ -279,7 +279,7 @@ class Main(object):
 			targetPath += '/.obsolete'
 			if not os.path.exists(targetPath):
 				os.makedirs(targetPath)
-			
+
 		(buildDependencies, portRepositoryPath) \
 			= port.resolveBuildDependencies(self.repository.path,
 											self.packagesPath)
@@ -303,17 +303,17 @@ class Main(object):
 						requiredPortIDs[portID] = True
 				except KeyError:
 					sysExit('Inconsistency: ' + port.versionedName
-							 + ' requires ' + packageID 
+							 + ' requires ' + packageID
 							 + ' but no corresponding port was found!')
 
 		if requiredPortsToBuild:
 			print 'The following required ports will be built first:'
-			for requiredPort in requiredPortsToBuild:			
-				print('\t' + requiredPort.category + '::' 
+			for requiredPort in requiredPortsToBuild:
+				print('\t' + requiredPort.category + '::'
 					  + requiredPort.versionedName)
-			for requiredPort in requiredPortsToBuild:			
+			for requiredPort in requiredPortsToBuild:
 				self._buildPort(requiredPort, True, targetPath)
-				
+
 		self._buildPort(port, False, targetPath)
 
 	def _buildPort(self, port, parseRecipe, targetPath):
@@ -322,12 +322,12 @@ class Main(object):
 		print '-' * 70
 		print port.category + '::' + port.versionedName
 		print '-' * 70
-		
+
 		# pass-on options to port
 		port.forceOverride = self.options.force
 		port.beQuiet = self.options.quiet
 		port.avoidChroot = not self.options.chroot
-		
+
 		if parseRecipe:
 			port.parseRecipeFile(True)
 
@@ -342,7 +342,7 @@ class Main(object):
 
 		if self.options.build:
 			port.build(self.packagesPath, self.options.package, targetPath)
-	
+
 
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture
@@ -419,9 +419,9 @@ class Main(object):
 		elements = portSpecString.split('-')
 		if len(elements) < 1 or len(elements) > 3:
 			sysExit('Invalid port specifier ' + portSpecString)
-		
-		return  { 
-			'specifier': portSpecString, 
+
+		return  {
+			'specifier': portSpecString,
 			'name': elements[0],
 			'version': elements[1] if len(elements) > 1 else None,
 			'revision': elements[2] if len(elements) > 2 else None,

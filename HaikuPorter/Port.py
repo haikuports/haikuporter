@@ -56,7 +56,7 @@ class ChrootSetup(object):
 		shellEnv.update(self.envVars)
 		check_call(['/bin/bash', '-c', setupChrootScript], env=shellEnv)
 		return self
-	
+
 	def __exit__(self, ignoredType, value, traceback):
 		# execute the chroot cleanup scriptlet via the shell ...
 		os.chdir(self.path)
@@ -74,19 +74,19 @@ class Port(object):
 		self.name = name
 		self.version = version
 		self.versionedName = name + '-' + version
-		self.category = category			
+		self.category = category
 		self.baseDir = baseDir
 		self.workDir = self.baseDir + '/work-' + self.version
 
 		self.recipeFilePath \
 			= self.baseDir + '/' + self.name + '-' + self.version + '.recipe'
-		
+
 		self.packageInfoName = self.versionedName + '.PackageInfo'
-		
+
 		self.revision = None
 		self.fullVersion = None
 		self.revisionedName = None
-		
+
 		self.definedPhases = []
 
 		# build dictionary of variables to inherit to shell
@@ -98,21 +98,21 @@ class Port(object):
 		}
 		self.shellVariables.update(globalShellVariables)
 		self._updateShellVariables(True)
-		
+
 		self.buildArchitecture = self.shellVariables['buildArchitecture']
 		self.targetArchitecture = self.shellVariables['targetArchitecture']
 		if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
 			and '_cross_' in name):
-			# the cross-tools (binutils and gcc) need to run on the build 
+			# the cross-tools (binutils and gcc) need to run on the build
 			# architecture, not the target architecture
 			self.hostArchitecture = self.shellVariables['buildArchitecture']
 		else:
 			self.hostArchitecture = self.shellVariables['targetArchitecture']
 
-		# Each port creates at least two packages: the base package (which will 
+		# Each port creates at least two packages: the base package (which will
 		# share its name with the port), and a source package.
 		# Additional packages can be declared in the recipe, too. All packages
-		# that are considered stable on the current architecture will be 
+		# that are considered stable on the current architecture will be
 		# collected in self.packages.
 		self.allPackages = []
 		self.packages = []
@@ -132,7 +132,7 @@ class Port(object):
 
 	def __enter__(self):
 		return self
-	
+
 	def __exit__(self, type, value, traceback):
 		pass
 
@@ -140,26 +140,26 @@ class Port(object):
 		"""Parse the recipe-file of the specified port"""
 
 		# If a patch file named like the port exists, use that as a default
-		# for "PATCHES" (check this for up to 9 sources). Support a second 
+		# for "PATCHES" (check this for up to 9 sources). Support a second
 		# patchset which is specific to target-architecture, too.
 		for s in range(1, 9):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.targetArchitecture 
+										+ self.targetArchitecture
 										+ '.patchset')
 				patchFileName = self.name + '-' + self.version + '.patch'
 				diffFileName = self.name + '-' + self.version + '.diff'
 				patchesKeyName = 'PATCHES'
 			else:
-				patchSetFileName = (self.name + '-' + self.version + '-source' 
+				patchSetFileName = (self.name + '-' + self.version + '-source'
 									+ str(s) + '.patchset')
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
 										+ self.targetArchitecture + '-source'
 										+ str(s) + '.patchset')
-				patchFileName = (self.name + '-' + self.version + '-source' 
+				patchFileName = (self.name + '-' + self.version + '-source'
 								 + str(s) + '.patch')
-				diffFileName = (self.name + '-' + self.version + '-source' 
+				diffFileName = (self.name + '-' + self.version + '-source'
 								+ str(s) + '.diff')
 				patchesKeyName = 'PATCHES_' + str(s)
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
@@ -178,7 +178,7 @@ class Port(object):
 			if not patchsets and os.path.exists(diffFilePath):
 				patchsets.append(diffFileName)
 			self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
-		
+
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
 		for entries in self.recipeKeysByExtension.values():
@@ -193,7 +193,7 @@ class Port(object):
 		self.sources = []
 		keys = self.recipeKeys
 		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
-			source = Source(self, index, keys['SRC_URI'][index], 
+			source = Source(self, index, keys['SRC_URI'][index],
 							keys['SRC_FILENAME'].get(index, None),
 							keys['CHECKSUM_MD5'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
@@ -213,13 +213,13 @@ class Port(object):
 			packageType = PackageType.byName(extension)
 			package = packageFactory(packageType, name, self, keys, self.policy)
 			self.allPackages.append(package)
-			
+
 			if packageType == PackageType.SOURCE:
 				haveSourcePackage = True
-			
+
 			status = package.getStatusOnArchitecture(self.targetArchitecture)
-			if (status == Status.STABLE 
-				or (status == Status.UNTESTED 
+			if (status == Status.STABLE
+				or (status == Status.UNTESTED
 					and globalConfiguration['ALLOW_UNTESTED'])):
 				self.packages.append(package)
 
@@ -235,7 +235,7 @@ class Port(object):
 					sourceKeys[key] = recipeAttributes[key]['default']
 				else:
 					sourceKeys[key] = baseKeys[key]
-					
+
 			# a source package shares some attributes with the base package,
 			# just provides itself and has no requires:
 			name = self.name + '_source'
@@ -250,7 +250,7 @@ class Port(object):
 				'PROVIDES': [ name + ' = ' + self.version ],
 				'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
 			})
-			package = packageFactory(PackageType.SOURCE, name, self, sourceKeys, 
+			package = packageFactory(PackageType.SOURCE, name, self, sourceKeys,
 									 self.policy)
 			self.allPackages.append(package)
 			self.packages.append(package)
@@ -263,7 +263,7 @@ class Port(object):
 
 	def validateRecipeFile(self, showWarnings = False):
 		"""Validate the syntax and contents of the recipe file"""
-		
+
 		if not os.path.exists(self.recipeFilePath):
 			sysExit(self.name + ' version ' + self.version + ' not found.')
 
@@ -277,28 +277,28 @@ class Port(object):
 		check_call(prepareRecipeCommand)
 
 		# parse the recipe file
-		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes, 
+		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
 							  		self.shellVariables)
 		extensions = recipeConfig.getExtensions()
 		self.definedPhases = recipeConfig.getDefinedPhases()
-		
+
 		if '' not in extensions:
 			sysExit('No base package defined in (in %s)' % self.recipeFilePath)
 
 		recipeKeysByExtension = {}
-		
+
 		# do some checks for each extension (i.e. package), starting with the
 		# base entries (extension '')
 		baseEntries = recipeConfig.getEntriesForExtension('')
 		for extension in sorted(extensions):
 			entries = recipeConfig.getEntriesForExtension(extension)
 			recipeKeys = {}
-			
+
 			# check whether all required values are present
 			for baseKey in recipeAttributes.keys():
 				if extension:
 					key = baseKey + '_' + extension
-					# inherit any missing attribute from the respective base 
+					# inherit any missing attribute from the respective base
 					# value or set the default
 					if key not in entries:
 						attributes = recipeAttributes[baseKey]
@@ -308,7 +308,7 @@ class Port(object):
 							if ('suffix' in attributes
 								and extension in attributes['suffix']):
 								recipeKeys[baseKey] = (
-									baseEntries[baseKey] 
+									baseEntries[baseKey]
 									+ attributes['suffix'][extension])
 							else:
 								recipeKeys[baseKey] = baseEntries[baseKey]
@@ -320,20 +320,20 @@ class Port(object):
 				if key not in entries:
 					# complain about missing required values
 					if recipeAttributes[baseKey]['required']:
-						sysExit("Required value '%s' not present (in %s)" 
+						sysExit("Required value '%s' not present (in %s)"
 								% (key, self.recipeFilePath))
-					
+
 					# set default value, as no other value has been provided
 					entries[key] = recipeAttributes[baseKey]['default']
-				
-				# The summary must be a single line of text, preferably not 
+
+				# The summary must be a single line of text, preferably not
 				# exceeding 70 characters in length
 				if baseKey == 'SUMMARY':
 					if '\n' in entries[key]:
-						sysExit('%s must be a single line of text (%s).' 
+						sysExit('%s must be a single line of text (%s).'
 							% (key, self.recipeFilePath))
 					if len(entries[key]) > 70 and showWarnings:
-						warn('%s exceeds 70 chars (in %s)' 
+						warn('%s exceeds 70 chars (in %s)'
 							 % (key, self.recipeFilePath))
 
 				# Check for a valid license file
@@ -346,16 +346,16 @@ class Port(object):
 								buildPlatform.getLicensesDirectory())
 							if item not in fileList:
 								fileList = []
-								dirname = (os.path.dirname(self.recipeFilePath) 
+								dirname = (os.path.dirname(self.recipeFilePath)
 										   + '/licenses')
 								if os.path.exists(dirname):
 									for filename in os.listdir(dirname):
 										fileList.append(filename)
 							if item not in fileList:
 								haikuLicenseList.sort()
-								sysExit('No match found for license ' + item 
+								sysExit('No match found for license ' + item
 										+ '\nValid license filenames included '
-										+ 'with Haiku are:\n' 
+										+ 'with Haiku are:\n'
 										+ '\n'.join(haikuLicenseList))
 					elif showWarnings:
 						warn('No %s found (in %s)' % (key, self.recipeFilePath))
@@ -363,19 +363,19 @@ class Port(object):
 				if baseKey == 'COPYRIGHT':
 					if key not in entries or not entries[key]:
 						if showWarnings:
-							warn('No %s found (in %s)' 
+							warn('No %s found (in %s)'
 								 % (key, self.recipeFilePath))
 
-				# store extension-specific value under base key						
+				# store extension-specific value under base key
 				recipeKeys[baseKey] = entries[key]
-				
+
 			recipeKeysByExtension[extension] = recipeKeys
 
 		return recipeKeysByExtension
 
 	def printDescription(self):
 		"""Show port description"""
-		
+
 		print '*' * 80
 		print 'VERSION: %s' % self.versionedName
 		print 'REVISION: %s' % self.revision
@@ -384,7 +384,7 @@ class Port(object):
 			print '-' * 80
 			print 'PACKAGE: %s' % package.versionedName
 			print 'SUMMARY: %s' % package.recipeKeys['SUMMARY']
-			print('STATUS: %s' 
+			print('STATUS: %s'
 				  % package.getStatusOnArchitecture(self.targetArchitecture))
 			print 'ARCHITECTURE: %s' % package.architecture
 		print '*' * 80
@@ -400,44 +400,44 @@ class Port(object):
 				self.targetArchitecture)
 		except:
 			return Status.UNSUPPORTED
-	
+
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""
 
 		for package in self.packages:
 			package.writePackageInfoIntoRepository(repositoryPath)
-					
+
 	def removePackageInfosFromRepository(self, repositoryPath):
 		"""Remove all PackageInfo-files for this port from the repository"""
 
 		for package in self.packages:
 			package.removePackageInfoFromRepository(repositoryPath)
-					
+
 	def obsoletePackages(self, packagesPath):
 		"""Moves all package-files into the 'obsolete' sub-directory"""
 
 		for package in self.packages:
 			package.obsoletePackage(packagesPath)
-					
+
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
 		"""Resolve any other ports that need to be built before this one.
-		
+
 		   In order to do so, we first determine the prerequired packages for
-		   the build, for which packages from outside the haikuports-tree may 
+		   the build, for which packages from outside the haikuports-tree may
 		   be considered. A temporary folder is then populated with only these
 		   prerequired packages and then all the build requirements of this
 		   port are determined with only the haikuports repository, the already
 		   built packages and the repository of prerequired packages active.
-		   This ensures that any build requirements a port may have that can not 
-		   be fulfilled from within the haikuports tree will be raised as an 
+		   This ensures that any build requirements a port may have that can not
+		   be fulfilled from within the haikuports tree will be raised as an
 		   error here.
 		"""
 
 		workRepositoryPath = self.workDir + '/repository'
 		prereqRepositoryPath = self.workDir + '/prereq-repository'
-		packageInfoFiles = self._prepareRepositories(workRepositoryPath, 
+		packageInfoFiles = self._prepareRepositories(workRepositoryPath,
 													 prereqRepositoryPath,
-													 repositoryPath, 
+													 repositoryPath,
 													 packagesPath)
 
 		# Determine the build requirements.
@@ -450,7 +450,7 @@ class Port(object):
 		shutil.rmtree(prereqRepositoryPath)
 
 		# Filter out system packages, as they are irrelevant.
-		return [ 
+		return [
 			package for package in packages
 				if not buildPlatform.isSystemPackage(package)
 		], workRepositoryPath
@@ -461,9 +461,9 @@ class Port(object):
 
 		workRepositoryPath = self.workDir + '/repository'
 		prereqRepositoryPath = self.workDir + '/prereq-repository'
-		packageInfoFiles = self._prepareRepositories(workRepositoryPath, 
+		packageInfoFiles = self._prepareRepositories(workRepositoryPath,
 													 prereqRepositoryPath,
-													 repositoryPath, 
+													 repositoryPath,
 													 packagesPath)
 
 		# drop package-infos for the required port, such that pkgman will
@@ -486,7 +486,7 @@ class Port(object):
 		if os.path.exists(self.workDir):
 			print 'Cleaning work directory...'
 			shutil.rmtree(self.workDir)
-				
+
 	def downloadSource(self):
 		"""Fetch the source archives and validate their checksum"""
 
@@ -513,12 +513,12 @@ class Port(object):
 			if getOption('patchFilesOnly'):
 				print 'Skipping patch function ...'
 				return
-			
+
 			# Check to see if the patching phase  has already been executed.
 			if self.checkFlag('patch') and not getOption('force'):
 				return
 
-			try:			
+			try:
 				print 'Running patch function ...'
 				self._doRecipeAction(Phase.PATCH, self.sourceDir)
 				for source in self.sources:
@@ -539,10 +539,10 @@ class Port(object):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.targetArchitecture 
+										+ self.targetArchitecture
 										+ '.patchset')
 			else:
-				patchSetFileName = (self.name + '-' + self.version + '-source' 
+				patchSetFileName = (self.name + '-' + self.version + '-source'
 									+ str(s) + '.patchset')
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
 										+ self.targetArchitecture + '-source'
@@ -551,7 +551,7 @@ class Port(object):
 			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
 			source.extractPatchset(patchSetFilePath, archPatchSetFilePath)
 			s += 1
-				
+
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package"""
 
@@ -563,12 +563,12 @@ class Port(object):
 			self.unsetFlag('build')
 
 		# Delete and re-create a couple of directories
-		directoriesToCreate = [	
-			self.packageInfoDir, self.packagingBaseDir, 
-			self.buildPackageDir, self.hpkgDir 
+		directoriesToCreate = [
+			self.packageInfoDir, self.packagingBaseDir,
+			self.buildPackageDir, self.hpkgDir
 		]
-		directoriesToRemove = [ 
-			directory for directory in directoriesToCreate 
+		directoriesToRemove = [
+			directory for directory in directoriesToCreate
 			if os.path.exists(directory)
 		]
 		if directoriesToRemove:
@@ -593,7 +593,7 @@ class Port(object):
 		if buildPlatform.usesChroot():
 			# setup chroot and keep it while executing the actions
 			chrootEnvVars = {
-				'packages': '\n'.join(requiredPackages), 
+				'packages': '\n'.join(requiredPackages),
 				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
 			}
@@ -605,7 +605,7 @@ class Port(object):
 					print 'chroot has these packages active:'
 					for package in sorted(requiredPackages):
 						print '\t' + package
-						
+
 				pid = os.fork()
 				if pid == 0:
 					# child, enter chroot and execute the build
@@ -629,13 +629,13 @@ class Port(object):
 						if childStatus != 0:
 							self.unsetFlag('build')
 							sysExit('Build has failed - stopping.')
-							
+
 						# tell the shell scriptlets that the build has succeeded
 						chrootSetup.buildOk = True
 				except KeyboardInterrupt:
 					if pid > 0:
 						print '*** interrupted - stopping child process'
-						try: 
+						try:
 							os.kill(pid, signal.SIGINT)
 							os.waitpid(pid, 0)
 						except:
@@ -667,14 +667,14 @@ class Port(object):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
-					print('grabbing ' + package.hpkgName 
+					print('grabbing ' + package.hpkgName
 						  + ' and putting it into ' + hpkgStoragePath)
 					os.rename(packageFile,
 							  hpkgStoragePath + '/' + package.hpkgName)
 
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
-			
+
 	def setFlag(self, name, index = '1'):
 		if index == '1':
 			touchFile('%s/flag.%s' % (self.workDir, name))
@@ -686,7 +686,7 @@ class Port(object):
 			flagFile = '%s/flag.%s' % (self.workDir, name)
 		else:
 			flagFile = '%s/flag.%s-%s' % (self.workDir, name, index)
-			
+
 		if os.path.exists(flagFile):
 			os.remove(flagFile)
 
@@ -698,7 +698,7 @@ class Port(object):
 
 	def test(self):
 		"""Test the port"""
-		
+
 		# TODO!
 
 	def _updateShellVariablesFromRecipe(self):
@@ -831,26 +831,26 @@ class Port(object):
 			self.shellVariables[relativeName] = value
 			self.shellVariables[name] = prefix + '/' + value
 
-	def _prepareRepositories(self, workRepositoryPath, prereqRepositoryPath, 
+	def _prepareRepositories(self, workRepositoryPath, prereqRepositoryPath,
 							 repositoryPath, packagesPath):
 		"""Resolve any other ports that need to be built before this one.
-		
+
 		   In order to do so, we first determine the prerequired packages for
-		   the build, for which packages from outside the haikuports-tree may 
+		   the build, for which packages from outside the haikuports-tree may
 		   be considered. A temporary folder is then populated with only these
 		   prerequired packages and then all the build requirements of this
 		   port are determined with only the haikuports repository, the already
 		   built packages and the repository of prerequired packages active.
-		   This ensures that any build requirements a port may have that can not 
-		   be fulfilled from within the haikuports tree will be raised as an 
+		   This ensures that any build requirements a port may have that can not
+		   be fulfilled from within the haikuports tree will be raised as an
 		   error here."""
 
 		# First create a work-repository by symlinking all package-infos from
 		# the haikuports-repository - we need to overwrite the package-infos
 		# for this port, so we do that in a private directory.
 		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
-		
-		# For each package, generate a PackageInfo-file containing only the 
+
+		# For each package, generate a PackageInfo-file containing only the
 		# prerequirements for building the package and no own provides (if a
 		# port prerequires itself, we want to pull in the real package from the
 		# build machine)
@@ -874,7 +874,7 @@ class Port(object):
 		# Populate a directory with those prerequired packages.
 		symlinkFiles(prereqPackages, prereqRepositoryPath)
 
-		# For each package, generate a PackageInfo-file containing only the 
+		# For each package, generate a PackageInfo-file containing only the
 		# immediate  requirements for building the package:
 		packageInfoFiles = []
 		for package in self.packages:
@@ -886,28 +886,28 @@ class Port(object):
 		return packageInfoFiles
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
-		"""Determine the set of packages that must be linked into the 
+		"""Determine the set of packages that must be linked into the
 		   build environment (chroot) for the build stage"""
-		
-		# For each package, generate a PackageInfo-file containing only the 
+
+		# For each package, generate a PackageInfo-file containing only the
 		# prerequirements for building the package and no own provides (if a
 		# port prerequires itself, we want to pull in the real package from the
 		# build machine)
 		packageInfoFiles = []
 		for package in self.packages:
-			packageInfoFile = (package.packageInfoDir + '/' 
+			packageInfoFile = (package.packageInfoDir + '/'
 							   + package.packageInfoName)
 			package.generatePackageInfoWithoutProvides(packageInfoFile,
 				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ])
 			packageInfoFiles.append(packageInfoFile)
-		
-		# Determine the prerequired packages, allowing build machine packages, 
+
+		# Determine the prerequired packages, allowing build machine packages,
 		# but leave out system packages, as they will be linked into the chroot
 		# anyway.
 		repositories = [ packagesPath ]
 		prereqPackages = self._resolvePrerequiredDependencies(
 			packageInfoFiles, repositories, 'prerequired packages for build')
-		prereqPackages = [ 
+		prereqPackages = [
 			package for package in prereqPackages
 				if not buildPlatform.isSystemPackage(package)
 		]
@@ -920,7 +920,7 @@ class Port(object):
 		# prerequired and required packages for the build:
 		packageInfoFiles = []
 		for package in self.packages:
-			packageInfoFile = (package.packageInfoDir + '/' 
+			packageInfoFile = (package.packageInfoDir + '/'
 							   + package.packageInfoName)
 			package.generatePackageInfoWithoutProvides(packageInfoFile,
 				[ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
@@ -934,8 +934,8 @@ class Port(object):
 
 		# Filter out system packages, they will be linked into the chroot
 		# anyway.
-		return [ 
-			package for package in packages 
+		return [
+			package for package in packages
 				if not buildPlatform.isSystemPackage(package)
 		]
 
@@ -955,7 +955,7 @@ class Port(object):
 
 	def _adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
-		
+
 		for source in self.sources:
 			source.adjustToChroot(self)
 
@@ -965,7 +965,7 @@ class Port(object):
 		# unset directories which can't be reached from inside the chroot
 		self.baseDir = None
 		self.downloadDir = None
-		
+
 		# the recipe file has a fixed same name in the chroot
 		self.preparedRecipeFile = '/port.recipe'
 		self.recipeFilePath = '/port.recipe'
@@ -982,7 +982,7 @@ class Port(object):
 
 		# update shell variables, too
 		self._updateShellVariablesFromRecipe()
-				
+
 
 	def _doBuildStage(self):
 		"""Run the actual build"""
@@ -990,7 +990,7 @@ class Port(object):
 		if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.BUILD:
 			for package in self.packages:
 				package.activateBuildPackage()
-			
+
 		# Check to see if a previous build was already done.
 		if self.checkFlag('build') and not getOption('force'):
 			print 'Skipping build ...'
@@ -1018,7 +1018,7 @@ class Port(object):
 			settingsDir = package.packagingDir + '/settings'
 			if not os.listdir(settingsDir):
 				os.rmdir(settingsDir)
-		
+
 		# For the main package remove certain empty directories. Typically
 		# contents is moved from the main package installation directory tree to
 		# the packaging directories of sibling packages, which may leave empty
@@ -1041,14 +1041,14 @@ class Port(object):
 		shutil.rmtree(self.packagingBaseDir)
 
 	def _doInstallStage(self):
-		"""Install the files resulting from the build into the packaging 
+		"""Install the files resulting from the build into the packaging
 		   folder"""
 
 		# activate build package if required at this stage
 		if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.INSTALL:
 			for package in self.packages:
 				package.activateBuildPackage()
-			
+
 		print 'Collecting files to be packaged ...'
 		self._doRecipeAction(Phase.INSTALL, self.sourceDir)
 
@@ -1059,7 +1059,7 @@ class Port(object):
 		if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.TEST:
 			for package in self.packages:
 				package.activateBuildPackage()
-			
+
 		print 'Testing ...'
 		self._doRecipeAction(Phase.TEST, self.sourceDir)
 
@@ -1076,7 +1076,7 @@ class Port(object):
 
 	def _openShell(self, params = [], dir = '/'):
 		"""Sets up environment and runs a shell with the given parameters"""
-		
+
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = filteredEnvironment()
@@ -1107,7 +1107,7 @@ class Port(object):
 			sysExit(('unable to resolve %s for %s\n'
 					 + '\tpackage-infos:\n\t\t%s\n'
 					 + '\trepositories:\n\t\t%s\n')
-					% (description, self.versionedName, 
+					% (description, self.versionedName,
 					   '\n\t\t'.join(packageInfoFiles),
 					   '\n\t\t'.join(repositories)))
 

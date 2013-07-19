@@ -57,7 +57,7 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': False,
 	},
-				
+
 	# indexable, i.e. per-source attributes
 	'CHECKSUM_MD5': {
 		'type': types.StringType,

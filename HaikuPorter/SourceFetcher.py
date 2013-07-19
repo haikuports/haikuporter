@@ -12,7 +12,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit, 
+from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit,
 							   unpackArchive, warn)
 
 import os
@@ -54,7 +54,7 @@ def unpackCheckoutWithTar(checkoutDir, sourceDir, subdir):
 	"""Use 'tar' to export the sources from the checkout into the source dir"""
 
 	if subdir:
-		command = ('tar -c -C "%s" --exclude-vcs | tar -x -C "%s"' 
+		command = ('tar -c -C "%s" --exclude-vcs | tar -x -C "%s"'
 				   % (subdir, sourceDir))
 	else:
 		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
@@ -67,7 +67,7 @@ def unpackCheckoutWithTar(checkoutDir, sourceDir, subdir):
 
 def unpackFile(uri, fetchTarget, sourceDir, subdir):
 	"""Move contents of subdir into sourceDir and remove subdir"""
-	
+
 	if uri.endswith('#noarchive'):
 		if os.path.isdir(fetchTarget):
 			shutil.copytree(fetchTarget, sourceDir, symlinks=True)
@@ -80,7 +80,7 @@ def unpackFile(uri, fetchTarget, sourceDir, subdir):
 		unpackArchive(fetchTarget, os.path.dirname(sourceDir), sourceSubdir)
 		if subdir:
 			foldSubdirIntoSourceDir(subdir, sourceDir)
-	
+
 # -----------------------------------------------------------------------------
 
 def foldSubdirIntoSourceDir(subdir, sourceDir):
@@ -94,7 +94,7 @@ def foldSubdirIntoSourceDir(subdir, sourceDir):
 	for fileName in os.listdir(fullSubdirPath):
 		os.rename(fullSubdirPath + '/' + fileName, sourceDir + '/' + fileName)
 	os.removedirs(fullSubdirPath)
-	
+
 # -- Fetches sources via bzr --------------------------------------------------
 
 class SourceFetcherForBazaar(object):
@@ -103,7 +103,7 @@ class SourceFetcherForBazaar(object):
 		self.sourceShouldBeValidated = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
-		
+
 	def fetch(self):
 		ensureCommandIsAvailable('bzr')
 		command = 'bzr checkout --lightweight'
@@ -127,10 +127,10 @@ class SourceFetcherForCvs(object):
 		self.sourceShouldBeValidated = False
 
 		(unusedType, uri, self.rev) = parseCheckoutUri(uri)
-		
+
 		# chop the leading 'cvs://' of the URI, then split off the module
 		(self.uri, self.module) = uri[6:].rsplit('/', 1)
-		
+
 	def fetch(self):
 		baseDir = os.path.dirname(self.fetchTarget)
 
@@ -161,7 +161,7 @@ class SourceFetcherForDownload(object):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
 		self.sourceShouldBeValidated = True
-		
+
 	def fetch(self):
 		downloadDir = os.path.dirname(self.fetchTarget)
 		os.chdir(downloadDir)
@@ -185,7 +185,7 @@ class SourceFetcherForFossil(object):
 		self.sourceShouldBeValidated = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
-		
+
 	def fetch(self):
 		ensureCommandIsAvailable('fossil')
 		fossilDir = self.fetchTarget + '.fossil'
@@ -215,7 +215,7 @@ class SourceFetcherForGit(object):
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 		if not self.rev:
 			self.rev = 'HEAD'
-		
+
 	def fetch(self):
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
@@ -223,7 +223,7 @@ class SourceFetcherForGit(object):
 
 	def updateToRev(self, rev):
 		ensureCommandIsAvailable('git')
-		
+
 		self.rev = rev
 		command = 'git rev-parse --verify %s &>/dev/null' % self.rev
 		try:
@@ -238,7 +238,7 @@ class SourceFetcherForGit(object):
 
 	def unpack(self, sourceDir, subdir):
 		if subdir:
-			command = ('git archive %s "%s" | tar -x -C "%s"' 
+			command = ('git archive %s "%s" | tar -x -C "%s"'
 					   % (self.rev, subdir, sourceDir))
 		else:
 			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
@@ -254,7 +254,7 @@ class SourceFetcherForLocalFile(object):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
 		self.sourceShouldBeValidated = False
-		
+
 	def fetch(self):
 		# just symlink the local file to fetchTarget (if it exists)
 		portBaseDir = os.path.dirname(os.path.dirname(self.fetchTarget))
@@ -277,7 +277,7 @@ class SourceFetcherForMercurial(object):
 		self.sourceShouldBeValidated = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
-		
+
 	def fetch(self):
 		ensureCommandIsAvailable('hg')
 		command = 'hg clone'
@@ -308,7 +308,7 @@ class SourceFetcherForSubversion(object):
 		self.sourceShouldBeValidated = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
-		
+
 	def fetch(self):
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'

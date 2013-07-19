@@ -12,7 +12,7 @@ class MachineArchitecture(str):
 	PPC = 'ppc'
 	X86 = 'x86'
 	X86_GCC2 = 'x86_gcc2'
-	
+
 	@staticmethod
 	def getAll():
 		# TODO: fetch this from PackageKit?
@@ -31,7 +31,7 @@ class MachineArchitecture(str):
 		}
 		if architecture in dict:
 			return dict[architecture]
-		return None		
+		return None
 
 	@staticmethod
 	def findMatch(architecture):
@@ -71,7 +71,7 @@ class Architectures(MachineArchitecture):
 	X86 = 'x86'
 	X86_GCC2 = 'x86_gcc2'
 	SOURCE = 'source'
-	
+
 	@staticmethod
 	def getAll():
 		return MachineArchitecture.getAll() + [
@@ -98,7 +98,7 @@ class Phase(str):
 	BUILD = 'BUILD'
 	INSTALL = 'INSTALL'
 	TEST = 'TEST'
-	
+
 	@staticmethod
 	def getAllowedValues():
 		return [ Phase.PATCH, Phase.BUILD, Phase.TEST, Phase.INSTALL ]
@@ -115,7 +115,7 @@ class LinesOfText(list):
 
 # A string representing a boolean value.
 class YesNo(str):
-	
+
 	@staticmethod
 	def getAllowedValues():
 		return [ 'yes', 'no', 'true', 'false' ]

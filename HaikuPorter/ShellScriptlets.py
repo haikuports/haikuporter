@@ -25,10 +25,10 @@ def getScriptletPrerequirements(targetMachineTripleAsName = None):
 	"""Returns the list of prerequirements for executing scriptlets.
 	   If targetMachineTriple is given, the prerequirements will be specialized
 	   for cross-building for the given target machine."""
-	
+
 	targetMachinePrefix \
 		= (targetMachineTripleAsName + '_') if targetMachineTripleAsName else ''
-	
+
 	prerequirements = Template(scriptletPrerequirements).substitute({
 		'targetMachinePrefix': targetMachinePrefix,
 	}).splitlines()
@@ -140,7 +140,7 @@ defineDebugInfoPackage()
 
 # -----------------------------------------------------------------------------
 
-# Shell scriptlet that is used to execute a config file and output all the 
+# Shell scriptlet that is used to execute a config file and output all the
 # configuration values (in the form of environment variables) which have been
 # set explicitly in the configuration file. The shell variables "fileToParse"
 # and "supportedKeysPattern" must be set to the configuration file respectively
@@ -166,7 +166,7 @@ updateRevisionVariables()
 supportedKeys=$(set | grep -E -o "^($supportedKeysPattern)(_[0-9a-zA-Z_]+)?=" \
 	| cut -d= -f1)
 
-# output the supported environment vars which have been set, quoting any 
+# output the supported environment vars which have been set, quoting any
 # newlines in their values
 NL=$'\n'
 for key in $supportedKeys
@@ -548,9 +548,9 @@ fi
 # Shell scriptlet that prepares a chroot environment for entering.
 # Invoked with $packages filled with the list of packages that should
 # be activated (via common/packages) and $recipeFilePath pointing to the
-# recipe file. 
-# Additionally, $crossSysrootDir will be set to the cross-sysroot directory 
-# when the cross-build repository is active and $targetArchitecture will be 
+# recipe file.
+# Additionally, $crossSysrootDir will be set to the cross-sysroot directory
+# when the cross-build repository is active and $targetArchitecture will be
 # filled with the target architecture.
 setupChrootScript = r'''
 # ignore sigint but stop on every error
@@ -580,7 +580,7 @@ rm -f boot/system/packages/*.hpkg
 ln -s /boot/system/packages/*.hpkg boot/system/packages/
 
 # link the list of required common packages
-for pkg in $packages; do 
+for pkg in $packages; do
 	ln -sfn "$pkg" boot/common/packages/
 done
 
@@ -627,7 +627,7 @@ mount -t bindfs -p "source $portDir" port
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that cleans up a chroot environment after it has been exited.
-# Invoked with $buildOk indicating if the build has worked and thus all paths 
+# Invoked with $buildOk indicating if the build has worked and thus all paths
 # required for building only should be wiped.
 cleanupChrootScript = r'''
 
@@ -635,7 +635,7 @@ cleanupChrootScript = r'''
 trap '' SIGINT
 
 # try to make sure we really are in a work directory
-if ! echo $(basename $PWD) | grep -qE '^work-'; then 
+if ! echo $(basename $PWD) | grep -qE '^work-'; then
 	echo "cleanupChroot invoked in $PWD, which doesn't seem to be a work dir!"
 	exit 1
 fi

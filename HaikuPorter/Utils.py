@@ -41,7 +41,7 @@ def check_output(*popenargs, **kwargs):
 # -- sysExit ------------------------------------------------------------------
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
-	
+
 	message = '\n'.join(['*** ' + line for line in message.split('\n') ])
 	sys.exit(message)
 
@@ -49,7 +49,7 @@ def sysExit(message):
 # -- warn ---------------------------------------------------------------------
 def warn(message):
 	"""print a warning"""
-	
+
 	message = '\n'.join(['* ' + line for line in message.split('\n') ])
 	print(message)
 
@@ -64,7 +64,7 @@ def printError(*args):
 # -- escapeForPackageInfo -----------------------------------------------------
 def escapeForPackageInfo(string):
 	"""escapes string to be used within "" quotes in a .PackageInfo file"""
-	
+
 	return string.replace('\\', '\\\\').replace('"', '\\"')
 
 # -- unpackArchive ------------------------------------------------------------
@@ -78,8 +78,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		tarFile = tarfile.open(archiveFile, 'r')
 		members = None
 		if subdir:
-			members = [ 
-				member for member in tarFile.getmembers() 
+			members = [
+				member for member in tarFile.getmembers()
 				if member.name.startswith(subdir)
 			]
 		tarFile.extractall(targetBaseDir, members)
@@ -88,8 +88,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
 		names = None
 		if subdir:
-			names = [ 
-				name for name in zipFile.namelist() 
+			names = [
+				name for name in zipFile.namelist()
 				if name.startswith(subdir)
 			]
 		zipFile.extractall(targetBaseDir, names)
@@ -104,34 +104,34 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			if subdir:
 				if not subdir.endswith('/'):
 					subdir += '/'
-				members = [ 
-					member for member in tarFile.getmembers() 
+				members = [
+					member for member in tarFile.getmembers()
 					if member.name.startswith(subdir)
 				]
 			tarFile.extractall(targetBaseDir)
 			tarFile.close()
 	else:
-		sysExit('Unrecognized archive type in file ' 
+		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
 
 # -- symlinkDirectoryContents -------------------------------------------------
 def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst = True):
 	"""Populates targetDir with symlinks to all files from sourceDir"""
-	
+
 	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir) ]
 	symlinkFiles(files, targetDir)
-	
+
 # -- symlinkGlob --------------------------------------------------------------
 def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst = True):
 	"""Populates targetDir with symlinks to all files matching given globSpec"""
-	
+
 	files = glob.glob(globSpec)
 	symlinkFiles(files, targetDir)
-	
+
 # -- symlinkFiles -------------------------------------------------------------
 def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	"""Populates targetDir with symlinks to all the given files"""
-	
+
 	if os.path.exists(targetDir) and emptyTargetDirFirst:
 		shutil.rmtree(targetDir)
 	if not os.path.exists(targetDir):
@@ -142,7 +142,7 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 # -- touchFile ----------------------------------------------------------------
 def touchFile(file):
 	"""Touches given file, making sure that its modification date is bumped"""
-	
+
 	if os.path.exists(file):
 		os.utime(file, None)
 	else:
@@ -151,14 +151,14 @@ def touchFile(file):
 # -- storeStringInFile --------------------------------------------------------
 def storeStringInFile(string, file):
 	"""Stores the given string in the file with the given name"""
-	
+
 	with open(file, 'w') as fo:
 		fo.write(string)
 
 # -- readStringFromFile--------------------------------------------------------
 def readStringFromFile(file):
 	"""Returns the contents of the file with the given name as a string"""
-	
+
 	with open(file, 'r') as fo:
 		return fo.read()
 
@@ -186,14 +186,14 @@ def ensureCommandIsAvailable(command):
 		sysExit("'" + command + "' is not available, please install it")
 
 # -- naturalCompare -----------------------------------------------------------
-def naturalCompare(left, right): 
+def naturalCompare(left, right):
 	"""performs a natural compare between the two given strings - returns:
 		-1 if left is lower than right
 		 1 if left is higher than right
 		 0 if both are equal"""
-	
+
 	convert = lambda text: int(text) if text.isdigit() else text.lower()
-	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
 	return cmp(alphanum_key(left), alphanum_key(right))
 
 # -- bareVersionCompare -------------------------------------------------------
@@ -217,16 +217,16 @@ def bareVersionCompare(left, right):
 				return -1
 		elif index + 1 > rightElementCount:
 			return 1
-			
+
 		result = naturalCompare(leftElements[index], rightElements[index])
 		if result != 0:
 			return result
-		
+
 		index += 1
-		
+
 # -- versionCompare -----------------------------------------------------------
 def versionCompare(left, right):
-	"""Compares two given versions that may include a pre-release - returns 
+	"""Compares two given versions that may include a pre-release - returns
 		-1 if left is lower than right
 		 1 if left is higher than right
 		 0 if both versions are equal"""
@@ -237,7 +237,7 @@ def versionCompare(left, right):
 	result = bareVersionCompare(leftElements[0], rightElements[0])
 	if result != 0:
 		return result
-	
+
 	if len(leftElements) < 2:
 		if len(rightElements) < 2:
 			return 0
@@ -245,14 +245,14 @@ def versionCompare(left, right):
 			return -1
 	elif len(rightElements) < 2:
 		return 1
-	
+
 	# compare pre-release strings
 	return naturalCompare(leftElements[1], rightElements[1])
 
 # -- filteredEnvironment ------------------------------------------------------
 def filteredEnvironment():
-	"""returns a filtered version of os.environ, such that none of the 
-	   variables that we export for one port leak into the shell environment 
+	"""returns a filtered version of os.environ, such that none of the
+	   variables that we export for one port leak into the shell environment
 	   of another"""
 
 	env = {}
@@ -260,5 +260,5 @@ def filteredEnvironment():
 	for key in ['LANG', 'LIBRARY_PATH', 'PATH']:
 		if key in os.environ:
 			env[key] = os.environ[key]
-	
+
 	return env

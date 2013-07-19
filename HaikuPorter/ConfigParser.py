@@ -31,11 +31,11 @@ class ConfigParser(object):
 		shellVariables = shellVariables.copy()
 		shellVariables['supportedKeysPattern'] = supportedKeysString
 		shellVariables['fileToParse'] = filename
-		
+
 		wrapperScript = (getShellVariableSetters(shellVariables)
 			+ configFileEvaluatorScript)
 		try:
-			output = check_output(['/bin/bash', '-c', wrapperScript], 
+			output = check_output(['/bin/bash', '-c', wrapperScript],
 								  env=shellEnv)
 		except (OSError, CalledProcessError):
 			sysExit("Can't evaluate config file: " + filename)
@@ -47,7 +47,7 @@ class ConfigParser(object):
 			if not separator:
 				sysExit('evaluating file %s produced illegal '
 						'key-values line:\n  %s\nexpected "<key>=<value>"\n'
-						'output of configuration script was: %s\n' 
+						'output of configuration script was: %s\n'
 						% (filename, line, output))
 
 			# some keys may have a package-specific extension, check:
@@ -94,16 +94,16 @@ class ConfigParser(object):
 			# create empty dictionary for new extension
 			if extension not in self.entriesByExtension:
 				self.entriesByExtension[extension] = {}
-			
+
 			entries = self.entriesByExtension[extension]
-			
+
 			valueString = valueString.replace(r'\n', '\n')
 				# replace quoted newlines by real newlines
-				
-			if attributes[baseKey]['indexable']: 
+
+			if attributes[baseKey]['indexable']:
 				if not baseKey in entries:
 					entries[baseKey] = {}
-				
+
 			attrType = attributes[baseKey]['type']
 			if attrType == types.StringType:
 				if attributes[baseKey]['indexable']:
@@ -140,7 +140,7 @@ class ConfigParser(object):
 				if valueString.upper() not in Phase.getAllowedValues():
 					sysExit('evaluating file %s\nproduced illegal value "%s" '
 							'for key %s\nexpected one of: %s'
-							% (filename, key, valueString, 
+							% (filename, key, valueString,
 							   ','.join(Phase.getAllowedValues())))
 				entries[key] = valueString.upper()
 			elif attrType == MachineArchitecture:
@@ -174,15 +174,15 @@ class ConfigParser(object):
 								% (filename, architecture, architectures))
 					entries[key][architecture] = status
 				if 'any' in entries[key] and len(entries[key]) > 1:
-					sysExit("%s specifies both 'any' and other architectures" 
+					sysExit("%s specifies both 'any' and other architectures"
 							% (filename))
 				if 'source' in entries[key] and len(entries[key]) > 1:
-					sysExit("%s specifies both 'source' and other architectures" 
+					sysExit("%s specifies both 'source' and other architectures"
 							% (filename))
 			elif attrType == YesNo:
 				valueString = valueString.lower()
 				if valueString not in YesNo.getAllowedValues():
-					sysExit("Value for %s should be 'yes' or 'no' in %s" 
+					sysExit("Value for %s should be 'yes' or 'no' in %s"
 							% (key, filename))
 				entries[key] = YesNo.toBool(self, valueString)
 			else:
@@ -218,7 +218,7 @@ class ConfigParser(object):
 				if c == '"':
 					inQuote = False
 				continue
-					
+
 			if c.isspace():
 				if component:
 					components.append(component)
@@ -228,7 +228,7 @@ class ConfigParser(object):
 			component += c
 			if c == '"':
 				inQuote = True
-				
+
 		if component:
 			components.append(component)
 			component = ''

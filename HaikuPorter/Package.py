@@ -36,10 +36,10 @@ class PackageType(str):
 	GENERAL = 'general'
 	SOURCE = 'source'
 
-	@staticmethod	
+	@staticmethod
 	def byName(name):
 		"""Lookup the type by name"""
-		
+
 		if name == PackageType.DEBUG_INFO:
 			return PackageType.DEBUG_INFO
 		elif name == PackageType.DEVELOPMENT:
@@ -60,7 +60,7 @@ class Package(object):
 		self.name = name
 		self.version = port.version
 		self.revision = port.revision
-		
+
 		self.workDir = port.workDir
 		self.packageInfoDir = port.packageInfoDir
 		self.buildPackageDir = port.buildPackageDir
@@ -68,7 +68,7 @@ class Package(object):
 		self.hpkgDir = port.hpkgDir
 		self.recipeKeys = recipeKeys
 		self.policy = policy
-		
+
 		self.versionedName = self.name + '-' + self.version
 		self.fullVersion = self.version + '-' + self.revision
 		self.revisionedName = self.name + '-' + self.fullVersion
@@ -102,7 +102,7 @@ class Package(object):
 	def getStatusOnArchitecture(self, architecture):
 		"""Return the status of this package on the given architecture (which
 		   must be a hardware architecture, i.e. not ANY or SOURCE)"""
-		
+
 		if architecture in self.recipeKeys['ARCHITECTURES']:
 			return self.recipeKeys['ARCHITECTURES'][architecture]
 		elif (Architectures.ANY in self.recipeKeys['ARCHITECTURES']
@@ -138,7 +138,7 @@ class Package(object):
 			if not os.path.exists(obsoleteDir):
 				os.mkdir(obsoleteDir)
 			os.rename(packageFile, obsoletePackage)
-					
+
 	def generatePackageInfoWithoutProvides(self, packageInfoPath,
 			requiresToUse):
 		"""Create a .PackageInfo file that doesn't include any provides except
@@ -146,7 +146,7 @@ class Package(object):
 
 		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True,
 								  Architectures.ANY)
-		
+
 	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
@@ -156,7 +156,7 @@ class Package(object):
 
 	def adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
-		
+
 		# adjust all relevant directories
 		pathLengthToCut = len(self.workDir)
 		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
@@ -165,7 +165,7 @@ class Package(object):
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.workDir = '/'
 		self.patchesDir = '/patches'
-				
+
 	def prepopulatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
@@ -180,7 +180,7 @@ class Package(object):
 		self.recipeKeys['UPDATED_REQUIRES'] \
 			= requiresUpdater.updateRequiresList(requiresList)
 
-		self.generatePackageInfo(self.packagingDir + '/.PackageInfo', 
+		self.generatePackageInfo(self.packagingDir + '/.PackageInfo',
 								 ['UPDATED_REQUIRES'], getOption('quiet'))
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
@@ -213,16 +213,16 @@ class Package(object):
 
 	def createBuildPackage(self):
 		"""Create the build package"""
-		
+
 		# create a package info for a build package
-		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName 
+		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName
 							+ '-build.PackageInfo')
-		self.generatePackageInfo(buildPackageInfo, 
-								 ['REQUIRES', 'BUILD_REQUIRES', 
+		self.generatePackageInfo(buildPackageInfo,
+								 ['REQUIRES', 'BUILD_REQUIRES',
 								  'BUILD_PREREQUIRES'], True)
 
 		# create the build package
-		buildPackage = (self.buildPackageDir + '/' + self.revisionedName 
+		buildPackage = (self.buildPackageDir + '/' + self.revisionedName
 						+ '-build.hpkg')
 		cmdlineArgs = [getOption('commandPackage'), 'create', '-bi',
 			buildPackageInfo, '-I', self.packagingDir, buildPackage]
@@ -240,7 +240,7 @@ class Package(object):
 
 	def removeBuildPackage(self):
 		"""Deactivate and remove the build package"""
-		
+
 		if self.activeBuildPackage:
 			buildPlatform.deactivateBuildPackage(self.workDir,
 				self.activeBuildPackage)
@@ -269,32 +269,32 @@ class Package(object):
 				infoFile.write('name\t\t\t' + self.name + '\n')
 			infoFile.write('version\t\t\t' + self.fullVersion + '\n')
 			infoFile.write('architecture\t\t' + architecture + '\n')
-			infoFile.write('summary\t\t\t"' 
-						   + escapeForPackageInfo(self.recipeKeys['SUMMARY']) 
+			infoFile.write('summary\t\t\t"'
+						   + escapeForPackageInfo(self.recipeKeys['SUMMARY'])
 						   + '"\n')
-	
+
 			infoFile.write('description\t\t"')
 			infoFile.write(
 				escapeForPackageInfo('\n'.join(self.recipeKeys['DESCRIPTION'])))
 			infoFile.write('"\n')
-	
-			infoFile.write('packager\t\t"' + globalConfiguration['PACKAGER'] 
+
+			infoFile.write('packager\t\t"' + globalConfiguration['PACKAGER']
 						   + '"\n')
 			infoFile.write('vendor\t\t\t"Haiku Project"\n')
-	
+
 			# These keys aren't mandatory so we need to check if they exist
 			if self.recipeKeys['LICENSE']:
 				infoFile.write('licenses {\n')
 				for license in self.recipeKeys['LICENSE']:
 					infoFile.write('\t"' + license + '"\n')
 				infoFile.write('}\n')
-	
+
 			if self.recipeKeys['COPYRIGHT']:
 				infoFile.write('copyrights {\n')
 				for copyright in self.recipeKeys['COPYRIGHT']:
 					infoFile.write('\t"' + copyright + '"\n')
 				infoFile.write('}\n')
-	
+
 			requires = []
 			for requiresKey in requiresToUse:
 				if requiresKey == 'SCRIPTLET_PREREQUIRES':
@@ -314,15 +314,15 @@ class Package(object):
 				for require in requiresForKey:
 					if require not in requires:
 						requires.append(require)
-	
+
 			if fakeEmptyProvides:
-				infoFile.write('provides {\n\tfaked_' + self.name + ' = ' 
+				infoFile.write('provides {\n\tfaked_' + self.name + ' = '
 							   + self.version + '\n}\n')
 			else:
-				self._writePackageInfoListByKey(infoFile, 'PROVIDES', 
+				self._writePackageInfoListByKey(infoFile, 'PROVIDES',
 												'provides')
 			self._writePackageInfoList(infoFile, requires, 'requires')
-			self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 
+			self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS',
 											'supplements')
 			self._writePackageInfoListByKey(infoFile, 'CONFLICTS', 'conflicts')
 			self._writePackageInfoListByKey(infoFile, 'FRESHENS', 'freshens')
@@ -341,44 +341,44 @@ class Package(object):
 				'groups')
 			self._writePackageInfoListQuotePaths(infoFile,
 				self.recipeKeys['POST_INSTALL_SCRIPTS'], 'post-install-scripts')
-	
+
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.
 			infoFile.write('source-urls {\n')
-			for index in sorted(self.recipeKeys['SRC_URI'].keys(), 
+			for index in sorted(self.recipeKeys['SRC_URI'].keys(),
 								cmp=naturalCompare):
 				uricount = 1
 				for uri in self.recipeKeys['SRC_URI'][index]:
 					if 'file://' in uri:
 						# skip local URIs
 						continue
-					
+
 					if uricount < 2:
 						infoFile.write('\t"Download <' + uri + '>"\n')
 					else:
-						infoFile.write('\t"Location ' + str(uricount) + ' <' 
+						infoFile.write('\t"Location ' + str(uricount) + ' <'
 									   + uri + '>"\n')
 					uricount += 1
 
 			# TODO: fix or drop the following URLs
 			# Point directly to the file in subversion.
 			#recipeurl_base = ('http://ports.haiku-files.org/'
-			#				  + 'svn/haikuports/trunk/' + self.category + '/' 
+			#				  + 'svn/haikuports/trunk/' + self.category + '/'
 			#				  + self.name)
 			#
-			#recipeurl = (recipeurl_base + '/' + self.name+ '-' + self.version 
+			#recipeurl = (recipeurl_base + '/' + self.name+ '-' + self.version
 			#			 + '.recipe')
-	
+
 			#infoFile.write('\t"Port-file <' + recipeurl + '>"\n')
-			#patchFilePath = (self.patchesDir + '/' + self.name + '-' 
+			#patchFilePath = (self.patchesDir + '/' + self.name + '-'
 			#				 + self.version + '.patch')
 			#if os.path.exists(patchFilePath):
 			#	patchurl = (recipeurl_base + '/patches/' + self.name + '-'
 			#				+ self.version + '.patch')
 			#	infoFile.write('\t"Patches <' + patchurl + '>"\n')
-	
+
 			infoFile.write('}\n')
-		
+
 		if not quiet:
 			with open(packageInfoPath, 'r') as infoFile:
 				print infoFile.read()
@@ -408,7 +408,7 @@ class Package(object):
 					item += component
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
-				
+
 
 # -- A source package ---------------------------------------------------------
 
@@ -420,18 +420,18 @@ class SourcePackage(Package):
 
 		super(SourcePackage, self).prepopulatePackagingDir(port)
 
-		targetBaseDir = (self.packagingDir + '/develop/sources/' 
+		targetBaseDir = (self.packagingDir + '/develop/sources/'
 						 + port.revisionedName)
 		for source in port.sources:
 			if source.index == '1':
 				targetDir = targetBaseDir + '/source'
 			else:
 				targetDir = targetBaseDir + '/source-' + source.index
-				
+
 			if not os.path.exists(targetDir):
 				os.makedirs(targetDir)
 
-			# export unchanged sources	
+			# export unchanged sources
 			source.exportPristineSources(targetDir)
 
 		# copy patches, if there are any
@@ -447,7 +447,7 @@ class SourcePackage(Package):
 				shutil.copy(patchFilePath, patchesTargetDir)
 
 		# add ReadMe
-		haikuportsRev = check_output([ 'git', 'rev-parse', '--short', 'HEAD' ], 
+		haikuportsRev = check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
 									 cwd=globalConfiguration['TREE_PATH'])
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
 			readmeFile.write((
@@ -457,9 +457,9 @@ class SourcePackage(Package):
 				'and use the haikuporter tool to run the build for you.\n\n'
 				'haikuports-URL: %s (revision %s)\n'
 				'haikuporter-URL: %s\n')
-				% (port.name, haikuportsRepoUrl, haikuportsRev.strip(), 
+				% (port.name, haikuportsRepoUrl, haikuportsRev.strip(),
 				   haikuporterRepoUrl))
-					
+
 		# copy recipe file
 		shutil.copy(port.recipeFilePath, targetBaseDir)
 
@@ -467,7 +467,7 @@ class SourcePackage(Package):
 
 def packageFactory(packageType, name, port, recipeKeys, policy):
 	"""Creates a package matching the given type"""
-	
+
 	if packageType == PackageType.SOURCE:
 		return SourcePackage(packageType, name, port, recipeKeys, policy)
 	else:

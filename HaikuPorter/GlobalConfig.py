@@ -49,7 +49,7 @@ haikuportsAttributes = {
 	},
 }
 
-	
+
 # -- global configuration -----------------------------------------------------
 globalConfiguration = {}
 
@@ -64,7 +64,7 @@ def readGlobalConfiguration():
 	for key in haikuportsAttributes.keys():
 		if key not in globalConfiguration:
 			if haikuportsAttributes[key]['required']:
-				sysExit("Required value '" + key + "' not present in " 
+				sysExit("Required value '" + key + "' not present in "
 						+ haikuportsConf)
 
 			# set default value, as no other value has been provided
@@ -79,13 +79,13 @@ def readGlobalConfiguration():
 					'to be set in ' + haikuportsConf)
 	else:
 		globalConfiguration['IS_CROSSBUILD_REPOSITORY'] = False
-		
+
 	# split packager into name and email:
-	m = re.match('^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', 
+	m = re.match('^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$',
 				 globalConfiguration['PACKAGER'])
 	if not m:
-		sysExit("Couldn't parse name/email from PACKAGER value " 
+		sysExit("Couldn't parse name/email from PACKAGER value "
 				+ globalConfiguration['PACKAGER'])
 	globalConfiguration['PACKAGER_NAME'] = m.group('name')
 	globalConfiguration['PACKAGER_EMAIL'] = m.group('email')
-	
+
