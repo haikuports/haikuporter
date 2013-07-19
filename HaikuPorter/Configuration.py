@@ -216,7 +216,16 @@ class Configuration(object):
 		return Configuration.configuration.outputDirectory
 
 	def _readConfigurationFile(self):
+		# Find the configuration file. It may be
+		# * specified on the command line,
+		# * in the current directory,
+		# * '/etc/haikuports.conf'.
 		haikuportsConf = getOption('configFile')
+		if not haikuportsConf:
+			haikuportsConf = 'haikuports.conf'
+			if not os.path.exists(haikuportsConf):
+				haikuportsConf = '/etc/haikuports.conf'
+
 		configParser = ConfigParser(haikuportsConf, haikuportsAttributes)
 		configurationValue = configParser.getEntriesForExtension('')
 

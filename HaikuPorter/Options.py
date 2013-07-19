@@ -143,7 +143,7 @@ def parseOptions():
 
 	parser.add_option('--config',
 					  action='store', type='string', dest='configFile',
-					  default='/etc/haikuports.conf',
+					  default=None,
 					  help='specifies the location of the global config file; '
 					  	   'the default is "/etc/haikuports.conf"')
 	parser.add_option('--cross-devel-package',
