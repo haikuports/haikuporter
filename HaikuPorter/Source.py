@@ -276,7 +276,7 @@ class Source(object):
 		if needToRebase:			
 			# the tag exists, so we drop the respective commit
 			check_call(['git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^', 
-						'PATCH_FUNCTION', 'master'], cwd=self.sourceDir)
+						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir)
 			
 		with open(patchSetFilePath, 'w') as patchSetFile:
 			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'], 
@@ -284,7 +284,7 @@ class Source(object):
 			
 		if needToRebase:			
 			# put PATCH_FUNCTION back in
-			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'master'], 
+			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'haikuport'],
 					   cwd=self.sourceDir)
 
 		# warn if there's a correpsonding arch-specific patchset file
