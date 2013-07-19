@@ -13,10 +13,8 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.BuildPlatform import buildPlatform
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
-from HaikuPorter.GlobalConfig import (globalConfiguration,
-									  readGlobalConfiguration)
-from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import PackageInfo
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
@@ -41,9 +39,9 @@ class Main(object):
 		self.repository = None
 
 		# read global settings
-		readGlobalConfiguration()
+		Configuration.init()
 
-		self.treePath = globalConfiguration['TREE_PATH'].rstrip('/')
+		self.treePath = Configuration.getTreePath()
 
 		# init build platform
 		buildPlatform.init(self.treePath)
@@ -143,7 +141,7 @@ class Main(object):
 
 			# validate name of port
 			if portSpec['name'] not in portVersionsByName:
-				if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+				if not Configuration.isCrossBuildRepository():
 					sysExit(portSpec['name'] + ' not found in repository')
 				# for cross-build repository, try with target arch added
 				nameWithTargetArch \
@@ -170,7 +168,7 @@ class Main(object):
 				status = port.getStatusOnTargetArchitecture()
 				if (status != Status.STABLE
 					and (status != Status.UNTESTED
-						or not globalConfiguration['ALLOW_UNTESTED'])):
+						or not Configuration.shallAllowUntested())):
 					warn('skipping %s, as it is %s on the target architecture.'
 						 % (portID, status))
 					continue
@@ -239,7 +237,7 @@ class Main(object):
 		status = port.getStatusOnTargetArchitecture()
 		if (status != Status.STABLE
 			and (status != Status.UNTESTED
-				 or not globalConfiguration['ALLOW_UNTESTED'])):
+				 or not Configuration.shallAllowUntested())):
 			warn('This port is %s on this architecture.' % status)
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')
@@ -347,8 +345,8 @@ class Main(object):
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture
 		targetArchitecture = buildPlatform.getTargetArchitecture()
-		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
-			targetHaikuPackage = getOption('crossDevelPackage')
+		if Configuration.isCrossBuildRepository():
+			targetHaikuPackage = Configuration.getCrossDevelPackage()
 			if not targetHaikuPackage:
 				if not buildPlatform.isHaiku():
 					sysExit('On this platform a haiku cross devel package must '
@@ -375,7 +373,7 @@ class Main(object):
 		if self.options.quiet:
 			self.shellVariables['quiet'] = '1'
 
-		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+		if Configuration.isCrossBuildRepository():
 			self.shellVariables['isCrossRepository'] = 'true';
 
 			buildMachineTriple = buildPlatform.getMachineTriple()

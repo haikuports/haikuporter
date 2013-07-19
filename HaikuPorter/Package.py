@@ -14,7 +14,7 @@
 
 from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.GlobalConfig import globalConfiguration
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import Architectures, Status
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
@@ -191,8 +191,9 @@ class Package(object):
 		print 'mimesetting files for package ' + self.hpkgName + ' ...'
 		mimeDBDir = 'data/mime_db'
 		os.chdir(self.packagingDir)
-		check_call([getOption('commandMimeset'), '--all', '--mimedb', mimeDBDir,
-			'--mimedb', buildPlatform.getSystemMimeDbDirectory(), '.'])
+		check_call([Configuration.getMimesetCommand(), '--all', '--mimedb',
+			mimeDBDir, '--mimedb', buildPlatform.getSystemMimeDbDirectory(),
+			'.'])
 
 		# If data/mime_db is empty, remove it.
 		if not os.listdir(mimeDBDir):
@@ -202,7 +203,7 @@ class Package(object):
 
 		# Create the package
 		print 'creating package ' + self.hpkgName + ' ...'
-		check_call([getOption('commandPackage'), 'create', packageFile])
+		check_call([Configuration.getPackageCommand(), 'create', packageFile])
 
 		# policy check
 		self.policy.checkPackage(self, packageFile)
@@ -224,7 +225,7 @@ class Package(object):
 		# create the build package
 		buildPackage = (self.buildPackageDir + '/' + self.revisionedName
 						+ '-build.hpkg')
-		cmdlineArgs = [getOption('commandPackage'), 'create', '-bi',
+		cmdlineArgs = [Configuration.getPackageCommand(), 'create', '-bi',
 			buildPackageInfo, '-I', self.packagingDir, buildPackage]
 		if getOption('quiet'):
 			cmdlineArgs.insert(2, '-q')
@@ -278,8 +279,7 @@ class Package(object):
 				escapeForPackageInfo('\n'.join(self.recipeKeys['DESCRIPTION'])))
 			infoFile.write('"\n')
 
-			infoFile.write('packager\t\t"' + globalConfiguration['PACKAGER']
-						   + '"\n')
+			infoFile.write('packager\t\t"' + Configuration.getPackager() + '"\n')
 			infoFile.write('vendor\t\t\t"Haiku Project"\n')
 
 			# These keys aren't mandatory so we need to check if they exist
@@ -304,7 +304,7 @@ class Package(object):
 					# the cross-building themselves (i.e. binutils and gcc),
 					# as those are running in the context of the build machine.
 					targetMachineTripleAsName = self.targetMachineTripleAsName
-					if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
+					if (Configuration.isCrossBuildRepository()
 						and '_cross_' in self.name):
 						targetMachineTripleAsName = ''
 					requiresForKey = getScriptletPrerequirements(
@@ -448,7 +448,7 @@ class SourcePackage(Package):
 
 		# add ReadMe
 		haikuportsRev = check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
-									 cwd=globalConfiguration['TREE_PATH'])
+									 cwd=Configuration.getTreePath())
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
 			readmeFile.write((
 				'These are the sources (and optionally patches) that were\n'

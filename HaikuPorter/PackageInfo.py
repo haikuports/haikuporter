@@ -5,7 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Options import getOption
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Utils import (check_output, sysExit)
 
 import os
@@ -88,7 +88,7 @@ class PackageInfo(object):
 		self.path = path
 
 		# get an attribute listing of the package/package info file
-		args = [ getOption('commandPackage'), 'list', '-i', path ]
+		args = [ Configuration.getPackageCommand(), 'list', '-i', path ]
 		if silent:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(args, stderr=devnull)

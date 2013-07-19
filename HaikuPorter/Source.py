@@ -12,7 +12,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.GlobalConfig import globalConfiguration
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
 from HaikuPorter.SourceFetcher import (createSourceFetcher, parseCheckoutUri)
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable,
@@ -70,10 +70,10 @@ class Source(object):
 		self.fetchTargetIsArchive = True
 
 		self.gitEnv = {
-			'GIT_COMMITTER_EMAIL': globalConfiguration['PACKAGER_EMAIL'],
-			'GIT_COMMITTER_NAME': globalConfiguration['PACKAGER_NAME'],
-			'GIT_AUTHOR_EMAIL': globalConfiguration['PACKAGER_EMAIL'],
-			'GIT_AUTHOR_NAME': globalConfiguration['PACKAGER_NAME'],
+			'GIT_COMMITTER_EMAIL': Configuration.getPackagerEmail(),
+			'GIT_COMMITTER_NAME': Configuration.getPackagerName(),
+			'GIT_AUTHOR_EMAIL': Configuration.getPackagerEmail(),
+			'GIT_AUTHOR_NAME': Configuration.getPackagerName(),
 		}
 
 	def fetch(self, port):

@@ -5,7 +5,6 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import (PackageInfo, Resolvable,
 									 ResolvableExpression)
 from HaikuPorter.Utils import (check_output, versionCompare, sysExit)

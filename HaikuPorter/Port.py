@@ -14,7 +14,7 @@
 
 from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.GlobalConfig import globalConfiguration
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import recipeAttributes
@@ -101,7 +101,7 @@ class Port(object):
 
 		self.buildArchitecture = self.shellVariables['buildArchitecture']
 		self.targetArchitecture = self.shellVariables['targetArchitecture']
-		if (globalConfiguration['IS_CROSSBUILD_REPOSITORY']
+		if (Configuration.isCrossBuildRepository()
 			and '_cross_' in name):
 			# the cross-tools (binutils and gcc) need to run on the build
 			# architecture, not the target architecture
@@ -220,7 +220,7 @@ class Port(object):
 			status = package.getStatusOnArchitecture(self.targetArchitecture)
 			if (status == Status.STABLE
 				or (status == Status.UNTESTED
-					and globalConfiguration['ALLOW_UNTESTED'])):
+					and Configuration.shallAllowUntested())):
 				self.packages.append(package)
 
 		# create source package if it hasn't been specified or disabled:
@@ -586,7 +586,7 @@ class Port(object):
 		self.policy.setPort(self, requiredPackages)
 
 		self.requiresUpdater = RequiresUpdater(self.packages, requiredPackages)
-		if not globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+		if not Configuration.isCrossBuildRepository():
 			self.requiresUpdater.addPackages(
 				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
@@ -597,7 +597,7 @@ class Port(object):
 				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
 			}
-			if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
 					= self.shellVariables['crossSysrootDir']
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
@@ -663,7 +663,7 @@ class Port(object):
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
 					if not (buildPlatform.usesChroot()
-						or globalConfiguration['IS_CROSSBUILD_REPOSITORY']):
+						or Configuration.isCrossBuildRepository()):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
@@ -739,7 +739,7 @@ class Port(object):
 				self.shellVariables[sourceDirKey] = source.sourceDir
 
 		basePrefix = ''
-		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+		if Configuration.isCrossBuildRepository():
 			# If this is a cross package, we possibly want to use an additional
 			# base prefix. Otherwise the prefix is as if building natively on
 			# Haiku, but we may need to prepend a dest-dir in the install phase
@@ -1080,7 +1080,7 @@ class Port(object):
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = filteredEnvironment()
-		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
+		if Configuration.isCrossBuildRepository():
 			# include cross development tools in path automatically
 			crossToolsPaths = buildPlatform.getCrossToolsBinPaths(self.workDir)
 			shellEnv['PATH'] = ':'.join(crossToolsPaths + [ shellEnv['PATH'] ])

@@ -5,7 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.GlobalConfig import globalConfiguration
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
 from HaikuPorter.Utils import (versionCompare, touchFile)
@@ -145,7 +145,7 @@ class Repository(object):
 					status = port.getStatusOnTargetArchitecture()
 					if (status == Status.STABLE
 						or (status == Status.UNTESTED
-							and globalConfiguration['ALLOW_UNTESTED'])):
+							and Configuration.shallAllowUntested())):
 						if (port.checkFlag('build')
 							and not preserveFlags):
 							if not self.quiet:
@@ -222,7 +222,7 @@ class Repository(object):
 					status = port.getStatusOnTargetArchitecture()
 					if (status != Status.STABLE
 						and not (status == Status.UNTESTED
-							and globalConfiguration['ALLOW_UNTESTED'])):
+							and Configuration.shallAllowUntested())):
 						touchFile(skippedDir + '/' + portID)
 						if not self.quiet:
 							print(('\t%s is still marked as %s on target '

@@ -6,6 +6,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.ConfigParser import ConfigParser
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Utils import (check_output, isCommandAvailable, sysExit)
 
 import os
@@ -253,7 +254,7 @@ class Policy(object):
 		try:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(
-					[getOption('commandPackage'), 'list', package],
+					[Configuration.getPackageCommand(), 'list', package],
 					stderr=devnull)
 		except:
 			return None

@@ -5,7 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Options import getOption
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
 from HaikuPorter.Utils import (check_output, sysExit)
 
@@ -148,7 +148,7 @@ class DependencyAnalyzer(object):
 				destinationPath = (self.noRequiresSystemRepositoryPath + '/'
 					+ fileName)
 				sourcePath = destinationPath + '.tmp'
-				check_call([getOption('commandPackage'), 'extract', '-i',
+				check_call([Configuration.getPackageCommand(), 'extract', '-i',
 					sourcePath, directory + '/' + package, '.PackageInfo'])
 
 				# strip the requires section from the package info

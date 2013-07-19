@@ -5,7 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.GlobalConfig import globalConfiguration
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import PackageInfo
 from HaikuPorter.RecipeTypes import Architectures, MachineArchitecture
@@ -33,9 +33,8 @@ class BuildPlatform(object):
 		self.treePath = treePath
 
 		self.targetArchitecture = self.architecture
-		if globalConfiguration['IS_CROSSBUILD_REPOSITORY']:
-			self.targetArchitecture \
-				= globalConfiguration['TARGET_ARCHITECTURE'].lower()
+		if Configuration.isCrossBuildRepository():
+			self.targetArchitecture = Configuration.getTargetArchitecture()
 
 		self.crossSysrootDir = '/boot/cross-sysroot/' + self.targetArchitecture
 
@@ -52,14 +51,14 @@ class BuildPlatform(object):
 		return self.targetArchitecture
 
 	def getLicensesDirectory(self):
-		directory = getOption('licensesDirectory')
+		directory = Configuration.getLicensesDirectory()
 		if not directory:
 			directory = (self.findDirectory('B_SYSTEM_DIRECTORY')
 				+ '/data/licenses')
 		return directory
 
 	def getSystemMimeDbDirectory(self):
-		directory = getOption('systemMimeDB')
+		directory = Configuration.getSystemMimeDbDirectory()
 		if not directory:
 			directory = (self.findDirectory('B_SYSTEM_DIRECTORY')
 				+ '/data/mime_db')
@@ -197,19 +196,18 @@ class BuildPlatformUnix(BuildPlatform):
 
 		super(BuildPlatformUnix, self).init(treePath, architecture, machine)
 
-		if getOption('commandPackage') == 'package':
+		if Configuration.getPackageCommand() == 'package':
 			sysExit('--command-package must be specified on this build '
 				'platform!')
-		if getOption('commandMimeset') == 'mimeset':
+		if Configuration.getMimesetCommand() == 'mimeset':
 			sysExit('--command-mimeset must be specified on this build '
 				'platform!')
-		if not getOption('systemMimeDB'):
-			sysExit('--system-mimedb must be specified on this build '
-				'platform!')
+		if not Configuration.getSystemMimeDbDirectory():
+			sysExit('--system-mimedb must be specified on this build platform!')
 
-		if not getOption('crossTools'):
+		if not Configuration.getCrossToolsDirectory():
 			sysExit('--cross-tools must be specified on this build platform!')
-		self.originalCrossToolsDir = getOption('crossTools')
+		self.originalCrossToolsDir = Configuration.getCrossToolsDirectory()
 
 		self.findDirectoryMap = {
 			'B_PACKAGE_LINKS_DIRECTORY': '/packages',
@@ -218,8 +216,8 @@ class BuildPlatformUnix(BuildPlatform):
 			'B_COMMON_PACKAGES_DIRECTORY': '/boot/common/packages',
 			}
 
-		self.crossDevelPackage = getOption('crossDevelPackage')
-		targetArchitecture = globalConfiguration['TARGET_ARCHITECTURE'].lower()
+		self.crossDevelPackage = Configuration.getCrossDevelPackage()
+		targetArchitecture = Configuration.getTargetArchitecture()
 		self.targetMachineTriple \
 			= MachineArchitecture.getTripleFor(targetArchitecture)
 		targetMachineAsName = self.targetMachineTriple.replace('-', '_')
@@ -464,8 +462,8 @@ class BuildPlatformUnix(BuildPlatform):
 		# extract the package, unless it is a build package
 		if not isBuildPackage:
 			installPath = installRoot + '/' + installationLocation
-			args = [ getOption('commandPackage'), 'extract', '-C', installPath,
-				package ]
+			args = [ Configuration.getPackageCommand(), 'extract', '-C',
+				installPath, package ]
 			check_call(args)
 		else:
 			installPath = packageInfo.getInstallPath()
