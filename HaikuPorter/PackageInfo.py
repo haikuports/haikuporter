@@ -136,7 +136,8 @@ class PackageInfo(object):
 		return result
 
 	def _extractOptionalField(self, output, fieldName):
-		match = re.search(r"%s:\s*(\S+)" % fieldName, output)
+		regExp = re.compile('^\s*%s:\s*(\S+)' % fieldName, re.MULTILINE)
+		match = regExp.search(output)
 		if match:
 			return match.group(1)
 		return None
