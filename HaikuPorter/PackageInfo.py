@@ -39,7 +39,7 @@ class Resolvable(object):
 		if self.version:
 			result += ' = ' + self.version
 		if self.compatibleVersion:
-			result += ' (' + self.compatibleVersion + ')'
+			result += ' (compatible >= ' + self.compatibleVersion + ')'
 		return result
 
 	def getName(self):
