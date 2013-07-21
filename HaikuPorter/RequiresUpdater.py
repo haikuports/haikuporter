@@ -129,7 +129,7 @@ class RequiresUpdater(object):
 
 	def _addPackageProvidesInfo(self, package, providesString):
 		provides = ProvidesInfo(package, providesString.strip())
-		if provides.name in self.providesMap:
-			self.providesMap[provides.name].append(provides)
+		if provides.getName() in self.providesMap:
+			self.providesMap[provides.getName()].append(provides)
 		else:
-			self.providesMap[provides.name] = [ provides ]
+			self.providesMap[provides.getName()] = [ provides ]
