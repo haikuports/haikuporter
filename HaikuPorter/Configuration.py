@@ -9,6 +9,7 @@
 from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.Options import getOption
 from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, YesNo)
+from HaikuPorter.Utils import sysExit
 
 import os
 import re

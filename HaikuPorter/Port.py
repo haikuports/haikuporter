@@ -25,9 +25,9 @@ from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 recipeActionScript,
 										 setupChrootScript)
 from HaikuPorter.Source import Source
-from HaikuPorter.Utils import (check_output, filteredEnvironment,
-							   naturalCompare, symlinkFiles, symlinkGlob,
-							   sysExit, touchFile, warn)
+from HaikuPorter.Utils import (filteredEnvironment, naturalCompare, 
+							   symlinkFiles, symlinkGlob, sysExit, touchFile, 
+							   warn)
 
 import os
 import shutil
@@ -1103,8 +1103,6 @@ class Port(object):
 			isPrerequired = False):
 		"""Resolve dependencies of one or more package-infos"""
 
-		args = ([ '/bin/pkgman', 'resolve-dependencies' ]
-				+ packageInfoFiles + repositories)
 		try:
 			return buildPlatform.resolveDependencies(packageInfoFiles,
 				repositories, isPrerequired)

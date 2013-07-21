@@ -7,10 +7,9 @@
 
 from HaikuPorter.PackageInfo import (PackageInfo, Resolvable,
 									 ResolvableExpression)
-from HaikuPorter.Utils import (check_output, versionCompare, sysExit)
+from HaikuPorter.Utils import (versionCompare, sysExit)
 
 import os
-import re
 from subprocess import CalledProcessError
 
 # -- ProvidesInfo class -------------------------------------------------------

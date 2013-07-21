@@ -131,7 +131,6 @@ class PackageInfo(object):
 
 	def _extractField(self, output, fieldName):
 		result = self._extractOptionalField(output, fieldName)
-		match = re.search(r"%s:\s*(\S+)" % fieldName, output)
 		if not result:
 			sysExit('Failed to get %s of package "%s"' % (fieldName, self.path))
 		return result

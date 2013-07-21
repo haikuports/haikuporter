@@ -19,11 +19,10 @@ from HaikuPorter.PackageInfo import PackageInfo
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Repository import Repository
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable,
-							   haikuportsRepoUrl, sysExit, warn)
+from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl, 
+							   sysExit, warn)
 
 import os
-import re
 from subprocess import check_call
 import sys
 
