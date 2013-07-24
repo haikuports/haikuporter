@@ -557,7 +557,7 @@ class Port(object):
 			s += 1
 
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
-		"""Build the port and collect the resulting package"""
+		"""Build the port and collect the resulting package(s)"""
 
 		# reset build flag if recipe is newer (unless that's prohibited)
 		if (not getOption('preserveFlags') and self.checkFlag('build')
@@ -581,7 +581,11 @@ class Port(object):
 				shutil.rmtree(directory, True)
 		for directory in directoriesToCreate:
 			os.mkdir(directory)
+			
 		for package in self.packages:
+			if (getOption('onlySourcePackages') 
+				and package.type != PackageType.SOURCE):
+				continue
 			os.mkdir(package.packagingDir)
 			package.prepopulatePackagingDir(self)
 
@@ -664,6 +668,9 @@ class Port(object):
 		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
 			for package in self.packages:
+				if (getOption('onlySourcePackages') 
+					and package.type != PackageType.SOURCE):
+					continue
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
 					if not (buildPlatform.usesChroot()
@@ -948,13 +955,20 @@ class Port(object):
 
 		# create all build packages (but don't activate them yet)
 		for package in self.packages:
+			if (getOption('onlySourcePackages') 
+				and package.type != PackageType.SOURCE):
+				continue
 			package.createBuildPackage()
 
-		self._doBuildStage()
+		if not getOption('onlySourcePackages'):
+			self._doBuildStage()
 
 		if makePackages:
 			self._makePackages()
 		for package in self.packages:
+			if (getOption('onlySourcePackages') 
+				and package.type != PackageType.SOURCE):
+				continue
 			package.removeBuildPackage()
 
 	def _adjustToChroot(self):
@@ -1008,31 +1022,33 @@ class Port(object):
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
 
-		# Create the settings directory in the packaging directory, if needed.
-		# We need to do that, since the .settings link would otherwise point
-		# to a non-existing entry and the directory couldn't be made either.
-		for package in self.packages:
-			settingsDir = package.packagingDir + '/settings'
-			if not os.path.exists(settingsDir):
-				os.makedirs(settingsDir)
-
-		self._doInstallStage()
-
-		# If the settings directory is still empty, remove it.
-		for package in self.packages:
-			settingsDir = package.packagingDir + '/settings'
-			if not os.listdir(settingsDir):
-				os.rmdir(settingsDir)
-
-		# For the main package remove certain empty directories. Typically
-		# contents is moved from the main package installation directory tree to
-		# the packaging directories of sibling packages, which may leave empty
-		# directories behind.
-		for dirName in [ 'add-ons', 'apps', 'bin', 'data', 'develop',
-				'documentation', 'lib', 'preferences' ]:
-			dir = self.packagingBaseDir + '/' + self.name + '/' + dirName
-			if os.path.exists(dir) and not os.listdir(dir):
-				os.rmdir(dir)
+		if not getOption('onlySourcePackages'):
+			# Create the settings directory in the packaging directory, if 
+			# needed. We need to do that, since the .settings link would 
+			# otherwise point to a non-existing entry and the directory 
+			# couldn't be made either.
+			for package in self.packages:
+				settingsDir = package.packagingDir + '/settings'
+				if not os.path.exists(settingsDir):
+					os.makedirs(settingsDir)
+	
+			self._doInstallStage()
+	
+			# If the settings directory is still empty, remove it.
+			for package in self.packages:
+				settingsDir = package.packagingDir + '/settings'
+				if not os.listdir(settingsDir):
+					os.rmdir(settingsDir)
+	
+			# For the main package remove certain empty directories. Typically
+			# contents is moved from the main package installation directory 
+			# tree to the packaging directories of sibling packages, which may 
+			# leave empty directories behind.
+			for dirName in [ 'add-ons', 'apps', 'bin', 'data', 'develop',
+					'documentation', 'lib', 'preferences' ]:
+				dir = self.packagingBaseDir + '/' + self.name + '/' + dirName
+				if os.path.exists(dir) and not os.listdir(dir):
+					os.rmdir(dir)
 
 		# create hpkg-directory if needed
 		if not os.path.exists(self.hpkgDir):
@@ -1040,6 +1056,9 @@ class Port(object):
 
 		# make each package
 		for package in self.packages:
+			if (getOption('onlySourcePackages') 
+				and package.type != PackageType.SOURCE):
+				continue
 			package.makeHpkg(self.requiresUpdater)
 
 		# Clean up after ourselves

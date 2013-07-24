@@ -114,6 +114,10 @@ def parseOptions():
 					  action='store', type='string', dest='portsfile',
 					  default='',
 					  help="handle all ports in the given file")
+	parser.add_option('--only-source-packages',
+					  action='store_true', dest='onlySourcePackages',
+					  default=False,
+					  help="build only source packages")
 
 	parser.add_option('-w', '--why',
 					  action='store', type='string', dest='why',
