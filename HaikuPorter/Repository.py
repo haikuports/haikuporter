@@ -8,12 +8,13 @@
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Port import Port
 from HaikuPorter.RecipeTypes import Status
-from HaikuPorter.Utils import (versionCompare, touchFile)
+from HaikuPorter.Utils import (check_output, touchFile, versionCompare)
 
 import glob
 import os
 import re
 import shutil
+from subprocess import check_call
 import sys
 
 
@@ -25,6 +26,8 @@ class Repository(object):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 		self.path = self.outputDirectory + '/repository'
+		self.inputSourcePackagesPath \
+			= self.outputDirectory + '/input-source-packages'
 		self.packagesPath = packagesPath
 		self.shellVariables = shellVariables
 		self.policy = policy
@@ -78,11 +81,37 @@ class Repository(object):
 		return sorted(ports)
 
 	def _initAllPorts(self):
-		# For now, we collect all ports into a dictionary that can be keyed
-		# by name + '-' + version. Additionally, we keep a sorted list of
+		# Collect all ports into a dictionary that can be keyed by 
+		# name + '-' + version. Additionally, we keep a sorted list of
 		# available versions for each port name.
 		self._allPorts = {}
 		self._portVersionsByName = {}
+		
+		# every existing input source package defines a port (which overrules
+		# any corresponding port in the recipe tree)
+		if os.path.exists(self.inputSourcePackagesPath):
+			for fileName in sorted(os.listdir(self.inputSourcePackagesPath)):
+				if not fileName.endswith('-source.hpkg'):
+					continue
+				
+				recipeFilePath \
+					= self._partiallyExtractSourcePackageIfNeeded(fileName)
+				
+				recipeName = os.path.basename(recipeFilePath)
+				name, version = recipeName[:-7].split('-')
+				if name not in self._portVersionsByName:
+					self._portVersionsByName[name] = [ version ]
+				else:
+					self._portVersionsByName[name].append(version)
+
+				portPath = os.path.dirname(recipeFilePath)
+				portOutputPath = (self.outputDirectory 
+								  + '/input-source-packages/build/' + name)
+				self._allPorts[name + '-' + version] \
+					= Port(name, version, None, portPath, portOutputPath,
+						   self.shellVariables, self.policy)
+
+		# collect ports from the recipe tree
 		for category in sorted(os.listdir(self.treePath)):
 			categoryPath = self.treePath + '/' + category
 			if (not os.path.isdir(categoryPath) or category[0] == '.'
@@ -102,6 +131,14 @@ class Repository(object):
 					portElements = recipe[:-7].split('-')
 					if len(portElements) == 2:
 						name, version = portElements
+						versionedName = name + '-' + version
+						if versionedName in self._allPorts:
+							# this version of the current port already was
+							# defined by an input source package - skip
+							if not self.quiet:
+								print('Warning: ' + versionedName + 'in tree '
+									  'is overruled by input source package')
+							continue
 						if name not in self._portVersionsByName:
 							self._portVersionsByName[name] = [ version ]
 						else:
@@ -293,3 +330,36 @@ class Repository(object):
 			if not os.path.exists(obsoleteDir):
 				os.mkdir(obsoleteDir)
 			os.rename(package, obsoletePackage)
+
+	def _partiallyExtractSourcePackageIfNeeded(self, sourcePackageName):
+		"""extract the recipe and potentially contained patches/licenses from 
+		   a source package, unless that has already been done"""
+		
+		sourcePackagePath \
+			= self.inputSourcePackagesPath + '/' + sourcePackageName
+		(name, version, revision, unused) = sourcePackageName.split('-')
+		name = name[:-7]	# drop '_source'
+		relativeBasePath \
+			= 'develop/sources/%s-%s-%s' % (name, version, revision)
+		recipeName = name + '-' + version + '.recipe'
+		recipeFilePath = (self.inputSourcePackagesPath + '/' + relativeBasePath 
+						  + '/' + recipeName)
+				
+		if (not os.path.exists(recipeFilePath)
+			or (os.path.getmtime(recipeFilePath)
+				<= os.path.getmtime(sourcePackagePath))):
+			# extract recipe and patches (but skip sources)
+			relativeSourcePath = relativeBasePath + '/source'
+			paths = check_output([Configuration.getPackageCommand(), 'list', 
+								  '-p', sourcePackagePath]).splitlines()
+			paths = [
+				path for path in paths 
+				if (path.startswith(relativeBasePath) 
+					and not path.startswith(relativeSourcePath)
+					and not path.endswith('ReadMe'))
+			]
+			check_call([Configuration.getPackageCommand(), 'extract', 
+						'-C', self.inputSourcePackagesPath, sourcePackagePath] 
+					   + paths)
+		
+		return recipeFilePath
