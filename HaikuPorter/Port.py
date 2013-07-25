@@ -124,6 +124,7 @@ class Port(object):
 		else:
 			self.downloadDir = self.outputDir + '/download'
 		self.patchesDir = self.baseDir + '/patches'
+		self.licensesDir = self.baseDir + '/licenses'
 		self.sourceBaseDir = self.workDir + '/sources'
 		self.packageInfoDir = self.workDir + '/package-infos'
 		self.buildPackageDir = self.workDir + '/build-packages'
@@ -350,10 +351,9 @@ class Port(object):
 								buildPlatform.getLicensesDirectory())
 							if item not in fileList:
 								fileList = []
-								dirname = (os.path.dirname(self.recipeFilePath)
-										   + '/licenses')
-								if os.path.exists(dirname):
-									for filename in os.listdir(dirname):
+								if os.path.exists(self.licensesDir):
+									licenses = os.listdir(self.licensesDir)
+									for filename in licenses:
 										fileList.append(filename)
 							if item not in fileList:
 								haikuLicenseList.sort()
@@ -998,6 +998,7 @@ class Port(object):
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.workDir = ''
 		self.patchesDir = '/patches'
+		self.licensesDir = '/licenses'
 
 		# update shell variables, too
 		self._updateShellVariablesFromRecipe()
