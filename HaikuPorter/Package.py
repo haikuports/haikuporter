@@ -456,8 +456,12 @@ class SourcePackage(Package):
 				shutil.copy(licenseFilePath, licensesTargetDir)
 
 		# add ReadMe
-		haikuportsRev = check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
-									 cwd=Configuration.getTreePath())
+		if os.path.exists(Configuration.getTreePath() + '/.git'):
+			haikuportsRev \
+				= check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
+							   cwd=Configuration.getTreePath())
+		else:
+			haikuportsRev = '<unknown>'
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
 			readmeFile.write((
 				'These are the sources (and optionally patches) that were\n'
