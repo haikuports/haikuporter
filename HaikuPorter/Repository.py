@@ -105,11 +105,14 @@ class Repository(object):
 					self._portVersionsByName[name].append(version)
 
 				portPath = os.path.dirname(recipeFilePath)
-				portOutputPath = (self.outputDirectory 
-								  + '/input-source-packages/build/' + name)
+				if self.outputDirectory == self.treePath:
+					portOutputPath = portPath
+				else:
+					portOutputPath = (self.outputDirectory 
+									  + '/input-source-packages/' + name)
 				self._allPorts[name + '-' + version] \
-					= Port(name, version, None, portPath, portOutputPath,
-						   self.shellVariables, self.policy)
+					= Port(name, version, '<source-package>', portPath, 
+						   portOutputPath, self.shellVariables, self.policy)
 
 		# collect ports from the recipe tree
 		for category in sorted(os.listdir(self.treePath)):
@@ -348,18 +351,24 @@ class Repository(object):
 		if (not os.path.exists(recipeFilePath)
 			or (os.path.getmtime(recipeFilePath)
 				<= os.path.getmtime(sourcePackagePath))):
-			# extract recipe and patches (but skip sources)
-			relativeSourcePath = relativeBasePath + '/source'
-			paths = check_output([Configuration.getPackageCommand(), 'list', 
+			# extract recipe, patches and licenses (but skip everything else)
+			allowedEntries = [
+				relativeBasePath + '/' + recipeName,
+				relativeBasePath + '/licenses',
+				relativeBasePath + '/patches',
+			]
+			entries = check_output([Configuration.getPackageCommand(), 'list', 
 								  '-p', sourcePackagePath]).splitlines()
-			paths = [
-				path for path in paths 
-				if (path.startswith(relativeBasePath) 
-					and not path.startswith(relativeSourcePath)
-					and not path.endswith('ReadMe'))
+			entries = [
+				entry for entry in entries if entry in allowedEntries 
 			]
 			check_call([Configuration.getPackageCommand(), 'extract', 
 						'-C', self.inputSourcePackagesPath, sourcePackagePath] 
-					   + paths)
+					   + entries)
+			
+			# add SRC_URI to recipe which points to the source package
+			with open(recipeFilePath, 'a') as recipeFile:
+				recipeFile.write('\n# Added by haikuporter:\n')
+				recipeFile.write('SRC_URI="pkg:%s"\n' % sourcePackagePath)
 		
 		return recipeFilePath
