@@ -12,6 +12,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit,
 							   unpackArchive, warn)
 
@@ -66,7 +67,7 @@ def unpackCheckoutWithTar(checkoutDir, sourceDir, subdir):
 # -----------------------------------------------------------------------------
 
 def unpackFile(uri, fetchTarget, sourceDir, subdir):
-	"""Move contents of subdir into sourceDir and remove subdir"""
+	"""Unpack archive file (or copy non-archive) into sourceDir"""
 
 	if uri.endswith('#noarchive'):
 		if os.path.isdir(fetchTarget):
@@ -300,6 +301,33 @@ class SourceFetcherForMercurial(object):
 		if subdir:
 			foldSubdirIntoSourceDir(subdir, sourceDir)
 
+# -- Fetches sources from source package --------------------------------------
+
+class SourceFetcherForSourcePackage(object):
+	def __init__(self, uri, fetchTarget):
+		self.fetchTarget = fetchTarget
+		self.uri = uri
+		self.sourceShouldBeValidated = False
+
+		self.sourcePackagePath = self.uri[4:]
+		sourcePackageName = os.path.basename(self.sourcePackagePath)
+		(name, version, revision, unused) = sourcePackageName.split('-')
+		name = name[:-7]	# drop '_source'
+		self.relativeSourcePath \
+			= 'develop/sources/%s-%s-%s/source' % (name, version, revision)
+
+	def fetch(self):
+		pass
+
+	def updateToRev(self, rev):
+		pass
+
+	def unpack(self, sourceDir, subdir):
+		check_call([Configuration.getPackageCommand(), 'extract', 
+					'-C', sourceDir, self.sourcePackagePath, 
+					self.relativeSourcePath])
+		foldSubdirIntoSourceDir(self.relativeSourcePath, sourceDir)
+
 # -- Fetches sources via svn --------------------------------------------------
 
 class SourceFetcherForSubversion(object):
@@ -342,6 +370,8 @@ def createSourceFetcher(uri, fetchTarget):
 		return SourceFetcherForMercurial(uri, fetchTarget)
 	elif lowerUri.startswith('http') or lowerUri.startswith('ftp'):
 		return SourceFetcherForDownload(uri, fetchTarget)
+	elif lowerUri.startswith('pkg:'):
+		return SourceFetcherForSourcePackage(uri, fetchTarget)
 	elif lowerUri.startswith('svn'):
 		return SourceFetcherForSubversion(uri, fetchTarget)
 	elif ':' not in lowerUri:
