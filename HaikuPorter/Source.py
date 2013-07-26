@@ -163,25 +163,26 @@ class Source(object):
 	def validateChecksum(self, port):
 		"""Make sure that the MD5-checksum matches the expectations"""
 
-		if self.checksum:
-			print 'Validating MD5 checksum of ' + self.fetchTargetName
-			h = hashlib.md5()
-			f = open(self.fetchTarget, 'rb')
-			while True:
-				d = f.read(16384)
-				if not d:
-					break
-				h.update(d)
-			f.close()
-			if h.hexdigest() != self.checksum:
-				sysExit('Expected: ' + self.checksum + '\n'
-						+ 'Found: ' + h.hexdigest())
-		else:
-			# Warn about missing checksum in recipe only when the source
-			# fetcher indicates that validation makes sense
-			if self.sourceFetcher.sourceShouldBeValidated:
-				warn('No CHECKSUM_MD5 key found in recipe for '
-					 + self.fetchTargetName)
+		if not self.sourceFetcher.sourceShouldBeValidated:
+			return
+		
+		if not self.checksum:
+			warn('No CHECKSUM_MD5 key found in recipe for '
+				 + self.fetchTargetName)
+			return
+		
+		print 'Validating MD5 checksum of ' + self.fetchTargetName
+		h = hashlib.md5()
+		f = open(self.fetchTarget, 'rb')
+		while True:
+			d = f.read(16384)
+			if not d:
+				break
+			h.update(d)
+		f.close()
+		if h.hexdigest() != self.checksum:
+			sysExit('Expected: ' + self.checksum + '\n'
+					+ 'Found: ' + h.hexdigest())
 
 	def patch(self, port):
 		"""Apply any patches to this source"""
