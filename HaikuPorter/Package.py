@@ -110,6 +110,14 @@ class Package(object):
 			return Status.STABLE
 		return Status.UNSUPPORTED
 
+	def isBuildableOnArchitecture(self, architecture):
+		"""Returns whether or not this package is buildable on the given
+		   architecture"""
+		status = self.getStatusOnArchitecture(architecture)
+		return (status == Status.STABLE
+			or (status == Status.UNTESTED
+				and Configuration.shallAllowUntested()))
+
 	def getRecipeKeys(self):
 		return self.recipeKeys
 

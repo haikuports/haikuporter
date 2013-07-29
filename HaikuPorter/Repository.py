@@ -7,8 +7,7 @@
 
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Port import Port
-from HaikuPorter.RecipeTypes import Status
-from HaikuPorter.Utils import (check_output, touchFile, versionCompare)
+from HaikuPorter.Utils import (check_output, touchFile, versionCompare, warn)
 
 import glob
 import os
@@ -34,6 +33,7 @@ class Repository(object):
 		self.quiet = quiet
 
 		# update repository if it exists and isn't empty, populate it otherwise
+		self._initAllPorts()
 		if (os.path.isdir(self.path)
 			and os.listdir(self.path)):
 			self._updateRepository()
@@ -57,15 +57,31 @@ class Repository(object):
 		return None
 
 	def getAllPorts(self):
-		if not hasattr(self, '_allPorts'):
-			self._initAllPorts()
 		return self._allPorts
 
 	def getPortVersionsByName(self):
-		if not hasattr(self, '_portVersionsByName'):
-			self._initAllPorts()
 		return self._portVersionsByName
 
+	def getActiveVersionOf(self, portName, warnAboutSkippedVersions = False):
+		"""return the highest buildable version of the port with the given
+		   name"""
+		if not portName in self._portVersionsByName:
+			return None
+		
+		versions = self._portVersionsByName[portName]
+		for version in reversed(versions):
+				portID = portName + '-' + version
+				port = self._allPorts[portID]
+				if not port.isBuildableOnTargetArchitecture():
+					if warnAboutSkippedVersions:
+						status = port.getStatusOnTargetArchitecture()
+						warn(('skipping %s, as it is %s on the target '
+							  + 'architecture.') % (portID, status))
+					continue
+				return version
+
+		return None
+	
 	def searchPorts(self, regExp):
 		"""Search for one or more ports in the HaikuPorts tree, returning
 		   a list of found matches"""
@@ -185,10 +201,7 @@ class Repository(object):
 						sys.stdout.write('\r\t%s' % port.versionedName)
 						sys.stdout.flush()
 					port.parseRecipeFile(False)
-					status = port.getStatusOnTargetArchitecture()
-					if (status == Status.STABLE
-						or (status == Status.UNTESTED
-							and Configuration.shallAllowUntested())):
+					if port.isBuildableOnTargetArchitecture():
 						if (port.checkFlag('build')
 							and not preserveFlags):
 							if not self.quiet:
@@ -203,6 +216,7 @@ class Repository(object):
 						# take notice of skipped recipe file
 						touchFile(skippedDir + '/' + portID)
 						if not self.quiet:
+							status = port.getStatusOnTargetArchitecture()
 							print((' is skipped, as it is %s on target '
 								  + 'architecture') % status)
 				except SystemExit:
@@ -262,12 +276,10 @@ class Repository(object):
 							break
 						continue
 
-					status = port.getStatusOnTargetArchitecture()
-					if (status != Status.STABLE
-						and not (status == Status.UNTESTED
-							and Configuration.shallAllowUntested())):
+					if not port.isBuildableOnTargetArchitecture():
 						touchFile(skippedDir + '/' + portID)
 						if not self.quiet:
+							status = port.getStatusOnTargetArchitecture()
 							print(('\t%s is still marked as %s on target '
 								   + 'architecture') % (portID, status))
 						continue

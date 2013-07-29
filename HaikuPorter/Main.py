@@ -17,7 +17,7 @@ from HaikuPorter.Configuration import Configuration
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
 from HaikuPorter.Options import getOption
 from HaikuPorter.Policy import Policy
-from HaikuPorter.RecipeTypes import MachineArchitecture, Status
+from HaikuPorter.RecipeTypes import MachineArchitecture
 from HaikuPorter.Repository import Repository
 from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl, 
 							   sysExit, warn)
@@ -151,39 +151,22 @@ class Main(object):
 					sysExit(portSpec['name'] + ' not found in repository')
 				portSpec['name'] = nameWithTargetArch
 
-			# use specific version if given, otherwise try with all available
-			# versions
-			versions = []
+			# use specific version if given, otherwise use the highest buildable
+			# version
 			if portSpec['version']:
-				versions.append(portSpec['version'])
+				portID = portSpec['name'] + '-' + portSpec['version']
 			else:
-				versions = portVersionsByName[portSpec['name']]
-
-			# try to find a version of the current port that is buildable (from
-			# highest version to lowest)
-			for version in reversed(versions):
-				portID = portSpec['name'] + '-' + version
-				if portID not in allPorts:
-					sysExit(portID + ' not found in tree.')
-				port = allPorts[portID]
-				status = port.getStatusOnTargetArchitecture()
-				if (status != Status.STABLE
-					and (status != Status.UNTESTED
-						or not Configuration.shallAllowUntested())):
-					warn('skipping %s, as it is %s on the target architecture.'
-						 % (portID, status))
-					continue
-
-				# notice ID of buildable port version
-				portSpec['id'] = portID
-				break
-			else:
-				if portSpec['version']:
-					sysExit(portSpec['name'] + '-' + portSpec['version']
-							+ " can't be built")
-				else:
-					sysExit('No version of ' + portSpec['name']
+				version = self.repository.getActiveVersionOf(portSpec['name'], 
+															 True)
+				if not version:
+					sysExit('No version of ' + portSpec['name']	
 							+ ' can be built')
+				portID = portSpec['name'] + '-' + version
+
+			if portID not in allPorts:
+				sysExit(portID + ' not found in tree.')
+			port = allPorts[portID]
+			portSpec['id'] = portID
 
 			# show port description, if requested
 			if self.options.about:
@@ -234,11 +217,9 @@ class Main(object):
 					+ '%s instead)')
 					% (port.versionedName, revision, port.revision))
 
-		# warn when the port is not stable on this architecture
-		status = port.getStatusOnTargetArchitecture()
-		if (status != Status.STABLE
-			and (status != Status.UNTESTED
-				 or not Configuration.shallAllowUntested())):
+		# warn when the port is not buildable on this architecture
+		if not port.isBuildableOnTargetArchitecture():
+			status = port.getStatusOnTargetArchitecture()
 			warn('This port is %s on this architecture.' % status)
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')
@@ -267,13 +248,15 @@ class Main(object):
 		print port.category + '::' + port.versionedName
 		print '=' * 70
 
+		allPorts = self.repository.getAllPorts()
+
 		# HPKGs are usually written into the 'packages' directory, but when
 		# an obsolete port (one that's not in the repository) is being built,
 		# its packages are stored into the .obsolete subfolder of the packages
 		# directory.
 		targetPath = self.packagesPath
-		packageInfo = self.repository.path + '/' + port.packageInfoName
-		if not os.path.exists(packageInfo):
+		activeVersion = self.repository.getActiveVersionOf(port.name)
+		if port.version != activeVersion:
 			warn('building obsolete package')
 			targetPath += '/.obsolete'
 			if not os.path.exists(targetPath):
@@ -282,7 +265,6 @@ class Main(object):
 		(buildDependencies, portRepositoryPath) \
 			= port.resolveBuildDependencies(self.repository.path,
 											self.packagesPath)
-		allPorts = self.repository.getAllPorts()
 		requiredPortsToBuild = []
 		requiredPortIDs = {}
 		for dependency in buildDependencies:

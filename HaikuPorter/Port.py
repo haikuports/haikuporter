@@ -223,10 +223,7 @@ class Port(object):
 			if packageType == PackageType.SOURCE:
 				haveSourcePackage = True
 
-			status = package.getStatusOnArchitecture(self.targetArchitecture)
-			if (status == Status.STABLE
-				or (status == Status.UNTESTED
-					and Configuration.shallAllowUntested())):
+			if package.isBuildableOnArchitecture(self.targetArchitecture):
 				self.packages.append(package)
 
 		# create source package if it hasn't been specified or disabled:
@@ -405,16 +402,26 @@ class Port(object):
 				# source packages are stable for any target architecture
 				return Status.STABLE
 
+			# use the status of the base package as overall status of the port
 			return self.allPackages[0].getStatusOnArchitecture(
 				self.targetArchitecture)
 		except:
 			return Status.UNSUPPORTED
 
+	def isBuildableOnTargetArchitecture(self):
+		"""Returns whether or not this port is buildable on the target 
+		   architecture"""
+		status = self.getStatusOnTargetArchitecture()
+		return (status == Status.STABLE
+			or (status == Status.UNTESTED
+				and Configuration.shallAllowUntested()))
+
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""
 
 		for package in self.packages:
-			package.writePackageInfoIntoRepository(repositoryPath)
+			if package.isBuildableOnArchitecture(self.targetArchitecture):
+				package.writePackageInfoIntoRepository(repositoryPath)
 
 	def removePackageInfosFromRepository(self, repositoryPath):
 		"""Remove all PackageInfo-files for this port from the repository"""
