@@ -134,6 +134,7 @@ class Port(object):
 		self.preparedRecipeFile = self.workDir + '/port.recipe'
 
 		self.policy = policy
+		self.requiresUpdater = None
 
 	def __enter__(self):
 		return self
@@ -400,6 +401,10 @@ class Port(object):
 			if not hasattr(self, 'recipeKeys'):
 				self.parseRecipeFile(False)
 
+			if getOption('onlySourcePackages'):
+				# source packages are stable for any target architecture
+				return Status.STABLE
+
 			return self.allPackages[0].getStatusOnArchitecture(
 				self.targetArchitecture)
 		except:
@@ -422,6 +427,16 @@ class Port(object):
 
 		for package in self.packages:
 			package.obsoletePackage(packagesPath)
+
+	def sourcePackageExists(self, packagesPath):
+		"""Determines if the source package already exists"""
+
+		for package in self.packages:
+			if package.type != PackageType.SOURCE:
+				continue
+			return os.path.exists(packagesPath + '/' + package.hpkgName)
+		
+		return False
 
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
 		"""Resolve any other ports that need to be built before this one.
@@ -589,14 +604,16 @@ class Port(object):
 			os.mkdir(package.packagingDir)
 			package.prepopulatePackagingDir(self)
 
-		requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
-
-		self.policy.setPort(self, requiredPackages)
-
-		self.requiresUpdater = RequiresUpdater(self.packages, requiredPackages)
-		if not Configuration.isCrossBuildRepository():
-			self.requiresUpdater.addPackages(
-				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		if getOption('onlySourcePackages'):
+			requiredPackages = []
+		else:
+			requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
+			self.policy.setPort(self, requiredPackages)
+			self.requiresUpdater \
+				= RequiresUpdater(self.packages, requiredPackages)
+			if not Configuration.isCrossBuildRepository():
+				self.requiresUpdater.addPackages(
+					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 		if buildPlatform.usesChroot():
 			# setup chroot and keep it while executing the actions
@@ -674,7 +691,8 @@ class Port(object):
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
 					if not (buildPlatform.usesChroot()
-						or Configuration.isCrossBuildRepository()):
+						or Configuration.isCrossBuildRepository()
+						or getOption('onlySourcePackages')):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue

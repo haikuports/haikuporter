@@ -15,7 +15,7 @@
 from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
-from HaikuPorter.PackageInfo import PackageInfo
+from HaikuPorter.Options import getOption
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture, Status
 from HaikuPorter.Repository import Repository
@@ -298,6 +298,9 @@ class Main(object):
 							= self.repository.getPortIdForPackageId(packageID)
 					if portID not in requiredPortIDs:
 						requiredPort = allPorts[portID]
+						if (getOption('onlySourcePackages')
+							and requiredPort.sourcePackageExists(targetPath)):
+							continue
 						requiredPortsToBuild.append(requiredPort)
 						requiredPortIDs[portID] = True
 				except KeyError:
@@ -354,14 +357,12 @@ class Main(object):
 			 			'be specified (via --cross-devel-package)')
 				targetHaikuPackage = ('/boot/system/develop/cross/'
 					+ 'haiku_cross_devel_sysroot_%s.hpkg') % targetArchitecture
-
-			targetHaikuPackageInfo = PackageInfo(targetHaikuPackage)
-			targetHaikuVersion = targetHaikuPackageInfo.getVersion()
 		else:
-			if not buildPlatform.isHaiku():
+			if (not buildPlatform.isHaiku() 
+				and not getOption('onlySourcePackages')):
 				sysExit('Native building not supported on this platform (%s)'
 					% buildPlatform.getName())
-			targetHaikuVersion = buildPlatform.getHaikuVersion()
+		targetHaikuVersion = buildPlatform.getHaikuVersion()
 
 		self.shellVariables = {
 			'haikuVersion': targetHaikuVersion,

@@ -263,6 +263,11 @@ class BuildPlatformUnix(BuildPlatform):
 	def isHaiku(self):
 		return False
 
+	def getHaikuVersion(self):
+		targetHaikuPackage = Configuration.getCrossDevelPackage()
+		targetHaikuPackageInfo = PackageInfo(targetHaikuPackage)
+		return targetHaikuPackageInfo.getVersion()
+
 	def usesChroot(self):
 		return False
 
