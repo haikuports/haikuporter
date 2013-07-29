@@ -176,12 +176,16 @@ class Package(object):
 	def makeHpkg(self, requiresUpdater):
 		"""Create a package suitable for distribution"""
 
-		requiresList = self.recipeKeys['REQUIRES']
-		self.recipeKeys['UPDATED_REQUIRES'] \
-			= requiresUpdater.updateRequiresList(requiresList)
+		if requiresUpdater and self.type != PackageType.SOURCE:
+			requiresList = self.recipeKeys['REQUIRES']
+			self.recipeKeys['UPDATED_REQUIRES'] \
+				= requiresUpdater.updateRequiresList(requiresList)
+			requiresName = 'UPDATED_REQUIRES'
+		else:
+			requiresName = 'REQUIRES'
 
 		self.generatePackageInfo(self.packagingDir + '/.PackageInfo',
-								 ['UPDATED_REQUIRES'], getOption('quiet'))
+								 [ requiresName ], getOption('quiet'))
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
