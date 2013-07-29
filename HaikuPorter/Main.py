@@ -159,8 +159,9 @@ class Main(object):
 			else:
 				versions = portVersionsByName[portSpec['name']]
 
-			# try to find a version of the current port that is buildable
-			for version in versions:
+			# try to find a version of the current port that is buildable (from
+			# highest version to lowest)
+			for version in reversed(versions):
 				portID = portSpec['name'] + '-' + version
 				if portID not in allPorts:
 					sysExit(portID + ' not found in tree.')
