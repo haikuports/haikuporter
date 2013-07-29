@@ -15,6 +15,7 @@
 from HaikuPorter.Package import PackageType
 from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText,
 									 Phase, YesNo)
+import copy
 import types
 
 
@@ -229,3 +230,6 @@ recipeAttributes = {
 		'indexable': False,
 	},
 }
+
+def getRecipeAttributes():
+	return copy.deepcopy(recipeAttributes)

@@ -103,6 +103,12 @@ class Package(object):
 		"""Return the status of this package on the given architecture (which
 		   must be a hardware architecture, i.e. not ANY or SOURCE)"""
 
+		if getOption('onlySourcePackages'):
+			# in case of source package collection, pretend that each package
+			# is stable on any architecture, otherwise sources for not yet 
+			# stable packages couldn't be collected
+			return Status.STABLE
+
 		if architecture in self.recipeKeys['ARCHITECTURES']:
 			return self.recipeKeys['ARCHITECTURES'][architecture]
 		elif (Architectures.ANY in self.recipeKeys['ARCHITECTURES']

@@ -101,20 +101,38 @@ class Main(object):
 				print os.path.join(self.treePath, portName)
 			sys.exit()
 
+		if self.options.portsfile:
+			# read portslist from file and convert into list of requires
+			with open(self.options.portsfile, 'r') as portsFile:
+				ports = [ p.strip() for p in portsFile.readlines() ]
+			ports = [ p for p in ports if len(p) > 0 ]
+			portsfileAsRequires = []
+			for port in ports:
+				portSpec = self._splitPortSpecIntoNameVersionAndRevision(port)
+				if portSpec['version']:
+					portsfileAsRequires.append(portSpec['name'] + ' ==' 
+											   + portSpec['version'])
+				else:
+					portsfileAsRequires.append(portSpec['name'])
+			if not portsfileAsRequires:
+				sysExit("The given ports-file doesn't contain any ports.")
+			self.shellVariables['portsfileAsRequires'] \
+				= '\n'.join(portsfileAsRequires)
+				
 		self._createRepositoryIfNeeded()
 
 		# if a ports-file has been given, read port specifications from it
-		# and build them all
+		# and build them all (as faked requires of a specific meta port, such
+		# that their runtime requires get pulled in, too)
 		self.portSpecs = []
 		if self.options.portsfile:
-			with open(self.options.portsfile, 'r') as portsFile:
-				portSpecs = [ p.strip() for p in portsFile.readlines() ]
-			portSpecs = [ p for p in portSpecs if len(p) > 0 ]
-			for portSpec in portSpecs:
-				self.portSpecs.append(
-					self._splitPortSpecIntoNameVersionAndRevision(portSpec))
-			if not self.portSpecs:
-				sysExit("The given ports-file doesn't contain any ports.")
+			# pretend the meta port responsible for building a list of ports 
+			# has been specified on the cmdline
+			metaPortSpec = 'meta_portsfile-1'
+			if not metaPortSpec in self.repository.getAllPorts():
+				sysExit("no recipe found for '%s'" % metaPortSpec)
+			self.portSpecs.append(
+				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
 		elif self.options.analyzeDependencies:
 			pass
 		else:
@@ -319,10 +337,11 @@ class Main(object):
 		if self.options.clean:
 			port.cleanWorkDirectory()
 
-		port.downloadSource()
-		port.unpackSource()
-		if self.options.patch:
-			port.patchSource()
+		if not port.isMetaPort:
+			port.downloadSource()
+			port.unpackSource()
+			if self.options.patch:
+				port.patchSource()
 
 		if self.options.build:
 			port.build(self.packagesPath, self.options.package, targetPath)

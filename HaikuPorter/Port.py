@@ -17,7 +17,7 @@ from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
-from HaikuPorter.RecipeAttributes import recipeAttributes
+from HaikuPorter.RecipeAttributes import getRecipeAttributes
 from HaikuPorter.RecipeTypes import Extendable, Phase, Status
 from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
@@ -70,7 +70,7 @@ class ChrootSetup(object):
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
 	def __init__(self, name, version, category, baseDir, outputDir,
-			globalShellVariables, policy):
+				 globalShellVariables, policy):
 		self.name = name
 		self.version = version
 		self.versionedName = name + '-' + version
@@ -79,8 +79,10 @@ class Port(object):
 		self.outputDir = outputDir
 		self.workDir = self.outputDir + '/work-' + self.version
 
-		self.recipeFilePath \
-			= self.baseDir + '/' + self.name + '-' + self.version + '.recipe'
+		self.isMetaPort = self.category == 'meta-ports'
+
+		self.recipeFilePath = (self.baseDir + '/' + self.name + '-' 
+							   + self.version + '.recipe')
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
@@ -118,13 +120,19 @@ class Port(object):
 		self.allPackages = []
 		self.packages = []
 
-		# create full paths for the directories
-		if Configuration.shallDownloadInPortDirectory():
-			self.downloadDir = self.baseDir + '/download'
+		if self.isMetaPort:
+			self.downloadDir = None
+			self.patchesDir = None
+			self.licensesDir = None
 		else:
-			self.downloadDir = self.outputDir + '/download'
-		self.patchesDir = self.baseDir + '/patches'
-		self.licensesDir = self.baseDir + '/licenses'
+			# create full paths for the directories
+			if Configuration.shallDownloadInPortDirectory():
+				self.downloadDir = self.baseDir + '/download'
+			else:
+				self.downloadDir = self.outputDir + '/download'
+			self.patchesDir = self.baseDir + '/patches'
+			self.licensesDir = self.baseDir + '/licenses'
+
 		self.sourceBaseDir = self.workDir + '/sources'
 		self.packageInfoDir = self.workDir + '/package-infos'
 		self.buildPackageDir = self.workDir + '/build-packages'
@@ -145,45 +153,48 @@ class Port(object):
 	def parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port"""
 
-		# If a patch file named like the port exists, use that as a default
-		# for "PATCHES" (check this for up to 9 sources). Support a second
-		# patchset which is specific to target-architecture, too.
-		for s in range(1, 9):
-			if s == 1:
-				patchSetFileName = self.name + '-' + self.version + '.patchset'
-				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.targetArchitecture
+		if not self.isMetaPort:
+			# If a patch file named like the port exists, use that as a default
+			# for "PATCHES" (check this for up to 9 sources). Support a second
+			# patchset which is specific to target-architecture, too.
+			for s in range(1, 9):
+				if s == 1:
+					patchSetFileName = (self.name + '-' + self.version 
 										+ '.patchset')
-				patchFileName = self.name + '-' + self.version + '.patch'
-				diffFileName = self.name + '-' + self.version + '.diff'
-				patchesKeyName = 'PATCHES'
-			else:
-				patchSetFileName = (self.name + '-' + self.version + '-source'
-									+ str(s) + '.patchset')
-				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.targetArchitecture + '-source'
-										+ str(s) + '.patchset')
-				patchFileName = (self.name + '-' + self.version + '-source'
-								 + str(s) + '.patch')
-				diffFileName = (self.name + '-' + self.version + '-source'
-								+ str(s) + '.diff')
-				patchesKeyName = 'PATCHES_' + str(s)
-			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
-			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
-			patchFilePath = self.patchesDir + '/' + patchFileName
-			diffFilePath = self.patchesDir + '/' + diffFileName
-
-			# prefer patchsets over patch
-			patchsets = []
-			if os.path.exists(patchSetFilePath):
-				patchsets.append(patchSetFileName)
-			if os.path.exists(archPatchSetFilePath):
-				patchsets.append(archPatchSetFileName)
-			if not patchsets and os.path.exists(patchFilePath):
-				patchsets.append(patchFileName)
-			if not patchsets and os.path.exists(diffFilePath):
-				patchsets.append(diffFileName)
-			self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
+					archPatchSetFileName = (self.name + '-' + self.version + '-'
+											+ self.targetArchitecture
+											+ '.patchset')
+					patchFileName = self.name + '-' + self.version + '.patch'
+					diffFileName = self.name + '-' + self.version + '.diff'
+					patchesKeyName = 'PATCHES'
+				else:
+					patchSetFileName = (self.name + '-' + self.version 
+										+ '-source' + str(s) + '.patchset')
+					archPatchSetFileName = (self.name + '-' + self.version + '-'
+											+ self.targetArchitecture 
+											+ '-source' + str(s) + '.patchset')
+					patchFileName = (self.name + '-' + self.version + '-source'
+									 + str(s) + '.patch')
+					diffFileName = (self.name + '-' + self.version + '-source'
+									+ str(s) + '.diff')
+					patchesKeyName = 'PATCHES_' + str(s)
+				patchSetFilePath = self.patchesDir + '/' + patchSetFileName
+				archPatchSetFilePath = (self.patchesDir + '/' 
+										+ archPatchSetFileName)
+				patchFilePath = self.patchesDir + '/' + patchFileName
+				diffFilePath = self.patchesDir + '/' + diffFileName
+	
+				# prefer patchsets over patch
+				patchsets = []
+				if os.path.exists(patchSetFilePath):
+					patchsets.append(patchSetFileName)
+				if os.path.exists(archPatchSetFilePath):
+					patchsets.append(archPatchSetFileName)
+				if not patchsets and os.path.exists(patchFilePath):
+					patchsets.append(patchFileName)
+				if not patchsets and os.path.exists(diffFilePath):
+					patchsets.append(diffFileName)
+				self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
 
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
@@ -227,6 +238,7 @@ class Port(object):
 				self.packages.append(package)
 
 		# create source package if it hasn't been specified or disabled:
+		recipeAttributes = getRecipeAttributes()
 		if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
 			and getOption('sourcePackageByDefault')):
 			# copy all recipe attributes from base package, but set defaults
@@ -258,7 +270,10 @@ class Port(object):
 			self.allPackages.append(package)
 			self.packages.append(package)
 
-		self.sourceDir = self.sources[0].sourceDir
+		if self.sources:
+			self.sourceDir = self.sources[0].sourceDir
+		else:
+			self.sourceDir = self.workDir
 
 		# set up the complete list of variables we'll inherit to the shell
 		# when executing a recipe action
@@ -279,6 +294,12 @@ class Port(object):
 				+ self.recipeFilePath + ' > ' + self.preparedRecipeFile]
 		check_call(prepareRecipeCommand)
 
+		# adjust recipe attributes for meta ports
+		recipeAttributes = getRecipeAttributes()
+		if self.isMetaPort:
+			recipeAttributes['HOMEPAGE']['required'] = False
+			recipeAttributes['SRC_URI']['required'] = False
+		
 		# parse the recipe file
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
 							  		self.shellVariables)
@@ -559,6 +580,9 @@ class Port(object):
 	def extractPatchset(self):
 		"""Extract patchsets from all sources"""
 
+		if self.isMetaPort:
+			return
+		
 		s = 1
 		for source in self.sources:
 			if s == 1:
@@ -1021,8 +1045,10 @@ class Port(object):
 		self.packagingBaseDir = self.packagingBaseDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.workDir = ''
-		self.patchesDir = '/patches'
-		self.licensesDir = '/licenses'
+
+		if not self.isMetaPort:
+			self.patchesDir = '/patches'
+			self.licensesDir = '/licenses'
 
 		# update shell variables, too
 		self._updateShellVariablesFromRecipe()
