@@ -33,9 +33,9 @@ class BuildPlatform(object):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 
-		self.targetArchitecture = self.architecture
-		if Configuration.isCrossBuildRepository():
-			self.targetArchitecture = Configuration.getTargetArchitecture()
+		self.targetArchitecture = Configuration.getTargetArchitecture()
+		if not self.targetArchitecture:
+			self.targetArchitecture = self.architecture
 
 		self.crossSysrootDir = '/boot/cross-sysroot/' + self.targetArchitecture
 
