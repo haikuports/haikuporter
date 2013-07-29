@@ -420,8 +420,7 @@ class Port(object):
 		"""Write one PackageInfo-file per stable package into the repository"""
 
 		for package in self.packages:
-			if package.isBuildableOnArchitecture(self.targetArchitecture):
-				package.writePackageInfoIntoRepository(repositoryPath)
+			package.writePackageInfoIntoRepository(repositoryPath)
 
 	def removePackageInfosFromRepository(self, repositoryPath):
 		"""Remove all PackageInfo-files for this port from the repository"""
