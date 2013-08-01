@@ -165,12 +165,12 @@ class Source(object):
 
 		if not self.sourceFetcher.sourceShouldBeValidated:
 			return
-		
+
 		if not self.checksum:
 			warn('No CHECKSUM_MD5 key found in recipe for '
 				 + self.fetchTargetName)
 			return
-		
+
 		print 'Validating MD5 checksum of ' + self.fetchTargetName
 		h = hashlib.md5()
 		f = open(self.fetchTarget, 'rb')

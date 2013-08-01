@@ -67,7 +67,7 @@ class Repository(object):
 		   name"""
 		if not portName in self._portVersionsByName:
 			return None
-		
+
 		versions = self._portVersionsByName[portName]
 		for version in reversed(versions):
 				portID = portName + '-' + version
@@ -81,7 +81,7 @@ class Repository(object):
 				return version
 
 		return None
-	
+
 	def searchPorts(self, regExp):
 		"""Search for one or more ports in the HaikuPorts tree, returning
 		   a list of found matches"""
@@ -97,22 +97,22 @@ class Repository(object):
 		return sorted(ports)
 
 	def _initAllPorts(self):
-		# Collect all ports into a dictionary that can be keyed by 
+		# Collect all ports into a dictionary that can be keyed by
 		# name + '-' + version. Additionally, we keep a sorted list of
 		# available versions for each port name.
 		self._allPorts = {}
 		self._portVersionsByName = {}
-		
+
 		# every existing input source package defines a port (which overrules
 		# any corresponding port in the recipe tree)
 		if os.path.exists(self.inputSourcePackagesPath):
 			for fileName in sorted(os.listdir(self.inputSourcePackagesPath)):
 				if not fileName.endswith('-source.hpkg'):
 					continue
-				
+
 				recipeFilePath \
 					= self._partiallyExtractSourcePackageIfNeeded(fileName)
-				
+
 				recipeName = os.path.basename(recipeFilePath)
 				name, version = recipeName[:-7].split('-')
 				if name not in self._portVersionsByName:
@@ -124,10 +124,10 @@ class Repository(object):
 				if self.outputDirectory == self.treePath:
 					portOutputPath = portPath
 				else:
-					portOutputPath = (self.outputDirectory 
+					portOutputPath = (self.outputDirectory
 									  + '/input-source-packages/' + name)
 				self._allPorts[name + '-' + version] \
-					= Port(name, version, '<source-package>', portPath, 
+					= Port(name, version, '<source-package>', portPath,
 						   portOutputPath, self.shellVariables, self.policy)
 
 		# collect ports from the recipe tree
@@ -347,9 +347,9 @@ class Repository(object):
 			os.rename(package, obsoletePackage)
 
 	def _partiallyExtractSourcePackageIfNeeded(self, sourcePackageName):
-		"""extract the recipe and potentially contained patches/licenses from 
+		"""extract the recipe and potentially contained patches/licenses from
 		   a source package, unless that has already been done"""
-		
+
 		sourcePackagePath \
 			= self.inputSourcePackagesPath + '/' + sourcePackageName
 		(name, version, revision, unused) = sourcePackageName.split('-')
@@ -357,9 +357,9 @@ class Repository(object):
 		relativeBasePath \
 			= 'develop/sources/%s-%s-%s' % (name, version, revision)
 		recipeName = name + '-' + version + '.recipe'
-		recipeFilePath = (self.inputSourcePackagesPath + '/' + relativeBasePath 
+		recipeFilePath = (self.inputSourcePackagesPath + '/' + relativeBasePath
 						  + '/' + recipeName)
-				
+
 		if (not os.path.exists(recipeFilePath)
 			or (os.path.getmtime(recipeFilePath)
 				<= os.path.getmtime(sourcePackagePath))):
@@ -369,18 +369,18 @@ class Repository(object):
 				relativeBasePath + '/licenses',
 				relativeBasePath + '/patches',
 			]
-			entries = check_output([Configuration.getPackageCommand(), 'list', 
+			entries = check_output([Configuration.getPackageCommand(), 'list',
 								  '-p', sourcePackagePath]).splitlines()
 			entries = [
-				entry for entry in entries if entry in allowedEntries 
+				entry for entry in entries if entry in allowedEntries
 			]
-			check_call([Configuration.getPackageCommand(), 'extract', 
-						'-C', self.inputSourcePackagesPath, sourcePackagePath] 
+			check_call([Configuration.getPackageCommand(), 'extract',
+						'-C', self.inputSourcePackagesPath, sourcePackagePath]
 					   + entries)
-			
+
 			# add SRC_URI to recipe which points to the source package
 			with open(recipeFilePath, 'a') as recipeFile:
 				recipeFile.write('\n# Added by haikuporter:\n')
 				recipeFile.write('SRC_URI="pkg:%s"\n' % sourcePackagePath)
-		
+
 		return recipeFilePath

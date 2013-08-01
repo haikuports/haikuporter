@@ -323,8 +323,8 @@ class SourceFetcherForSourcePackage(object):
 		pass
 
 	def unpack(self, sourceDir, subdir):
-		check_call([Configuration.getPackageCommand(), 'extract', 
-					'-C', sourceDir, self.sourcePackagePath, 
+		check_call([Configuration.getPackageCommand(), 'extract',
+					'-C', sourceDir, self.sourcePackagePath,
 					self.relativeSourcePath])
 		foldSubdirIntoSourceDir(self.relativeSourcePath, sourceDir)
 

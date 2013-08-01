@@ -19,7 +19,7 @@ from HaikuPorter.Options import getOption
 from HaikuPorter.Policy import Policy
 from HaikuPorter.RecipeTypes import MachineArchitecture
 from HaikuPorter.Repository import Repository
-from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl, 
+from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl,
 							   sysExit, warn)
 
 import os
@@ -110,7 +110,7 @@ class Main(object):
 			for port in ports:
 				portSpec = self._splitPortSpecIntoNameVersionAndRevision(port)
 				if portSpec['version']:
-					portsfileAsRequires.append(portSpec['name'] + ' ==' 
+					portsfileAsRequires.append(portSpec['name'] + ' =='
 											   + portSpec['version'])
 				else:
 					portsfileAsRequires.append(portSpec['name'])
@@ -118,7 +118,7 @@ class Main(object):
 				sysExit("The given ports-file doesn't contain any ports.")
 			self.shellVariables['portsfileAsRequires'] \
 				= '\n'.join(portsfileAsRequires)
-				
+
 		self._createRepositoryIfNeeded()
 
 		# if a ports-file has been given, read port specifications from it
@@ -126,7 +126,7 @@ class Main(object):
 		# that their runtime requires get pulled in, too)
 		self.portSpecs = []
 		if self.options.portsfile:
-			# pretend the meta port responsible for building a list of ports 
+			# pretend the meta port responsible for building a list of ports
 			# has been specified on the cmdline
 			metaPortSpec = 'meta_portsfile-1'
 			if not metaPortSpec in self.repository.getAllPorts():
@@ -174,10 +174,10 @@ class Main(object):
 			if portSpec['version']:
 				portID = portSpec['name'] + '-' + portSpec['version']
 			else:
-				version = self.repository.getActiveVersionOf(portSpec['name'], 
+				version = self.repository.getActiveVersionOf(portSpec['name'],
 															 True)
 				if not version:
-					sysExit('No version of ' + portSpec['name']	
+					sysExit('No version of ' + portSpec['name']
 							+ ' can be built')
 				portID = portSpec['name'] + '-' + version
 
@@ -359,7 +359,7 @@ class Main(object):
 				targetHaikuPackage = ('/boot/system/develop/cross/'
 					+ 'haiku_cross_devel_sysroot_%s.hpkg') % targetArchitecture
 		else:
-			if (not buildPlatform.isHaiku() 
+			if (not buildPlatform.isHaiku()
 				and not getOption('onlySourcePackages')):
 				sysExit('Native building not supported on this platform (%s)'
 					% buildPlatform.getName())

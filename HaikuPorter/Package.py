@@ -105,7 +105,7 @@ class Package(object):
 
 		if getOption('onlySourcePackages'):
 			# in case of source package collection, pretend that each package
-			# is stable on any architecture, otherwise sources for not yet 
+			# is stable on any architecture, otherwise sources for not yet
 			# stable packages couldn't be collected
 			return Status.STABLE
 

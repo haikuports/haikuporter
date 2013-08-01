@@ -25,8 +25,8 @@ from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 recipeActionScript,
 										 setupChrootScript)
 from HaikuPorter.Source import Source
-from HaikuPorter.Utils import (filteredEnvironment, naturalCompare, 
-							   symlinkFiles, symlinkGlob, sysExit, touchFile, 
+from HaikuPorter.Utils import (filteredEnvironment, naturalCompare,
+							   symlinkFiles, symlinkGlob, sysExit, touchFile,
 							   warn)
 
 import os
@@ -81,7 +81,7 @@ class Port(object):
 
 		self.isMetaPort = self.category == 'meta-ports'
 
-		self.recipeFilePath = (self.baseDir + '/' + self.name + '-' 
+		self.recipeFilePath = (self.baseDir + '/' + self.name + '-'
 							   + self.version + '.recipe')
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
@@ -159,7 +159,7 @@ class Port(object):
 			# patchset which is specific to target-architecture, too.
 			for s in range(1, 9):
 				if s == 1:
-					patchSetFileName = (self.name + '-' + self.version 
+					patchSetFileName = (self.name + '-' + self.version
 										+ '.patchset')
 					archPatchSetFileName = (self.name + '-' + self.version + '-'
 											+ self.targetArchitecture
@@ -168,10 +168,10 @@ class Port(object):
 					diffFileName = self.name + '-' + self.version + '.diff'
 					patchesKeyName = 'PATCHES'
 				else:
-					patchSetFileName = (self.name + '-' + self.version 
+					patchSetFileName = (self.name + '-' + self.version
 										+ '-source' + str(s) + '.patchset')
 					archPatchSetFileName = (self.name + '-' + self.version + '-'
-											+ self.targetArchitecture 
+											+ self.targetArchitecture
 											+ '-source' + str(s) + '.patchset')
 					patchFileName = (self.name + '-' + self.version + '-source'
 									 + str(s) + '.patch')
@@ -179,11 +179,11 @@ class Port(object):
 									+ str(s) + '.diff')
 					patchesKeyName = 'PATCHES_' + str(s)
 				patchSetFilePath = self.patchesDir + '/' + patchSetFileName
-				archPatchSetFilePath = (self.patchesDir + '/' 
+				archPatchSetFilePath = (self.patchesDir + '/'
 										+ archPatchSetFileName)
 				patchFilePath = self.patchesDir + '/' + patchFileName
 				diffFilePath = self.patchesDir + '/' + diffFileName
-	
+
 				# prefer patchsets over patch
 				patchsets = []
 				if os.path.exists(patchSetFilePath):
@@ -299,7 +299,7 @@ class Port(object):
 		if self.isMetaPort:
 			recipeAttributes['HOMEPAGE']['required'] = False
 			recipeAttributes['SRC_URI']['required'] = False
-		
+
 		# parse the recipe file
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
 							  		self.shellVariables)
@@ -430,7 +430,7 @@ class Port(object):
 			return Status.UNSUPPORTED
 
 	def isBuildableOnTargetArchitecture(self):
-		"""Returns whether or not this port is buildable on the target 
+		"""Returns whether or not this port is buildable on the target
 		   architecture"""
 		status = self.getStatusOnTargetArchitecture()
 		return (status == Status.STABLE
@@ -462,7 +462,7 @@ class Port(object):
 			if package.type != PackageType.SOURCE:
 				continue
 			return os.path.exists(packagesPath + '/' + package.hpkgName)
-		
+
 		return False
 
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
@@ -582,7 +582,7 @@ class Port(object):
 
 		if self.isMetaPort:
 			return
-		
+
 		s = 1
 		for source in self.sources:
 			if s == 1:
@@ -626,9 +626,9 @@ class Port(object):
 				shutil.rmtree(directory, True)
 		for directory in directoriesToCreate:
 			os.mkdir(directory)
-			
+
 		for package in self.packages:
-			if (getOption('onlySourcePackages') 
+			if (getOption('onlySourcePackages')
 				and package.type != PackageType.SOURCE):
 				continue
 			os.mkdir(package.packagingDir)
@@ -715,7 +715,7 @@ class Port(object):
 		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
 			for package in self.packages:
-				if (getOption('onlySourcePackages') 
+				if (getOption('onlySourcePackages')
 					and package.type != PackageType.SOURCE):
 					continue
 				packageFile = self.hpkgDir + '/' + package.hpkgName
@@ -1003,7 +1003,7 @@ class Port(object):
 
 		# create all build packages (but don't activate them yet)
 		for package in self.packages:
-			if (getOption('onlySourcePackages') 
+			if (getOption('onlySourcePackages')
 				and package.type != PackageType.SOURCE):
 				continue
 			package.createBuildPackage()
@@ -1014,7 +1014,7 @@ class Port(object):
 		if makePackages:
 			self._makePackages()
 		for package in self.packages:
-			if (getOption('onlySourcePackages') 
+			if (getOption('onlySourcePackages')
 				and package.type != PackageType.SOURCE):
 				continue
 			package.removeBuildPackage()
@@ -1074,26 +1074,26 @@ class Port(object):
 		"""Create all packages suitable for distribution"""
 
 		if not getOption('onlySourcePackages'):
-			# Create the settings directory in the packaging directory, if 
-			# needed. We need to do that, since the .settings link would 
-			# otherwise point to a non-existing entry and the directory 
+			# Create the settings directory in the packaging directory, if
+			# needed. We need to do that, since the .settings link would
+			# otherwise point to a non-existing entry and the directory
 			# couldn't be made either.
 			for package in self.packages:
 				settingsDir = package.packagingDir + '/settings'
 				if not os.path.exists(settingsDir):
 					os.makedirs(settingsDir)
-	
+
 			self._doInstallStage()
-	
+
 			# If the settings directory is still empty, remove it.
 			for package in self.packages:
 				settingsDir = package.packagingDir + '/settings'
 				if not os.listdir(settingsDir):
 					os.rmdir(settingsDir)
-	
+
 			# For the main package remove certain empty directories. Typically
-			# contents is moved from the main package installation directory 
-			# tree to the packaging directories of sibling packages, which may 
+			# contents is moved from the main package installation directory
+			# tree to the packaging directories of sibling packages, which may
 			# leave empty directories behind.
 			for dirName in [ 'add-ons', 'apps', 'bin', 'data', 'develop',
 					'documentation', 'lib', 'preferences' ]:
@@ -1107,7 +1107,7 @@ class Port(object):
 
 		# make each package
 		for package in self.packages:
-			if (getOption('onlySourcePackages') 
+			if (getOption('onlySourcePackages')
 				and package.type != PackageType.SOURCE):
 				continue
 			package.makeHpkg(self.requiresUpdater)

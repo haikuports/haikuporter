@@ -5,7 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText, 
+from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText,
 									 MachineArchitecture, Phase, Status, YesNo)
 from HaikuPorter.ShellScriptlets import (configFileEvaluatorScript,
 										 getShellVariableSetters)
