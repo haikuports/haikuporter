@@ -453,7 +453,6 @@ class BuildPlatformUnix(BuildPlatform):
 		sysrootLibDir = sysrootDir + '/boot/system/develop/lib'
 		if secondaryArchitecture:
 			sysrootLibDir += '/' + secondaryArchitecture
-		print 'os.symlink(%s, %s)' % (sysrootLibDir, libDir)
 		os.symlink(sysrootLibDir, libDir)
 
 		# Prepare the bin dir -- it will be added to PATH and must contain the
