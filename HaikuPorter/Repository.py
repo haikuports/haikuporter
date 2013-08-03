@@ -171,6 +171,24 @@ class Repository(object):
 							print("Warning: Couldn't parse port/version info: "
 								  + recipe)
 
+		# Create ports for the secondary architectures. Not all make sense or
+		# are supported, but we won't know until we have parsed the recipe file.
+		secondaryArchitectures = Configuration.getSecondaryTargetArchitectures()
+		if secondaryArchitectures:
+			for port in self._allPorts.values():
+				for architecture in secondaryArchitectures:
+					newPort = Port(port.baseName, port.version, port.category,
+						port.baseDir, port.outputDir, self.shellVariables,
+						port.policy, architecture)
+					self._allPorts[newPort.versionedName] = newPort
+
+					name = newPort.name
+					version = newPort.version
+					if name not in self._portVersionsByName:
+						self._portVersionsByName[name] = [ version ]
+					else:
+						self._portVersionsByName[name].append(version)
+
 		# Sort version list of each port
 		for portName in self._portVersionsByName.keys():
 			self._portVersionsByName[portName].sort(cmp=versionCompare)

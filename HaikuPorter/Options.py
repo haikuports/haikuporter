@@ -30,6 +30,12 @@ def getOption(string):
 	return getattr(__Options__, string)
 
 
+# -- splitCommaSeparatedList --------------------------------------------------
+
+def setCommaSeparatedList(option, opt, value, parser):
+	setattr(parser.values, option.dest, value.split(','))
+
+
 # -- parseOptions -------------------------------------------------------------
 
 def parseOptions():
@@ -158,6 +164,15 @@ def parseOptions():
 					  	   'cross-building at all) is the one to be found in '
 					  	   '"/boot/system/develop/cross" matching the target '
 					  	   'architecture')
+	parser.add_option('--secondary-cross-devel-packages',
+					  action='callback', callback=setCommaSeparatedList,
+					  type='string', dest='secondaryCrossDevelPackages',
+					  default=[],
+					  help='comma-separated list of paths to a secondary cross '
+					  		'development package (the actual "sysroot" '
+					  		'package); one path must be specified for each '
+					  		'configured secondary target architecture '
+					  		'(specified in the same order)')
 	parser.add_option('--licenses',
 					  action='store', type='string', dest='licensesDirectory',
 					  default=None,

@@ -18,7 +18,8 @@ from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
 from HaikuPorter.Package import (PackageType, packageFactory)
 from HaikuPorter.RecipeAttributes import getRecipeAttributes
-from HaikuPorter.RecipeTypes import Extendable, Phase, Status
+from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, Phase,
+									 Status)
 from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 getShellVariableSetters,
@@ -70,18 +71,27 @@ class ChrootSetup(object):
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
 	def __init__(self, name, version, category, baseDir, outputDir,
-				 globalShellVariables, policy):
+				 globalShellVariables, policy, secondaryArchitecture = None):
+		self.baseName = name
+		self.secondaryArchitecture = secondaryArchitecture
 		self.name = name
+		if secondaryArchitecture:
+			self.name += '_' + secondaryArchitecture
 		self.version = version
-		self.versionedName = name + '-' + version
+		self.versionedName = self.name + '-' + version
 		self.category = category
 		self.baseDir = baseDir
 		self.outputDir = outputDir
-		self.workDir = self.outputDir + '/work-' + self.version
+
+		if secondaryArchitecture:
+			self.workDir = (self.outputDir + '/work-' + secondaryArchitecture
+				+ '-' + self.version)
+		else:
+			self.workDir = self.outputDir + '/work-' + self.version
 
 		self.isMetaPort = self.category == 'meta-ports'
 
-		self.recipeFilePath = (self.baseDir + '/' + self.name + '-'
+		self.recipeFilePath = (self.baseDir + '/' + self.baseName + '-'
 							   + self.version + '.recipe')
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
@@ -105,7 +115,7 @@ class Port(object):
 		self.buildArchitecture = self.shellVariables['buildArchitecture']
 		self.targetArchitecture = self.shellVariables['targetArchitecture']
 		if (Configuration.isCrossBuildRepository()
-			and '_cross_' in name):
+			and '_cross_' in self.name):
 			# the cross-tools (binutils and gcc) need to run on the build
 			# architecture, not the target architecture
 			self.hostArchitecture = self.shellVariables['buildArchitecture']
@@ -703,14 +713,15 @@ class Port(object):
 					print '\t' + package
 
 			buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
-				requiredPackages)
+				self.secondaryArchitecture, requiredPackages)
 			try:
 				self._executeBuild(makePackages)
 			except:
 				buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-					False)
+					self.secondaryArchitecture, False)
 				raise
-			buildPlatform.cleanNonChrootBuildEnvironment(self.workDir, True)
+			buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
+				self.secondaryArchitecture, True)
 
 		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
@@ -797,6 +808,29 @@ class Port(object):
 					sourceDirKey = 'sourceDir' + source.index
 				self.shellVariables[sourceDirKey] = source.sourceDir
 
+
+		if self.secondaryArchitecture:
+			secondaryArchSubDir = '/' + self.secondaryArchitecture
+			secondaryArchSuffix = '_' + self.secondaryArchitecture
+			effectiveTargetArchitecture = self.secondaryArchitecture
+		else:
+			secondaryArchSubDir = ''
+			secondaryArchSuffix = ''
+			effectiveTargetArchitecture = buildPlatform.getTargetArchitecture()
+
+		effectiveTargetMachineTriple = MachineArchitecture.getTripleFor(
+			effectiveTargetArchitecture)
+
+		self.shellVariables['secondaryArchSubDir'] = secondaryArchSubDir
+		self.shellVariables['secondaryArchSuffix'] = secondaryArchSuffix
+
+		self.shellVariables['effectiveTargetArchitecture'] \
+			= effectiveTargetArchitecture
+		self.shellVariables['effectiveTargetMachineTriple'] \
+			= effectiveTargetMachineTriple
+		self.shellVariables['effectiveTargetMachineTripleAsName'] \
+			= effectiveTargetMachineTriple.replace('-', '_')
+
 		basePrefix = ''
 		if Configuration.isCrossBuildRepository():
 			# If this is a cross package, we possibly want to use an additional
@@ -817,11 +851,11 @@ class Port(object):
 		relativeConfigureDirs = {
 			'dataDir':			'data',
 			'dataRootDir':		'data',
-			'binDir':			'bin',
-			'sbinDir':			'bin',
-			'libDir':			'lib',
-			'includeDir':		'develop/headers',
-			'oldIncludeDir':	'develop/headers',
+			'binDir':			'bin' + secondaryArchSubDir,
+			'sbinDir':			'bin' + secondaryArchSubDir,
+			'libDir':			'lib' + secondaryArchSubDir,
+			'includeDir':		'develop/headers' + secondaryArchSubDir,
+			'oldIncludeDir':	'develop/headers' + secondaryArchSubDir,
 			'docDir':			'documentation/packages/' + self.name,
 			'infoDir':			'documentation/info',
 			'manDir':			'documentation/man',
@@ -877,7 +911,7 @@ class Port(object):
 			'debugInfoDir':		'develop/debug',
 			'developDir':		'develop',
 			'developDocDir':	'develop/documentation/'  + self.name,
-			'developLibDir':	'develop/lib',
+			'developLibDir':	'develop/lib' + secondaryArchSubDir,
 			'documentationDir':	'documentation',
 			'fontsDir':			'data/fonts',
 			'postInstallDir':	'boot/post-install',

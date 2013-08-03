@@ -225,7 +225,7 @@ getTargetArchitectureCommand()
 	local command=$1
 
 	if [[ $isCrossRepository == true && $portName != *_cross_* ]]; then
-		echo ${targetMachineTriple}-$command
+		echo ${effectiveTargetMachineTriple}-$command
 	else
 		echo $command
 	fi

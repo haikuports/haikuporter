@@ -97,6 +97,30 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'packager',
 	},
+	'SECONDARY_CROSS_DEVEL_PACKAGES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'secondaryCrossDevelPackages',
+		'setAttribute': 'secondaryCrossDevelPackages',
+	},
+	'SECONDARY_CROSS_TOOLS': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.NO,
+		'indexable': False,
+	},
+	'SECONDARY_TARGET_ARCHITECTURES': {
+		'type': types.ListType,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'secondaryArchitectures',
+	},
 	'TARGET_ARCHITECTURE': {
 		'type': MachineArchitecture,
 		'required': False,
@@ -134,6 +158,7 @@ class Configuration(object):
 		self.treePath = None
 		self.isCrossBuildRepository = False
 		self.targetArchitecture = None
+		self.secondaryArchitectures = None
 		self.packager = None
 		self.packagerName = None
 		self.packagerEmail = None
@@ -144,7 +169,9 @@ class Configuration(object):
 		self.systemMimeDB = None
 		self.licensesDirectory = None
 		self.crossTools = None
+		self.secondaryCrossTools = {}
 		self.crossDevelPackage = None
+		self.secondaryCrossDevelPackages = None
 		self.outputDirectory = None
 
 		self._readConfigurationFile()
@@ -167,6 +194,10 @@ class Configuration(object):
 	@staticmethod
 	def getTargetArchitecture():
 		return Configuration.configuration.targetArchitecture
+
+	@staticmethod
+	def getSecondaryTargetArchitectures():
+		return Configuration.configuration.secondaryArchitectures
 
 	@staticmethod
 	def getPackager():
@@ -209,8 +240,17 @@ class Configuration(object):
 		return Configuration.configuration.crossTools
 
 	@staticmethod
+	def getSecondaryCrossToolsDirectory(architecture):
+		return Configuration.configuration.secondaryCrossTools.get(architecture)
+
+	@staticmethod
 	def getCrossDevelPackage():
 		return Configuration.configuration.crossDevelPackage
+
+	@staticmethod
+	def getSecondaryCrossDevelPackage(architecture):
+		return Configuration.configuration.secondaryCrossDevelPackages.get(
+			architecture)
 
 	@staticmethod
 	def getOutputDirectory():
@@ -253,7 +293,6 @@ class Configuration(object):
 				setAttribute = haikuportsAttributes[key]['setAttribute']
 				setattr(self, setAttribute, configurationValue[key])
 
-
 		self.treePath = self.treePath.rstrip('/')
 
 		# determine if we are using a cross-build repository
@@ -269,3 +308,27 @@ class Configuration(object):
 					+ self.packager)
 		self.packagerName = m.group('name')
 		self.packagerEmail = m.group('email')
+
+		# get the secondary cross tools and devel packages
+		if self.secondaryArchitectures:
+			crossTools = configurationValue.get('SECONDARY_CROSS_TOOLS')
+			if crossTools:
+				if len(crossTools) != len(self.secondaryArchitectures):
+					sysExit('A cross-tools directory must be specified for '
+			 			'each secondary architecture')
+				for architecture, tools \
+		 				in zip(self.secondaryArchitectures, crossTools):
+					self.secondaryCrossTools[architecture] = tools
+
+			if self.secondaryCrossDevelPackages:
+				crossDevelPackages = self.secondaryCrossDevelPackages
+				self.secondaryCrossDevelPackages = {}
+				if len(crossDevelPackages) != len(self.secondaryArchitectures):
+					sysExit('A cross-tools devel pacakge must be specified for '
+			 			'each secondary architecture')
+				for architecture, package \
+		 				in zip(self.secondaryArchitectures, crossDevelPackages):
+					self.secondaryCrossDevelPackages[architecture] = package
+		else:
+			self.secondaryCrossTools = {}
+			self.secondaryCrossDevelPackages = {}

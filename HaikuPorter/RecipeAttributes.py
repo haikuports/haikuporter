@@ -202,6 +202,13 @@ recipeAttributes = {
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
+	'SECONDARY_ARCHITECTURES': {
+		'type': Architectures,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.INHERITED,
+		'indexable': False,
+	},
 	'SUMMARY': {
 		'type': types.StringType,
 		'required': True,

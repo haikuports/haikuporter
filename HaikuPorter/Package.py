@@ -60,6 +60,7 @@ class Package(object):
 		self.name = name
 		self.version = port.version
 		self.revision = port.revision
+		self.secondaryArchitecture = port.secondaryArchitecture
 
 		self.workDir = port.workDir
 		self.packageInfoDir = port.packageInfoDir
@@ -120,6 +121,33 @@ class Package(object):
 		"""Returns whether or not this package is buildable on the given
 		   architecture"""
 		status = self.getStatusOnArchitecture(architecture)
+		return (status == Status.STABLE
+			or (status == Status.UNTESTED
+				and Configuration.shallAllowUntested()))
+
+	def getStatusOnSecondaryArchitecture(self, architecture,
+			secondaryArchitecture):
+		# check the primary architecture
+		primaryStatus = self.getStatusOnArchitecture(architecture)
+		if not primaryStatus in [Status.STABLE, Status.UNTESTED]:
+			return primaryStatus
+
+		# check the secondary architecture
+		if secondaryArchitecture:
+			secondaryStatus = Status.UNSUPPORTED
+			secondaryArchitectures = self.recipeKeys['SECONDARY_ARCHITECTURES']
+			if secondaryArchitecture in secondaryArchitectures:
+				secondaryStatus = secondaryArchitectures[secondaryArchitecture]
+
+			if secondaryStatus != Status.STABLE:
+				return secondaryStatus
+
+		return primaryStatus
+
+	def isBuildableOnSecondaryArchitecture(self, architecture,
+			secondaryArchitecture):
+		status = self.getStatusOnSecondaryArchitecture(architecture,
+			secondaryArchitecture)
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED
 				and Configuration.shallAllowUntested()))
