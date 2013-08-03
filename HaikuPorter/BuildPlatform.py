@@ -446,23 +446,13 @@ class BuildPlatformUnix(BuildPlatform):
 			secondaryArchitecture)
 
 		# prepare the system include and library directories
-		machineDir = crossToolsDir + '/' + targetMachineTriple
-		os.mkdir(machineDir)
-
-		includeDir = machineDir + '/sys-include'
+		includeDir = crossToolsDir + '/include'
 		os.symlink(sysrootDir + '/boot/system/develop/headers', includeDir)
 
-# TODO: Fix once the gccs can be built correctly!
-		libDir = machineDir + '/lib'
+		libDir = crossToolsDir + '/lib'
 		sysrootLibDir = sysrootDir + '/boot/system/develop/lib'
 		if secondaryArchitecture:
-			os.mkdir(libDir)
 			sysrootLibDir += '/' + secondaryArchitecture
-#			libDir += '/' + secondaryArchitecture
-			if targetMachineTriple == 'i586-pc-haiku_gcc2':
-				libDir += '/gcc2'
-			else:
-				libDir += '/gcc4'
 		print 'os.symlink(%s, %s)' % (sysrootLibDir, libDir)
 		os.symlink(sysrootLibDir, libDir)
 
