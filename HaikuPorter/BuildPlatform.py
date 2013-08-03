@@ -279,6 +279,12 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:' + targetMachineAsName + '_strip',
 			])
 
+		for secondaryArchitecture in self.secondaryTargetArchitectures:
+			self.implicitBuildProvides.add(
+				'binutils_cross_' + secondaryArchitecture)
+			self.implicitBuildProvides.add(
+				'gcc_cross_' + secondaryArchitecture)
+
 	def isHaiku(self):
 		return False
 
