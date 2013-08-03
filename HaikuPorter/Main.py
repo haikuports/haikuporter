@@ -286,27 +286,27 @@ class Main(object):
 		requiredPortsToBuild = []
 		requiredPortIDs = {}
 		for dependency in buildDependencies:
-			if dependency.startswith(portRepositoryPath):
-				packageInfoFileName = os.path.basename(dependency)
-				packageID \
-					= packageInfoFileName[:packageInfoFileName.rindex('.')]
-				try:
-					if packageID in allPorts:
-						portID = packageID
-					else:
-						portID \
-							= self.repository.getPortIdForPackageId(packageID)
-					if portID not in requiredPortIDs:
-						requiredPort = allPorts[portID]
-						if (getOption('onlySourcePackages')
-							and requiredPort.sourcePackageExists(targetPath)):
-							continue
-						requiredPortsToBuild.append(requiredPort)
-						requiredPortIDs[portID] = True
-				except KeyError:
-					sysExit('Inconsistency: ' + port.versionedName
-							 + ' requires ' + packageID
-							 + ' but no corresponding port was found!')
+			if not dependency.startswith(portRepositoryPath):
+				continue
+			
+			packageInfoFileName = os.path.basename(dependency)
+			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+			try:
+				if packageID in allPorts:
+					portID = packageID
+				else:
+					portID = self.repository.getPortIdForPackageId(packageID)
+				if portID not in requiredPortIDs:
+					requiredPort = allPorts[portID]
+					if (getOption('onlySourcePackages')
+						and requiredPort.sourcePackageExists(targetPath)):
+						continue
+					requiredPortsToBuild.append(requiredPort)
+					requiredPortIDs[portID] = True
+			except KeyError:
+				sysExit('Inconsistency: ' + port.versionedName
+						 + ' requires ' + packageID
+						 + ' but no corresponding port was found!')
 
 		if requiredPortsToBuild:
 			print 'The following required ports will be built first:'
