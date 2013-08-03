@@ -811,6 +811,10 @@ class Port(object):
 
 		if self.secondaryArchitecture:
 			secondaryArchSubDir = '/' + self.secondaryArchitecture
+			# don't use a subdir when building cross-packages
+			if (Configuration.isCrossBuildRepository()
+				and '_cross_' in self.name):
+				secondaryArchSubDir = ''
 			secondaryArchSuffix = '_' + self.secondaryArchitecture
 			effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
