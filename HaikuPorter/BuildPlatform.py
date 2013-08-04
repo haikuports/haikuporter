@@ -239,7 +239,7 @@ class BuildPlatformUnix(BuildPlatform):
 			= MachineArchitecture.getTripleFor(targetArchitecture)
 		targetMachineAsName = self.targetMachineTriple.replace('-', '_')
 
-		self.implicitBuildProvides = set([
+		self.implicitBuildHostProvides = set([
 			'haiku',
 			'haiku_devel',
 			'binutils_cross_' + targetArchitecture,
@@ -251,9 +251,8 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:automake',
 			'cmd:autoreconf',
 			'cmd:bash',
-			'cmd:find',
-			'cmd:m4',
 			'cmd:cmake',
+			'cmd:find',
 			'cmd:flex',
 			'cmd:gcc',
 			'cmd:grep',
@@ -262,6 +261,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:libtool',
 			'cmd:libtoolize',
 			'cmd:login',
+			'cmd:m4',
 			'cmd:make',
 			'cmd:makeinfo',
 			'cmd:nm',
@@ -279,10 +279,14 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:' + targetMachineAsName + '_strip',
 			])
 
+		self.implicitBuildTargetProvides = set([
+			'haiku',
+		])
+
 		for secondaryArchitecture in self.secondaryTargetArchitectures:
-			self.implicitBuildProvides.add(
+			self.implicitBuildHostProvides.add(
 				'binutils_cross_' + secondaryArchitecture)
-			self.implicitBuildProvides.add(
+			self.implicitBuildHostProvides.add(
 				'gcc_cross_' + secondaryArchitecture)
 
 	def isHaiku(self):
@@ -310,12 +314,10 @@ class BuildPlatformUnix(BuildPlatform):
 				if not (package.endswith('.hpkg')
 						or package.endswith('.PackageInfo')):
 					continue
-				# For prerequirements consider only cross packages.
-				# TODO: Once we have a strict separation of build host and
-				# target requires, for non-prerequires only non-cross packages
-				# should be considered.
+				# For prerequirements consider only cross packages, for
+				# non-prerequirements consider only non-cross packages
 				isCrossPackage = '_cross_' in package
-				if not isPrerequired or isCrossPackage:
+				if isPrerequired == isCrossPackage:
 					requiresUpdater.addPackageFile(repository + '/' + package)
 
 		for packageInfoFile in packageInfoFiles:
@@ -328,11 +330,12 @@ class BuildPlatformUnix(BuildPlatform):
 			package = pendingPackages.pop()
 			packageInfo = PackageInfo(package)
 			for requires in packageInfo.getRequires():
-				# TODO: Once we have a strict separation of build host and
-				# target requires, this check should be done only for
-				# prerequires.
-				if requires.getName() in self.implicitBuildProvides:
-					continue
+				if isPrerequired:
+					if requires.getName() in self.implicitBuildHostProvides:
+						continue
+				else:
+					if requires.getName() in self.implicitBuildTargetProvides:
+						continue
 
 				provides = requiresUpdater.getMatchingProvides(requires)
 				if not provides:

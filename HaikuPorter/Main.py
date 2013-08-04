@@ -280,15 +280,11 @@ class Main(object):
 			if not os.path.exists(targetPath):
 				os.makedirs(targetPath)
 
-		(buildDependencies, portRepositoryPath) \
-			= port.resolveBuildDependencies(self.repository.path,
-											self.packagesPath)
+		buildDependencies = port.resolveBuildDependencies(self.repository.path,
+														  self.packagesPath)
 		requiredPortsToBuild = []
 		requiredPortIDs = {}
 		for dependency in buildDependencies:
-			if not dependency.startswith(portRepositoryPath):
-				continue
-			
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
 			try:

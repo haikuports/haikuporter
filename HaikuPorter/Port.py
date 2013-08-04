@@ -27,8 +27,7 @@ from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 setupChrootScript)
 from HaikuPorter.Source import Source
 from HaikuPorter.Utils import (filteredEnvironment, naturalCompare,
-							   symlinkFiles, symlinkGlob, sysExit, touchFile,
-							   warn)
+							   symlinkGlob, sysExit, touchFile, warn)
 
 import os
 import shutil
@@ -476,63 +475,60 @@ class Port(object):
 		return False
 
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
-		"""Resolve any other ports that need to be built before this one.
-
-		   In order to do so, we first determine the prerequired packages for
-		   the build, for which packages from outside the haikuports-tree may
-		   be considered. A temporary folder is then populated with only these
-		   prerequired packages and then all the build requirements of this
-		   port are determined with only the haikuports repository, the already
-		   built packages and the repository of prerequired packages active.
-		   This ensures that any build requirements a port may have that can not
-		   be fulfilled from within the haikuports tree will be raised as an
-		   error here.
+		"""Resolve any other ports (no matter if required or prerequired) that
+		   need to be built before this one.
+		   Any build requirements a port may have that can not be fulfilled from
+		   within the haikuports tree will be raised as an error here.
 		"""
 
 		workRepositoryPath = self.workDir + '/repository'
-		prereqRepositoryPath = self.workDir + '/prereq-repository'
-		packageInfoFiles = self._prepareRepositories(workRepositoryPath,
-													 prereqRepositoryPath,
-													 repositoryPath,
-													 packagesPath)
+		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
 
-		# Determine the build requirements.
-		repositories = [ packagesPath, workRepositoryPath,
-			prereqRepositoryPath ]
-		packages = self._resolveDependencies(
-			packageInfoFiles, repositories, 'required ports')
+		requiresTypes = [ 'BUILD_REQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
+											 			  workRepositoryPath)
+		requiredPackages = self._resolveDependencies(packageInfoFiles,
+													 [ workRepositoryPath ],
+												 	 'required ports')
 
-		shutil.rmtree(workRepositoryPath)
-		shutil.rmtree(prereqRepositoryPath)
+		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
+											 			  workRepositoryPath)
+		prerequiredPackages \
+			= self._resolvePrerequiredDependencies(packageInfoFiles,
+												   [ workRepositoryPath ],
+												   'prerequired ports')
 
-		# Filter out system packages, as they are irrelevant.
+		# return list of unique ports which need to be built before this one
 		return [
-			package for package in packages
-				if not buildPlatform.isSystemPackage(package)
-		], workRepositoryPath
+			package for package in set(requiredPackages + prerequiredPackages)
+			if package.startswith(workRepositoryPath)
+		]
 
 	def whyIsPortRequired(self, repositoryPath, packagesPath, requiredPort):
 		"""Find out which package is pulling the given port in as a dependency
 		   of this port."""
 
 		workRepositoryPath = self.workDir + '/repository'
-		prereqRepositoryPath = self.workDir + '/prereq-repository'
-		packageInfoFiles = self._prepareRepositories(workRepositoryPath,
-													 prereqRepositoryPath,
-													 repositoryPath,
-													 packagesPath)
+		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
 
 		# drop package-infos for the required port, such that pkgman will
 		# fail with an appropriate message
 		requiredPort.removePackageInfosFromRepository(workRepositoryPath)
-		requiredPort.removePackageInfosFromRepository(prereqRepositoryPath)
 
-		# Ask pkgman to determine the build requirements, which should fail
-		# on the required port, with an error message that gives a hint
-		# about who requires it.
-		repositories = [ workRepositoryPath, prereqRepositoryPath ]
-		self._resolveDependencies(packageInfoFiles, repositories,
-			'why is port required')
+		requiresTypes = [ 'BUILD_REQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
+											 			  workRepositoryPath)
+		self._resolveDependencies(packageInfoFiles, [ workRepositoryPath ],
+								  'why is port needed')
+
+		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
+														  workRepositoryPath)
+		self._resolvePrerequiredDependencies(packageInfoFiles,
+											 [ workRepositoryPath ],
+											 'why is port needed')
+
 		warn("port %s doesn't seem to be required by %s"
 			 % (requiredPort.versionedName, self.versionedName))
 
@@ -646,8 +642,11 @@ class Port(object):
 
 		if getOption('onlySourcePackages'):
 			requiredPackages = []
+			prerequiredPackages = []
 		else:
 			requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
+			prerequiredPackages \
+				= self._getPackagesPrerequiredForBuild(packagesPath)
 			self.policy.setPort(self, requiredPackages)
 			self.requiresUpdater \
 				= RequiresUpdater(self.packages, requiredPackages)
@@ -655,10 +654,11 @@ class Port(object):
 				self.requiresUpdater.addPackages(
 					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
+		allPackages = set(requiredPackages + prerequiredPackages)
 		if buildPlatform.usesChroot():
 			# setup chroot and keep it while executing the actions
 			chrootEnvVars = {
-				'packages': '\n'.join(requiredPackages),
+				'packages': '\n'.join(allPackages),
 				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
 			}
@@ -668,7 +668,7 @@ class Port(object):
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 				if not getOption('quiet'):
 					print 'chroot has these packages active:'
-					for package in sorted(requiredPackages):
+					for package in sorted(allPackages):
 						print '\t' + package
 
 				pid = os.fork()
@@ -709,11 +709,11 @@ class Port(object):
 		else:
 			if not getOption('quiet'):
 				print 'non-chroot has these packages active:'
-				for package in sorted(requiredPackages):
+				for package in sorted(allPackages):
 					print '\t' + package
 
 			buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
-				self.secondaryArchitecture, requiredPackages)
+				self.secondaryArchitecture, allPackages)
 			try:
 				self._executeBuild(makePackages)
 			except:
@@ -928,109 +928,49 @@ class Port(object):
 			self.shellVariables[relativeName] = value
 			self.shellVariables[name] = prefix + '/' + value
 
-	def _prepareRepositories(self, workRepositoryPath, prereqRepositoryPath,
-							 repositoryPath, packagesPath):
-		"""Resolve any other ports that need to be built before this one.
+	def _generatePackageInfoFiles(self, requiresTypes, path = None):
+		"""Generates package info files with given types of requires."""
 
-		   In order to do so, we first determine the prerequired packages for
-		   the build, for which packages from outside the haikuports-tree may
-		   be considered. A temporary folder is then populated with only these
-		   prerequired packages and then all the build requirements of this
-		   port are determined with only the haikuports repository, the already
-		   built packages and the repository of prerequired packages active.
-		   This ensures that any build requirements a port may have that can not
-		   be fulfilled from within the haikuports tree will be raised as an
-		   error here."""
+		if not path:
+			path = self.packageInfoDir
 
-		# First create a work-repository by symlinking all package-infos from
-		# the haikuports-repository - we need to overwrite the package-infos
-		# for this port, so we do that in a private directory.
-		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
-
-		# For each package, generate a PackageInfo-file containing only the
-		# prerequirements for building the package and no own provides (if a
-		# port prerequires itself, we want to pull in the real package from the
-		# build machine)
 		packageInfoFiles = []
+
 		for package in self.packages:
-			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
+			packageInfoFile = (path + '/' + package.packageInfoName)
 			package.generatePackageInfoWithoutProvides(packageInfoFile,
-				[ 'BUILD_PREREQUIRES' ])
-			packageInfoFiles.append(packageInfoFile)
-
-		# Determine the prerequired packages, allowing build machine packages,
-		# but leave out system packages, as those are irrelevant.
-		repositories = [ packagesPath, workRepositoryPath ]
-		prereqPackages = self._resolvePrerequiredDependencies(
-			packageInfoFiles, repositories, 'prerequired ports')
-		prereqPackages = [
-			package for package in prereqPackages
-				if not buildPlatform.isSystemPackage(package)
-		]
-
-		# Populate a directory with those prerequired packages.
-		symlinkFiles(prereqPackages, prereqRepositoryPath)
-
-		# For each package, generate a PackageInfo-file containing only the
-		# immediate  requirements for building the package:
-		packageInfoFiles = []
-		for package in self.packages:
-			packageInfoFile = workRepositoryPath + '/' + package.packageInfoName
-			package.generatePackageInfoWithoutProvides(packageInfoFile,
-				[ 'BUILD_REQUIRES' ])
+													   requiresTypes)
 			packageInfoFiles.append(packageInfoFile)
 
 		return packageInfoFiles
+
+	def _getPackagesPrerequiredForBuild(self, packagesPath):
+		"""Determine the set of prerequired packages that must be linked into
+		   the build environment (chroot) for the build stage"""
+
+		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
+
+		prereqPackages = self._resolvePrerequiredDependencies(
+			packageInfoFiles, [ packagesPath ],
+			'prerequired packages for build')
+
+		return [
+			package for package in prereqPackages
+				if not buildPlatform.isSystemPackage(package)
+		]
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the
 		   build environment (chroot) for the build stage"""
 
-		# For each package, generate a PackageInfo-file containing only the
-		# prerequirements for building the package and no own provides (if a
-		# port prerequires itself, we want to pull in the real package from the
-		# build machine)
-		packageInfoFiles = []
-		for package in self.packages:
-			packageInfoFile = (package.packageInfoDir + '/'
-							   + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(packageInfoFile,
-				[ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ])
-			packageInfoFiles.append(packageInfoFile)
+		requiresTypes = [ 'BUILD_REQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
-		# Determine the prerequired packages, allowing build machine packages,
-		# but leave out system packages, as they will be linked into the chroot
-		# anyway.
-		repositories = [ packagesPath ]
-		prereqPackages = self._resolvePrerequiredDependencies(
-			packageInfoFiles, repositories, 'prerequired packages for build')
-		prereqPackages = [
-			package for package in prereqPackages
-				if not buildPlatform.isSystemPackage(package)
-		]
+		packages = self._resolveDependencies(packageInfoFiles,
+											 [ packagesPath ],
+											 'required packages for build')
 
-		# Populate a directory with those prerequired packages.
-		prereqRepositoryPath = self.workDir + '/prereq-repository'
-		symlinkFiles(prereqPackages, prereqRepositoryPath)
-
-		# For each package, create a package-info that contains both the
-		# prerequired and required packages for the build:
-		packageInfoFiles = []
-		for package in self.packages:
-			packageInfoFile = (package.packageInfoDir + '/'
-							   + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(packageInfoFile,
-				[ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
-				  'SCRIPTLET_PREREQUIRES' ])
-			packageInfoFiles.append(packageInfoFile)
-
-		# Determine the build requirements.
-		repositories = [ packagesPath, prereqRepositoryPath ]
-		packages = self._resolveDependencies(
-			packageInfoFiles, repositories, 'required packages for build')
-
-		# Filter out system packages, they will be linked into the chroot
-		# anyway.
 		return [
 			package for package in packages
 				if not buildPlatform.isSystemPackage(package)
@@ -1081,6 +1021,7 @@ class Port(object):
 		self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
 		self.buildPackageDir = self.buildPackageDir[pathLengthToCut:]
 		self.packagingBaseDir = self.packagingBaseDir[pathLengthToCut:]
+		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.workDir = ''
 
