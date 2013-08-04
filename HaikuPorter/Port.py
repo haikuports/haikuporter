@@ -487,17 +487,19 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
-		requiredPackages = self._resolveDependencies(packageInfoFiles,
-													 [ workRepositoryPath ],
-												 	 'required ports')
+		requiredPackages \
+			= self._resolveDependencies(packageInfoFiles,
+										[ packagesPath, workRepositoryPath ],
+										'required ports')
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
 		prerequiredPackages \
 			= self._resolvePrerequiredDependencies(packageInfoFiles,
-												   [ workRepositoryPath ],
-												   'prerequired ports')
+												   [ packagesPath],
+												   'prerequired ports',
+												   [ workRepositoryPath ])
 
 		# return list of unique ports which need to be built before this one
 		return [
@@ -1149,12 +1151,12 @@ class Port(object):
 		check_call(args, cwd=dir, env=shellEnv)
 
 	def _resolveDependencies(self, packageInfoFiles, repositories, description,
-			isPrerequired = False):
+			isPrerequired = False, fallbackRepositories = []):
 		"""Resolve dependencies of one or more package-infos"""
 
 		try:
 			return buildPlatform.resolveDependencies(packageInfoFiles,
-				repositories, isPrerequired)
+				repositories, isPrerequired, fallbackRepositories)
 		except (CalledProcessError, LookupError):
 			sysExit(('unable to resolve %s for %s\n'
 					 + '\tpackage-infos:\n\t\t%s\n'
@@ -1164,6 +1166,6 @@ class Port(object):
 					   '\n\t\t'.join(repositories)))
 
 	def _resolvePrerequiredDependencies(self, packageInfoFiles, repositories,
-			description):
+			description, fallbackRepositories = []):
 		return self._resolveDependencies(packageInfoFiles, repositories,
-			description, True)
+			description, True, fallbackRepositories)

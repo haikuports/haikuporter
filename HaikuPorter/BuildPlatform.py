@@ -109,7 +109,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		return self.findDirectoryCache[which]
 
 	def resolveDependencies(self, packageInfoFiles, repositories,
-			isPrerequired):
+			isPrerequired, fallbackRepositories = []):
 		# When resolving pre-requirements, also consider the build host's
 		# common package directory. In either case add the system packages
 		# directory.
@@ -119,6 +119,7 @@ class BuildPlatformHaiku(BuildPlatform):
 				buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'))
 		repositories.append(
 			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		repositories += fallbackRepositories
 
 		args = ([ '/bin/pkgman', 'resolve-dependencies' ]
 				+ packageInfoFiles + repositories)
@@ -306,9 +307,10 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.findDirectoryMap[which]
 
 	def resolveDependencies(self, packageInfoFiles, repositories,
-			isPrerequired):
+			isPrerequired, fallbackRepositories = []):
 		# Use the RequiresUpdater to resolve the dependencies.
 		requiresUpdater = RequiresUpdater([], packageInfoFiles)
+		repositories += fallbackRepositories
 		for repository in repositories:
 			for package in os.listdir(repository):
 				if not (package.endswith('.hpkg')
