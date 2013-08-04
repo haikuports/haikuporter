@@ -389,6 +389,87 @@ fixPkgconfig()
 	rm -r $sourcePkgconfigDir
 }
 
+symlinkRelative()
+{
+	local flags
+	while [ $# -ge 1 ] && [[ "$1" = -* ]]; do
+		flags="$flags $1"
+		shift 1
+	done
+
+	if [ $# -lt 2 ]; then
+		echo "Usage: symlinkRelative <flags> <from> ... <to>" >&2
+		exit 1
+	fi
+
+	declare -a fromPaths
+	while [ $# -gt 1 ]; do
+		fromPaths[${#fromPaths[@]}]="$1"
+		shift 1
+	done
+	local toPath="$1"
+
+	# make sure target path is absolute
+	if [[ "$toPath" != /* ]]; then
+		toPath="$(pwd)/$toPath"
+	fi
+
+	# get target path prefixes
+	declare -a toPathPrefixes
+	declare -a toPathUpPrefixes
+	local path="$toPath"
+	if [ -d "$path" ]; then
+		path="$path/_"
+	fi
+	local upPrefix=
+	while [ "$path" != / ]; do
+		path="$(dirname "$path")"
+		toPathPrefixes=("$path" "${toPathPrefixes[@]}")
+		toPathUpPrefixes=("$upPrefix" "${toPathUpPrefixes[@]}")
+		upPrefix=${upPrefix}../
+	done
+
+	# process the from paths
+	declare -a processedFromPaths
+	local fromPath
+	for fromPath in "${fromPaths[@]}"; do
+		# make sure target path is absolute
+		if [[ "$fromPath" != /* ]]; then
+			fromPath="$(pwd)/$fromPath"
+		fi
+
+		# get path prefixes
+		declare -a fromPathPrefixes
+		local path="$fromPath"
+		while [ "$path" != / ]; do
+			path="$(dirname "$path")"
+			fromPathPrefixes=("$path" "${fromPathPrefixes[@]}")
+		done
+
+		# get the longest common prefix
+		local commonPrefix
+		local i
+		for (( i=0 ; i<${#fromPathPrefixes[@]} ; i++ )) ; do
+			if [ "${fromPathPrefixes[$i]}" != "${toPathPrefixes[$i]}" ]; then
+				break
+			fi
+			commonPrefix="${fromPathPrefixes[$i]}"
+			upPrefix="${toPathUpPrefixes[$i]}"
+		done
+		local prefixLength=${#commonPrefix}
+		if [ $prefixLength -gt 1 ]; then
+			prefixLength=$[$prefixLength + 1]
+		fi
+		local fromSuffix="${fromPath:$prefixLength}"
+		local toSuffix="${toPath:$prefixLength}"
+
+		# construct the relative path
+		processedFromPaths[${#processedFromPaths[@]}]="$upPrefix$fromSuffix"
+	done
+
+	ln $flags "${processedFromPaths[@]}" "$toPath"
+}
+
 addAppDeskbarSymlink()
 {
 	# Usage: addAppDeskbarSymlink <appPath> [ <entryName> ]
@@ -412,7 +493,7 @@ addAppDeskbarSymlink()
 
 	targetDir=$dataDir/deskbar/menu/Applications
 	mkdir -p $targetDir
-	ln -s "$appPath" "$targetDir/$entryName"
+	symlinkRelative -s "$appPath" "$targetDir/$entryName"
 }
 
 addPreferencesDeskbarSymlink()
@@ -438,7 +519,7 @@ addPreferencesDeskbarSymlink()
 
 	targetDir=$dataDir/deskbar/menu/Preferences
 	mkdir -p $targetDir
-	ln -s "$appPath" "$targetDir/$entryName"
+	symlinkRelative -s "$appPath" "$targetDir/$entryName"
 }
 
 packageEntries()
