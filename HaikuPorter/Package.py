@@ -63,7 +63,6 @@ class Package(object):
 		self.secondaryArchitecture = port.secondaryArchitecture
 
 		self.workDir = port.workDir
-		self.packageInfoDir = port.packageInfoDir
 		self.buildPackageDir = port.buildPackageDir
 		self.packagingDir = port.packagingBaseDir + '/' + self.name
 		self.hpkgDir = port.hpkgDir
@@ -201,7 +200,6 @@ class Package(object):
 
 		# adjust all relevant directories
 		pathLengthToCut = len(self.workDir)
-		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
 		self.buildPackageDir = self.buildPackageDir[pathLengthToCut:]
 		self.packagingDir = self.packagingDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
