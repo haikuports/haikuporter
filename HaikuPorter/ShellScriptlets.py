@@ -345,7 +345,8 @@ prepareInstalledDevelLib()
 	# development directory. Everything else is moved there.
 	for lib in $installDestDir$libDir/${libBaseName}${pattern:-.*}; do
 		if [ "$lib" = "$sharedLib" ]; then
-			ln -s ../../lib/$(basename $lib) $installDestDir$developLibDir/
+			symlinkRelative -s $installDestDir$libDir/$(basename $lib) \
+				$installDestDir$developLibDir/
 		elif [ "$lib" = "$sonameLib" ]; then
 			ln -s $(basename $sharedLib) $installDestDir$developLibDir/$soname
 		else
