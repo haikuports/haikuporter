@@ -1072,6 +1072,18 @@ class Port(object):
 				if not os.listdir(settingsDir):
 					os.rmdir(settingsDir)
 
+			# For secondary architecture packages symlink the bin/<arch>/*
+			# entries to bin/ with a respective suffix.
+			if self.secondaryArchitecture:
+				for package in self.packages:
+					binDir = package.packagingDir + '/bin'
+					archBinDir = binDir + '/' + self.secondaryArchitecture
+					if os.path.exists(archBinDir):
+						for entry in os.listdir(archBinDir):
+							os.symlink(self.secondaryArchitecture + '/' + entry,
+								binDir + '/' + entry + '-'
+									+ self.secondaryArchitecture)
+
 			# For the main package remove certain empty directories. Typically
 			# contents is moved from the main package installation directory
 			# tree to the packaging directories of sibling packages, which may
