@@ -329,6 +329,8 @@ class Configuration(object):
 				for architecture, package \
 		 				in zip(self.secondaryArchitectures, crossDevelPackages):
 					self.secondaryCrossDevelPackages[architecture] = package
+			else:
+				self.secondaryCrossDevelPackages = {}
 		else:
 			self.secondaryCrossTools = {}
 			self.secondaryCrossDevelPackages = {}
