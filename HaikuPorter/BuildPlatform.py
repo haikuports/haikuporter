@@ -227,6 +227,11 @@ class BuildPlatformUnix(BuildPlatform):
 				self.secondaryTargetMachineTriples[secondaryArchitecture] \
 					= MachineArchitecture.getTripleFor(secondaryArchitecture)
 
+			if not Configuration.getSecondaryCrossDevelPackage(
+					self.secondaryTargetArchitectures[0]):
+				sysExit('The Haiku cross devel package for all secondary '
+					'architectures must be specified on this build platform!')
+
 		self.findDirectoryMap = {
 			'B_PACKAGE_LINKS_DIRECTORY': '/packages',
 			'B_SYSTEM_DIRECTORY': '/boot/system',
