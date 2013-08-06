@@ -149,7 +149,7 @@ class Main(object):
 			self.options.package = False
 
 		if self.options.analyzeDependencies:
-			DependencyAnalyzer(self.repository)
+			DependencyAnalyzer(self.repository).printDependencies()
 			return
 
 		# collect all available ports and validate each specified port

@@ -198,49 +198,36 @@ class DependencyAnalyzer(object):
 
 			portNode.areDependenciesResolved = True
 
-		# resolve the haikuporter dependencies
-		haikuporterDependencies = self._resolveRequiresList(
-			getScriptletPrerequirements())
-
-		# print the needed system packages
-		print 'Required system packages:'
-
+		# determine the needed system packages
+		self.systemPackageNodes = set()
 		remainingPortNodes = set()
 		nonSystemPackageNodes = set()
 
 		for packageNode in self.packageNodes.itervalues():
 			if packageNode.isSystemPackage():
-				print '  %s' % packageNode.getName()
+				self.systemPackageNodes.add(packageNode)
 			else:
 				nonSystemPackageNodes.add(packageNode)
 				remainingPortNodes.add(packageNode.portNode)
 
-		# print haikuporter dependencies
-		print 'Ports required by haikuporter:'
-
-		haikuporterRequires = set()
+		# resolve the haikuporter dependencies
+		haikuporterDependencies = self._resolveRequiresList(
+			getScriptletPrerequirements())
+		self.haikuporterRequires = set()
 		for packageNode in haikuporterDependencies:
 			if not packageNode.isSystemPackage():
-				if packageNode.portNode in remainingPortNodes:
-					print '  %s' % packageNode.portNode.getName()
-					remainingPortNodes.remove(packageNode.portNode)
-					haikuporterRequires.add(packageNode)
+				self.haikuporterRequires.add(packageNode)
 
 		# ... and their requires closure
-		nodeStack = list(haikuporterRequires)
+		nodeStack = list(self.haikuporterRequires)
 		while nodeStack:
 			packageNode = nodeStack.pop()
 			portNode = packageNode.portNode
-			if portNode in remainingPortNodes:
-				print '  %s' % portNode.getName()
-				haikuporterRequires.add(portNode)
-				remainingPortNodes.remove(portNode)
-
 			for dependency in packageNode.getRequires():
 				if (dependency in nonSystemPackageNodes
-					and not dependency in haikuporterRequires):
+					and not dependency in self.haikuporterRequires):
 					nodeStack.append(dependency)
-					haikuporterRequires.add(dependency)
+					self.haikuporterRequires.add(dependency)
 
 		# compute the in-degrees of the nodes
 		nodes = set(remainingPortNodes)
@@ -292,16 +279,29 @@ class DependencyAnalyzer(object):
 					if otherNode.outdegree == 0:
 						outdegreeZeroStack.append(otherNode)
 
-		# print the remaining cycle(s)
-		print 'Ports depending cyclically on each other:'
-
-		for node in nodes:
-			if node.isPort() and node in remainingPortNodes:
-				print '  %s (out-degree %d)' % (node.getName(), node.outdegree)
+		self.cyclicNodes = [
+			node for node in nodes if node.isPort()
+		]
 
 		# clean up
 		shutil.rmtree(self.noRequiresRepositoryPath)
 		shutil.rmtree(self.noRequiresSystemRepositoryPath)
+
+	def printDependencies(self):
+		print 'Required system packages:'
+		for packageNode in self.systemPackageNodes:
+			print '  %s' % packageNode.getName()
+
+		print 'Ports required by haikuporter:'
+		for packageNode in self.haikuporterRequires:
+			print '  %s' % packageNode.portNode.getName()
+
+		print 'Ports depending cyclically on each other:'
+		for node in self.cyclicNodes:
+			print '  %s (out-degree %d)' % (node.getName(), node.outdegree)
+
+	def getBuildOrderForPortWithCyclicDependencies(self):
+		pass
 
 	def _resolveRequiresList(self, requiresList):
 		dependencies = set()
