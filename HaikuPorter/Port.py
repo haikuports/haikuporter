@@ -463,20 +463,21 @@ class Port(object):
 		for package in self.packages:
 			package.obsoletePackage(packagesPath)
 
+	def getSourcePackage(self):
+		# isBuildableOnTargetArchitecture() makes sure the recipe has been
+		# parsed and the packages have been created.
+		self.isBuildableOnTargetArchitecture()
+
+		for package in self.packages:
+			if package.type == PackageType.SOURCE:
+				return package
+		return None
+
 	def sourcePackageExists(self, packagesPath):
 		"""Determines if the source package already exists"""
 
-		# isBuildableOnTargetArchitecture() makes sure the recipe has been
-		# parsed and the packages have been created.
-		if not self.isBuildableOnTargetArchitecture():
-			return False
-
-		for package in self.packages:
-			if package.type != PackageType.SOURCE:
-				continue
-			return os.path.exists(packagesPath + '/' + package.hpkgName)
-
-		return False
+		package = self.getSourcePackage()
+		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
 		"""Resolve any other ports (no matter if required or prerequired) that

@@ -304,7 +304,8 @@ class Main(object):
 				if portID not in requiredPortIDs:
 					requiredPort = allPorts[portID]
 					if (getOption('onlySourcePackages')
-						and requiredPort.sourcePackageExists(targetPath)):
+		 				and (not requiredPort.getSourcePackage()
+							or requiredPort.sourcePackageExists(targetPath))):
 						continue
 					requiredPortsToBuild.append(requiredPort)
 					requiredPortIDs[portID] = True
