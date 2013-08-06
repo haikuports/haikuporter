@@ -114,8 +114,7 @@ class Package(object):
 		"""Returns whether or not this package is buildable on the given
 		   architecture"""
 		status = self.getStatusOnArchitecture(architecture)
-		allowUntested = (Configuration.shallAllowUntested()
-			or getOption('onlySourcePackages'))
+		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
 
@@ -142,8 +141,7 @@ class Package(object):
 			secondaryArchitecture):
 		status = self.getStatusOnSecondaryArchitecture(architecture,
 			secondaryArchitecture)
-		allowUntested = (Configuration.shallAllowUntested()
-			or getOption('onlySourcePackages'))
+		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
 

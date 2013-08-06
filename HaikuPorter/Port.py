@@ -441,8 +441,7 @@ class Port(object):
 		"""Returns whether or not this port is buildable on the target
 		   architecture"""
 		status = self.getStatusOnTargetArchitecture()
-		allowUntested = (Configuration.shallAllowUntested()
-			or getOption('onlySourcePackages'))
+		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
 
