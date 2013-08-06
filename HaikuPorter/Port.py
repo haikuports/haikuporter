@@ -466,6 +466,11 @@ class Port(object):
 	def sourcePackageExists(self, packagesPath):
 		"""Determines if the source package already exists"""
 
+		# isBuildableOnTargetArchitecture() makes sure the recipe has been
+		# parsed and the packages have been created.
+		if not self.isBuildableOnTargetArchitecture():
+			return False
+
 		for package in self.packages:
 			if package.type != PackageType.SOURCE:
 				continue
