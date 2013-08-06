@@ -205,6 +205,9 @@ class Port(object):
 					patchsets.append(diffFileName)
 				self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
 
+		# set default SOURCE_DIR
+		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
+
 		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
 		self.recipeKeys = {}
 		for entries in self.recipeKeysByExtension.values():
