@@ -285,11 +285,20 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:' + targetMachineAsName + '_strip',
 			])
 
+		# TODO: We might instead want to support passing the package infos for
+		# the system packages to haikuporter, so we could get the actual
+		# provides.
+		haikuVersion = self.getHaikuVersion()
 		self.implicitBuildTargetProvides = set([
 			'haiku',
+			'haiku_devel',
 			'coreutils',
 			'diffutils',
+			'cmd:gunzip',
+			'cmd:login',
+			'cmd:passwd',
 			'cmd:sh',
+			'cmd:zcat'
 		])
 
 		for secondaryArchitecture in self.secondaryTargetArchitectures:
