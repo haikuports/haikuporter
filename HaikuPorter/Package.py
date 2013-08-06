@@ -103,12 +103,6 @@ class Package(object):
 		"""Return the status of this package on the given architecture (which
 		   must be a hardware architecture, i.e. not ANY or SOURCE)"""
 
-		if getOption('onlySourcePackages'):
-			# in case of source package collection, pretend that each package
-			# is stable on any architecture, otherwise sources for not yet
-			# stable packages couldn't be collected
-			return Status.STABLE
-
 		if architecture in self.recipeKeys['ARCHITECTURES']:
 			return self.recipeKeys['ARCHITECTURES'][architecture]
 		elif (Architectures.ANY in self.recipeKeys['ARCHITECTURES']
@@ -120,9 +114,10 @@ class Package(object):
 		"""Returns whether or not this package is buildable on the given
 		   architecture"""
 		status = self.getStatusOnArchitecture(architecture)
+		allowUntested = (Configuration.shallAllowUntested()
+			or getOption('onlySourcePackages'))
 		return (status == Status.STABLE
-			or (status == Status.UNTESTED
-				and Configuration.shallAllowUntested()))
+			or (status == Status.UNTESTED and allowUntested))
 
 	def getStatusOnSecondaryArchitecture(self, architecture,
 			secondaryArchitecture):
@@ -147,9 +142,10 @@ class Package(object):
 			secondaryArchitecture):
 		status = self.getStatusOnSecondaryArchitecture(architecture,
 			secondaryArchitecture)
+		allowUntested = (Configuration.shallAllowUntested()
+			or getOption('onlySourcePackages'))
 		return (status == Status.STABLE
-			or (status == Status.UNTESTED
-				and Configuration.shallAllowUntested()))
+			or (status == Status.UNTESTED and allowUntested))
 
 	def getRecipeKeys(self):
 		return self.recipeKeys

@@ -428,10 +428,6 @@ class Port(object):
 			if not hasattr(self, 'recipeKeys'):
 				self.parseRecipeFile(False)
 
-			if getOption('onlySourcePackages'):
-				# source packages are stable for any target architecture
-				return Status.STABLE
-
 			# use the status of the base package as overall status of the port
 			return self.allPackages[0].getStatusOnArchitecture(
 				self.targetArchitecture)
@@ -442,9 +438,10 @@ class Port(object):
 		"""Returns whether or not this port is buildable on the target
 		   architecture"""
 		status = self.getStatusOnTargetArchitecture()
+		allowUntested = (Configuration.shallAllowUntested()
+			or getOption('onlySourcePackages'))
 		return (status == Status.STABLE
-			or (status == Status.UNTESTED
-				and Configuration.shallAllowUntested()))
+			or (status == Status.UNTESTED and allowUntested))
 
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""
