@@ -287,6 +287,9 @@ class BuildPlatformUnix(BuildPlatform):
 
 		self.implicitBuildTargetProvides = set([
 			'haiku',
+			'coreutils',
+			'diffutils',
+			'cmd:sh',
 		])
 
 		for secondaryArchitecture in self.secondaryTargetArchitectures:
