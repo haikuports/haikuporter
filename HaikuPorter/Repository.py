@@ -56,6 +56,21 @@ class Repository(object):
 		# no corresponding port-ID was found
 		return None
 
+	def getPortNameForPackageName(self, packageName):
+		"""return the port name for the given package name"""
+
+		# cut out subparts from the package name until we find a port
+		# with that name:
+		portName = packageName
+		(portName, unused1, unused2) = portName.rpartition('_')
+		while portName:
+			if portName in self._portVersionsByName:
+				return portName
+			(portName, unused1, unused2) = portName.rpartition('_')
+
+		# no corresponding port-ID was found
+		return None
+
 	def getAllPorts(self):
 		return self._allPorts
 

@@ -158,16 +158,25 @@ class Main(object):
 		for portSpec in self.portSpecs:
 
 			# validate name of port
-			if portSpec['name'] not in portVersionsByName:
-				if not Configuration.isCrossBuildRepository():
-					sysExit(portSpec['name'] + ' not found in repository')
+			portName = portSpec['name']
+			if portName not in portVersionsByName:
 				# for cross-build repository, try with target arch added
-				nameWithTargetArch \
-					= (portSpec['name'] + '_'
-					   + self.shellVariables['targetArchitecture'])
-				if nameWithTargetArch not in portVersionsByName:
-					sysExit(portSpec['name'] + ' not found in repository')
-				portSpec['name'] = nameWithTargetArch
+				portNameFound = False
+				if Configuration.isCrossBuildRepository():
+					nameWithTargetArch \
+						= (portName + '_'
+						+ self.shellVariables['targetArchitecture'])
+					if nameWithTargetArch in portVersionsByName:
+						portName = nameWithTargetArch
+						portNameFound = True
+
+				# it might actually be a package name
+				if not portNameFound:
+					portName = self.repository.getPortNameForPackageName(
+						portName)
+					if not portName:
+						sysExit(portSpec['name'] + ' not found in repository')
+				portSpec['name'] = portName
 
 			# use specific version if given, otherwise use the highest buildable
 			# version
