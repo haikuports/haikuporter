@@ -429,8 +429,8 @@ class Port(object):
 				self.parseRecipeFile(False)
 
 			# use the status of the base package as overall status of the port
-			return self.allPackages[0].getStatusOnArchitecture(
-				self.targetArchitecture)
+			return self.allPackages[0].getStatusOnSecondaryArchitecture(
+				self.targetArchitecture, self.secondaryArchitecture)
 		except:
 			return Status.UNSUPPORTED
 
