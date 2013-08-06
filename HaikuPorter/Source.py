@@ -187,6 +187,11 @@ class Source(object):
 			sysExit('Expected: ' + self.checksum + '\n'
 					+ 'Found: ' + h.hexdigest())
 
+	def isFromSourcePackage(self):
+		"""Determines whether or not this source comes from a source package"""
+
+		return self.uris[0].lower().startswith('pkg:')
+
 	def patch(self, port):
 		"""Apply any patches to this source"""
 
@@ -315,7 +320,13 @@ class Source(object):
 		"""Export pristine (unpatched) sources into a folder"""
 
 		# export from implicit git repo
-		command = 'git archive ORIGIN | tar -x -C "%s"' % targetDir
+		if getOption('createSourcePackagesForBootstrap'):
+			# the source packages for the bootstrap image need the sources
+			# in directly usable (i.e. patched) form, as git isn't available
+			rev = 'HEAD'
+		else:
+			rev = 'ORIGIN'
+		command = 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
 		check_call(command, cwd=self.sourceDir, shell=True)
 
 	def adjustToChroot(self, port):

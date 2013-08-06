@@ -221,12 +221,15 @@ class Port(object):
 		# create sources
 		self.sources = []
 		keys = self.recipeKeys
+		basedOnSourcePackage = False
 		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
 			source = Source(self, index, keys['SRC_URI'][index],
 							keys['SRC_FILENAME'].get(index, None),
 							keys['CHECKSUM_MD5'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
 							keys['PATCHES'].get(index, []))
+			if source.isFromSourcePackage():
+				basedOnSourcePackage = True
 			self.sources.append(source)
 
 		# create packages
@@ -244,6 +247,8 @@ class Port(object):
 			self.allPackages.append(package)
 
 			if packageType == PackageType.SOURCE:
+				if getOption('noSourcePackages') or basedOnSourcePackage:
+					continue
 				haveSourcePackage = True
 
 			if package.isBuildableOnArchitecture(self.targetArchitecture):
@@ -252,7 +257,7 @@ class Port(object):
 		# create source package if it hasn't been specified or disabled:
 		recipeAttributes = getRecipeAttributes()
 		if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
-			and getOption('sourcePackageByDefault')):
+			and not getOption('noSourcePackages')):
 			# copy all recipe attributes from base package, but set defaults
 			# for everything that's package-specific:
 			sourceKeys = {}
@@ -562,6 +567,12 @@ class Port(object):
 	def patchSource(self):
 		"""Apply the Haiku patches to the source(s)"""
 
+		# skip all patches if any of the sources comes from a source package
+		# (as those contain already patched sources)
+		for source in self.sources:
+			if source.isFromSourcePackage():
+				return
+
 		patched = False
 		for source in self.sources:
 			if source.patch(self):
@@ -641,13 +652,13 @@ class Port(object):
 			os.mkdir(directory)
 
 		for package in self.packages:
-			if (getOption('onlySourcePackages')
+			if (getOption('createSourcePackagesForBootstrap')
 				and package.type != PackageType.SOURCE):
 				continue
 			os.mkdir(package.packagingDir)
 			package.prepopulatePackagingDir(self)
 
-		if getOption('onlySourcePackages'):
+		if getOption('createSourcePackagesForBootstrap'):
 			requiredPackages = []
 			prerequiredPackages = []
 		else:
@@ -733,14 +744,14 @@ class Port(object):
 		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
 			for package in self.packages:
-				if (getOption('onlySourcePackages')
+				if (getOption('createSourcePackagesForBootstrap')
 					and package.type != PackageType.SOURCE):
 					continue
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
 					if not (buildPlatform.usesChroot()
 						or Configuration.isCrossBuildRepository()
-						or getOption('onlySourcePackages')):
+						or getOption('createSourcePackagesForBootstrap')):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
@@ -988,18 +999,18 @@ class Port(object):
 
 		# create all build packages (but don't activate them yet)
 		for package in self.packages:
-			if (getOption('onlySourcePackages')
+			if (getOption('createSourcePackagesForBootstrap')
 				and package.type != PackageType.SOURCE):
 				continue
 			package.createBuildPackage()
 
-		if not getOption('onlySourcePackages'):
+		if not getOption('createSourcePackagesForBootstrap'):
 			self._doBuildStage()
 
 		if makePackages:
 			self._makePackages()
 		for package in self.packages:
-			if (getOption('onlySourcePackages')
+			if (getOption('createSourcePackagesForBootstrap')
 				and package.type != PackageType.SOURCE):
 				continue
 			package.removeBuildPackage()
@@ -1059,7 +1070,7 @@ class Port(object):
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
 
-		if not getOption('onlySourcePackages'):
+		if not getOption('createSourcePackagesForBootstrap'):
 			# Create the settings directory in the packaging directory, if
 			# needed. We need to do that, since the .settings link would
 			# otherwise point to a non-existing entry and the directory
@@ -1105,7 +1116,7 @@ class Port(object):
 
 		# make each package
 		for package in self.packages:
-			if (getOption('onlySourcePackages')
+			if (getOption('createSourcePackagesForBootstrap')
 				and package.type != PackageType.SOURCE):
 				continue
 			package.makeHpkg(self.requiresUpdater)

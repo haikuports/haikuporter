@@ -13,6 +13,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.__version__ import __version__
+from HaikuPorter.Utils import (isCommandAvailable, warn)
 
 from optparse import OptionParser
 
@@ -94,10 +95,10 @@ def parseOptions():
 	parser.add_option('-p', '--nopackage',
 					  action='store_false', dest='package', default=True,
 					  help="don't create package, stop after build")
-	parser.add_option('--nosrcpackage',
-					  action='store_false', dest='sourcePackageByDefault',
-					  default=True,
-					  help="don't create a source package by default")
+	parser.add_option('--no-source-packages',
+					  action='store_true', dest='noSourcePackages',
+					  default=False,
+					  help="don't create any source packages")
 	parser.add_option('--test',
 					  action='store_true', dest='test', default=False,
 					  help="run tests on resulting binaries")
@@ -120,10 +121,12 @@ def parseOptions():
 					  action='store', type='string', dest='portsfile',
 					  default='',
 					  help="handle all ports in the given file")
-	parser.add_option('--only-source-packages',
-					  action='store_true', dest='onlySourcePackages',
+	parser.add_option('--create-source-packages-for-bootstrap',
+					  action='store_true',
+					  dest='createSourcePackagesForBootstrap',
 					  default=False,
-					  help="build only source packages")
+					  help="build only source packages as required by the"
+						   "bootstrap image")
 
 	parser.add_option('-w', '--why',
 					  action='store', type='string', dest='why',
@@ -212,6 +215,10 @@ def parseOptions():
 	if not getOption('build'):
 		setattr(__Options__, 'package', False)
 	if getOption('enterChroot'):
-		setattr(__Options__, 'sourcePackageByDefault', False)
+		setattr(__Options__, 'noSourcePackages', True)
+	elif not isCommandAvailable('git'):
+		warn("deactivating creation of source packages as 'git' is not "
+			 "available")
+		setattr(__Options__, 'noSourcePackages', True)
 
 	return (__Options__, args)
