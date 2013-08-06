@@ -573,7 +573,7 @@ class Port(object):
 				print 'Skipping patch function ...'
 				return
 
-			# Check to see if the patching phase  has already been executed.
+			# Check to see if the patching phase has already been executed.
 			if self.checkFlag('patch') and not getOption('force'):
 				return
 

@@ -170,7 +170,7 @@ class Repository(object):
 							# this version of the current port already was
 							# defined by an input source package - skip
 							if not self.quiet:
-								print('Warning: ' + versionedName + 'in tree '
+								print('Warning: ' + versionedName + ' in tree '
 									  'is overruled by input source package')
 							continue
 						if name not in self._portVersionsByName:
