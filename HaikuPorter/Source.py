@@ -48,9 +48,11 @@ class Source(object):
 				sourceDir = sourceDir[:index]
 			else:
 				self.sourceExportSubdir = None
+			self.sourceSubDir = sourceDir
 			self.sourceDir = self.sourceBaseDir + '/' + sourceDir
 		else:
 			self.sourceDir = self.sourceBaseDir
+			self.sourceSubDir = None
 			self.sourceExportSubdir = None
 
 		# If explicit PATCHES were specified, set our patches list accordingly.
@@ -156,7 +158,8 @@ class Source(object):
 		os.makedirs(self.sourceDir)
 
 		print 'Unpacking source of ' + self.fetchTargetName
-		self.sourceFetcher.unpack(self.sourceDir, self.sourceExportSubdir)
+		self.sourceFetcher.unpack(self.sourceBaseDir, self.sourceSubDir,
+			self.sourceExportSubdir)
 
 		port.setFlag('unpack', self.index)
 

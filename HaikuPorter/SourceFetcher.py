@@ -51,36 +51,43 @@ def parseCheckoutUri(uri):
 
 # -----------------------------------------------------------------------------
 
-def unpackCheckoutWithTar(checkoutDir, sourceDir, subdir):
+def unpackCheckoutWithTar(checkoutDir, sourceBaseDir, sourceSubDir, foldSubDir):
 	"""Use 'tar' to export the sources from the checkout into the source dir"""
 
-	if subdir:
+	sourceDir = sourceBaseDir + '/' + sourceSubDir \
+		if sourceSubDir else sourceBaseDir
+	if foldSubDir:
 		command = ('tar -c -C "%s" --exclude-vcs | tar -x -C "%s"'
-				   % (subdir, sourceDir))
+				   % (foldSubDir, sourceDir))
 	else:
 		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
 	check_call(command, cwd=checkoutDir, shell=True)
 
-	if subdir:
-		foldSubdirIntoSourceDir(subdir, sourceDir)
+	if foldSubDir:
+		foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
 # -----------------------------------------------------------------------------
 
-def unpackFile(uri, fetchTarget, sourceDir, subdir):
+def unpackFile(uri, fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir):
 	"""Unpack archive file (or copy non-archive) into sourceDir"""
 
+	sourceDir = sourceBaseDir + '/' + sourceSubDir \
+		if sourceSubDir else sourceBaseDir
 	if uri.endswith('#noarchive'):
 		if os.path.isdir(fetchTarget):
 			shutil.copytree(fetchTarget, sourceDir, symlinks=True)
 		else:
 			shutil.copy(fetchTarget, sourceDir)
 	else:
-		sourceSubdir = os.path.basename(sourceDir)
-		if subdir:
-			sourceSubdir += '/' + subdir
-		unpackArchive(fetchTarget, os.path.dirname(sourceDir), sourceSubdir)
-		if subdir:
-			foldSubdirIntoSourceDir(subdir, sourceDir)
+		actualSubDir = sourceSubDir
+		if actualSubDir:
+			if foldSubDir:
+				actualSubDir += '/' + foldSubDir
+		else:
+			actualSubDir = foldSubDir
+		unpackArchive(fetchTarget, sourceBaseDir, actualSubDir)
+		if foldSubDir:
+			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
 # -----------------------------------------------------------------------------
 
@@ -117,8 +124,9 @@ class SourceFetcherForBazaar(object):
 		warn("Updating of a Bazaar repository to a specific revision has "
 			 "not been implemented yet, sorry")
 
-	def unpack(self, sourceDir, subdir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
+			foldSubDir)
 
 # -- Fetches sources via cvs --------------------------------------------------
 
@@ -152,8 +160,9 @@ class SourceFetcherForCvs(object):
 		warn("Updating of a CVS repository to a specific revision has "
 			 "not been implemented yet, sorry")
 
-	def unpack(self, sourceDir, subdir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
+			foldSubDir)
 
 # -- Fetches sources via wget -------------------------------------------------
 
@@ -175,8 +184,9 @@ class SourceFetcherForDownload(object):
 	def updateToRev(self, rev):
 		pass
 
-	def unpack(self, sourceDir, subdir):
-		unpackFile(self.uri, self.fetchTarget, sourceDir, subdir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir,
+			foldSubDir)
 
 # -- Fetches sources via fossil -----------------------------------------------
 
@@ -202,8 +212,9 @@ class SourceFetcherForFossil(object):
 		warn("Updating of a Fossil repository to a specific revision has "
 			 "not been implemented yet, sorry")
 
-	def unpack(self, sourceDir, subdir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
+			foldSubDir)
 
 # -- Fetches sources via git --------------------------------------------------
 
@@ -237,16 +248,18 @@ class SourceFetcherForGit(object):
 			command = 'git fetch origin %s:%s' % (currentBranch, currentBranch)
 			check_call(command, shell=True, cwd=self.fetchTarget)
 
-	def unpack(self, sourceDir, subdir):
-		if subdir:
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		sourceDir = sourceBaseDir + '/' + sourceSubDir \
+			if sourceSubDir else sourceBaseDir
+		if foldSubDir:
 			command = ('git archive %s "%s" | tar -x -C "%s"'
-					   % (self.rev, subdir, sourceDir))
+					   % (self.rev, foldSubDir, sourceDir))
 		else:
 			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
 		check_call(command, shell=True, cwd=self.fetchTarget)
 
-		if subdir:
-			foldSubdirIntoSourceDir(subdir, sourceDir)
+		if foldSubDir:
+			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
 # -- Fetches sources from local disk ------------------------------------------
 
@@ -267,8 +280,9 @@ class SourceFetcherForLocalFile(object):
 	def updateToRev(self, rev):
 		pass
 
-	def unpack(self, sourceDir, subdir):
-		unpackFile(self.uri, self.fetchTarget, sourceDir, subdir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir,
+			foldSubDir)
 
 # -- Fetches sources via hg ---------------------------------------------------
 
@@ -291,15 +305,18 @@ class SourceFetcherForMercurial(object):
 		warn("Updating of a Mercurial repository to a specific revision has "
 			 "not been implemented yet, sorry")
 
-	def unpack(self, sourceDir, subdir):
-		if subdir:
-			command = 'hg archive -I "%s" -t files "%s"' % (subdir, sourceDir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		sourceDir = sourceBaseDir + '/' + sourceSubDir \
+			if sourceSubDir else sourceBaseDir
+		if foldSubDir:
+			command = 'hg archive -I "%s" -t files "%s"' \
+				% (foldSubDir, sourceDir)
 		else:
 			command = 'hg archive -t files "%s"' % sourceDir
 		check_call(command, shell=True, cwd=self.fetchTarget)
 
-		if subdir:
-			foldSubdirIntoSourceDir(subdir, sourceDir)
+		if foldSubDir:
+			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
 # -- Fetches sources from source package --------------------------------------
 
@@ -322,7 +339,9 @@ class SourceFetcherForSourcePackage(object):
 	def updateToRev(self, rev):
 		pass
 
-	def unpack(self, sourceDir, subdir):
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		sourceDir = sourceBaseDir + '/' + sourceSubDir \
+			if sourceSubDir else sourceBaseDir
 		check_call([Configuration.getPackageCommand(), 'extract',
 					'-C', sourceDir, self.sourcePackagePath,
 					self.relativeSourcePath])
@@ -349,8 +368,9 @@ class SourceFetcherForSubversion(object):
 		warn("Updating of a Subversion repository to a specific revision has "
 			 "not been implemented yet, sorry")
 
-	def unpack(self, sourceDir, subdir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceDir, subdir)
+	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
+			foldSubDir)
 
 # -- source fetcher factory function for given URI ----------------------------
 
