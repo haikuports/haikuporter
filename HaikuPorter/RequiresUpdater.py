@@ -70,7 +70,6 @@ class RequiresUpdater(object):
 			return None
 
 		providesList = self.providesMap[name]
-		matchingProvides = None
 		for provides in providesList:
 			if not operator:
 				return provides
