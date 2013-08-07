@@ -417,15 +417,6 @@ class BuildPlatformUnix(BuildPlatform):
 		self._activatePackage(self._getCrossDevelPackage(secondaryArchitecture),
 			sysrootDir, '/boot/system')
 
-# TODO: Temporary hack-around! The name of the develop/lib subdir the secondary
-# gcc searches headers in is currently "gcc2" respectively "gcc4" while it
-# should be the secondary architecture. Create a symlink...
-		if secondaryArchitecture:
-			subDirName = 'gcc2' \
-				if secondaryArchitecture == 'x86_gcc2' else 'gcc4'
-			os.symlink(secondaryArchitecture,
-				sysrootDir + '/boot/system/develop/lib/' + subDirName)
-
 		# extract the required packages
 		for package in requiredPackages:
 			self._activatePackage(package,
