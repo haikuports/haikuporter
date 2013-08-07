@@ -464,6 +464,11 @@ class Port(object):
 		for package in self.packages:
 			package.removePackageInfoFromRepository(repositoryPath)
 
+	def generatePackageInfoFiles(self, requiresTypes, targetPath = None):
+		"""Generates package info files with given types of requires."""
+
+		return self._generatePackageInfoFiles(requiresTypes, targetPath)
+
 	def obsoletePackages(self, packagesPath):
 		"""Moves all package-files into the 'obsolete' sub-directory"""
 
@@ -953,6 +958,8 @@ class Port(object):
 
 		if not path:
 			path = self.packageInfoDir
+		if not os.path.exists(path):
+			os.makedirs(path)
 
 		packageInfoFiles = []
 
