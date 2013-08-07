@@ -68,10 +68,11 @@ class PortNode(object):
 	def addBuildPrerequires(self, elements):
 		self.buildPrerequires |= elements
 
-	def isBuildable(self, doneRepositoryPath):
+	def isBuildable(self, packageInfoPath, doneRepositoryPath):
 		# check prerequires
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
-		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes)
+		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes,
+															  packageInfoPath)
 		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
 				+ [
 					doneRepositoryPath,
@@ -86,7 +87,8 @@ class PortNode(object):
 
 		# check build requires
 		requiresTypes = [ 'BUILD_REQUIRES' ]
-		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes)
+		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes,
+															  packageInfoPath)
 		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
 				+ [
 					doneRepositoryPath,
@@ -340,6 +342,7 @@ class DependencyAnalyzer(object):
 			print '  %s (out-degree %d)' % (node.getName(), node.outdegree)
 
 	def getBuildOrderForBootstrap(self):
+		packageInfoPath = self.repository.path + '/.package-infos'
 		doneRepositoryPath = self.repository.path + '/.build-order-done'
 		if os.path.exists(doneRepositoryPath):
 			shutil.rmtree(doneRepositoryPath)
@@ -349,8 +352,11 @@ class DependencyAnalyzer(object):
 		nodes = set(self.cyclicNodes)
 		while nodes:
 			lastDoneCount = len(done)
-			for node in list(nodes):
-				if node.isBuildable(doneRepositoryPath):
+			for node in sorted(list(nodes), key=PortNode.getName):
+				if os.path.exists(packageInfoPath):
+					shutil.rmtree(packageInfoPath)
+				os.mkdir(packageInfoPath)
+				if node.isBuildable(packageInfoPath, doneRepositoryPath):
 					done.append(node.getName())
 					nodes.remove(node)
 					node.markAsBuilt(doneRepositoryPath)
@@ -360,6 +366,7 @@ class DependencyAnalyzer(object):
 												 nodes))))
 
 		shutil.rmtree(doneRepositoryPath)
+		shutil.rmtree(packageInfoPath)
 
 		return done
 
