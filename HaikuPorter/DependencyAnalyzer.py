@@ -5,6 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
 from HaikuPorter.Utils import (check_output, sysExit)
@@ -66,6 +67,41 @@ class PortNode(object):
 
 	def addBuildPrerequires(self, elements):
 		self.buildPrerequires |= elements
+
+	def isBuildable(self, doneRepositoryPath):
+		# check prerequires
+		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes)
+		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
+				+ [
+					doneRepositoryPath,
+					buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
+					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
+				])
+		try:
+			with open(os.devnull, "w") as devnull:
+				check_call(args, stdout=devnull, stderr=devnull)
+		except CalledProcessError:
+			return False
+
+		# check build requires
+		requiresTypes = [ 'BUILD_REQUIRES' ]
+		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes)
+		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
+				+ [
+					doneRepositoryPath,
+					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
+				])
+		try:
+			with open(os.devnull, "w") as devnull:
+				check_call(args, stdout=devnull, stderr=devnull)
+		except CalledProcessError:
+			return False
+
+		return True
+
+	def markAsBuilt(self, doneRepositoryPath):
+		self.port.writePackageInfosIntoRepository(doneRepositoryPath)
 
 # -- PackageNode class ---------------------------------------------------------
 
@@ -138,7 +174,10 @@ class DependencyAnalyzer(object):
 		self.emptyDirectory = self.noRequiresSystemRepositoryPath + '/empty'
 		os.mkdir(self.emptyDirectory)
 
-		for directory in ['/boot/system/packages', '/boot/common/packages']:
+		for directory in [
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
+			buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
+		]:
 			for package in os.listdir(directory):
 				if not package.endswith('.hpkg'):
 					continue
@@ -300,8 +339,29 @@ class DependencyAnalyzer(object):
 		for node in self.cyclicNodes:
 			print '  %s (out-degree %d)' % (node.getName(), node.outdegree)
 
-	def getBuildOrderForPortWithCyclicDependencies(self):
-		pass
+	def getBuildOrderForBootstrap(self):
+		doneRepositoryPath = self.repository.path + '/.build-order-done'
+		if os.path.exists(doneRepositoryPath):
+			shutil.rmtree(doneRepositoryPath)
+		os.mkdir(doneRepositoryPath)
+
+		done = []
+		nodes = set(self.cyclicNodes)
+		while nodes:
+			lastDoneCount = len(done)
+			for node in list(nodes):
+				if node.isBuildable(doneRepositoryPath):
+					done.append(node.getName())
+					nodes.remove(node)
+					node.markAsBuilt(doneRepositoryPath)
+			if lastDoneCount == len(done):
+				sysExit("None of these cyclic dependencies can be built:\n\t"
+						+ "\n\t".join(sorted(map(lambda node: node.getName(),
+												 nodes))))
+
+		shutil.rmtree(doneRepositoryPath)
+
+		return done
 
 	def _resolveRequiresList(self, requiresList):
 		dependencies = set()
