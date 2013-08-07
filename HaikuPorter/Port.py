@@ -822,7 +822,7 @@ class Port(object):
 			'portRevision': revision,
 			'portFullVersion': fullVersion,
 			'portRevisionedName': revisionedName,
-			'portDir': '/port',
+			'portDir': self.workDir + '/port',
 		})
 
 		if not forParsing:
@@ -832,7 +832,10 @@ class Port(object):
 				else:
 					sourceDirKey = 'sourceDir' + source.index
 				self.shellVariables[sourceDirKey] = source.sourceDir
-
+			self.shellVariables.update({
+				'packagingBaseDir': self.packagingBaseDir,
+				'workDir': self.workDir,
+			})
 
 		if self.secondaryArchitecture:
 			secondaryArchSubDir = '/' + self.secondaryArchitecture
