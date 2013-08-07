@@ -248,6 +248,8 @@ class Port(object):
 
 			if packageType == PackageType.SOURCE:
 				if getOption('noSourcePackages') or basedOnSourcePackage:
+					# creation of the source package should be avoided, so we
+					# skip adding it to the list of active packages
 					continue
 				haveSourcePackage = True
 
@@ -257,7 +259,7 @@ class Port(object):
 		# create source package if it hasn't been specified or disabled:
 		recipeAttributes = getRecipeAttributes()
 		if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
-			and not getOption('noSourcePackages')):
+			and not basedOnSourcePackage and not getOption('noSourcePackages')):
 			# copy all recipe attributes from base package, but set defaults
 			# for everything that's package-specific:
 			sourceKeys = {}
