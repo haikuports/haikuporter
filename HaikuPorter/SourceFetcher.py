@@ -237,15 +237,20 @@ class SourceFetcherForGit(object):
 		ensureCommandIsAvailable('git')
 
 		self.rev = rev
-		command = 'git rev-parse --verify %s &>/dev/null' % self.rev
+		command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
 		try:
 			check_call(command, shell=True, cwd=self.fetchTarget)
 		except:
 			print 'trying to fetch revision %s from upstream' % self.rev
-			command = "git branch | grep '*' | cut -d' ' -f2"
-			currentBranch = \
-				check_output(command, shell=True, cwd=self.fetchTarget).strip()
-			command = 'git fetch origin %s:%s' % (currentBranch, currentBranch)
+			command = "git branch | cut -c3-"
+			branches = check_output(command, shell=True,
+									cwd=self.fetchTarget).splitlines()
+			for branch in branches:
+				command = 'git fetch origin %s:%s' % (branch, branch)
+				print command
+				check_call(command, shell=True, cwd=self.fetchTarget)
+			# ensure that the revision really is available now
+			command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
 			check_call(command, shell=True, cwd=self.fetchTarget)
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
