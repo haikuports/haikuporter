@@ -127,6 +127,9 @@ def parseOptions():
 					  default=False,
 					  help="build only source packages as required by the"
 						   "bootstrap image")
+	parser.add_option('--do-bootstrap',
+					  action='store_true', dest='doBootstrap', default=False,
+					  help="build all packages with cyclic dependencies")
 
 	parser.add_option('-w', '--why',
 					  action='store', type='string', dest='why',

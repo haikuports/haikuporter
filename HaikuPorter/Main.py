@@ -121,6 +121,10 @@ class Main(object):
 
 		self._createRepositoryIfNeeded()
 
+		if self.options.analyzeDependencies:
+			DependencyAnalyzer(self.repository).printDependencies()
+			return
+
 		# if a ports-file has been given, read port specifications from it
 		# and build them all (as faked requires of a specific meta port, such
 		# that their runtime requires get pulled in, too)
@@ -133,8 +137,15 @@ class Main(object):
 				sysExit("no recipe found for '%s'" % metaPortSpec)
 			self.portSpecs.append(
 				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
-		elif self.options.analyzeDependencies:
-			pass
+		elif self.options.doBootstrap:
+			dependencyAnalyzer = DependencyAnalyzer(self.repository)
+			portsToBuild = dependencyAnalyzer.getBuildOrderForBootstrap()
+			print 'Untangling the mess suggested this build order:'
+			print "  " + "\n  ".join(portsToBuild)
+			self.portSpecs = [
+				self._splitPortSpecIntoNameVersionAndRevision(port)
+				for port in portsToBuild
+			]
 		else:
 			# if there is no argument given, exit
 			if not args:
@@ -147,10 +158,6 @@ class Main(object):
 		if not self.options.patch:
 			self.options.build = False
 			self.options.package = False
-
-		if self.options.analyzeDependencies:
-			DependencyAnalyzer(self.repository).printDependencies()
-			return
 
 		# collect all available ports and validate each specified port
 		allPorts = self.repository.getAllPorts()
@@ -220,7 +227,7 @@ class Main(object):
 									   requiredPort)
 				sys.exit(0)
 
-			if self.options.build:
+			if self.options.build and not self.options.doBootstrap:
 				self._buildMainPort(port)
 			elif self.options.extractPatchset:
 				port.extractPatchset()
