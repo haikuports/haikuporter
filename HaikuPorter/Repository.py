@@ -6,6 +6,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.Configuration import Configuration
+from HaikuPorter.Options import getOption
 from HaikuPorter.Port import Port
 from HaikuPorter.Utils import (check_output, touchFile, versionCompare, warn)
 
@@ -169,7 +170,7 @@ class Repository(object):
 						if versionedName in self._allPorts:
 							# this version of the current port already was
 							# defined by an input source package - skip
-							if not self.quiet:
+							if not self.quiet and not getOption('doBootstrap'):
 								print('Warning: ' + versionedName + ' in tree '
 									  'is overruled by input source package')
 							continue
