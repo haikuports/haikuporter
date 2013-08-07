@@ -1157,6 +1157,13 @@ class Port(object):
 			# include cross development tools in path automatically
 			crossToolsPaths = buildPlatform.getCrossToolsBinPaths(self.workDir)
 			shellEnv['PATH'] = ':'.join(crossToolsPaths + [ shellEnv['PATH'] ])
+		elif self.secondaryArchitecture:
+			# include secondary architecture tools in path
+			secondaryArchPaths = [
+				'/boot/common/bin/' + self.secondaryArchitecture,
+				'/boot/system/bin/' + self.secondaryArchitecture ]
+			shellEnv['PATH'] = ':'.join(
+				secondaryArchPaths + [ shellEnv['PATH'] ])
 
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)
