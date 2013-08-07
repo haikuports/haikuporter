@@ -95,6 +95,9 @@ def parseOptions():
 	parser.add_option('-p', '--nopackage',
 					  action='store_false', dest='package', default=True,
 					  help="don't create package, stop after build")
+	parser.add_option('--no-dependencies',
+					  action='store_true', dest='noDependencies', default=False,
+					  help="ignore any dependencies, just build the given port")
 	parser.add_option('--no-source-packages',
 					  action='store_true', dest='noSourcePackages',
 					  default=False,

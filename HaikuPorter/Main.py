@@ -227,7 +227,8 @@ class Main(object):
 									   requiredPort)
 				sys.exit(0)
 
-			if self.options.build and not self.options.doBootstrap:
+			if (self.options.build and not self.options.doBootstrap
+				and not self.options.noDependencies):
 				self._buildMainPort(port)
 			elif self.options.extractPatchset:
 				port.extractPatchset()
