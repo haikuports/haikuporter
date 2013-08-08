@@ -96,6 +96,9 @@ class Policy(object):
 		# everything in bin/ must be declared as cmd:*
 		if os.path.exists('bin'):
 			for entry in os.listdir('bin'):
+				# ignore secondary architecture subdir
+				if entry == self.package.secondaryArchitecture:
+					continue
 				name = self._normalizeResolvableName('cmd:' + entry)
 				if not name in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
