@@ -700,7 +700,6 @@ mount -t packagefs -p "type system" boot/system
 mount -t packagefs -p "type common" boot/common
 
 # bind-mount the port directory to port/
-portDir=$(dirname $recipeFile)
 mount -t bindfs -p "source $portDir" port
 
 '''

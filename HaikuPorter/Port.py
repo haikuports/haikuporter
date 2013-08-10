@@ -686,6 +686,7 @@ class Port(object):
 				'packages': '\n'.join(allPackages),
 				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
+				'portDir': self.baseDir,
 			}
 			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
