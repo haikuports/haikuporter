@@ -40,6 +40,11 @@ class Policy(object):
 
 	def setPort(self, port, requiredPackages):
 		self.port = port
+		self.secondaryArchitecture = port.secondaryArchitecture
+		self.secondaryArchSuffix = '_' + self.secondaryArchitecture \
+			if self.secondaryArchitecture else ''
+		self.secondaryArchSubDir = '/' + self.secondaryArchitecture \
+			if self.secondaryArchitecture else ''
 
 		# Get the provides of all of the port's packages. We need them to find
 		# dependencies between packages of the port.
@@ -104,22 +109,23 @@ class Policy(object):
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'bin/' + entry))
 
-		# library entries in lib/ must be declared as lib:*
-		if os.path.exists('lib'):
-			for entry in os.listdir('lib'):
+		# library entries in lib[/<arch>] must be declared as lib:*[_<arch>]
+		if os.path.exists('lib' + self.secondaryArchSubDir):
+			for entry in os.listdir('lib' + self.secondaryArchSubDir):
 				suffixIndex = entry.find('.so')
 				if suffixIndex < 0:
 					continue
 
 				name = self._normalizeResolvableName(
-					'lib:' + entry[:suffixIndex])
+					'lib:' + entry[:suffixIndex] + self.secondaryArchSuffix)
 				if not name in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'lib/' + entry))
 
-		# library entries in develop/lib must be declared as devel:*
-		if os.path.exists('develop/lib'):
-			for entry in os.listdir('develop/lib'):
+		# library entries in develop/lib[<arch>] must be declared as
+		# devel:*[_<arch>]
+		if os.path.exists('develop/lib' + self.secondaryArchSubDir):
+			for entry in os.listdir('develop/lib' + self.secondaryArchSubDir):
 				suffixIndex = entry.find('.so')
 				if suffixIndex < 0:
 					suffixIndex = entry.find('.a')
@@ -127,7 +133,7 @@ class Policy(object):
 						continue
 
 				name = self._normalizeResolvableName(
-					'devel:' + entry[:suffixIndex])
+					'devel:' + entry[:suffixIndex] + self.secondaryArchSuffix)
 				if not name in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'develop/lib/' + entry))
@@ -142,8 +148,8 @@ class Policy(object):
 		if not isCommandAvailable('readelf'):
 			return
 
-		# check all files in bin/ and lib/
-		for dir in ['bin', 'lib']:
+		# check all files in bin/ and lib[/<arch>]
+		for dir in ['bin', 'lib' + self.secondaryArchSubDir]:
 			if not os.path.exists(dir):
 				continue
 
@@ -178,7 +184,7 @@ class Policy(object):
 
 	def _isMissingLibraryDependency(self, library):
 		# the library might be provided by the package
-		if os.path.exists('lib/' + library):
+		if os.path.exists('lib' + self.secondaryArchSubDir + '/' + library):
 			return False
 
 		# not provided by the package -- check whether it is required explicitly
@@ -186,7 +192,7 @@ class Policy(object):
 		resolvableName = None
 		if suffixIndex >= 0:
 			resolvableName = self._normalizeResolvableName(
-				'lib:' + library[:suffixIndex])
+				'lib:' + library[:suffixIndex] + self.secondaryArchSuffix)
 			if resolvableName in self.requires:
 				return False
 
@@ -204,7 +210,7 @@ class Policy(object):
 			# system.
 			libraryPath = None
 			for directory in ['/boot/common/lib', '/boot/system/lib']:
-				path = directory + '/' + library
+				path = directory + self.secondaryArchSubDir + '/' + library
 				if os.path.exists(path):
 					libraryPath = path
 					break
@@ -273,7 +279,7 @@ class Policy(object):
 		return self._parseResolvableExpressionList(provides)
 
 	def _checkMisplacedDevelopLibraries(self):
-		libDir = 'lib'
+		libDir = 'lib' + self.secondaryArchSubDir
 		if not os.path.exists(libDir):
 			return
 
@@ -283,7 +289,7 @@ class Policy(object):
 
 			path = libDir + '/' + entry
 			self._violation('development library entry "%s" should be placed '
-				'in "develop/lib"' % path)
+				'in "develop/lib%s"' % (path, self.secondaryArchSubDir))
 
 	def _checkGlobalWritableFiles(self):
 		# Create a map for the declared global writable files and check them
