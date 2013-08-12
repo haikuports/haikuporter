@@ -223,7 +223,6 @@ class SourceFetcherForGit(object):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
 
-		print uri
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 		if not self.rev:
 			self.rev = 'HEAD'
