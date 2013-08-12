@@ -469,8 +469,8 @@ class SourcePackage(Package):
 			if not os.path.exists(targetDir):
 				os.makedirs(targetDir)
 
-			# export unchanged sources
-			source.exportPristineSources(targetDir)
+			# export sources
+			source.exportSources(targetDir)
 
 		# copy patches, if there are any
 		if os.path.exists(port.patchesDir):

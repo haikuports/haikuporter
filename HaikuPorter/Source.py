@@ -316,18 +316,19 @@ class Source(object):
 				 + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 
-	def exportPristineSources(self, targetDir):
-		"""Export pristine (unpatched) sources into a folder"""
+	def exportSources(self, targetDir):
+		"""Export sources into a folder"""
 
-		# export from implicit git repo
 		if getOption('createSourcePackagesForBootstrap'):
 			# the source packages for the bootstrap image need the sources
 			# in directly usable (i.e. patched) form, as git isn't available
-			rev = 'HEAD'
+			# in the bootstrap image, so no patches can be applied there
+			check_call('tar c --exclude=.git . | tar x -C %s' % targetDir,
+					   cwd=self.sourceDir, shell=True)
 		else:
-			rev = 'ORIGIN'
-		command = 'git archive %s | tar -x -C "%s"' % (rev, targetDir)
-		check_call(command, cwd=self.sourceDir, shell=True)
+			# unpack the archive into the targetDir
+			self.sourceFetcher.unpack(targetDir, None,
+									  self.sourceSubDir)
 
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
