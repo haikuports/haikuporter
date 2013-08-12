@@ -14,7 +14,8 @@
 
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
-from HaikuPorter.SourceFetcher import (createSourceFetcher, parseCheckoutUri)
+from HaikuPorter.SourceFetcher import (createSourceFetcher,
+									   foldSubdirIntoSourceDir, parseCheckoutUri)
 from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable,
 							   readStringFromFile, storeStringInFile, sysExit,
 							   warn)
@@ -327,8 +328,11 @@ class Source(object):
 					   cwd=self.sourceDir, shell=True)
 		else:
 			# unpack the archive into the targetDir
-			self.sourceFetcher.unpack(targetDir, None,
-									  self.sourceSubDir)
+			if self.sourceSubDir:
+				os.mkdir(targetDir + '/' + self.sourceSubDir)
+			self.sourceFetcher.unpack(targetDir, self.sourceSubDir, None)
+			if self.sourceSubDir:
+				foldSubdirIntoSourceDir(self.sourceSubDir, targetDir)
 
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
