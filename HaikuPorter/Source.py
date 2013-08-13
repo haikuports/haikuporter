@@ -349,6 +349,9 @@ class Source(object):
 
 		ensureCommandIsAvailable('git')
 		check_call(['git', 'init'], cwd=self.sourceDir)
+		check_call(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir)
+			# Disable automatic garbage collection. This works around an issue
+			# with git failing to do that with the haikuwebkit repository.
 		check_call(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'],
 				   cwd=self.sourceDir)
 		check_call(['git', 'add', '-f', '.'], cwd=self.sourceDir)
