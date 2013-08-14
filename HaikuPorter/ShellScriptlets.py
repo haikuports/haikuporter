@@ -712,6 +712,26 @@ mount -t bindfs -p "source $portDir" port
 # required for building only should be wiped.
 cleanupChrootScript = r'''
 
+checkedUnmount()
+{
+	local mountPoint="$1"
+
+	if ! [[ $mountPoint = /* ]]; then
+		mountPoint=$PWD/$mountPoint
+	fi
+
+	# retry up to 5 times to unmount the given mountpoint
+	local x=0
+	while [ $x -lt 5 ]; do
+		if unmount "$mountPoint"; then
+			break
+		fi
+		let x+=1
+		echo "unmounting $mountPoint failed - wait 1 second and retry ..."
+		sleep 1
+	done
+}
+
 # ignore sigint
 trap '' SIGINT
 
@@ -723,13 +743,13 @@ fi
 
 # if it is defined, unmount the cross-build sysroot
 if [[ -n $crossSysrootDir && -e $crossSysrootDir/boot/system/develop ]]; then
-	unmount $crossSysrootDir/boot/system
+	checkedUnmount $crossSysrootDir/boot/system
 fi
 
-unmount dev
-unmount boot/system
-unmount boot/common
-unmount port
+checkedUnmount dev
+checkedUnmount boot/system
+checkedUnmount boot/common
+checkedUnmount port
 
 # wipe files and directories if it is ok to do so
 if [[ $buildOk ]]; then
