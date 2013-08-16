@@ -142,9 +142,20 @@ class Main(object):
 			portsToBuild = dependencyAnalyzer.getBuildOrderForBootstrap()
 			print 'Untangling the mess suggested this build order:'
 			print "  " + "\n  ".join(portsToBuild)
+			portsNotYetBuilt = []
+			for portId in portsToBuild:
+				port = self.repository.getAllPorts()[portId]
+				mainPackage = port.getMainPackage()
+				if (mainPackage
+					and os.path.exists(
+						self.packagesPath + '/' + mainPackage.hpkgName)):
+					print('skipping port %s, since its main package already '
+						'exists' % portId)
+					continue
+				portsNotYetBuilt.append(portId)
 			self.portSpecs = [
 				self._splitPortSpecIntoNameVersionAndRevision(port)
-				for port in portsToBuild
+				for port in portsNotYetBuilt
 			]
 		else:
 			# if there is no argument given, exit

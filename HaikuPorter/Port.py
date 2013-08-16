@@ -475,6 +475,15 @@ class Port(object):
 		for package in self.packages:
 			package.obsoletePackage(packagesPath)
 
+	def getMainPackage(self):
+		# isBuildableOnTargetArchitecture() makes sure the recipe has been
+		# parsed and the packages have been created.
+		self.isBuildableOnTargetArchitecture()
+
+		if self.packages:
+			return self.packages[0]
+		return None
+
 	def getSourcePackage(self):
 		# isBuildableOnTargetArchitecture() makes sure the recipe has been
 		# parsed and the packages have been created.
