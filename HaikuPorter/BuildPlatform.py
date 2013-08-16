@@ -302,10 +302,16 @@ class BuildPlatformUnix(BuildPlatform):
 		])
 
 		for secondaryArchitecture in self.secondaryTargetArchitectures:
-			self.implicitBuildHostProvides.add(
-				'binutils_cross_' + secondaryArchitecture)
-			self.implicitBuildHostProvides.add(
-				'gcc_cross_' + secondaryArchitecture)
+			self.implicitBuildTargetProvides |= set([
+				'haiku_' + secondaryArchitecture,
+				'haiku_' + secondaryArchitecture + '_devel',
+				])
+			self.implicitBuildHostProvides |= set([
+				'haiku_' + secondaryArchitecture,
+				'haiku_' + secondaryArchitecture + '_devel',
+				'binutils_cross_' + secondaryArchitecture,
+				'gcc_cross_' + secondaryArchitecture,
+				])
 
 	def isHaiku(self):
 		return False
