@@ -672,12 +672,12 @@ class Port(object):
 			requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
 			prerequiredPackages \
 				= self._getPackagesPrerequiredForBuild(packagesPath)
-			self.policy.setPort(self, requiredPackages)
 			self.requiresUpdater \
 				= RequiresUpdater(self.packages, requiredPackages)
 			if not Configuration.isCrossBuildRepository():
 				self.requiresUpdater.addPackages(
 					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		self.policy.setPort(self, requiredPackages)
 
 		allPackages = set(requiredPackages + prerequiredPackages)
 		if buildPlatform.usesChroot():
