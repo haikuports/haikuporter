@@ -432,12 +432,14 @@ class BuildPlatformUnix(BuildPlatform):
 			buildOK):
 		# remove the symlinks we created in the cross tools tree
 		sysrootDir = self.getCrossSysrootDirectory(workDir)
+		targetArchitecture = secondaryArchitecture \
+			if secondaryArchitecture else self.targetArchitecture
 		targetMachineTriple \
 			= self._getTargetMachineTriple(secondaryArchitecture)
-		toolsMachineTriple = self._getCrossToolsMachineTriple(
+		toolsMachineTriple = self._getTargetMachineTriple(
 			secondaryArchitecture)
 
-		if targetMachineTriple == 'i586-pc-haiku_gcc2':
+		if targetArchitecture == 'x86_gcc2':
 			# gcc 2: uses 'sys-include' and 'lib' in the target machine dir
 			toolsMachineDir = (
 				self._getOriginalCrossToolsDir(secondaryArchitecture) + '/'
@@ -474,9 +476,11 @@ class BuildPlatformUnix(BuildPlatform):
 		crossToolsDir = self._getCrossToolsPath(workDir)
 		os.mkdir(crossToolsDir)
 
+		targetArchitecture = secondaryArchitecture \
+			if secondaryArchitecture else self.targetArchitecture
 		targetMachineTriple \
 			= self._getTargetMachineTriple(secondaryArchitecture)
-		toolsMachineTriple = self._getCrossToolsMachineTriple(
+		toolsMachineTriple = self._getTargetMachineTriple(
 			secondaryArchitecture)
 
 		# prepare the system include and library directories
@@ -491,26 +495,21 @@ class BuildPlatformUnix(BuildPlatform):
 		toolsBinDir = (self._getOriginalCrossToolsDir(secondaryArchitecture)
 			+ '/bin')
 		binDir = crossToolsDir + '/bin'
-		if toolsMachineTriple != targetMachineTriple:
-			os.mkdir(binDir)
-			for tool in os.listdir(toolsBinDir):
-				toolLink = tool
-				if tool.startswith(toolsMachineTriple):
-					toolLink = tool.replace(toolsMachineTriple,
-						targetMachineTriple, 1)
-				os.symlink(toolsBinDir + '/' + tool, binDir + '/' + toolLink)
-		else:
-			os.symlink(toolsBinDir, binDir)
+		os.symlink(toolsBinDir, binDir)
 
 		# Symlink the include and lib dirs back to the cross-tools tree such
 		# they match the paths that are built into the tools.
-		if targetMachineTriple == 'i586-pc-haiku_gcc2':
+		if targetArchitecture == 'x86_gcc2':
 			# gcc 2: uses 'sys-include' and 'lib' in the target machine dir
 			toolsMachineDir = (
 				self._getOriginalCrossToolsDir(secondaryArchitecture) + '/'
 				+ toolsMachineTriple)
 			toolsIncludeDir = toolsMachineDir + '/sys-include'
 			toolsLibDir = toolsMachineDir + '/lib'
+			# The cross-compiler doesn't have the subdirectory in the search
+			# path, so refer to that directly.
+			if secondaryArchitecture:
+				libDir += '/' + secondaryArchitecture
 		else:
 			# gcc 4: has a separate sysroot dir
 			toolsDevelopDir = (
@@ -538,14 +537,6 @@ class BuildPlatformUnix(BuildPlatform):
 		return (self.secondaryTargetMachineTriples[secondaryArchitecture]
 			if secondaryArchitecture
 			else self.targetMachineTriple)
-
-	def _getCrossToolsMachineTriple(self, secondaryArchitecture):
-		# In case of gcc2 our machine triple doesn't agree with that of the
-		# cross tools.
-		machineTriple = self._getTargetMachineTriple(secondaryArchitecture)
-		if machineTriple == 'i586-pc-haiku_gcc2':
-			return 'i586-pc-haiku'
-		return machineTriple
 
 	def _getOriginalCrossToolsDir(self, secondaryArchitecture):
 		if not secondaryArchitecture:

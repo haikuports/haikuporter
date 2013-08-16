@@ -27,7 +27,10 @@ class MachineArchitecture(str):
 		dict = {
 			Architectures.PPC: 'powerpc-apple-haiku',
 			Architectures.X86: 'i586-pc-haiku',
-			Architectures.X86_GCC2: 'i586-pc-haiku_gcc2',
+			Architectures.X86_GCC2: 'i586-pc-haiku',
+				# Note: In theory it would make sense to use a different triple
+				# for x86_gcc2. Unfortunately that would cause us a lot of work
+				# to adjust the GNU autotools and autotools based build systems.
 		}
 		if architecture in dict:
 			return dict[architecture]
