@@ -519,10 +519,15 @@ class Port(object):
 												   [ workRepositoryPath ])
 
 		# return list of unique ports which need to be built before this one
-		return [
-			package for package in set(requiredPackages + prerequiredPackages)
-			if package.startswith(workRepositoryPath)
-		]
+		processedPackages = set()
+		result = []
+		for package in requiredPackages + prerequiredPackages:
+			if package in processedPackages:
+				continue
+			processedPackages.add(package)
+			if package.startswith(workRepositoryPath):
+				result.append(package)
+		return result
 
 	def whyIsPortRequired(self, repositoryPath, packagesPath, requiredPort):
 		"""Find out which package is pulling the given port in as a dependency
