@@ -86,15 +86,15 @@ class Repository(object):
 
 		versions = self._portVersionsByName[portName]
 		for version in reversed(versions):
-				portID = portName + '-' + version
-				port = self._allPorts[portID]
-				if not port.isBuildableOnTargetArchitecture():
-					if warnAboutSkippedVersions:
-						status = port.getStatusOnTargetArchitecture()
-						warn(('skipping %s, as it is %s on the target '
-							  + 'architecture.') % (portID, status))
-					continue
-				return version
+			portID = portName + '-' + version
+			port = self._allPorts[portID]
+			if not port.isBuildableOnTargetArchitecture():
+				if warnAboutSkippedVersions:
+					status = port.getStatusOnTargetArchitecture()
+					warn(('skipping %s, as it is %s on the target '
+						  + 'architecture.') % (portID, status))
+				continue
+			return version
 
 		return None
 
