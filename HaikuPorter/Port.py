@@ -81,6 +81,7 @@ class Port(object):
 		self.category = category
 		self.baseDir = baseDir
 		self.outputDir = outputDir
+		self.recipeIsBroken = False
 
 		if secondaryArchitecture:
 			self.workDir = (self.outputDir + '/work-' + secondaryArchitecture
@@ -161,6 +162,10 @@ class Port(object):
 
 	def parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port"""
+
+		# temporarily mark the recipe as broken, such that any exception
+		# will leave this marker on
+		self.recipeIsBroken = True
 
 		if not self.isMetaPort:
 			# If a patch file named like the port exists, use that as a default
@@ -297,6 +302,9 @@ class Port(object):
 		# set up the complete list of variables we'll inherit to the shell
 		# when executing a recipe action
 		self._updateShellVariablesFromRecipe()
+
+		# take notice that the recipe is ok
+		self.recipeIsBroken = False
 
 	def validateRecipeFile(self, showWarnings = False):
 		"""Validate the syntax and contents of the recipe file"""
@@ -451,6 +459,16 @@ class Port(object):
 		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
+
+	def hasBrokenRecipe(self):
+		"""Returns whether or not the recipe for this port is broken (i.e. it
+		   can't be parsed or contains errors)"""
+		if not hasattr(self, 'recipeKeys'):
+			try:
+				self.parseRecipeFile(False)
+			except:
+				pass
+		return self.recipeIsBroken
 
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""

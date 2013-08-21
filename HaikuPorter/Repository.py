@@ -88,6 +88,14 @@ class Repository(object):
 		for version in reversed(versions):
 			portID = portName + '-' + version
 			port = self._allPorts[portID]
+			if port.hasBrokenRecipe():
+				if warnAboutSkippedVersions:
+					warn('skipping %s, as the recipe is broken:' % portID)
+					try:
+						port.parseRecipeFile(True)
+					except SystemExit as e:
+						print e
+				continue
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
 					status = port.getStatusOnTargetArchitecture()
