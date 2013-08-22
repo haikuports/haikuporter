@@ -14,7 +14,7 @@
 
 from HaikuPorter.Package import PackageType
 from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText,
-									 Phase, YesNo)
+									 Phase, ProvidesList, RequiresList, YesNo)
 import copy
 import types
 
@@ -105,21 +105,21 @@ recipeAttributes = {
 		'indexable': False,
 	},
 	'BUILD_PREREQUIRES': {
-		'type': types.ListType,
+		'type': RequiresList,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
 	'BUILD_REQUIRES': {
-		'type': types.ListType,
+		'type': RequiresList,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
 	'CONFLICTS': {
-		'type': types.ListType,
+		'type': RequiresList,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.DEFAULT,
@@ -140,7 +140,7 @@ recipeAttributes = {
 		'indexable': False,
 	},
 	'FRESHENS': {
-		'type': types.ListType,
+		'type': RequiresList,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.DEFAULT,
@@ -175,7 +175,7 @@ recipeAttributes = {
 		'indexable': False,
 	},
 	'PROVIDES': {
-		'type': types.ListType,
+		'type': ProvidesList,
 		'required': True,
 		'default': None,
 		'extendable': Extendable.DEFAULT,
@@ -196,7 +196,7 @@ recipeAttributes = {
 		'indexable': False,
 	},
 	'REQUIRES': {
-		'type': types.ListType,
+		'type': RequiresList,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.DEFAULT,
@@ -223,7 +223,7 @@ recipeAttributes = {
 		}
 	},
 	'SUPPLEMENTS': {
-		'type': types.ListType,
+		'type': RequiresList,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.DEFAULT,

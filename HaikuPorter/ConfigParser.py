@@ -6,7 +6,8 @@
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText,
-									 MachineArchitecture, Phase, Status, YesNo)
+									 MachineArchitecture, Phase, ProvidesList,
+									 RequiresList, Status, YesNo)
 from HaikuPorter.ShellScriptlets import (configFileEvaluatorScript,
 										 getShellVariableSetters)
 from HaikuPorter.Utils import check_output, filteredEnvironment, sysExit, warn
@@ -120,10 +121,20 @@ class ConfigParser(object):
 				except ValueError:
 					sysExit('evaluating file %s produced illegal value '
 							'"%s" for key %s, expected an <integer> value'
-							% (filename, key, valueString))
-			elif attrType == types.ListType:
+							% (filename, valueString, key))
+			elif attrType in [ types.ListType, ProvidesList, RequiresList ]:
 				values = [v.strip() for v in valueString.splitlines()]
 				values = [v for v in values if len(v) > 0]
+				# explicitly protect against '-' in names of provides or
+				# requires declarations
+				if attrType in [ ProvidesList, RequiresList ]:
+					for value in values:
+						if '-' in value.split()[0]:
+							sysExit('evaluating file %s produced illegal value '
+									'"%s" for key %s\n'
+									'dashes are not allowed in provides- or '
+									'requires declarations'
+									% (filename, value, key))
 				if attributes[baseKey]['indexable']:
 					entries[baseKey][index] = values
 				else:
@@ -141,7 +152,7 @@ class ConfigParser(object):
 				if valueString.upper() not in Phase.getAllowedValues():
 					sysExit('evaluating file %s\nproduced illegal value "%s" '
 							'for key %s\nexpected one of: %s'
-							% (filename, key, valueString,
+							% (filename, valueString, key,
 							   ','.join(Phase.getAllowedValues())))
 				entries[key] = valueString.upper()
 			elif attrType == MachineArchitecture:

@@ -114,6 +114,22 @@ class LinesOfText(list):
 	pass
 
 
+# -- ProvidesList -------------------------------------------------------------
+
+# Create new type 'ProvidesList', used to handle a list of provides
+# specifications
+class ProvidesList(list):
+	pass
+
+
+# -- RequiresList -------------------------------------------------------------
+
+# Create new type 'RequiresList', used to handle a list of requires
+# specifications
+class RequiresList(list):
+	pass
+
+
 # -- YesNo --------------------------------------------------------------------
 
 # A string representing a boolean value.
