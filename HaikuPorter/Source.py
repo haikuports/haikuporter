@@ -330,7 +330,8 @@ class Source(object):
 			# unpack the archive into the targetDir
 			if self.sourceSubDir:
 				os.mkdir(targetDir + '/' + self.sourceSubDir)
-			self.sourceFetcher.unpack(targetDir, self.sourceSubDir, None)
+			self.sourceFetcher.unpack(targetDir, self.sourceSubDir,
+				self.sourceExportSubdir)
 			if self.sourceSubDir:
 				foldSubdirIntoSourceDir(self.sourceSubDir, targetDir)
 
