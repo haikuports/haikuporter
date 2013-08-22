@@ -124,6 +124,11 @@ def parseOptions():
 					  action='store', type='string', dest='portsfile',
 					  default='',
 					  help="handle all ports in the given file")
+	parser.add_option('--create-source-packages',
+					  action='store_true',
+					  dest='createSourcePackages',
+					  default=False,
+					  help="build only the (regular) source packages")
 	parser.add_option('--create-source-packages-for-bootstrap',
 					  action='store_true',
 					  dest='createSourcePackagesForBootstrap',

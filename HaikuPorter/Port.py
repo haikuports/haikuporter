@@ -691,13 +691,15 @@ class Port(object):
 			os.mkdir(directory)
 
 		for package in self.packages:
-			if (getOption('createSourcePackagesForBootstrap')
+			if ((getOption('createSourcePackagesForBootstrap')
+					or getOption('createSourcePackages'))
 				and package.type != PackageType.SOURCE):
 				continue
 			os.mkdir(package.packagingDir)
 			package.prepopulatePackagingDir(self)
 
-		if getOption('createSourcePackagesForBootstrap'):
+		if (getOption('createSourcePackagesForBootstrap')
+			or getOption('createSourcePackages')):
 			requiredPackages = []
 			prerequiredPackages = []
 		else:
@@ -784,14 +786,16 @@ class Port(object):
 		if makePackages and not getOption('enterChroot'):
 			# move all created packages into packages folder
 			for package in self.packages:
-				if (getOption('createSourcePackagesForBootstrap')
+				if ((getOption('createSourcePackagesForBootstrap')
+						or getOption('createSourcePackages'))
 					and package.type != PackageType.SOURCE):
 					continue
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
 					if not (buildPlatform.usesChroot()
 						or Configuration.isCrossBuildRepository()
-						or getOption('createSourcePackagesForBootstrap')):
+						or getOption('createSourcePackagesForBootstrap')
+						or getOption('createSourcePackages')):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
@@ -1044,18 +1048,21 @@ class Port(object):
 
 		# create all build packages (but don't activate them yet)
 		for package in self.packages:
-			if (getOption('createSourcePackagesForBootstrap')
+			if ((getOption('createSourcePackagesForBootstrap')
+					or getOption('createSourcePackages'))
 				and package.type != PackageType.SOURCE):
 				continue
 			package.createBuildPackage()
 
-		if not getOption('createSourcePackagesForBootstrap'):
+		if not (getOption('createSourcePackagesForBootstrap')
+			or getOption('createSourcePackages')):
 			self._doBuildStage()
 
 		if makePackages:
 			self._makePackages()
 		for package in self.packages:
-			if (getOption('createSourcePackagesForBootstrap')
+			if ((getOption('createSourcePackagesForBootstrap')
+					or getOption('createSourcePackages'))
 				and package.type != PackageType.SOURCE):
 				continue
 			package.removeBuildPackage()
@@ -1115,7 +1122,8 @@ class Port(object):
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
 
-		if not getOption('createSourcePackagesForBootstrap'):
+		if not (getOption('createSourcePackagesForBootstrap')
+			or getOption('createSourcePackages')):
 			# Create the settings directory in the packaging directory, if
 			# needed. We need to do that, since the .settings link would
 			# otherwise point to a non-existing entry and the directory
@@ -1161,7 +1169,8 @@ class Port(object):
 
 		# make each package
 		for package in self.packages:
-			if (getOption('createSourcePackagesForBootstrap')
+			if ((getOption('createSourcePackagesForBootstrap')
+					or getOption('createSourcePackages'))
 				and package.type != PackageType.SOURCE):
 				continue
 			package.makeHpkg(self.requiresUpdater)

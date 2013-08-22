@@ -322,7 +322,8 @@ class Main(object):
 					portID = self.repository.getPortIdForPackageId(packageID)
 				if portID not in requiredPortIDs:
 					requiredPort = allPorts[portID]
-					if (getOption('createSourcePackagesForBootstrap')
+					if ((getOption('createSourcePackagesForBootstrap')
+							or getOption('createSourcePackages'))
 		 				and (not requiredPort.getSourcePackage()
 							or requiredPort.sourcePackageExists(targetPath))):
 						continue
@@ -385,7 +386,8 @@ class Main(object):
 					+ 'haiku_cross_devel_sysroot_%s.hpkg') % targetArchitecture
 		else:
 			if (not buildPlatform.isHaiku()
-				and not getOption('createSourcePackagesForBootstrap')):
+				and not (getOption('createSourcePackagesForBootstrap')
+					or getOption('createSourcePackages'))):
 				sysExit('Native building not supported on this platform (%s)'
 					% buildPlatform.getName())
 		targetHaikuVersion = buildPlatform.getHaikuVersion()
