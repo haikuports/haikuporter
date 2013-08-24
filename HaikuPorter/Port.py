@@ -533,8 +533,9 @@ class Port(object):
 											 			  workRepositoryPath)
 		requiredPackages \
 			= self._resolveRequiredDependencies(packageInfoFiles,
-												[ packagesPath, workRepositoryPath ],
-												'required ports')
+												[ packagesPath ],
+												'required ports',
+												[ workRepositoryPath ])
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
@@ -570,8 +571,9 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
-		self._resolveRequiredDependencies(packageInfoFiles, [ workRepositoryPath ],
-										  'why is port needed')
+		self._resolveRequiredDependencies(packageInfoFiles, [],
+										  'why is port needed',
+										  [ workRepositoryPath ])
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
