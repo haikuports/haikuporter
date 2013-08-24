@@ -532,9 +532,9 @@ class Port(object):
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
 		requiredPackages \
-			= self._resolveDependencies(packageInfoFiles,
-										[ packagesPath, workRepositoryPath ],
-										'required ports')
+			= self._resolveRequiredDependencies(packageInfoFiles,
+												[ packagesPath, workRepositoryPath ],
+												'required ports')
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
@@ -570,8 +570,8 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
-		self._resolveDependencies(packageInfoFiles, [ workRepositoryPath ],
-								  'why is port needed')
+		self._resolveRequiredDependencies(packageInfoFiles, [ workRepositoryPath ],
+										  'why is port needed')
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
@@ -1034,9 +1034,8 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
-		packages = self._resolveDependencies(packageInfoFiles,
-											 [ packagesPath ],
-											 'required packages for build')
+		packages = self._resolveRequiredDependencies(
+			packageInfoFiles, [ packagesPath ], 'required packages for build')
 
 		return [
 			package for package in packages
@@ -1239,8 +1238,18 @@ class Port(object):
 		args += params
 		check_call(args, cwd=dir, env=shellEnv)
 
+	def _resolveRequiredDependencies(self, packageInfoFiles, repositories,
+			description, fallbackRepositories = []):
+		return self._resolveDependencies(packageInfoFiles, repositories,
+			description, False, fallbackRepositories)
+
+	def _resolvePrerequiredDependencies(self, packageInfoFiles, repositories,
+			description, fallbackRepositories = []):
+		return self._resolveDependencies(packageInfoFiles, repositories,
+			description, True, fallbackRepositories)
+
 	def _resolveDependencies(self, packageInfoFiles, repositories, description,
-			isPrerequired = False, fallbackRepositories = []):
+			isPrerequired, fallbackRepositories):
 		"""Resolve dependencies of one or more package-infos"""
 
 		try:
@@ -1253,8 +1262,3 @@ class Port(object):
 					% (description, self.versionedName,
 					   '\n\t\t'.join(packageInfoFiles),
 					   '\n\t\t'.join(repositories)))
-
-	def _resolvePrerequiredDependencies(self, packageInfoFiles, repositories,
-			description, fallbackRepositories = []):
-		return self._resolveDependencies(packageInfoFiles, repositories,
-			description, True, fallbackRepositories)
