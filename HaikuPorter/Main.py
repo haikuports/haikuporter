@@ -230,9 +230,16 @@ class Main(object):
 
 			if self.options.why:
 				# find out about why another port is required
-				if self.options.why not in allPorts:
-					sysExit(self.options.why + ' not found in tree.')
-				requiredPort = allPorts[self.options.why]
+				whySpec = self._splitPortSpecIntoNameVersionAndRevision(
+					self.options.why)
+				if not whySpec['version']:
+					whySpec['version'] \
+						= self.repository.getActiveVersionOf(whySpec['name'],
+															 False)
+				whyID = whySpec['name'] + '-' + whySpec['version']
+				if not whyID in allPorts:
+					sysExit(whyID + ' not found in tree.')
+				requiredPort = allPorts[whyID]
 				self._validateMainPort(requiredPort)
 				port.whyIsPortRequired(self.repository.path, self.packagesPath,
 									   requiredPort)

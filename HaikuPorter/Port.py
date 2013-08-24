@@ -571,16 +571,22 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
-		self._resolveRequiredDependencies(packageInfoFiles, [],
-										  'why is port needed',
-										  [ workRepositoryPath ])
+		try:
+			self._resolveRequiredDependencies(packageInfoFiles, [],
+											  'why is port needed',
+											  [ workRepositoryPath ])
+		except SystemExit:
+			return
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 														  workRepositoryPath)
-		self._resolvePrerequiredDependencies(packageInfoFiles,
-											 [ workRepositoryPath ],
-											 'why is port needed')
+		try:
+			self._resolvePrerequiredDependencies(packageInfoFiles, [],
+												 'why is port needed',
+												 [ workRepositoryPath ])
+		except SystemExit:
+			return
 
 		warn("port %s doesn't seem to be required by %s"
 			 % (requiredPort.versionedName, self.versionedName))
