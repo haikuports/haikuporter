@@ -56,7 +56,8 @@ class Source(object):
 			self.sourceSubDir = None
 			self.sourceExportSubdir = None
 
-		# If explicit PATCHES were specified, set our patches list accordingly.
+		# PATCHES refers to patch files relative to the patches directory,
+		# make those absolute paths.
 		if self.patches:
 			self.patches = [ port.patchesDir + '/' + p for p in self.patches ]
 
