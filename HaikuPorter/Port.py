@@ -167,49 +167,6 @@ class Port(object):
 		# will leave this marker on
 		self.recipeIsBroken = True
 
-		if not self.isMetaPort:
-			# If a patch file named like the port exists, use that as a default
-			# for "PATCHES" (check this for up to 9 sources). Support a second
-			# patchset which is specific to target-architecture, too.
-			for s in range(1, 9):
-				if s == 1:
-					patchSetFileName = (self.name + '-' + self.version
-										+ '.patchset')
-					archPatchSetFileName = (self.name + '-' + self.version + '-'
-											+ self.targetArchitecture
-											+ '.patchset')
-					patchFileName = self.name + '-' + self.version + '.patch'
-					diffFileName = self.name + '-' + self.version + '.diff'
-					patchesKeyName = 'PATCHES'
-				else:
-					patchSetFileName = (self.name + '-' + self.version
-										+ '-source' + str(s) + '.patchset')
-					archPatchSetFileName = (self.name + '-' + self.version + '-'
-											+ self.targetArchitecture
-											+ '-source' + str(s) + '.patchset')
-					patchFileName = (self.name + '-' + self.version + '-source'
-									 + str(s) + '.patch')
-					diffFileName = (self.name + '-' + self.version + '-source'
-									+ str(s) + '.diff')
-					patchesKeyName = 'PATCHES_' + str(s)
-				patchSetFilePath = self.patchesDir + '/' + patchSetFileName
-				archPatchSetFilePath = (self.patchesDir + '/'
-										+ archPatchSetFileName)
-				patchFilePath = self.patchesDir + '/' + patchFileName
-				diffFilePath = self.patchesDir + '/' + diffFileName
-
-				# prefer patchsets over patch
-				patchsets = []
-				if os.path.exists(patchSetFilePath):
-					patchsets.append(patchSetFileName)
-				if os.path.exists(archPatchSetFilePath):
-					patchsets.append(archPatchSetFileName)
-				if not patchsets and os.path.exists(patchFilePath):
-					patchsets.append(patchFileName)
-				if not patchsets and os.path.exists(diffFilePath):
-					patchsets.append(diffFileName)
-				self.shellVariables[patchesKeyName] = '\n'.join(patchsets)
-
 		# set default SOURCE_DIR
 		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
 
@@ -341,6 +298,7 @@ class Port(object):
 		# do some checks for each extension (i.e. package), starting with the
 		# base entries (extension '')
 		baseEntries = recipeConfig.getEntriesForExtension('')
+		allPatches = []
 		for extension in sorted(extensions):
 			entries = recipeConfig.getEntriesForExtension(extension)
 			recipeKeys = {}
@@ -391,7 +349,7 @@ class Port(object):
 				if baseKey == 'LICENSE':
 					if key in entries and entries[key]:
 						fileList = []
-						recipeLicense = entries['LICENSE']
+						recipeLicense = entries[key]
 						for item in recipeLicense:
 							haikuLicenseList = fileList = os.listdir(
 								buildPlatform.getLicensesDirectory())
@@ -416,10 +374,30 @@ class Port(object):
 							warn('No %s found (in %s)'
 								 % (key, self.recipeFilePath))
 
+				if baseKey == 'PATCHES':
+					# collect all referenced patches into a single list
+					if key in entries and entries[key]:
+						for index in entries[key].keys():
+							allPatches += entries[key][index]
+
 				# store extension-specific value under base key
 				recipeKeys[baseKey] = entries[key]
 
 			recipeKeysByExtension[extension] = recipeKeys
+
+		# If a patch file exists for this port, warn if that patch file isn't
+		# referenced in "PATCHES"
+		if not self.isMetaPort:
+			for fileExtension in ['diff', 'patch', 'patchset']:
+				for suffix in ['', '-gcc2', '-gcc4']:
+					patchFileName = '%s%s.%s' % (self.name + '-' + self.version,
+												 suffix, fileExtension)
+					if (os.path.exists(self.patchesDir + '/' + patchFileName)
+						and not patchFileName in allPatches):
+							if showWarnings:
+								warn('Patch file %s is not referenced in '
+									 'PATCHES, so it will not be used'
+									 % patchFileName)
 
 		return recipeKeysByExtension
 
