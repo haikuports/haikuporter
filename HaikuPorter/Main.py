@@ -66,6 +66,7 @@ class Main(object):
 
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
+			self._createRepositoryIfNeeded(True)
 			self._checkSourceTree()
 			sys.exit()
 
