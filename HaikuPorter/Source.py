@@ -30,12 +30,13 @@ from subprocess import check_call
 
 class Source(object):
 	def __init__(self, port, index, uris, fetchTargetName, checksum, sourceDir,
-				 patches):
+				 patches, additionalFiles):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
 		self.checksum = checksum
 		self.patches = patches
+		self.additionalFiles = additionalFiles
 
 		if index == '1':
 			self.sourceBaseDir = port.sourceBaseDir
@@ -59,7 +60,17 @@ class Source(object):
 		# PATCHES refers to patch files relative to the patches directory,
 		# make those absolute paths.
 		if self.patches:
-			self.patches = [ port.patchesDir + '/' + p for p in self.patches ]
+			self.patches = [
+				port.patchesDir + '/' + patch for patch in self.patches
+			]
+
+		# ADDITIONAL_FILES refers to the files relative to the additional-files
+		# directory, make those absolute paths.
+		if self.additionalFiles:
+			self.additionalFiles = [
+				port.additionalFilesDir + '/' + additionalFile
+				for additionalFile in self.additionalFiles
+			]
 
 		# set local filename from URI, unless specified explicitly
 		if not self.fetchTargetName:
@@ -321,6 +332,8 @@ class Source(object):
 	def exportSources(self, targetDir):
 		"""Export sources into a folder"""
 
+		if not os.path.exists(targetDir):
+			os.makedirs(targetDir)
 		if getOption('createSourcePackagesForBootstrap'):
 			# the source packages for the bootstrap image need the sources
 			# in directly usable (i.e. patched) form, as git isn't available
@@ -336,6 +349,19 @@ class Source(object):
 			if self.sourceSubDir:
 				foldSubdirIntoSourceDir(self.sourceSubDir, targetDir)
 
+	def exportAdditionalFiles(self, targetDir):
+		"""Export any additional files into given folder"""
+
+		if not self.additionalFiles:
+			return
+
+		if not os.path.exists(targetDir):
+			os.makedirs(targetDir)
+		for additionalFile in self.additionalFiles:
+			command = ('tar -c %s | tar -x -C "%s"'
+					   % (os.path.basename(additionalFile), targetDir))
+			check_call(command, cwd=os.path.dirname(additionalFile), shell=True)
+
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
 
@@ -345,6 +371,10 @@ class Source(object):
 		pathLengthToCut = len(port.workDir)
 		self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
 		self.sourceDir = self.sourceDir[pathLengthToCut:]
+		self.additionalFiles = [
+			additionalFile[pathLengthToCut:]
+			for additionalFile in self.additionalFiles
+		]
 
 	def _initImplicitGitRepo(self):
 		"""Import sources into git repository"""

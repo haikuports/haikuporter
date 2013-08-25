@@ -60,6 +60,13 @@ recipeAttributes = {
 	},
 
 	# indexable, i.e. per-source attributes
+	'ADDITIONAL_FILES': {
+		'type': types.ListType,
+		'required': False,
+		'default': {},
+		'extendable': Extendable.NO,
+		'indexable': True,
+	},
 	'CHECKSUM_MD5': {
 		'type': types.StringType,
 		'required': False,

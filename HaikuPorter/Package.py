@@ -463,14 +463,14 @@ class SourcePackage(Package):
 		for source in port.sources:
 			if source.index == '1':
 				targetDir = targetBaseDir + '/source'
+				additionalFilesDir = targetBaseDir + '/additional-files'
 			else:
 				targetDir = targetBaseDir + '/source-' + source.index
-
-			if not os.path.exists(targetDir):
-				os.makedirs(targetDir)
-
-			# export sources
+				additionalFilesDir = (targetBaseDir + '/additional-files-'
+									  + source.index)
+			# export sources and additional files (if any)
 			source.exportSources(targetDir)
+			source.exportAdditionalFiles(additionalFilesDir)
 
 		# copy patches, if there are any
 		if os.path.exists(port.patchesDir):

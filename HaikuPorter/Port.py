@@ -137,6 +137,7 @@ class Port(object):
 			self.downloadDir = None
 			self.patchesDir = None
 			self.licensesDir = None
+			self.additionalFilesDir = None
 		else:
 			# create full paths for the directories
 			if Configuration.shallDownloadInPortDirectory():
@@ -145,6 +146,7 @@ class Port(object):
 				self.downloadDir = self.outputDir + '/download'
 			self.patchesDir = self.baseDir + '/patches'
 			self.licensesDir = self.baseDir + '/licenses'
+			self.additionalFilesDir = self.baseDir + '/additional-files'
 
 		self.sourceBaseDir = self.workDir + '/sources'
 		self.packageInfoDir = self.workDir + '/package-infos'
@@ -192,7 +194,8 @@ class Port(object):
 							keys['SRC_FILENAME'].get(index, None),
 							keys['CHECKSUM_MD5'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
-							keys['PATCHES'].get(index, []))
+							keys['PATCHES'].get(index, []),
+							keys['ADDITIONAL_FILES'].get(index, []))
 			if source.isFromSourcePackage():
 				basedOnSourcePackage = True
 			self.sources.append(source)
