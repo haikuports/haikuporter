@@ -86,8 +86,11 @@ class Port(object):
 		if secondaryArchitecture:
 			self.workDir = (self.outputDir + '/work-' + secondaryArchitecture
 				+ '-' + self.version)
+			self.effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
 			self.workDir = self.outputDir + '/work-' + self.version
+			self.effectiveTargetArchitecture \
+				= buildPlatform.getTargetArchitecture()
 
 		self.isMetaPort = self.category == 'meta-ports'
 
@@ -388,10 +391,17 @@ class Port(object):
 		# If a patch file exists for this port, warn if that patch file isn't
 		# referenced in "PATCHES"
 		if not self.isMetaPort:
+			versionedBaseName = self.baseName + '-' + self.version
 			for fileExtension in ['diff', 'patch', 'patchset']:
-				for suffix in ['', '-gcc2', '-gcc4']:
-					patchFileName = '%s%s.%s' % (self.name + '-' + self.version,
-												 suffix, fileExtension)
+				suffixes = ['', '-' + self.effectiveTargetArchitecture]
+				if self.effectiveTargetArchitecture \
+					== MachineArchitecture.X86_GCC2:
+					suffixes.append('-gcc2')
+				else:
+					suffixes.append('-gcc4')
+				for suffix in suffixes:
+					patchFileName = '%s%s.%s' % (versionedBaseName, suffix,
+												 fileExtension)
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
 						and not patchFileName in allPatches):
 							if showWarnings:
@@ -867,20 +877,18 @@ class Port(object):
 				and '_cross_' in self.name):
 				secondaryArchSubDir = ''
 			secondaryArchSuffix = '_' + self.secondaryArchitecture
-			effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
 			secondaryArchSubDir = ''
 			secondaryArchSuffix = ''
-			effectiveTargetArchitecture = buildPlatform.getTargetArchitecture()
 
 		effectiveTargetMachineTriple = MachineArchitecture.getTripleFor(
-			effectiveTargetArchitecture)
+			self.effectiveTargetArchitecture)
 
 		self.shellVariables['secondaryArchSubDir'] = secondaryArchSubDir
 		self.shellVariables['secondaryArchSuffix'] = secondaryArchSuffix
 
 		self.shellVariables['effectiveTargetArchitecture'] \
-			= effectiveTargetArchitecture
+			= self.effectiveTargetArchitecture
 		self.shellVariables['effectiveTargetMachineTriple'] \
 			= effectiveTargetMachineTriple
 		self.shellVariables['effectiveTargetMachineTripleAsName'] \
