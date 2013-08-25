@@ -70,9 +70,6 @@ class MachineArchitecture(str):
 # is known about the status of the port on this architecture.
 class Architectures(MachineArchitecture):
 	ANY = 'any'
-	PPC = 'ppc'
-	X86 = 'x86'
-	X86_GCC2 = 'x86_gcc2'
 	SOURCE = 'source'
 
 	@staticmethod
