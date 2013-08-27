@@ -152,10 +152,10 @@ class Package(object):
 		"""Write a PackageInfo-file for this package into the repository"""
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		if Configuration.isCrossBuildRepository():
-			requires = [ 'BUILD_REQUIRES', 'REQUIRES' ]
-		else:
+		if buildPlatform.getName() == 'Haiku':
 			requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
+		else:
+			requires = [ 'BUILD_REQUIRES', 'REQUIRES' ]
 		self.generatePackageInfo(packageInfoFile, requires, True)
 
 	def removePackageInfoFromRepository(self, repositoryPath):
