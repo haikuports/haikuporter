@@ -152,8 +152,11 @@ class Package(object):
 		"""Write a PackageInfo-file for this package into the repository"""
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		self.generatePackageInfo(packageInfoFile,
-			[ 'BUILD_REQUIRES', 'REQUIRES' ], True)
+		if Configuration.isCrossBuildRepository():
+			requires = [ 'BUILD_REQUIRES', 'REQUIRES' ]
+		else:
+			requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
+		self.generatePackageInfo(packageInfoFile, requires, True)
 
 	def removePackageInfoFromRepository(self, repositoryPath):
 		"""Remove PackageInfo-file from repository, if it's there"""
