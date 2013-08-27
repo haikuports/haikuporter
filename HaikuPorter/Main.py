@@ -126,10 +126,13 @@ class Main(object):
 			DependencyAnalyzer(self.repository).printDependencies()
 			return
 
+		bootstrapPorts = set()
+
 		# if a ports-file has been given, read port specifications from it
 		# and build them all (as faked requires of a specific meta port, such
 		# that their runtime requires get pulled in, too)
 		self.portSpecs = []
+		self.builtPortIDs = set()
 		if self.options.portsfile:
 			# pretend the meta port responsible for building a list of ports
 			# has been specified on the cmdline
@@ -139,10 +142,12 @@ class Main(object):
 			self.portSpecs.append(
 				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
 		elif self.options.doBootstrap:
+			# first untangle and build all ports with circular dependencies
 			dependencyAnalyzer = DependencyAnalyzer(self.repository)
 			portsToBuild = dependencyAnalyzer.getBuildOrderForBootstrap()
-			print 'Untangling the mess suggested this build order:'
+			print 'Untangling the ports with circular dependencies gave this:'
 			print "  " + "\n  ".join(portsToBuild)
+			print 'After that, all other available ports will be built, too'
 			portsNotYetBuilt = []
 			for portId in portsToBuild:
 				port = self.repository.getAllPorts()[portId]
@@ -154,6 +159,12 @@ class Main(object):
 						'exists' % portId)
 					continue
 				portsNotYetBuilt.append(portId)
+				bootstrapPorts.add(portId)
+			# add all other ports, such that all available ports will be built
+			for portId in self.repository.getAllPorts().keys():
+				if not portId in bootstrapPorts:
+					portsNotYetBuilt.append(portId)
+			# add all ports as if they were given on the cmdline
 			self.portSpecs = [
 				self._splitPortSpecIntoNameVersionAndRevision(port)
 				for port in portsNotYetBuilt
@@ -225,28 +236,29 @@ class Main(object):
 
 			self._validateMainPort(port, portSpec['revision'])
 
+		if self.options.why:
+			# find out about why another port is required
+			port = allPorts[self.portSpecs.first()['id']]
+			whySpec = self._splitPortSpecIntoNameVersionAndRevision(
+				self.options.why)
+			if not whySpec['version']:
+				whySpec['version'] \
+					= self.repository.getActiveVersionOf(whySpec['name'],
+														 False)
+			whyID = whySpec['name'] + '-' + whySpec['version']
+			if not whyID in allPorts:
+				sysExit(whyID + ' not found in tree.')
+			requiredPort = allPorts[whyID]
+			self._validateMainPort(requiredPort)
+			port.whyIsPortRequired(self.repository.path, self.packagesPath,
+								   requiredPort)
+			sys.exit(0)
+
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:
 			port = allPorts[portSpec['id']]
 
-			if self.options.why:
-				# find out about why another port is required
-				whySpec = self._splitPortSpecIntoNameVersionAndRevision(
-					self.options.why)
-				if not whySpec['version']:
-					whySpec['version'] \
-						= self.repository.getActiveVersionOf(whySpec['name'],
-															 False)
-				whyID = whySpec['name'] + '-' + whySpec['version']
-				if not whyID in allPorts:
-					sysExit(whyID + ' not found in tree.')
-				requiredPort = allPorts[whyID]
-				self._validateMainPort(requiredPort)
-				port.whyIsPortRequired(self.repository.path, self.packagesPath,
-									   requiredPort)
-				sys.exit(0)
-
-			if (self.options.build and not self.options.doBootstrap
+			if (self.options.build and not portSpec['id'] in bootstrapPorts
 				and not self.options.noDependencies):
 				self._buildMainPort(port)
 			elif self.options.extractPatchset:
@@ -267,14 +279,15 @@ class Main(object):
 
 		# if a specific revision has been given, check if this port matches it
 		if revision and port.revision != revision:
-			sysExit(("port %s isn't available in revision %s (found revision "
+			sysExit(("Port %s isn't available in revision %s (found revision "
 					+ '%s instead)')
 					% (port.versionedName, revision, port.revision))
 
 		# warn when the port is not buildable on this architecture
 		if not port.isBuildableOnTargetArchitecture():
 			status = port.getStatusOnTargetArchitecture()
-			warn('This port is %s on this architecture.' % status)
+			warn('Port %s is %s on this architecture.'
+				 % (port.versionedName, status))
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')
 				if answer == '':
@@ -297,6 +310,9 @@ class Main(object):
 
 	def _buildMainPort(self, port):
 		"""Build the given port with all its dependencies"""
+
+		if port.versionedName in self.builtPortIDs:
+			return
 
 		print '=' * 70
 		print port.category + '::' + port.versionedName
@@ -355,6 +371,9 @@ class Main(object):
 	def _buildPort(self, port, parseRecipe, targetPath):
 		"""Build a single port"""
 
+		if port.versionedName in self.builtPortIDs:
+			return
+
 		print '-' * 70
 		print port.category + '::' + port.versionedName
 		print '-' * 70
@@ -380,6 +399,7 @@ class Main(object):
 		if self.options.build:
 			port.build(self.packagesPath, self.options.package, targetPath)
 
+		self.builtPortIDs.add(port.versionedName)
 
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture
