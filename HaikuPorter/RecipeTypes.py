@@ -11,6 +11,7 @@ import re
 class MachineArchitecture(str):
 	PPC = 'ppc'
 	X86 = 'x86'
+	X86_64 = 'x86_64'
 	X86_GCC2 = 'x86_gcc2'
 
 	@staticmethod
@@ -19,6 +20,7 @@ class MachineArchitecture(str):
 		return [
 			Architectures.PPC,
 			Architectures.X86,
+			Architectures.X86_64,
 			Architectures.X86_GCC2,
 		]
 
@@ -27,6 +29,7 @@ class MachineArchitecture(str):
 		dict = {
 			Architectures.PPC: 'powerpc-apple-haiku',
 			Architectures.X86: 'i586-pc-haiku',
+			Architectures.X86_64: 'x86_64-unknown-haiku',
 			Architectures.X86_GCC2: 'i586-pc-haiku',
 				# Note: In theory it would make sense to use a different triple
 				# for x86_gcc2. Unfortunately that would cause us a lot of work
