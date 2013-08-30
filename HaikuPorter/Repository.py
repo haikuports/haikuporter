@@ -396,7 +396,11 @@ class Repository(object):
 		sourcePackagePath \
 			= self.inputSourcePackagesPath + '/' + sourcePackageName
 		(name, version, revision, unused) = sourcePackageName.split('-')
-		name = name[:-7]	# drop '_source'
+		# determine port name by dropping '_source' or '_source_rigged'
+		if name.endswith('_source_rigged'):
+			name = name[:-14]
+		elif name.endswith('_source'):
+			name = name[:-7]
 		relativeBasePath \
 			= 'develop/sources/%s-%s-%s' % (name, version, revision)
 		recipeName = name + '-' + version + '.recipe'
