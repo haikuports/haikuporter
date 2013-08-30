@@ -131,7 +131,8 @@ class Repository(object):
 		# any corresponding port in the recipe tree)
 		if os.path.exists(self.inputSourcePackagesPath):
 			for fileName in sorted(os.listdir(self.inputSourcePackagesPath)):
-				if not fileName.endswith('-source.hpkg'):
+				if not ('_source-' in fileName
+						or '_source_rigged-' in fileName):
 					continue
 
 				recipeFilePath \

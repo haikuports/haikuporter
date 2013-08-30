@@ -605,10 +605,10 @@ class Port(object):
 	def patchSource(self):
 		"""Apply the Haiku patches to the source(s)"""
 
-		# skip all patches if any of the sources comes from a source package
-		# (as those contain already patched sources)
+		# skip all patches if any of the sources comes from a rigged source
+		# package (as those contain already patched sources)
 		for source in self.sources:
-			if source.isFromSourcePackage():
+			if source.isFromNonRiggedSourcePackage():
 				return
 
 		patched = False
