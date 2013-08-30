@@ -294,6 +294,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'haiku_devel',
 			'coreutils',
 			'diffutils',
+			'cmd:awk',
 			'cmd:gunzip',
 			'cmd:login',
 			'cmd:passwd',
