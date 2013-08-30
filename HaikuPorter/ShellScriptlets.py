@@ -279,7 +279,10 @@ runConfigure()
 		fi
 	done
 
-	$configure $dirArgs $@
+	# explicitly set build target (avoid guessing)
+	buildSpec="--build=$effectiveTargetMachineTriple"
+
+	$configure $dirArgs $buildSpec $@
 }
 
 fixDevelopLibDirReferences()
