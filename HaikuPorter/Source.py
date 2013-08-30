@@ -120,6 +120,8 @@ class Source(object):
 						if rev != storedRev:
 							self.sourceFetcher.updateToRev(rev)
 							storeStringInFile(uri, self.fetchTarget + '.uri')
+							port.unsetFlag('unpack', self.index)
+							port.unsetFlag('patchset', self.index)
 						else:
 							print ('Skipping download of source for '
 								   + self.fetchTargetName)
