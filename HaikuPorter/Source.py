@@ -335,9 +335,10 @@ class Source(object):
 		if not os.path.exists(targetDir):
 			os.makedirs(targetDir)
 		if getOption('createSourcePackagesForBootstrap'):
-			# the source packages for the bootstrap image need the sources
-			# in directly usable (i.e. patched) form, as git isn't available
-			# in the bootstrap image, so no patches can be applied there
+			# the source packages for the bootstrap image need to be rigged,
+			# i.e. the sources must be in directly usable (i.e. patched) form,
+			# as git isn't available in the bootstrap image, so no patches can
+			# be applied there
 			check_call('tar c --exclude=.git . | tar x -C %s' % targetDir,
 					   cwd=self.sourceDir, shell=True)
 		else:

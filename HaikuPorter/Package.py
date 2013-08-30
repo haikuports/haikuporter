@@ -76,7 +76,13 @@ class Package(object):
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
 		if packageType == PackageType.SOURCE:
-			self.architecture = Architectures.SOURCE
+			if name.endswith('_rigged'):
+				# let rigged source packages use the target architecture, as
+				# (potentially) they have been patched specifically for that
+				# target architecture
+				self.architecture = port.targetArchitecture
+			else:
+				self.architecture = Architectures.SOURCE
 		elif port.targetArchitecture in self.recipeKeys['ARCHITECTURES']:
 			# if this package can be built for the current target architecture,
 			# we do so and create a package for the host architecture (which
@@ -523,6 +529,8 @@ def packageFactory(packageType, name, port, recipeKeys, policy):
 	"""Creates a package matching the given type"""
 
 	if packageType == PackageType.SOURCE:
+		if getOption('createSourcePackagesForBootstrap'):
+			name += '_rigged'
 		return SourcePackage(packageType, name, port, recipeKeys, policy)
 	else:
 		return Package(packageType, name, port, recipeKeys, policy)
