@@ -608,7 +608,7 @@ class Port(object):
 		# skip all patches if any of the sources comes from a rigged source
 		# package (as those contain already patched sources)
 		for source in self.sources:
-			if source.isFromNonRiggedSourcePackage():
+			if source.isFromRiggedSourcePackage():
 				return
 
 		patched = False

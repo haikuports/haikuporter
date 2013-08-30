@@ -205,12 +205,12 @@ class Source(object):
 
 		return self.uris[0].lower().startswith('pkg:')
 
-	def isFromNonRiggedSourcePackage(self):
+	def isFromRiggedSourcePackage(self):
 		"""Determines whether or not this source comes from a source package
-		   that isn't rigged (i.e. does not have the patches already applied)"""
+		   that has been rigged (i.e. does have the patches already applied)"""
 
 		return (self.uris[0].lower().startswith('pkg:')
-				and not '_source_rigged-' in self.uris[0].lower())
+				and '_source_rigged-' in self.uris[0].lower())
 
 	def patch(self, port):
 		"""Apply any patches to this source"""
