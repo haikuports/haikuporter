@@ -288,7 +288,6 @@ class BuildPlatformUnix(BuildPlatform):
 		# TODO: We might instead want to support passing the package infos for
 		# the system packages to haikuporter, so we could get the actual
 		# provides.
-		haikuVersion = self.getHaikuVersion()
 		self.implicitBuildTargetProvides = set([
 			'haiku',
 			'haiku_devel',
