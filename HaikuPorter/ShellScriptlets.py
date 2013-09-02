@@ -279,8 +279,11 @@ runConfigure()
 		fi
 	done
 
-	# explicitly set build target (avoid guessing)
-	buildSpec="--build=$effectiveTargetMachineTriple"
+	# explicitly set build target for native build (avoid guessing)
+	buildSpec=""
+	if [[ $isCrossRepository != true ]]; then
+		buildSpec="--build=$effectiveTargetMachineTriple"
+	fi
 
 	$configure $dirArgs $buildSpec $@
 }
