@@ -163,6 +163,14 @@ class Main(object):
 			# add all other ports, such that all available ports will be built
 			for portId in self.repository.getAllPorts().keys():
 				if not portId in bootstrapPorts:
+					port = self.repository.getAllPorts()[portId]
+					mainPackage = port.getMainPackage()
+					if (mainPackage
+						and os.path.exists(
+							self.packagesPath + '/' + mainPackage.hpkgName)):
+						print('skipping port %s, since its main package '
+							'already exists' % portId)
+						continue
 					portsNotYetBuilt.append(portId)
 			# add all ports as if they were given on the cmdline
 			self.portSpecs = [
