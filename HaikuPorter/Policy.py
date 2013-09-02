@@ -35,6 +35,10 @@ allowedTopLevelEntries = [
 # -- Policy checker class -----------------------------------------------------
 
 class Policy(object):
+
+	# log for policy warnings and errors
+	violationsByPort = {}
+
 	def __init__(self, strict):
 		self.strict = strict
 
@@ -411,6 +415,11 @@ class Policy(object):
 	def _violation(self, message):
 		self.violationEncountered = True
 		if self.strict:
-			print 'POLICY ERROR: ' + message
+			violation = 'POLICY ERROR: ' + message
 		else:
-			print 'POLICY WARNING: ' + message
+			violation = 'POLICY WARNING: ' + message
+		print violation
+		if not self.port.versionedName in Policy.violationsByPort:
+			Policy.violationsByPort[self.port.versionedName] = [ violation ]
+		else:
+			Policy.violationsByPort[self.port.versionedName].append(violation)

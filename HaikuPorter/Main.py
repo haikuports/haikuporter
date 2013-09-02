@@ -278,6 +278,14 @@ class Main(object):
 			# if self.options.test:
 			#	port.test()
 
+		# show summary of policy violations
+		if Policy.violationsByPort:
+			print 'Summary of policy violations in this session:'
+			for portName in sorted(Policy.violationsByPort.keys()):
+				print 'Policy violations of %s:' + portName
+				for violation in Policy.violationsByPort[portName]:
+					print '\t' + violation
+
 	def _validateMainPort(self, port, revision = None):
 		"""Parse the recipe file for the given port and get any required
 		   confirmations"""
