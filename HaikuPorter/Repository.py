@@ -413,6 +413,7 @@ class Repository(object):
 			# extract recipe, patches and licenses (but skip everything else)
 			allowedEntries = [
 				relativeBasePath + '/' + recipeName,
+				relativeBasePath + '/additional-files',
 				relativeBasePath + '/licenses',
 				relativeBasePath + '/patches',
 			]
