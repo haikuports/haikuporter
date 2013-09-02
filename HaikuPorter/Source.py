@@ -368,7 +368,7 @@ class Source(object):
 		if not os.path.exists(targetDir):
 			os.makedirs(targetDir)
 		for additionalFile in self.additionalFiles:
-			command = ('tar -c %s | tar -x -C "%s"'
+			command = ('tar -c "%s" | tar -x -C "%s"'
 					   % (os.path.basename(additionalFile), targetDir))
 			check_call(command, cwd=os.path.dirname(additionalFile), shell=True)
 
