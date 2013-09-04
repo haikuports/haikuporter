@@ -470,11 +470,11 @@ class SourcePackage(Package):
 		targetBaseDir = (self.packagingDir + '/develop/sources/'
 						 + port.revisionedName)
 		for source in port.sources:
+			targetDir = (targetBaseDir + '/'
+						 + os.path.basename(source.sourceBaseDir))
 			if source.index == '1':
-				targetDir = targetBaseDir + '/source'
 				additionalFilesDir = targetBaseDir + '/additional-files'
 			else:
-				targetDir = targetBaseDir + '/source-' + source.index
 				additionalFilesDir = (targetBaseDir + '/additional-files-'
 									  + source.index)
 			# export sources and additional files (if any)

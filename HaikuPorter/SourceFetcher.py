@@ -329,17 +329,7 @@ class SourceFetcherForSourcePackage(object):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
 		self.sourceShouldBeValidated = False
-
 		self.sourcePackagePath = self.uri[4:]
-		sourcePackageName = os.path.basename(self.sourcePackagePath)
-		(name, version, revision, unused) = sourcePackageName.split('-')
-		# determine port name by dropping '_source' or '_source_rigged'
-		if name.endswith('_source_rigged'):
-			name = name[:-14]
-		elif name.endswith('_source'):
-			name = name[:-7]
-		self.relativeSourcePath \
-			= 'develop/sources/%s-%s-%s/source' % (name, version, revision)
 
 	def fetch(self):
 		pass
@@ -350,10 +340,22 @@ class SourceFetcherForSourcePackage(object):
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
 			if sourceSubDir else sourceBaseDir
+
+		sourcePackageName = os.path.basename(self.sourcePackagePath)
+		(name, version, revision, unused) = sourcePackageName.split('-')
+		# determine port name by dropping '_source' or '_source_rigged'
+		if name.endswith('_source_rigged'):
+			name = name[:-14]
+		elif name.endswith('_source'):
+			name = name[:-7]
+		relativeSourcePath = ('develop/sources/%s-%s-%s/%s'
+							  % (name, version, revision,
+								 os.path.basename(sourceBaseDir)))
+
 		check_call([Configuration.getPackageCommand(), 'extract',
 					'-C', sourceDir, self.sourcePackagePath,
-					self.relativeSourcePath])
-		foldSubdirIntoSourceDir(self.relativeSourcePath, sourceDir)
+					relativeSourcePath])
+		foldSubdirIntoSourceDir(relativeSourcePath, sourceDir)
 
 # -- Fetches sources via svn --------------------------------------------------
 

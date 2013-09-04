@@ -426,9 +426,17 @@ class Repository(object):
 						'-C', self.inputSourcePackagesPath, sourcePackagePath]
 					   + entries)
 
-			# add SRC_URI to recipe which points to the source package
+			# override all SRC_URIs in recipe to point to the source package
+			with open(recipeFilePath, 'r') as recipeFile:
+				recipeText = recipeFile.read()
+			textToAdd = ('\n# Added by haikuporter:\n'
+						 + 'SRC_URI="pkg:%s"\n' % sourcePackagePath)
+			for index in range(2, 100):
+				srcUri = 'SRC_URI_' + str(index)
+				if not srcUri in recipeText:
+					break
+				textToAdd += '%s="pkg:%s"\n' % (srcUri, sourcePackagePath)
 			with open(recipeFilePath, 'a') as recipeFile:
-				recipeFile.write('\n# Added by haikuporter:\n')
-				recipeFile.write('SRC_URI="pkg:%s"\n' % sourcePackagePath)
+				recipeFile.write(textToAdd)
 
 		return recipeFilePath
