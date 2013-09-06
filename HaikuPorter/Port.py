@@ -225,35 +225,17 @@ class Port(object):
 				self.packages.append(package)
 
 		# create source package if it hasn't been specified or disabled:
-		recipeAttributes = getRecipeAttributes()
 		if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
 			and not basedOnSourcePackage and not getOption('noSourcePackages')):
-			# copy all recipe attributes from base package, but set defaults
-			# for everything that's package-specific:
-			sourceKeys = {}
-			baseKeys = self.recipeKeysByExtension['']
-			for key in baseKeys.keys():
-				if recipeAttributes[key]['extendable'] != Extendable.NO:
-					sourceKeys[key] = recipeAttributes[key]['default']
-				else:
-					sourceKeys[key] = baseKeys[key]
-
-			# a source package shares some attributes with the base package,
-			# just provides itself and has no requires:
 			name = self.name + '_source'
-			sourceSuffix \
-				= recipeAttributes['SUMMARY']['suffix'][PackageType.SOURCE]
-			sourceKeys.update({
-				'ARCHITECTURES': baseKeys['ARCHITECTURES'],
-				'COPYRIGHT': baseKeys['COPYRIGHT'],
-				'DESCRIPTION': baseKeys['DESCRIPTION'],
-				'HOMEPAGE': baseKeys['HOMEPAGE'],
-				'LICENSE': baseKeys['LICENSE'],
-				'PROVIDES': [ name + ' = ' + self.version ],
-				'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
-			})
-			package = packageFactory(PackageType.SOURCE, name, self, sourceKeys,
-									 self.policy)
+			package = self._createSourcePackage(name)
+			self.allPackages.append(package)
+			self.packages.append(package)
+
+		# create additiohal rigged source package if necessary
+		if getOption('createSourcePackagesForBootstrap'):
+			name = self.name + '_source_rigged'
+			package = self._createSourcePackage(name)
 			self.allPackages.append(package)
 			self.packages.append(package)
 
@@ -1259,3 +1241,31 @@ class Port(object):
 					% (description, self.versionedName,
 					   '\n\t\t'.join(packageInfoFiles),
 					   '\n\t\t'.join(repositories)))
+
+	def _createSourcePackage(self, name):
+		# copy all recipe attributes from base package, but set defaults
+		# for everything that's package-specific:
+		sourceKeys = {}
+		baseKeys = self.recipeKeysByExtension['']
+		recipeAttributes = getRecipeAttributes()
+		for key in baseKeys.keys():
+			if recipeAttributes[key]['extendable'] != Extendable.NO:
+				sourceKeys[key] = recipeAttributes[key]['default']
+			else:
+				sourceKeys[key] = baseKeys[key]
+
+		# a source package shares some attributes with the base package,
+		# just provides itself and has no requires:
+		sourceSuffix \
+			= recipeAttributes['SUMMARY']['suffix'][PackageType.SOURCE]
+		sourceKeys.update({
+			'ARCHITECTURES': baseKeys['ARCHITECTURES'],
+			'COPYRIGHT': baseKeys['COPYRIGHT'],
+			'DESCRIPTION': baseKeys['DESCRIPTION'],
+			'HOMEPAGE': baseKeys['HOMEPAGE'],
+			'LICENSE': baseKeys['LICENSE'],
+			'PROVIDES': [ name + ' = ' + self.version ],
+			'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
+		})
+		return packageFactory(PackageType.SOURCE, name, self, sourceKeys,
+							  self.policy)
