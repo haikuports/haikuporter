@@ -344,10 +344,8 @@ class Source(object):
 		if not os.path.exists(targetDir):
 			os.makedirs(targetDir)
 		if rigged:
-			# the source packages for the bootstrap image need to be rigged,
-			# i.e. the sources must be in directly usable (i.e. patched) form,
-			# as git isn't available in the bootstrap image, so no patches can
-			# be applied there
+			# export the sources in 'rigged' state, i.e. in directly usable
+			# form, with patches already applied
 			check_call('tar c --exclude=.git . | tar x -C %s' % targetDir,
 					   cwd=self.sourceDir, shell=True)
 		else:
