@@ -16,7 +16,8 @@ from HaikuPorter.BuildPlatform import buildPlatform
 from HaikuPorter.ConfigParser import ConfigParser
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Options import getOption
-from HaikuPorter.Package import (PackageType, packageFactory)
+from HaikuPorter.Package import (PackageType, sourcePackageFactory,
+								 packageFactory)
 from HaikuPorter.RecipeAttributes import getRecipeAttributes
 from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, Phase,
 									 Status)
@@ -229,15 +230,13 @@ class Port(object):
 			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
 				and not basedOnSourcePackage
 				and not getOption('noSourcePackages')):
-				name = self.name + '_source'
-				package = self._createSourcePackage(name)
+				package = self._createSourcePackage(name, False)
 				self.allPackages.append(package)
 				self.packages.append(package)
 
-			# create additiohal rigged source package if necessary
+			# create additional rigged source package if necessary
 			if getOption('createSourcePackagesForBootstrap'):
-				name = self.name + '_source_rigged'
-				package = self._createSourcePackage(name)
+				package = self._createSourcePackage(name, True)
 				self.allPackages.append(package)
 				self.packages.append(package)
 
@@ -1244,7 +1243,7 @@ class Port(object):
 					   '\n\t\t'.join(packageInfoFiles),
 					   '\n\t\t'.join(repositories)))
 
-	def _createSourcePackage(self, name):
+	def _createSourcePackage(self, name, rigged):
 		# copy all recipe attributes from base package, but set defaults
 		# for everything that's package-specific:
 		sourceKeys = {}
@@ -1269,5 +1268,8 @@ class Port(object):
 			'PROVIDES': [ name + ' = ' + self.version ],
 			'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
 		})
-		return packageFactory(PackageType.SOURCE, name, self, sourceKeys,
-							  self.policy)
+		if rigged:
+			name = self.name + '_source_rigged'
+		else:
+			name = self.name + '_source'
+		return sourcePackageFactory(name, self, sourceKeys, self.policy, rigged)

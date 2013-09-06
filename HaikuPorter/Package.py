@@ -55,7 +55,8 @@ class PackageType(str):
 # -- Base class for all packages ----------------------------------------------
 
 class Package(object):
-	def __init__(self, packageType, name, port, recipeKeys, policy):
+	def __init__(self, packageType, name, port, recipeKeys, policy,
+				 isRiggedSourcePackage = False):
 		self.type = packageType
 		self.name = name
 		self.version = port.version
@@ -75,8 +76,10 @@ class Package(object):
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 
+		self.isRiggedSourcePackage = isRiggedSourcePackage
+
 		if packageType == PackageType.SOURCE:
-			if name.endswith('_rigged'):
+			if self.isRiggedSourcePackage:
 				# let rigged source packages use the target architecture, as
 				# (potentially) they have been patched specifically for that
 				# target architecture
@@ -462,7 +465,10 @@ class SourcePackage(Package):
 	def prepopulatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
-		print "Populating source package ..."
+		if self.isRiggedSourcePackage:
+			print "Populating rigged source package ..."
+		else:
+			print "Populating source package ..."
 
 		super(SourcePackage, self).prepopulatePackagingDir(port)
 
@@ -477,7 +483,7 @@ class SourcePackage(Package):
 				additionalFilesDir = (targetBaseDir + '/additional-files-'
 									  + source.index)
 			# export sources and additional files (if any)
-			source.exportSources(targetDir, self.name.endswith('_rigged'))
+			source.exportSources(targetDir, self.isRiggedSourcePackage)
 			source.exportAdditionalFiles(additionalFilesDir)
 
 		# copy patches, if there are any
@@ -531,3 +537,11 @@ def packageFactory(packageType, name, port, recipeKeys, policy):
 		return SourcePackage(packageType, name, port, recipeKeys, policy)
 	else:
 		return Package(packageType, name, port, recipeKeys, policy)
+
+# -- source package factory function ------------------------------------------
+
+def sourcePackageFactory(name, port, recipeKeys, policy, rigged):
+	"""Creates a source package"""
+
+	return SourcePackage(PackageType.SOURCE, name, port, recipeKeys, policy,
+						 rigged)
