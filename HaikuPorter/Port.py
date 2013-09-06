@@ -224,20 +224,22 @@ class Port(object):
 			if package.isBuildableOnArchitecture(self.targetArchitecture):
 				self.packages.append(package)
 
-		# create source package if it hasn't been specified or disabled:
-		if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
-			and not basedOnSourcePackage and not getOption('noSourcePackages')):
-			name = self.name + '_source'
-			package = self._createSourcePackage(name)
-			self.allPackages.append(package)
-			self.packages.append(package)
+		if not self.isMetaPort:
+			# create source package if it hasn't been specified or disabled:
+			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
+				and not basedOnSourcePackage
+				and not getOption('noSourcePackages')):
+				name = self.name + '_source'
+				package = self._createSourcePackage(name)
+				self.allPackages.append(package)
+				self.packages.append(package)
 
-		# create additiohal rigged source package if necessary
-		if getOption('createSourcePackagesForBootstrap'):
-			name = self.name + '_source_rigged'
-			package = self._createSourcePackage(name)
-			self.allPackages.append(package)
-			self.packages.append(package)
+			# create additiohal rigged source package if necessary
+			if getOption('createSourcePackagesForBootstrap'):
+				name = self.name + '_source_rigged'
+				package = self._createSourcePackage(name)
+				self.allPackages.append(package)
+				self.packages.append(package)
 
 		if self.sources:
 			self.sourceDir = self.sources[0].sourceDir
