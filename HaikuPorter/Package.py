@@ -493,7 +493,7 @@ class SourcePackage(Package):
 				shutil.copy(patchFilePath, patchesTargetDir)
 
 		# copy licenses, if there are any
-		if os.path.exists(port.licensesDir):
+		if port.licensesDir and os.path.exists(port.licensesDir):
 			licensesTargetDir = targetBaseDir + '/licenses'
 			if not os.path.exists(licensesTargetDir):
 				os.mkdir(licensesTargetDir)

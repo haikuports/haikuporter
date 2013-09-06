@@ -341,12 +341,12 @@ class Port(object):
 						for item in recipeLicense:
 							haikuLicenseList = fileList = os.listdir(
 								buildPlatform.getLicensesDirectory())
-							if item not in fileList:
+							if (item not in fileList and self.licensesDir
+								and os.path.exists(self.licensesDir)):
 								fileList = []
-								if os.path.exists(self.licensesDir):
-									licenses = os.listdir(self.licensesDir)
-									for filename in licenses:
-										fileList.append(filename)
+								licenses = os.listdir(self.licensesDir)
+								for filename in licenses:
+									fileList.append(filename)
 							if item not in fileList:
 								haikuLicenseList.sort()
 								sysExit('No match found for license ' + item
