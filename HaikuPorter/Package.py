@@ -477,7 +477,7 @@ class SourcePackage(Package):
 				additionalFilesDir = (targetBaseDir + '/additional-files-'
 									  + source.index)
 			# export sources and additional files (if any)
-			source.exportSources(targetDir)
+			source.exportSources(targetDir, self.name.endswith('_rigged'))
 			source.exportAdditionalFiles(additionalFilesDir)
 
 		# copy patches, if there are any

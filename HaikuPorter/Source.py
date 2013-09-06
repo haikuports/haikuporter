@@ -338,12 +338,12 @@ class Source(object):
 				 + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 
-	def exportSources(self, targetDir):
+	def exportSources(self, targetDir, rigged):
 		"""Export sources into a folder"""
 
 		if not os.path.exists(targetDir):
 			os.makedirs(targetDir)
-		if getOption('createSourcePackagesForBootstrap'):
+		if rigged:
 			# the source packages for the bootstrap image need to be rigged,
 			# i.e. the sources must be in directly usable (i.e. patched) form,
 			# as git isn't available in the bootstrap image, so no patches can
