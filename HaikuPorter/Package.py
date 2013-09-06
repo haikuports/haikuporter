@@ -207,7 +207,6 @@ class Package(object):
 		self.packagingDir = self.packagingDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.workDir = '/'
-		self.patchesDir = '/patches'
 
 	def prepopulatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
@@ -482,7 +481,7 @@ class SourcePackage(Package):
 			source.exportAdditionalFiles(additionalFilesDir)
 
 		# copy patches, if there are any
-		if os.path.exists(port.patchesDir):
+		if port.patchesDir and os.path.exists(port.patchesDir):
 			patchesTargetDir = targetBaseDir + '/patches'
 			for patchFileName in os.listdir(port.patchesDir):
 				if not (patchFileName.startswith(port.versionedName + '.')
@@ -529,8 +528,6 @@ def packageFactory(packageType, name, port, recipeKeys, policy):
 	"""Creates a package matching the given type"""
 
 	if packageType == PackageType.SOURCE:
-		if getOption('createSourcePackagesForBootstrap'):
-			name += '_rigged'
 		return SourcePackage(packageType, name, port, recipeKeys, policy)
 	else:
 		return Package(packageType, name, port, recipeKeys, policy)

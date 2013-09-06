@@ -59,7 +59,7 @@ class Source(object):
 
 		# PATCHES refers to patch files relative to the patches directory,
 		# make those absolute paths.
-		if self.patches:
+		if self.patches and port.patchesDir:
 			self.patches = [
 				port.patchesDir + '/' + patch for patch in self.patches
 			]
