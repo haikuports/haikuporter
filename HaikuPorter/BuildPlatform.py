@@ -109,12 +109,11 @@ class BuildPlatformHaiku(BuildPlatform):
 		return self.findDirectoryCache[which]
 
 	def resolveDependencies(self, packageInfoFiles, repositories,
-			isPrerequired, fallbackRepositories = []):
-		# When resolving pre-requirements, also consider the build host's
-		# common package directory. In either case add the system packages
-		# directory.
+			considerBuildhostPackages, fallbackRepositories = []):
+		# Only add the build host's common package directory if asked to
+		# do that, but always add the system packages.
 		repositories = list(repositories)
-		if isPrerequired:
+		if considerBuildhostPackages:
 			repositories.append(
 				buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'))
 		repositories.append(
@@ -330,7 +329,7 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.findDirectoryMap[which]
 
 	def resolveDependencies(self, packageInfoFiles, repositories,
-			isPrerequired, fallbackRepositories = []):
+			considerBuildhostPackages, fallbackRepositories = []):
 		# Use the RequiresUpdater to resolve the dependencies.
 		requiresUpdater = RequiresUpdater([], packageInfoFiles)
 		repositories += fallbackRepositories
@@ -339,10 +338,10 @@ class BuildPlatformUnix(BuildPlatform):
 				if not (package.endswith('.hpkg')
 						or package.endswith('.PackageInfo')):
 					continue
-				# For prerequirements consider only cross packages, for
-				# non-prerequirements consider only non-cross packages
+				# Only cross packages are build-host packages, everything
+				# else are target packages
 				isCrossPackage = '_cross_' in package
-				if isPrerequired == isCrossPackage:
+				if considerBuildhostPackages == isCrossPackage:
 					requiresUpdater.addPackageFile(repository + '/' + package)
 
 		for packageInfoFile in packageInfoFiles:
@@ -355,7 +354,7 @@ class BuildPlatformUnix(BuildPlatform):
 			package = pendingPackages.pop()
 			packageInfo = PackageInfo(package)
 			for requires in packageInfo.getRequires():
-				if isPrerequired:
+				if considerBuildhostPackages:
 					if requires.getName() in self.implicitBuildHostProvides:
 						continue
 				else:

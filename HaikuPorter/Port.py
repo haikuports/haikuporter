@@ -506,19 +506,17 @@ class Port(object):
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
 		requiredPackages \
-			= self._resolveRequiredDependencies(packageInfoFiles,
-												[ packagesPath ],
-												'required ports',
-												[ workRepositoryPath ])
+			= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
+										'required ports', False,
+										[ workRepositoryPath ])
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
 		prerequiredPackages \
-			= self._resolvePrerequiredDependencies(packageInfoFiles,
-												   [ packagesPath],
-												   'prerequired ports',
-												   [ workRepositoryPath ])
+			= self._resolveDependencies(packageInfoFiles, [ packagesPath],
+										'prerequired ports', True,
+										[ workRepositoryPath ])
 
 		# return list of unique ports which need to be built before this one
 		processedPackages = set()
@@ -546,9 +544,9 @@ class Port(object):
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
 		try:
-			self._resolveRequiredDependencies(packageInfoFiles, [],
-											  'why is port needed',
-											  [ workRepositoryPath ])
+			self._resolveDependencies(packageInfoFiles, [], 
+									  'why is port needed', False,
+									  [ workRepositoryPath ])
 		except SystemExit:
 			return
 
@@ -556,9 +554,9 @@ class Port(object):
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 														  workRepositoryPath)
 		try:
-			self._resolvePrerequiredDependencies(packageInfoFiles, [],
-												 'why is port needed',
-												 [ workRepositoryPath ])
+			self._resolveDependencies(packageInfoFiles, [],
+									  'why is port needed', True,
+									  [ workRepositoryPath ])
 		except SystemExit:
 			return
 
@@ -998,9 +996,9 @@ class Port(object):
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
-		prereqPackages = self._resolvePrerequiredDependencies(
+		prereqPackages = self._resolveDependencies(
 			packageInfoFiles, [ packagesPath ],
-			'prerequired packages for build')
+			'prerequired packages for build', True)
 
 		return [
 			package for package in prereqPackages
@@ -1014,8 +1012,10 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
-		packages = self._resolveRequiredDependencies(
-			packageInfoFiles, [ packagesPath ], 'required packages for build')
+		packages = self._resolveDependencies(packageInfoFiles, 
+											 [ packagesPath ], 
+											 'required packages for build',
+											 buildPlatform.isHaiku())
 
 		return [
 			package for package in packages
@@ -1218,23 +1218,13 @@ class Port(object):
 		args += params
 		check_call(args, cwd=dir, env=shellEnv)
 
-	def _resolveRequiredDependencies(self, packageInfoFiles, repositories,
-			description, fallbackRepositories = []):
-		return self._resolveDependencies(packageInfoFiles, repositories,
-			description, False, fallbackRepositories)
-
-	def _resolvePrerequiredDependencies(self, packageInfoFiles, repositories,
-			description, fallbackRepositories = []):
-		return self._resolveDependencies(packageInfoFiles, repositories,
-			description, True, fallbackRepositories)
-
 	def _resolveDependencies(self, packageInfoFiles, repositories, description,
-			isPrerequired, fallbackRepositories):
+			considerBuildhostPackages, fallbackRepositories = []):
 		"""Resolve dependencies of one or more package-infos"""
 
 		try:
 			return buildPlatform.resolveDependencies(packageInfoFiles,
-				repositories, isPrerequired, fallbackRepositories)
+				repositories, considerBuildhostPackages, fallbackRepositories)
 		except (CalledProcessError, LookupError):
 			sysExit(('unable to resolve %s for %s\n'
 					 + '\tpackage-infos:\n\t\t%s\n'
