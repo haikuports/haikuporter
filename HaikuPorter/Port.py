@@ -436,7 +436,8 @@ class Port(object):
 											 			  workRepositoryPath)
 		requiredPackages \
 			= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
-										'required ports', False,
+										'required ports', 
+										buildPlatform.isHaiku(),
 										[ workRepositoryPath ])
 
 		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
