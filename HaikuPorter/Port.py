@@ -475,7 +475,8 @@ class Port(object):
 											 			  workRepositoryPath)
 		try:
 			self._resolveDependencies(packageInfoFiles, [], 
-									  'why is port needed', False,
+									  'why is port needed',
+									  buildPlatform.isHaiku(),
 									  [ workRepositoryPath ])
 		except SystemExit:
 			return
