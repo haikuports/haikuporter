@@ -246,7 +246,7 @@ class Main(object):
 
 		if self.options.why:
 			# find out about why another port is required
-			port = allPorts[self.portSpecs.first()['id']]
+			port = allPorts[self.portSpecs[0]['id']]
 			whySpec = self._splitPortSpecIntoNameVersionAndRevision(
 				self.options.why)
 			if not whySpec['version']:
