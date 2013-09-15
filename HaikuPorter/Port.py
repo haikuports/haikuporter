@@ -83,6 +83,7 @@ class Port(object):
 		self.baseDir = baseDir
 		self.outputDir = outputDir
 		self.recipeIsBroken = False
+		self.recipeHasBeenParsed = False
 
 		if secondaryArchitecture:
 			self.workDir = (self.outputDir + '/work-' + secondaryArchitecture
@@ -166,91 +167,20 @@ class Port(object):
 	def __exit__(self, type, value, traceback):
 		pass
 
+	def parseRecipeFileIfNeeded(self):
+		"""Make sure that the recipe has been parsed and silently parse it if
+		   it hasn't"""
+		self.parseRecipeFile(False)
+		
 	def parseRecipeFile(self, showWarnings):
-		"""Parse the recipe-file of the specified port"""
-
-		# temporarily mark the recipe as broken, such that any exception
-		# will leave this marker on
-		self.recipeIsBroken = True
-
-		# set default SOURCE_DIR
-		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
-
-		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
-		self.recipeKeys = {}
-		for entries in self.recipeKeysByExtension.values():
-			self.recipeKeys.update(entries)
-
-		# initialize variables that depend on the recipe revision
-		self.revision = str(self.recipeKeys['REVISION'])
-		self.fullVersion = self.version + '-' + self.revision
-		self.revisionedName = self.name + '-' + self.fullVersion
-
-		# create sources
-		self.sources = []
-		keys = self.recipeKeys
-		basedOnSourcePackage = False
-		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
-			source = Source(self, index, keys['SRC_URI'][index],
-							keys['SRC_FILENAME'].get(index, None),
-							keys['CHECKSUM_MD5'].get(index, None),
-							keys['SOURCE_DIR'].get(index, None),
-							keys['PATCHES'].get(index, []),
-							keys['ADDITIONAL_FILES'].get(index, []))
-			if source.isFromSourcePackage():
-				basedOnSourcePackage = True
-			self.sources.append(source)
-
-		# create packages
-		self.allPackages = []
-		self.packages = []
-		haveSourcePackage = False
-		for extension in sorted(self.recipeKeysByExtension.keys()):
-			keys = self.recipeKeysByExtension[extension]
-			if extension:
-				name = self.name + '_' + extension
-			else:
-				name = self.name
-			packageType = PackageType.byName(extension)
-			package = packageFactory(packageType, name, self, keys, self.policy)
-			self.allPackages.append(package)
-
-			if packageType == PackageType.SOURCE:
-				if getOption('noSourcePackages') or basedOnSourcePackage:
-					# creation of the source package should be avoided, so we
-					# skip adding it to the list of active packages
-					continue
-				haveSourcePackage = True
-
-			if package.isBuildableOnArchitecture(self.targetArchitecture):
-				self.packages.append(package)
-
-		if not self.isMetaPort:
-			# create source package if it hasn't been specified or disabled:
-			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
-				and not basedOnSourcePackage
-				and not getOption('noSourcePackages')):
-				package = self._createSourcePackage(name, False)
-				self.allPackages.append(package)
-				self.packages.append(package)
-
-			# create additional rigged source package if necessary
-			if getOption('createSourcePackagesForBootstrap'):
-				package = self._createSourcePackage(name, True)
-				self.allPackages.append(package)
-				self.packages.append(package)
-
-		if self.sources:
-			self.sourceDir = self.sources[0].sourceDir
-		else:
-			self.sourceDir = self.workDir
-
-		# set up the complete list of variables we'll inherit to the shell
-		# when executing a recipe action
-		self._updateShellVariablesFromRecipe()
-
-		# take notice that the recipe is ok
-		self.recipeIsBroken = False
+		"""Parse the recipe-file of the specified port, unless already done"""
+		
+		if self.recipeHasBeenParsed:
+			return
+		try:
+			self._parseRecipeFile(showWarnings)
+		finally:
+			self.recipeHasBeenParsed = True
 
 	def validateRecipeFile(self, showWarnings = False):
 		"""Validate the syntax and contents of the recipe file"""
@@ -400,6 +330,7 @@ class Port(object):
 	def printDescription(self):
 		"""Show port description"""
 
+		self.parseRecipeFileIfNeeded()
 		print '*' * 80
 		print 'VERSION: %s' % self.versionedName
 		print 'REVISION: %s' % self.revision
@@ -417,8 +348,7 @@ class Port(object):
 		"""Return the status of this port on the target architecture"""
 
 		try:
-			if not hasattr(self, 'recipeKeys'):
-				self.parseRecipeFile(False)
+			self.parseRecipeFileIfNeeded()
 
 			# use the status of the base package as overall status of the port
 			return self.allPackages[0].getStatusOnSecondaryArchitecture(
@@ -447,40 +377,38 @@ class Port(object):
 	def writePackageInfosIntoRepository(self, repositoryPath):
 		"""Write one PackageInfo-file per stable package into the repository"""
 
+		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
 			package.writePackageInfoIntoRepository(repositoryPath)
 
 	def removePackageInfosFromRepository(self, repositoryPath):
 		"""Remove all PackageInfo-files for this port from the repository"""
 
+		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
 			package.removePackageInfoFromRepository(repositoryPath)
 
 	def generatePackageInfoFiles(self, requiresTypes, targetPath = None):
 		"""Generates package info files with given types of requires."""
 
+		self.parseRecipeFileIfNeeded()
 		return self._generatePackageInfoFiles(requiresTypes, targetPath)
 
 	def obsoletePackages(self, packagesPath):
 		"""Moves all package-files into the 'obsolete' sub-directory"""
 
+		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
 			package.obsoletePackage(packagesPath)
 
 	def getMainPackage(self):
-		# isBuildableOnTargetArchitecture() makes sure the recipe has been
-		# parsed and the packages have been created.
-		self.isBuildableOnTargetArchitecture()
-
+		self.parseRecipeFileIfNeeded()
 		if self.packages:
 			return self.packages[0]
 		return None
 
 	def getSourcePackage(self):
-		# isBuildableOnTargetArchitecture() makes sure the recipe has been
-		# parsed and the packages have been created.
-		self.isBuildableOnTargetArchitecture()
-
+		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
 			if package.type == PackageType.SOURCE:
 				return package
@@ -489,6 +417,7 @@ class Port(object):
 	def sourcePackageExists(self, packagesPath):
 		"""Determines if the source package already exists"""
 
+		self.parseRecipeFileIfNeeded()
 		package = self.getSourcePackage()
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
@@ -573,6 +502,7 @@ class Port(object):
 	def downloadSource(self):
 		"""Fetch the source archives and validate their checksum"""
 
+		self.parseRecipeFileIfNeeded()
 		for source in self.sources:
 			source.fetch(self)
 			source.validateChecksum(self)
@@ -580,11 +510,14 @@ class Port(object):
 	def unpackSource(self):
 		"""Unpack the source archive(s)"""
 
+		self.parseRecipeFileIfNeeded()
 		for source in self.sources:
 			source.unpack(self)
 
 	def patchSource(self):
 		"""Apply the Haiku patches to the source(s)"""
+
+		self.parseRecipeFileIfNeeded()
 
 		# skip all patches if any of the sources comes from a rigged source
 		# package (as those contain already patched sources)
@@ -623,6 +556,7 @@ class Port(object):
 	def extractPatchset(self):
 		"""Extract patchsets from all sources"""
 
+		self.parseRecipeFileIfNeeded()
 		if self.isMetaPort:
 			return
 
@@ -646,6 +580,8 @@ class Port(object):
 
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package(s)"""
+
+		self.parseRecipeFileIfNeeded()
 
 		# reset build flag if recipe is newer (unless that's prohibited)
 		if (not getOption('preserveFlags') and self.checkFlag('build')
@@ -812,6 +748,92 @@ class Port(object):
 		"""Test the port"""
 
 		# TODO!
+
+	def _parseRecipeFile(self, showWarnings):
+		"""Parse the recipe-file of the specified port"""
+
+		# temporarily mark the recipe as broken, such that any exception
+		# will leave this marker on
+		self.recipeIsBroken = True
+
+		# set default SOURCE_DIR
+		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
+
+		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
+		self.recipeKeys = {}
+		for entries in self.recipeKeysByExtension.values():
+			self.recipeKeys.update(entries)
+
+		# initialize variables that depend on the recipe revision
+		self.revision = str(self.recipeKeys['REVISION'])
+		self.fullVersion = self.version + '-' + self.revision
+		self.revisionedName = self.name + '-' + self.fullVersion
+
+		# create sources
+		self.sources = []
+		keys = self.recipeKeys
+		basedOnSourcePackage = False
+		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
+			source = Source(self, index, keys['SRC_URI'][index],
+							keys['SRC_FILENAME'].get(index, None),
+							keys['CHECKSUM_MD5'].get(index, None),
+							keys['SOURCE_DIR'].get(index, None),
+							keys['PATCHES'].get(index, []),
+							keys['ADDITIONAL_FILES'].get(index, []))
+			if source.isFromSourcePackage():
+				basedOnSourcePackage = True
+			self.sources.append(source)
+
+		# create packages
+		self.allPackages = []
+		self.packages = []
+		haveSourcePackage = False
+		for extension in sorted(self.recipeKeysByExtension.keys()):
+			keys = self.recipeKeysByExtension[extension]
+			if extension:
+				name = self.name + '_' + extension
+			else:
+				name = self.name
+			packageType = PackageType.byName(extension)
+			package = packageFactory(packageType, name, self, keys, self.policy)
+			self.allPackages.append(package)
+
+			if packageType == PackageType.SOURCE:
+				if getOption('noSourcePackages') or basedOnSourcePackage:
+					# creation of the source package should be avoided, so we
+					# skip adding it to the list of active packages
+					continue
+				haveSourcePackage = True
+
+			if package.isBuildableOnArchitecture(self.targetArchitecture):
+				self.packages.append(package)
+
+		if not self.isMetaPort:
+			# create source package if it hasn't been specified or disabled:
+			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
+				and not basedOnSourcePackage
+				and not getOption('noSourcePackages')):
+				package = self._createSourcePackage(name, False)
+				self.allPackages.append(package)
+				self.packages.append(package)
+
+			# create additional rigged source package if necessary
+			if getOption('createSourcePackagesForBootstrap'):
+				package = self._createSourcePackage(name, True)
+				self.allPackages.append(package)
+				self.packages.append(package)
+
+		if self.sources:
+			self.sourceDir = self.sources[0].sourceDir
+		else:
+			self.sourceDir = self.workDir
+
+		# set up the complete list of variables we'll inherit to the shell
+		# when executing a recipe action
+		self._updateShellVariablesFromRecipe()
+
+		# take notice that the recipe is ok
+		self.recipeIsBroken = False
 
 	def _updateShellVariablesFromRecipe(self):
 		"""Fill dictionary with variables that will be inherited to the shell
