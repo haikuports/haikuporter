@@ -276,17 +276,15 @@ class Main(object):
 		for portSpec in self.portSpecs:
 			port = allPorts[portSpec['id']]
 
-			if (self.options.build and not portSpec['id'] in bootstrapPorts
+			if self.options.test:
+				self._testPort(port)
+			elif (self.options.build and not portSpec['id'] in bootstrapPorts
 				and not self.options.noDependencies):
 				self._buildMainPort(port)
 			elif self.options.extractPatchset:
 				port.extractPatchset()
 			else:
 				self._buildPort(port, True, self.packagesPath)
-
-			# TODO: reactivate these!
-			# if self.options.test:
-			#	port.test()
 
 		# show summary of policy violations
 		if Policy.violationsByPort:
@@ -426,6 +424,21 @@ class Main(object):
 			port.build(self.packagesPath, self.options.package, targetPath)
 
 		self.builtPortIDs.add(port.versionedName)
+
+	def _testPort(self, port):
+		"""Build a single port"""
+
+		if not port.checkFlag('build'):
+			sysExit('Please build the port first.')
+
+		print '-' * 70
+		print 'TESTING ' + port.category + '::' + port.versionedName
+		print '-' * 70
+
+		# pass-on options to port
+		port.beQuiet = self.options.quiet
+
+		port.test(self.packagesPath)
 
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture

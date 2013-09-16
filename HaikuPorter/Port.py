@@ -593,21 +593,7 @@ class Port(object):
 			print 'unsetting build flag, as recipe is newer'
 			self.unsetFlag('build')
 
-		# Delete and re-create a couple of directories
-		directoriesToCreate = [
-			self.packageInfoDir, self.packagingBaseDir,
-			self.buildPackageDir, self.hpkgDir
-		]
-		directoriesToRemove = [
-			directory for directory in directoriesToCreate
-			if os.path.exists(directory)
-		]
-		if directoriesToRemove:
-			print 'Cleaning up remains of last build ...'
-			for directory in directoriesToRemove:
-				shutil.rmtree(directory, True)
-		for directory in directoriesToCreate:
-			os.mkdir(directory)
+		self._recreatePackageDirectories()
 
 		for package in self.packages:
 			if ((getOption('createSourcePackagesForBootstrap')
@@ -644,49 +630,25 @@ class Port(object):
 			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
 					= self.shellVariables['crossSysrootDir']
+			
+			def makeChrootFunctions():
+				def taskFunction():
+					if getOption('enterChroot'):
+						self._openShell()
+					else:
+						self._executeBuild(makePackages)
+				def successFunction():
+					# tell the shell scriptlets that the task has succeeded
+					chrootSetup.buildOk = True
+				def failureFunction():
+					sysExit('Build has failed - stopping.')
+				return {
+					'task': taskFunction, 
+					'success': successFunction, 
+					'failure': failureFunction 
+				}
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
-				if not getOption('quiet'):
-					print 'chroot has these packages active:'
-					for package in sorted(allPackages):
-						print '\t' + package
-
-				pid = os.fork()
-				if pid == 0:
-					# child, enter chroot and execute the build
-					try:
-						os.chroot(self.workDir)
-						self._adjustToChroot()
-						if getOption('enterChroot'):
-							self._openShell()
-						else:
-							self._executeBuild(makePackages)
-					except BaseException as exception:
-						if not getOption('enterChroot'):
-							if getOption('debug'):
-								traceback.print_exc()
-							else:
-								print exception
-							os._exit(1)
-					os._exit(0)
-
-				# parent, wait on child
-				try:
-					childStatus = os.waitpid(pid, 0)[1]
-					if not getOption('enterChroot'):
-						if childStatus != 0:
-							sysExit('Build has failed - stopping.')
-
-						# tell the shell scriptlets that the build has succeeded
-						chrootSetup.buildOk = True
-				except KeyboardInterrupt:
-					if pid > 0:
-						print '*** interrupted - stopping child process'
-						try:
-							os.kill(pid, signal.SIGINT)
-							os.waitpid(pid, 0)
-						except:
-							pass
-						print '*** child stopped'
+				self._executeInChroot(chrootSetup, makeChrootFunctions())
 		else:
 			if not getOption('quiet'):
 				print 'non-chroot has these packages active:'
@@ -728,6 +690,42 @@ class Port(object):
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
 
+	def test(self, packagesPath):
+		"""Test the port"""
+
+		if not buildPlatform.isHaiku():
+			sysExit("Sorry, can't execute a test unless running on Haiku")
+			
+		self.parseRecipeFileIfNeeded()
+
+		self._recreatePackageDirectories()
+
+		requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
+		prerequiredPackages \
+				= self._getPackagesPrerequiredForBuild(packagesPath)
+		self.policy.setPort(self, requiredPackages)
+
+		allPackages = set(requiredPackages + prerequiredPackages)
+		# setup chroot and keep it while executing the actions
+		chrootEnvVars = {
+			'packages': '\n'.join(allPackages),
+			'recipeFile': self.preparedRecipeFile,
+			'targetArchitecture': self.targetArchitecture,
+			'portDir': self.baseDir,
+		}
+
+		def makeChrootFunctions():
+			def taskFunction():
+				self._executeTest()
+			def failureFunction():
+				sysExit('Test has failed - stopping.')
+			return {
+				'task': taskFunction, 
+				'failure': failureFunction 
+			}
+		with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
+			self._executeInChroot(chrootSetup, makeChrootFunctions())
+
 	def setFlag(self, name, index = '1'):
 		if index == '1':
 			touchFile('%s/flag.%s' % (self.workDir, name))
@@ -748,11 +746,6 @@ class Port(object):
 			return os.path.exists('%s/flag.%s' % (self.workDir, name))
 
 		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
-
-	def test(self):
-		"""Test the port"""
-
-		# TODO!
 
 	def _parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port"""
@@ -998,6 +991,62 @@ class Port(object):
 			self.shellVariables[relativeName] = value
 			self.shellVariables[name] = prefix + '/' + value
 
+	def _recreatePackageDirectories(self):
+		# Delete and re-create a couple of directories
+		directoriesToCreate = [
+			self.packageInfoDir, self.packagingBaseDir,
+			self.buildPackageDir, self.hpkgDir
+		]
+		directoriesToRemove = [
+			directory for directory in directoriesToCreate
+			if os.path.exists(directory)
+		]
+		if directoriesToRemove:
+			print 'Cleaning up temporary directories ...'
+			for directory in directoriesToRemove:
+				shutil.rmtree(directory, True)
+		for directory in directoriesToCreate:
+			os.mkdir(directory)
+
+	def _executeInChroot(self, chrootSetup, chrootFunctions):
+		pid = os.fork()
+		if pid == 0:
+			# child, enter chroot and execute the given task
+			try:
+				os.chroot(self.workDir)
+				self._adjustToChroot()
+				chrootFunctions['task']()
+			except BaseException as exception:
+				if not getOption('enterChroot'):
+					if getOption('debug'):
+						traceback.print_exc()
+					else:
+						print exception
+					os._exit(1)
+			os._exit(0)
+
+		# parent, wait on child
+		try:
+			childStatus = os.waitpid(pid, 0)[1]
+			if not getOption('enterChroot'):
+				if childStatus != 0:
+					if 'failure' in chrootFunctions:
+						chrootFunctions['failure']()
+					# normally, the following should never be executed,
+					# as the error function is meant to return.
+					sysExit('chroot-task failed')
+				if 'success' in chrootFunctions:
+					chrootFunctions['success']()
+		except KeyboardInterrupt:
+			if pid > 0:
+				print '*** interrupted - stopping child process'
+				try:
+					os.kill(pid, signal.SIGINT)
+					os.waitpid(pid, 0)
+				except:
+					pass
+				print '*** child stopped'
+
 	def _generatePackageInfoFiles(self, requiresTypes, path = None):
 		"""Generates package info files with given types of requires."""
 
@@ -1052,13 +1101,7 @@ class Port(object):
 	def _executeBuild(self, makePackages):
 		"""Executes the build stage and creates all declared packages"""
 
-		# create all build packages (but don't activate them yet)
-		for package in self.packages:
-			if ((getOption('createSourcePackagesForBootstrap')
-					or getOption('createSourcePackages'))
-				and package.type != PackageType.SOURCE):
-				continue
-			package.createBuildPackage()
+		self._createBuildPackages()
 
 		if not (getOption('createSourcePackagesForBootstrap')
 			or getOption('createSourcePackages')):
@@ -1070,6 +1113,28 @@ class Port(object):
 
 		if makePackages:
 			self._makePackages()
+
+		self._removeBuildPackages()
+
+	def _executeTest(self):
+		"""Executes the test stage"""
+
+		self._createBuildPackages()
+
+		self._doTestStage()
+
+		self._removeBuildPackages()
+
+	def _createBuildPackages(self):
+		# create all build packages (but don't activate them yet)
+		for package in self.packages:
+			if ((getOption('createSourcePackagesForBootstrap')
+					or getOption('createSourcePackages'))
+				and package.type != PackageType.SOURCE):
+				continue
+			package.createBuildPackage()
+
+	def _removeBuildPackages(self):
 		for package in self.packages:
 			if ((getOption('createSourcePackagesForBootstrap')
 					or getOption('createSourcePackages'))
