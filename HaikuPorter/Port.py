@@ -28,7 +28,8 @@ from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 setupChrootScript)
 from HaikuPorter.Source import Source
 from HaikuPorter.Utils import (filteredEnvironment, naturalCompare,
-							   symlinkGlob, sysExit, touchFile, warn)
+							   storeStringInFile, symlinkGlob, sysExit, 
+							   touchFile, warn)
 
 import os
 import shutil
@@ -1214,9 +1215,11 @@ class Port(object):
 		shellVariables = self.shellVariables.copy()
 		shellVariables['fileToParse'] = self.preparedRecipeFile
 		shellVariables['recipeAction'] = action
-		wrapperScript = (getShellVariableSetters(shellVariables)
+		wrapperScriptContent = (getShellVariableSetters(shellVariables)
 			+ recipeActionScript)
-		self._openShell(['-c', wrapperScript], dir)
+		wrapperScript = self.workDir + '/wrapper-script'
+		storeStringInFile(wrapperScriptContent, wrapperScript)
+		self._openShell(['-c', '. ' + wrapperScript], dir)
 
 	def _openShell(self, params = [], dir = '/'):
 		"""Sets up environment and runs a shell with the given parameters"""
