@@ -15,15 +15,12 @@ import tarfile
 import zipfile
 
 
-# -- path to haikuports-tree --------------------------------------------------
-
+# path to haikuports-tree --------------------------------------------------
 haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 
-# -- path to haikuporter-tree --------------------------------------------------
-
+# path to haikuporter-tree
 haikuporterRepoUrl = 'git@bitbucket.org:haikuports/haikuporter.git'
 
-# -- capture output of shell command -----------------------------------------
 def check_output(*popenargs, **kwargs):
 	"""local clone of subprocess.check_output() provided by python-2.7
 	   TODO: drop this once we have upgraded python to 2.7"""
@@ -38,7 +35,6 @@ def check_output(*popenargs, **kwargs):
 	return output
 
 
-# -- sysExit ------------------------------------------------------------------
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
@@ -46,7 +42,6 @@ def sysExit(message):
 	sys.exit(message)
 
 
-# -- warn ---------------------------------------------------------------------
 def warn(message):
 	"""print a warning"""
 
@@ -54,20 +49,17 @@ def warn(message):
 	print(message)
 
 
-# -- printError ---------------------------------------------------------------
 def printError(*args):
 	"""print a to stderr"""
 
 	sys.stderr.write(' '.join(map(str, args)) + '\n')
 
 
-# -- escapeForPackageInfo -----------------------------------------------------
 def escapeForPackageInfo(string):
 	"""escapes string to be used within "" quotes in a .PackageInfo file"""
 
 	return string.replace('\\', '\\\\').replace('"', '\\"')
 
-# -- unpackArchive ------------------------------------------------------------
 def unpackArchive(archiveFile, targetBaseDir, subdir):
 	"""Unpack archive into a directory"""
 
@@ -114,21 +106,18 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
 
-# -- symlinkDirectoryContents -------------------------------------------------
 def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst = True):
 	"""Populates targetDir with symlinks to all files from sourceDir"""
 
 	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir) ]
 	symlinkFiles(files, targetDir)
 
-# -- symlinkGlob --------------------------------------------------------------
 def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst = True):
 	"""Populates targetDir with symlinks to all files matching given globSpec"""
 
 	files = glob.glob(globSpec)
 	symlinkFiles(files, targetDir)
 
-# -- symlinkFiles -------------------------------------------------------------
 def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	"""Populates targetDir with symlinks to all the given files"""
 
@@ -139,7 +128,6 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
 
-# -- touchFile ----------------------------------------------------------------
 def touchFile(file):
 	"""Touches given file, making sure that its modification date is bumped"""
 
@@ -148,21 +136,18 @@ def touchFile(file):
 	else:
 		open(file, 'w').close()
 
-# -- storeStringInFile --------------------------------------------------------
 def storeStringInFile(string, file):
 	"""Stores the given string in the file with the given name"""
 
 	with open(file, 'w') as fo:
 		fo.write(string)
 
-# -- readStringFromFile--------------------------------------------------------
 def readStringFromFile(file):
 	"""Returns the contents of the file with the given name as a string"""
 
 	with open(file, 'r') as fo:
 		return fo.read()
 
-# -- isCommandAvailable -------------------------------------------------------
 availableCommands = {}
 def isCommandAvailable(command):
 	"""returns whether the given command is available"""
@@ -178,14 +163,12 @@ def isCommandAvailable(command):
 	availableCommands[command] = False
 	return False
 
-# -- ensureCommandIsAvailable -------------------------------------------------
 def ensureCommandIsAvailable(command):
 	"""checks if the given command is available and bails if not"""
 
 	if not isCommandAvailable(command):
 		sysExit("'" + command + "' is not available, please install it")
 
-# -- naturalCompare -----------------------------------------------------------
 def naturalCompare(left, right):
 	"""performs a natural compare between the two given strings - returns:
 		-1 if left is lower than right
@@ -196,7 +179,6 @@ def naturalCompare(left, right):
 	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
 	return cmp(alphanum_key(left), alphanum_key(right))
 
-# -- bareVersionCompare -------------------------------------------------------
 def bareVersionCompare(left, right):
 	"""Compares two given bare versions - returns:
 		-1 if left is lower than right
@@ -224,7 +206,6 @@ def bareVersionCompare(left, right):
 
 		index += 1
 
-# -- versionCompare -----------------------------------------------------------
 def versionCompare(left, right):
 	"""Compares two given versions that may include a pre-release - returns
 		-1 if left is lower than right
@@ -249,7 +230,6 @@ def versionCompare(left, right):
 	# compare pre-release strings
 	return naturalCompare(leftElements[1], rightElements[1])
 
-# -- filteredEnvironment ------------------------------------------------------
 def filteredEnvironment():
 	"""returns a filtered version of os.environ, such that none of the
 	   variables that we export for one port leak into the shell environment
