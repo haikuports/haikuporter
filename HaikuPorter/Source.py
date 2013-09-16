@@ -309,6 +309,9 @@ class Source(object):
 			check_call(['git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^',
 						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir)
 
+		patchSetDirectory = os.path.dirname(patchSetFilePath)
+		if not os.path.exists(patchSetDirectory):
+			os.mkdir(patchSetDirectory)
 		with open(patchSetFilePath, 'w') as patchSetFile:
 			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'],
 					   stdout=patchSetFile, cwd=self.sourceDir)
