@@ -670,7 +670,6 @@ class Port(object):
 					childStatus = os.waitpid(pid, 0)[1]
 					if not getOption('enterChroot'):
 						if childStatus != 0:
-							self.unsetFlag('build')
 							sysExit('Build has failed - stopping.')
 
 						# tell the shell scriptlets that the build has succeeded
@@ -1059,7 +1058,11 @@ class Port(object):
 
 		if not (getOption('createSourcePackagesForBootstrap')
 			or getOption('createSourcePackages')):
-			self._doBuildStage()
+			try:
+				self._doBuildStage()
+			except BaseException:
+				self.unsetFlag('build')
+				raise
 
 		if makePackages:
 			self._makePackages()
