@@ -276,7 +276,9 @@ class Main(object):
 		for portSpec in self.portSpecs:
 			port = allPorts[portSpec['id']]
 
-			if self.options.test:
+			if self.options.clean:
+				port.cleanWorkDirectory()
+			elif self.options.test:
 				self._testPort(port)
 			elif (self.options.build and not portSpec['id'] in bootstrapPorts
 				and not self.options.noDependencies):
@@ -409,10 +411,6 @@ class Main(object):
 
 		if parseRecipe:
 			port.parseRecipeFile(True)
-
-		# clean the work directory, if requested
-		if self.options.clean:
-			port.cleanWorkDirectory()
 
 		if not port.isMetaPort:
 			port.downloadSource()

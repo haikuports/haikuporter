@@ -499,7 +499,7 @@ class Port(object):
 		"""Clean the working directory"""
 
 		if os.path.exists(self.workDir):
-			print 'Cleaning work directory...'
+			print 'Cleaning work directory of %s ...' % self.versionedName
 			shutil.rmtree(self.workDir)
 
 	def downloadSource(self):
