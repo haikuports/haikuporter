@@ -73,6 +73,9 @@ def parseOptions():
 					  action='store_true', dest='strictPolicy', default=False,
 					  help="require strict packaging policy adherence; "
 					  	"packaging will fail on any policy violation")
+	parser.add_option('--debug',
+					  action='store_true', dest='debug', default=False,
+					  help="show Python stack traces for fatal errors")
 
 	parser.add_option('-n', '--nopatch',
 					  action='store_false', dest='patch', default=True,

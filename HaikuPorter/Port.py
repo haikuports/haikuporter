@@ -660,9 +660,12 @@ class Port(object):
 							self._openShell()
 						else:
 							self._executeBuild(makePackages)
-					except:
+					except BaseException as exception:
 						if not getOption('enterChroot'):
-							traceback.print_exc()
+							if getOption('debug'):
+								traceback.print_exc()
+							else:
+								print exception
 							os._exit(1)
 					os._exit(0)
 

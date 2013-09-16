@@ -25,6 +25,7 @@ from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl,
 import os
 from subprocess import check_call
 import sys
+import traceback
 
 
 # -- Main Class ---------------------------------------------------------------
@@ -32,7 +33,16 @@ import sys
 class Main(object):
 	def __init__(self, options, args):
 		self.options = options
-
+		try:
+			self.run(args)
+		except BaseException as exception:
+			if getOption('debug'):
+				traceback.print_exc()
+			else:
+				print exception
+			exit(1)
+			
+	def run(self, args):
 		self.policy = Policy(self.options.strictPolicy)
 
 		self.repository = None
