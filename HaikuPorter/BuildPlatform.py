@@ -184,9 +184,11 @@ class BuildPlatformHaiku(BuildPlatform):
 			try:
 				linkTarget = os.readlink('/packages/%s/.self'
 										 % revisionedName)
-				if not os.path.basename(linkTarget) in [ '..', 'common' ]:
-					if activated:
-						return
+				packagingFolder = revisionedName.split('-')[0]
+				linkTargetIsPackagingFolder \
+					= os.path.basename(linkTarget) == packagingFolder
+				if linkTargetIsPackagingFolder == activated:
+					return
 			except OSError:
 				if not activated:
 					return
