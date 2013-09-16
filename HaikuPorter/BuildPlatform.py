@@ -15,6 +15,7 @@ from HaikuPorter.Utils import (check_output, printError, sysExit)
 import os
 import platform
 import shutil
+import time
 from subprocess import check_call, CalledProcessError
 
 
@@ -138,12 +139,12 @@ class BuildPlatformHaiku(BuildPlatform):
 		return packagePath.startswith(
 			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
-	def activateBuildPackage(self, workDir, packagePath):
+	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		# activate the build package
 		packagesDir = buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY')
 		activeBuildPackage = packagesDir + '/' + os.path.basename(packagePath)
-		if os.path.exists(activeBuildPackage):
-			os.remove(activeBuildPackage)
+		self.deactivateBuildPackage(workDir, activeBuildPackage, 
+									revisionedName)
 
 		if not buildPlatform.usesChroot():
 			# may have to cross devices, so better use a symlink
@@ -152,11 +153,14 @@ class BuildPlatformHaiku(BuildPlatform):
 			# symlinking a package won't work in chroot, but in this
 			# case we are sure that the move won't cross devices
 			os.rename(packagePath, activeBuildPackage)
+		self._waitForPackageSelfLink(revisionedName, True)
 		return activeBuildPackage
 
-	def deactivateBuildPackage(self, workDir, activeBuildPackage):
+	def deactivateBuildPackage(self, workDir, activeBuildPackage,
+							   revisionedName):
 		if os.path.exists(activeBuildPackage):
 			os.remove(activeBuildPackage)
+		self._waitForPackageSelfLink(revisionedName, False)
 
 	def getCrossToolsBasePrefix(self, workDir):
 		return ''
@@ -175,6 +179,21 @@ class BuildPlatformHaiku(BuildPlatform):
 			buildOK):
 		sysExit('cleanNonChrootBuildEnvironment() not supported on Haiku')
 
+	def _waitForPackageSelfLink(self, revisionedName, activated):
+		while True:
+			try:
+				linkTarget = os.readlink('/packages/%s/.self'
+										 % revisionedName)
+				if not os.path.basename(linkTarget) in [ '..', 'common' ]:
+					if activated:
+						return
+			except OSError:
+				if not activated:
+					return
+			print ('waiting for build package %s to be %s'
+				   % (revisionedName,
+				      'activated' if activated else 'deactivated'))
+			time.sleep(1)
 
 # -- BuildPlatformUnix class --------------------------------------------------
 
@@ -377,11 +396,12 @@ class BuildPlatformUnix(BuildPlatform):
 	def isSystemPackage(self, packagePath):
 		return False
 
-	def activateBuildPackage(self, workDir, packagePath):
+	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		return self._activatePackage(packagePath,
 			self._getPackageInstallRoot(workDir, packagePath), None, True)
 
-	def deactivateBuildPackage(self, workDir, activeBuildPackage):
+	def deactivateBuildPackage(self, workDir, activeBuildPackage,
+							   revisionedName):
 		if os.path.exists(activeBuildPackage):
 			shutil.rmtree(activeBuildPackage)
 

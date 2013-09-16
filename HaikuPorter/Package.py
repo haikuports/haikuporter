@@ -286,14 +286,14 @@ class Package(object):
 		"""Activate the build package"""
 
 		self.activeBuildPackage = buildPlatform.activateBuildPackage(
-			self.workDir, self.buildPackage)
+			self.workDir, self.buildPackage, self.revisionedName)
 
 	def removeBuildPackage(self):
 		"""Deactivate and remove the build package"""
 
 		if self.activeBuildPackage:
 			buildPlatform.deactivateBuildPackage(self.workDir,
-				self.activeBuildPackage)
+				self.activeBuildPackage, self.revisionedName)
 			self.activeBuildPackage = None
 		if self.buildPackage and os.path.exists(self.buildPackage):
 			os.remove(self.buildPackage)
