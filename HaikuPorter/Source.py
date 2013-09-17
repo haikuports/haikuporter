@@ -240,7 +240,8 @@ class Source(object):
 
 				if patch.endswith('.patchset'):
 					print 'Applying patchset "%s" ...' % patch
-					check_call(['git', 'am', '-3', patch], cwd=self.sourceDir)
+					check_call(['git', 'am', '-3', patch], cwd=self.sourceDir,
+							   env=self.gitEnv)
 				else:
 					print 'Applying patch "%s" ...' % patch
 					check_call(['git', 'apply', '-p1', '--index', patch],
@@ -307,19 +308,21 @@ class Source(object):
 		if needToRebase:
 			# the tag exists, so we drop the respective commit
 			check_call(['git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^',
-						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir)
+						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir,
+						env=self.gitEnv)
 
 		patchSetDirectory = os.path.dirname(patchSetFilePath)
 		if not os.path.exists(patchSetDirectory):
 			os.mkdir(patchSetDirectory)
 		with open(patchSetFilePath, 'w') as patchSetFile:
 			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'],
-					   stdout=patchSetFile, cwd=self.sourceDir)
+					   stdout=patchSetFile, cwd=self.sourceDir, 
+					   env=self.gitEnv)
 
 		if needToRebase:
 			# put PATCH_FUNCTION back in
 			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'haikuport'],
-					   cwd=self.sourceDir)
+					   cwd=self.sourceDir, env=self.gitEnv)
 
 		# warn if there's a correpsonding arch-specific patchset file
 		if os.path.exists(archPatchSetFilePath):
