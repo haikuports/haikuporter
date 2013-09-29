@@ -9,6 +9,8 @@ import re
 
 # Defines the set of real machines architectures that are supported.
 class MachineArchitecture(str):
+	ARM = 'arm'
+	M68K = 'm68k'
 	PPC = 'ppc'
 	X86 = 'x86'
 	X86_64 = 'x86_64'
@@ -18,6 +20,8 @@ class MachineArchitecture(str):
 	def getAll():
 		# TODO: fetch this from PackageKit?
 		return [
+			Architectures.ARM,
+			Architectures.M68K,
 			Architectures.PPC,
 			Architectures.X86,
 			Architectures.X86_64,
@@ -27,6 +31,8 @@ class MachineArchitecture(str):
 	@staticmethod
 	def getTripleFor(architecture):
 		dict = {
+			Architectures.ARM: 'arm-unknown-haiku',
+			Architectures.M68K: 'm68k-unknown-haiku',
 			Architectures.PPC: 'powerpc-apple-haiku',
 			Architectures.X86: 'i586-pc-haiku',
 			Architectures.X86_64: 'x86_64-unknown-haiku',
