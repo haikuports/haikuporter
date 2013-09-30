@@ -633,6 +633,10 @@ class Port(object):
 			
 			def makeChrootFunctions():
 				def taskFunction():
+					if not getOption('quiet'):
+						print 'chroot has these packages active:'
+						for package in sorted(allPackages):
+							print '\t' + package
 					if getOption('enterChroot'):
 						self._openShell()
 					else:
