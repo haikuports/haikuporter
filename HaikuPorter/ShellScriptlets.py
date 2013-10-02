@@ -388,8 +388,8 @@ fixPkgconfig()
 
 	for file in $sourcePkgconfigDir/*; do
 		name=$(basename $file)
-		sed -e 's,^libdir=\(.*\),libdir=${prefix}/develop/lib,' \
-			-e 's,^includedir=\(.*\),includedir=${prefix}/develop/headers,' \
+		sed -e 's,^libdir=\(.*\),libdir=${prefix}/'${relativeDevelopLibDir}',' \
+			-e 's,^includedir=\(.*\),includedir=${prefix}/'${relativeIncludeDir}',' \
 			$file > $targetPkgconfigDir/$name
 	done
 
