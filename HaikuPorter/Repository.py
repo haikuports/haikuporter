@@ -178,10 +178,17 @@ class Repository(object):
 						versionedName = name + '-' + version
 						if versionedName in self._allPorts:
 							# this version of the current port already was
-							# defined by an input source package - skip
+							# defined - skip
 							if not self.quiet and not getOption('doBootstrap'):
-								print('Warning: ' + versionedName + ' in tree '
-									  'is overruled by input source package')
+								otherPort = self._allPorts[versionedName]
+								if otherPort.category == '<source-package>':
+									warn('%s/%s  is overruled by input source '
+										 'package' % (category, versionedName))
+								else:
+									warn('%s/%s  is overruled by duplicate in '
+										  '%s - please remove one of them'
+										  % (category, versionedName,
+										     otherPort.category))
 							continue
 						if name not in self._portVersionsByName:
 							self._portVersionsByName[name] = [ version ]
