@@ -213,7 +213,7 @@ class Policy(object):
 			# package that provides the library. Find the library in the file
 			# system.
 			libraryPath = None
-			for directory in ['/boot/common/lib', '/boot/system/lib']:
+			for directory in ['/boot/system/lib']:
 				path = directory + self.secondaryArchSubDir + '/' + library
 				if os.path.exists(path):
 					libraryPath = path

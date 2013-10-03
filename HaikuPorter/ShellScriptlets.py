@@ -635,7 +635,7 @@ fi
 
 # Shell scriptlet that prepares a chroot environment for entering.
 # Invoked with $packages filled with the list of packages that should
-# be activated (via common/packages) and $recipeFilePath pointing to the
+# be activated (via system/packages) and $recipeFilePath pointing to the
 # recipe file.
 # Additionally, $crossSysrootDir will be set to the cross-sysroot directory
 # when the cross-build repository is active and $targetArchitecture will be
@@ -648,28 +648,24 @@ set -e
 mkdir -p \
 	dev \
 	boot/system/packages \
-	boot/common/cache/tmp \
-	boot/common/packages \
-	boot/common/settings/etc \
+	boot/system/cache/tmp \
+	boot/system/packages \
+	boot/system/settings/etc \
 	port \
 
 ln -sfn /boot/system system
 ln -sfn /boot/system/bin bin
 ln -sfn /boot/system/package-links packages
-ln -sfn /boot/common/cache/tmp tmp
-ln -sfn /boot/common/settings/etc etc
-ln -sfn /boot/common/var var
+ln -sfn /boot/system/cache/tmp tmp
+ln -sfn /boot/system/settings/etc etc
+ln -sfn /boot/system/var var
 
 # remove any packages that may be lying around
-rm -f boot/common/packages/*.hpkg
 rm -f boot/system/packages/*.hpkg
 
-# link all system packages
-ln -s /boot/system/packages/*.hpkg boot/system/packages/
-
-# link the list of required common packages
+# link the list of required packages
 for pkg in $packages; do
-	ln -sfn "$pkg" boot/common/packages/
+	ln -sfn "$pkg" boot/system/packages/
 done
 
 # silently unmount if needed, just to be one the safe side
@@ -679,10 +675,7 @@ fi
 if [ -e boot/system/bin ]; then
 	unmount boot/system
 fi
-if [ -e boot/common/bin ]; then
-	unmount boot/common
-fi
-if [ -e port/work* ]; then
+if [ "$(echo port/work*)" != port/work\* ]; then
 	unmount port
 fi
 
@@ -700,10 +693,9 @@ if [[ -n $crossSysrootDir ]]; then
 	mount -t packagefs -p "type system" $crossSysrootDir/boot/system
 fi
 
-# mount dev, system-packagefs and common-packagefs
+# mount dev and system-packagefs
 mount -t bindfs -p "source /dev" dev
 mount -t packagefs -p "type system" boot/system
-mount -t packagefs -p "type common" boot/common
 
 # bind-mount the port directory to port/
 mount -t bindfs -p "source $portDir" port
@@ -754,7 +746,6 @@ fi
 
 checkedUnmount dev
 checkedUnmount boot/system
-checkedUnmount boot/common
 checkedUnmount port
 
 # wipe files and directories if it is ok to do so

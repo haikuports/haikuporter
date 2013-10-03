@@ -1080,10 +1080,7 @@ class Port(object):
 			packageInfoFiles, [ packagesPath ],
 			'prerequired packages for build', True)
 
-		return [
-			package for package in prereqPackages
-				if not buildPlatform.isSystemPackage(package)
-		]
+		return prereqPackages
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the
@@ -1097,10 +1094,7 @@ class Port(object):
 											 'required packages for build',
 											 buildPlatform.isHaiku())
 
-		return [
-			package for package in packages
-				if not buildPlatform.isSystemPackage(package)
-		]
+		return packages
 
 	def _executeBuild(self, makePackages):
 		"""Executes the build stage and creates all declared packages"""
@@ -1306,7 +1300,6 @@ class Port(object):
 		elif self.secondaryArchitecture:
 			# include secondary architecture tools in path
 			secondaryArchPaths = [
-				'/boot/common/bin/' + self.secondaryArchitecture,
 				'/boot/system/bin/' + self.secondaryArchitecture ]
 			shellEnv['PATH'] = ':'.join(
 				secondaryArchPaths + [ shellEnv['PATH'] ])

@@ -111,12 +111,8 @@ class BuildPlatformHaiku(BuildPlatform):
 
 	def resolveDependencies(self, packageInfoFiles, repositories,
 			considerBuildhostPackages, fallbackRepositories = []):
-		# Only add the build host's common package directory if asked to
-		# do that, but always add the system packages.
+		# Always add the system packages.
 		repositories = list(repositories)
-		if considerBuildhostPackages:
-			repositories.append(
-				buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'))
 		repositories.append(
 			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		repositories += fallbackRepositories
@@ -141,7 +137,7 @@ class BuildPlatformHaiku(BuildPlatform):
 
 	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		# activate the build package
-		packagesDir = buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY')
+		packagesDir = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
 		activeBuildPackage = packagesDir + '/' + os.path.basename(packagePath)
 		self.deactivateBuildPackage(workDir, activeBuildPackage, 
 									revisionedName)
@@ -166,7 +162,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		return ''
 
 	def getCrossToolsBinPaths(self, workDir):
-		return [ '/boot/common/develop/tools/bin' ]
+		return [ '/boot/system/develop/tools/bin' ]
 
 	def getInstallDestDir(self, workDir):
 		return None
@@ -256,7 +252,6 @@ class BuildPlatformUnix(BuildPlatform):
 			'B_PACKAGE_LINKS_DIRECTORY': '/packages',
 			'B_SYSTEM_DIRECTORY': '/boot/system',
 			'B_SYSTEM_PACKAGES_DIRECTORY': '/boot/system/packages',
-			'B_COMMON_PACKAGES_DIRECTORY': '/boot/common/packages',
 			}
 
 		self.crossDevelPackage = Configuration.getCrossDevelPackage()
@@ -436,7 +431,6 @@ class BuildPlatformUnix(BuildPlatform):
 		os.mkdir(sysrootDir + '/packages')
 		os.mkdir(sysrootDir + '/boot')
 		os.mkdir(sysrootDir + '/boot/system')
-		os.mkdir(sysrootDir + '/boot/common')
 
 		self._activateCrossTools(workDir, sysrootDir, secondaryArchitecture)
 

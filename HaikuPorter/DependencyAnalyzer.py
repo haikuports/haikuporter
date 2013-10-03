@@ -76,7 +76,6 @@ class PortNode(object):
 		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
 				+ [
 					doneRepositoryPath,
-					buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
 					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
 				])
 		try:
@@ -178,7 +177,6 @@ class DependencyAnalyzer(object):
 
 		for directory in [
 			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
-			buildPlatform.findDirectory('B_COMMON_PACKAGES_DIRECTORY'),
 		]:
 			for package in os.listdir(directory):
 				if not package.endswith('.hpkg'):
