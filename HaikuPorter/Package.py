@@ -192,14 +192,14 @@ class Package(object):
 		   for the one matching the package name"""
 
 		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True,
-								  Architectures.ANY)
+								  False, Architectures.ANY)
 
 	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 
 		self._generatePackageInfo(packageInfoPath, requiresToUse, quiet, False,
-								  self.architecture)
+								  True, self.architecture)
 
 	def adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
@@ -267,9 +267,9 @@ class Package(object):
 		# create a package info for a build package
 		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName
 							+ '-build.PackageInfo')
-		self.generatePackageInfo(buildPackageInfo,
-								 ['REQUIRES', 'BUILD_REQUIRES',
-								  'BUILD_PREREQUIRES'], True)
+		self._generatePackageInfo(buildPackageInfo,
+			['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES'], True, False,
+			False, self.architecture)
 
 		# create the build package
 		buildPackage = (self.buildPackageDir + '/' + self.revisionedName
@@ -300,7 +300,7 @@ class Package(object):
 			self.buildPackage = None
 
 	def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
-							 fakeEmptyProvides, architecture):
+			fakeEmptyProvides, withActivationActions, architecture):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 
@@ -380,16 +380,20 @@ class Package(object):
 			self._writePackageInfoListQuotePaths(infoFile,
 				self.recipeKeys['HOMEPAGE'], 'urls')
 
-			self._writePackageInfoListQuotePaths(infoFile,
-				self.recipeKeys['GLOBAL_WRITABLE_FILES'],
-				'global-writable-files')
-			self._writePackageInfoListQuotePaths(infoFile,
-				self.recipeKeys['USER_SETTINGS_FILES'], 'user-settings-files')
-			self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS', 'users')
-			self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS',
-				'groups')
-			self._writePackageInfoListQuotePaths(infoFile,
-				self.recipeKeys['POST_INSTALL_SCRIPTS'], 'post-install-scripts')
+			if withActivationActions:
+				self._writePackageInfoListQuotePaths(infoFile,
+					self.recipeKeys['GLOBAL_WRITABLE_FILES'],
+					'global-writable-files')
+				self._writePackageInfoListQuotePaths(infoFile,
+					self.recipeKeys['USER_SETTINGS_FILES'],
+					'user-settings-files')
+				self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS',
+					'users')
+				self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS',
+					'groups')
+				self._writePackageInfoListQuotePaths(infoFile,
+					self.recipeKeys['POST_INSTALL_SCRIPTS'],
+					'post-install-scripts')
 
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.
