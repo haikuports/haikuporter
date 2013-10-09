@@ -977,7 +977,7 @@ class Port(object):
 		# use finddir to get them (also for the configure variables above), but
 		# we want relative paths here.
 		relativeOtherDirs = {
-			'addOnsDir':		'add-ons',
+			'addOnsDir':		'add-ons' + secondaryArchSubDir,
 			'appsDir':			'apps',
 			'debugInfoDir':		'develop/debug',
 			'developDir':		'develop',
