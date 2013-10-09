@@ -80,7 +80,16 @@ class BuildPlatformHaiku(BuildPlatform):
 
 	def init(self, treePath, outputDirectory):
 		# get system haiku package version and architecture
-		haikuPackageInfo = PackageInfo('/system/packages/haiku.hpkg')
+		systemPackageName = None
+		for file in os.listdir('/system/packages'):
+			if (file == 'haiku.hpkg'
+				or (file.startswith('haiku-') and file.endswith('.hpkg'))):
+				systemPackageName = file
+				break
+		if systemPackageName == None:
+			sysExit('Failed to find Haiku system package')
+
+		haikuPackageInfo = PackageInfo('/system/packages/' + systemPackageName)
 		self.haikuVersion = haikuPackageInfo.getVersion()
 		machine = MachineArchitecture.getTripleFor(
 			haikuPackageInfo.getArchitecture())
