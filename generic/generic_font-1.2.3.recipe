@@ -1,0 +1,32 @@
+SUMMARY="Font summary"
+DESCRIPTION="Extended Font description"
+HOMEPAGE=""
+SRC_URI=""
+CHECKSUM_MD5="abc123"
+LICENSE=""
+COPYRIGHT=""
+REVISION="1"
+
+ARCHITECTURES="any"
+DISABLE_SOURCE_PACKAGE=yes
+
+PROVIDES="generic_font = $portVersion"
+REQUIRES=""
+BUILD_REQUIRES=""
+BUILD_PREREQUIRES="coreutils"
+
+SOURCE_DIR="generic-font-1.2.3"
+
+BUILD()
+{
+	true
+}
+
+INSTALL()
+{
+	FONTDIR=$fontsDir/generic-font
+	mkdir -p ${FONTDIR}
+	cp generic-font1.ttf ${FONTDIR}
+	cp generic-font2.ttf ${FONTDIR}
+	cp generic-font-bold.ttf ${FONTDIR}
+}
