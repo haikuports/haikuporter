@@ -260,12 +260,17 @@ class Configuration(object):
 		# Find the configuration file. It may be
 		# * specified on the command line,
 		# * in the current directory,
-		# * '/etc/haikuports.conf'.
+		# * '~/config/settings/haikuports.conf'.
 		haikuportsConf = getOption('configFile')
 		if not haikuportsConf:
 			haikuportsConf = 'haikuports.conf'
 			if not os.path.exists(haikuportsConf):
-				haikuportsConf = '/etc/haikuports.conf'
+				haikuportsConf = (os.path.expanduser('~')
+					+ '/config/settings/haikuports.conf')
+		
+		if not os.path.exists(haikuportsConf):
+			sysExit("Unable to find haikuports.conf in known search paths.\n"
+				+ "See haikuports-sample.conf for more information");
 
 		configParser = ConfigParser(haikuportsConf, haikuportsAttributes)
 		configurationValue = configParser.getEntriesForExtension('')

@@ -16,7 +16,7 @@ from subprocess import CalledProcessError
 import types
 
 
-# -- /etc/haikuports.conf and *.recipe parser --------------------------------
+# -- haikuports.conf and *.recipe parser --------------------------------
 
 class ConfigParser(object):
 	def __init__(self, filename, attributes, shellVariables={}):
