@@ -1304,6 +1304,10 @@ class Port(object):
 			shellEnv['PATH'] = ':'.join(
 				secondaryArchPaths + [ shellEnv['PATH'] ])
 
+		# Request scripting language (perl, python) modules to be installed
+		# into vendor directories automatically.
+		shellEnv['HAIKU_USE_VENDOR_DIRECTORIES'] = '1';
+
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)
 		shellEnv['LC_ALL'] = 'POSIX'
