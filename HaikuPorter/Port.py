@@ -864,6 +864,8 @@ class Port(object):
 			'portFullVersion': fullVersion,
 			'portRevisionedName': revisionedName,
 			'portDir': self.workDir + '/port',
+			'packagerName': Configuration.getPackagerName(),
+			'packagerEmail': Configuration.getPackagerEmail(),
 		})
 
 		if not forParsing:
