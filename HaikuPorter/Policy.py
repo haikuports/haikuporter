@@ -254,8 +254,8 @@ class Policy(object):
 	def _getPackageProvidingPath(self, path):
 		try:
 			with open(os.devnull, "w") as devnull:
-				output = check_output(['catattr', '-d', 'SYS:PACKAGE', path],
-					stderr=devnull)
+				output = check_output(
+					['catattr', '-d', 'SYS:PACKAGE_FILE', path], stderr=devnull)
 				if output.endswith('\n'):
 					output = output[:-1]
 				return output
