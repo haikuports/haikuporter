@@ -237,6 +237,7 @@ runConfigure()
 {
 	# parse arguments
 	varsToOmit=""
+	omitBuildSpec=false
 
 	while [ $# -ge 1 ]; do
 		case $1 in
@@ -248,6 +249,10 @@ runConfigure()
 				varsToOmit="$1"
 				shift 1
 				;;
+			--omit-buildspec)
+				omitBuildSpec=true
+				shift 1
+				;;
 			*)
 				break
 				;;
@@ -255,8 +260,8 @@ runConfigure()
 	done
 
 	if [ $# -lt 1 ]; then
-		echo "Usage: runConfigure [ --omit-dirs <dirsToOmit> ] <configure>" \
-			"<argsToConfigure> ..." >&2
+		echo "Usage: runConfigure [ --omit-dirs <dirsToOmit> ]" \
+			"[ --omit-buildspec ] <configure> <argsToConfigure> ..." >&2
 		echo "  <configure>" >&2
 		echo "      The configure program to be called." >&2
 		echo "  <dirsToOmit>" >&2
@@ -265,6 +270,9 @@ runConfigure()
 		echo "      argument!)." >&2
 		echo "  <argsToConfigure>" >&2
 		echo "      The additional arguments passed to configure." >&2
+		echo "	--omit-buildspec" >&2
+		echo "		Don't pass an explicit build target to configure for" >&2
+		echo "		native builds." >&2
 		exit 1
 	fi
 
@@ -281,7 +289,7 @@ runConfigure()
 
 	# explicitly set build target for native build (avoid guessing)
 	buildSpec=""
-	if [[ $isCrossRepository != true ]]; then
+	if [[ $omitBuildSpec != true && $isCrossRepository != true ]]; then
 		buildSpec="--build=$effectiveTargetMachineTriple"
 	fi
 
