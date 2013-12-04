@@ -1,0 +1,50 @@
+SUMMARY="Short ProjectX description"
+DESCRIPTION="
+	Long ProjectX description.
+	Spanning several paragraphs, maybe
+	- containing
+	- bullet points etc.
+	"
+HOMEPAGE="https://homepage/of/projectx.org"
+SRC_URI="git+https://github.com/HaikuArchives/projectx#3911030177bb2921ad7000c263988ac3615f096e"
+REVISION="1"
+LICENSE="MIT"
+COPYRIGHT="2013 Developer name"
+
+ARCHITECTURES="x86_gcc2 ?x86 ?x86_64"
+
+PROVIDES="
+	projectx = $portVersion
+	app:projectx = $portVersion
+	"
+REQUIRES="
+	haiku >= $haikuVersion
+	"
+BUILD_REQUIRES="
+	haiku_devel >= $haikuVersion
+	"
+BUILD_PREREQUIRES="
+	makefile_engine
+	cmd:make
+	cmd:gcc
+	cmd:mkdepend
+	"
+USER_SETTINGS_FILES="settings/projectx.config"
+
+SOURCE_DIR="$portVersionedName"
+
+BUILD()
+{
+	make $jobArgs BUILDHOME=`finddir B_SYSTEM_DEVELOP_DIRECTORY`
+}
+
+INSTALL()
+{
+	ARCHITECTURE=$(echo $buildArchitecture | sed 's/_/-/g')
+	cd objects.$ARCHITECTURE-release
+	
+	APPDIR=$appsDir/ProjectX
+	mkdir -p ${APPDIR}
+	cp -a ProjectX ${APPDIR}
+	addAppDeskbarSymlink ${APPDIR}/ProjectX
+}
