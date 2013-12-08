@@ -560,8 +560,8 @@ packageEntries()
 		exit 1
 	fi
 
-	# move the entries
-	for file in $*; do
+	# move the entries provided
+	for file; do
 		# If absolute, resolve to relative file name.
 		if [[ "$file" = /* ]]; then
 			if [[ "$file" =~ $installDestDir$prefix/(.*) ]]; then
