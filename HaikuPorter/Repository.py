@@ -94,7 +94,7 @@ class Repository(object):
 					try:
 						port.parseRecipeFile(True)
 					except SystemExit as e:
-						print e
+						print e.code
 				continue
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
@@ -269,12 +269,12 @@ class Repository(object):
 							status = port.getStatusOnTargetArchitecture()
 							print((' is skipped, as it is %s on target '
 								  + 'architecture') % status)
-				except SystemExit:
+				except SystemExit as e:
 					# take notice of broken recipe file
 					touchFile(skippedDir + '/' + portID)
 					if not self.quiet:
-						sys.stdout.write('\r')
-					pass
+						print ""
+						print e.code
 		os.rename(newRepositoryPath, self.path)
 
 	def _updateRepository(self):
@@ -342,7 +342,7 @@ class Repository(object):
 						print '\tupdating package infos of ' + portID
 					port.writePackageInfosIntoRepository(self.path)
 
-				except SystemExit:
+				except SystemExit as e:
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
 						touchFile(skippedDir + '/' + portID)
@@ -350,7 +350,8 @@ class Repository(object):
 							brokenPorts.append(portID)
 						else:
 							if not self.quiet:
-								print '\trecipe for %s is still broken' % portID
+								print '\trecipe for %s is still broken:' % portID
+								print e.code
 
 		self._removeStalePackageInfos(brokenPorts)
 
