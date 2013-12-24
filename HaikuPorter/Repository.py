@@ -22,7 +22,7 @@ import sys
 
 class Repository(object):
 	def __init__(self, treePath, outputDirectory, packagesPath, shellVariables,
-			policy, preserveFlags, quiet = False):
+			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 		self.path = self.outputDirectory + '/repository'
@@ -32,6 +32,7 @@ class Repository(object):
 		self.shellVariables = shellVariables
 		self.policy = policy
 		self.quiet = quiet
+		self.verbose = verbose
 
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
@@ -90,11 +91,12 @@ class Repository(object):
 			port = self._allPorts[portID]
 			if port.hasBrokenRecipe():
 				if warnAboutSkippedVersions:
-					warn('skipping %s, as the recipe is broken:' % portID)
+					warn('skipping %s, as the recipe is broken' % portID)
 					try:
 						port.parseRecipeFile(True)
 					except SystemExit as e:
-						print e.code
+						if self.verbose:
+							print e.code
 				continue
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
@@ -274,6 +276,7 @@ class Repository(object):
 					touchFile(skippedDir + '/' + portID)
 					if not self.quiet:
 						print ""
+					if self.verbose:
 						print e.code
 		os.rename(newRepositoryPath, self.path)
 
@@ -349,9 +352,11 @@ class Repository(object):
 						if os.path.exists(mainPackageInfoFile):
 							brokenPorts.append(portID)
 						else:
-							if not self.quiet:
+							if not self.quiet and not self.verbose:
+								print '\trecipe for %s is still broken' % portID
+							if self.verbose:
 								print '\trecipe for %s is still broken:' % portID
-								print e.code
+								print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
 		self._removeStalePackageInfos(brokenPorts)
 

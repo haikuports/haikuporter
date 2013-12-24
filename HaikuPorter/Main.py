@@ -130,7 +130,7 @@ class Main(object):
 			self.shellVariables['portsfileAsRequires'] \
 				= '\n'.join(portsfileAsRequires)
 
-		self._createRepositoryIfNeeded()
+		self._createRepositoryIfNeeded(self.options.quiet, self.options.verbose)
 
 		if self.options.analyzeDependencies:
 			DependencyAnalyzer(self.repository).printDependencies()
@@ -492,13 +492,13 @@ class Main(object):
 		else:
 			self.shellVariables['isCrossRepository'] = 'false'
 
-	def _createRepositoryIfNeeded(self, quiet = False):
+	def _createRepositoryIfNeeded(self, quiet = False, verbose = False):
 		"""create/update repository"""
 		if self.repository:
 			return
 		self.repository = Repository(self.treePath, self.outputDirectory,
 			self.packagesPath, self.shellVariables, self.policy,
-			self.options.preserveFlags, quiet)
+			self.options.preserveFlags, quiet, verbose)
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""
