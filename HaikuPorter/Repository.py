@@ -93,6 +93,8 @@ class Repository(object):
 				if warnAboutSkippedVersions:
 					warn('skipping %s, as the recipe is broken' % portID)
 					try:
+						if self.verbose:
+							port.validateRecipeFile(True)
 						port.parseRecipeFile(True)
 					except SystemExit as e:
 						if self.verbose:
