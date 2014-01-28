@@ -326,10 +326,6 @@ prepareInstalledDevelLib()
 		exit 1
 	fi
 
-	sed >/dev/null 2>&1 || {
-		echo >&2 "prepareInstalledDevelLib needs sed in BUILD_PREREQUIRES";
-		exit 1;
-	}
 	mkdir -p $installDestDir$developLibDir
 
 	local libBaseName=$1
@@ -341,6 +337,21 @@ prepareInstalledDevelLib()
 	local sonameLib=""
 	local soname=""
 	local readelf=$(getTargetArchitectureCommand readelf)
+
+	echo >&2 "Looking for sed and $readelf"
+	command -v sed >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo >&2 "prepareInstalledDevelLib needs sed in BUILD_PREREQUIRES"
+		exit 1
+	fi
+
+	command -v $readelf >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo >&2 "prepareInstalledDevelLib needs $readelf in BUILD_PREREQUIRES"
+		exit 1
+	fi
+	echo >&2 "ok, found both..."
+
 	for lib in $installDestDir$libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
 			sharedLib=$lib
