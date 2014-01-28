@@ -326,6 +326,10 @@ prepareInstalledDevelLib()
 		exit 1
 	fi
 
+	sed >/dev/null 2>&1 || {
+		echo >&2 "prepareInstalledDevelLib needs sed in BUILD_PREREQUIRES";
+		exit 1;
+	}
 	mkdir -p $installDestDir$developLibDir
 
 	local libBaseName=$1
