@@ -22,7 +22,7 @@ import sys
 
 class Repository(object):
 	def __init__(self, treePath, outputDirectory, packagesPath, shellVariables,
-			policy, preserveFlags, quiet = False):
+			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 		self.path = self.outputDirectory + '/repository'
@@ -32,6 +32,7 @@ class Repository(object):
 		self.shellVariables = shellVariables
 		self.policy = policy
 		self.quiet = quiet
+		self.verbose = verbose
 
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
@@ -90,11 +91,14 @@ class Repository(object):
 			port = self._allPorts[portID]
 			if port.hasBrokenRecipe():
 				if warnAboutSkippedVersions:
-					warn('skipping %s, as the recipe is broken:' % portID)
+					warn('skipping %s, as the recipe is broken' % portID)
 					try:
+						if self.verbose:
+							port.validateRecipeFile(True)
 						port.parseRecipeFile(True)
 					except SystemExit as e:
-						print e
+						if self.verbose:
+							print e.code
 				continue
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
@@ -269,12 +273,13 @@ class Repository(object):
 							status = port.getStatusOnTargetArchitecture()
 							print((' is skipped, as it is %s on target '
 								  + 'architecture') % status)
-				except SystemExit:
+				except SystemExit as e:
 					# take notice of broken recipe file
 					touchFile(skippedDir + '/' + portID)
 					if not self.quiet:
-						sys.stdout.write('\r')
-					pass
+						print ""
+					if self.verbose:
+						print e.code
 		os.rename(newRepositoryPath, self.path)
 
 	def _updateRepository(self):
@@ -342,15 +347,18 @@ class Repository(object):
 						print '\tupdating package infos of ' + portID
 					port.writePackageInfosIntoRepository(self.path)
 
-				except SystemExit:
+				except SystemExit as e:
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
 						touchFile(skippedDir + '/' + portID)
 						if os.path.exists(mainPackageInfoFile):
 							brokenPorts.append(portID)
 						else:
-							if not self.quiet:
+							if not self.quiet and not self.verbose:
 								print '\trecipe for %s is still broken' % portID
+							if self.verbose:
+								print '\trecipe for %s is still broken:' % portID
+								print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
 		self._removeStalePackageInfos(brokenPorts)
 

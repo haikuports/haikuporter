@@ -63,6 +63,9 @@ def parseOptions():
 	parser.add_option('-q', '--quiet',
 					  action='store_true', dest='quiet', default=False,
 					  help="suppress output from build actions")
+	parser.add_option('-v', '--verbose',
+					  action='store_true', dest='verbose', default=False,
+					  help="show why the recipe is broken")
 	parser.add_option('-y', '--yes',
 					  action='store_true', dest='yes', default=False,
 					  help="answer yes to all questions")
