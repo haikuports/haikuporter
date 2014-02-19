@@ -129,6 +129,8 @@ class Source(object):
 				else:
 					warn("Stored SRC_URI is no longer in recipe, automatic "
 						 "repository update won't work")
+					self.sourceFetcher \
+						= createSourceFetcher(storedUri, self.fetchTarget)
 
 				return
 			else:
