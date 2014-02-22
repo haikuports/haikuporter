@@ -112,7 +112,6 @@ class Main(object):
 				print os.path.join(self.treePath, portName)
 			sys.exit()
 
-		fixedPortVersions = {}
 		if self.options.portsfile:
 			# read portslist from file and convert into list of requires
 			with open(self.options.portsfile, 'r') as portsFile:
@@ -124,16 +123,14 @@ class Main(object):
 				if portSpec['version']:
 					portsfileAsRequires.append(portSpec['name'] + ' =='
 											   + portSpec['version'])
-					fixedPortVersions[portSpec['name']] = portSpec['version']
 				else:
 					portsfileAsRequires.append(portSpec['name'])
 			if not portsfileAsRequires:
 				sysExit("The given ports-file doesn't contain any ports.")
 			self.shellVariables['portsfileAsRequires'] \
 				= '\n'.join(portsfileAsRequires)
-				
-		self._createRepositoryIfNeeded(self.options.quiet, self.options.verbose,
-									   fixedPortVersions)
+
+		self._createRepositoryIfNeeded(self.options.quiet, self.options.verbose)
 
 		if self.options.analyzeDependencies:
 			DependencyAnalyzer(self.repository).printDependencies()
@@ -495,14 +492,13 @@ class Main(object):
 		else:
 			self.shellVariables['isCrossRepository'] = 'false'
 
-	def _createRepositoryIfNeeded(self, quiet = False, verbose = False, 
-								  fixedPortVersions = {}):
+	def _createRepositoryIfNeeded(self, quiet = False, verbose = False):
 		"""create/update repository"""
 		if self.repository:
 			return
 		self.repository = Repository(self.treePath, self.outputDirectory,
 			self.packagesPath, self.shellVariables, self.policy,
-			self.options.preserveFlags, quiet, verbose, fixedPortVersions)
+			self.options.preserveFlags, quiet, verbose)
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via svn"""

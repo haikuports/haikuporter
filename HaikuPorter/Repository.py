@@ -22,8 +22,7 @@ import sys
 
 class Repository(object):
 	def __init__(self, treePath, outputDirectory, packagesPath, shellVariables,
-			policy, preserveFlags, quiet = False, verbose = False, 
-			fixedPortVersions = {}):
+			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 		self.path = self.outputDirectory + '/repository'
@@ -34,7 +33,6 @@ class Repository(object):
 		self.policy = policy
 		self.quiet = quiet
 		self.verbose = verbose
-		self.fixedPortVersions = fixedPortVersions
 
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
@@ -181,9 +179,6 @@ class Repository(object):
 					portElements = recipe[:-7].split('-')
 					if len(portElements) == 2:
 						name, version = portElements
-						if (name in self.fixedPortVersions 
-							and self.fixedPortVersions[name] != version):
-							continue
 						versionedName = name + '-' + version
 						if versionedName in self._allPorts:
 							# this version of the current port already was
