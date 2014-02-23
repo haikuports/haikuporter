@@ -54,6 +54,14 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'downloadInPortDirectory',
 	},
+	'DOWNLOAD_MIRROR': {
+		'type': types.StringType,
+		'required': False,
+		'default': 'https://ports-mirror.haiku-os.org',
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'downloadMirror',
+	},
 	'LICENSES_DIRECTORY': {
 		'type': types.StringType,
 		'required': False,
@@ -255,6 +263,10 @@ class Configuration(object):
 	@staticmethod
 	def getOutputDirectory():
 		return Configuration.configuration.outputDirectory
+
+	@staticmethod
+	def getDownloadMirror():
+		return Configuration.configuration.downloadMirror
 
 	def _readConfigurationFile(self):
 		# Find the configuration file. It may be

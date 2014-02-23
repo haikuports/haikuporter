@@ -72,13 +72,24 @@ class Source(object):
 				for additionalFile in self.additionalFiles
 			]
 
+		# determine filename of first URI
+		uriFileName = self.uris[0]
+		uriExtension = ''
+		hashPos = uriFileName.find('#')
+		if hashPos >= 0:
+			uriExtension = uriFileName[hashPos:]
+			uriFileName = uriFileName[:hashPos]
+		uriFileName = uriFileName[uriFileName.rindex('/') + 1:]
+
 		# set local filename from URI, unless specified explicitly
 		if not self.fetchTargetName:
-			uri = self.uris[0]
-			hashPos = uri.find('#')
-			if hashPos >= 0:
-				uri = uri[:hashPos]
-			self.fetchTargetName = uri[uri.rindex('/') + 1:]
+			self.fetchTargetName = uriFileName
+			
+		downloadMirror = Configuration.getDownloadMirror()
+		if downloadMirror:
+			# add fallback URI using a general source tarball mirror (some 
+			# original source sites aren't very reliable)
+			self.uris.append(downloadMirror + '/' + uriFileName + uriExtension)
 
 		self.sourceFetcher = None
 		self.fetchTarget = port.downloadDir + '/' + self.fetchTargetName
@@ -154,8 +165,12 @@ class Source(object):
 				storeStringInFile(uri, self.fetchTarget + '.uri')
 				return
 			except Exception as e:
-				warn(('Unable to fetch source from %s (error: %s), '
-					  + 'trying next location.') % (uri, e))
+				if uri != self.uris[-1]:
+					warn(('Unable to fetch source from %s (error: %s), '
+						  + 'trying next location.') % (uri, e))
+				else:
+					warn(('Unable to fetch source from %s (error: %s)') 
+						 % (uri, e))
 
 		# failed to fetch source
 		sysExit('Failed to fetch source from all known locations.')
