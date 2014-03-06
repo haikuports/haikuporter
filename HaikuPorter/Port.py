@@ -778,7 +778,12 @@ class Port(object):
 		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
 			source = Source(self, index, keys['SRC_URI'][index],
 							keys['SRC_FILENAME'].get(index, None),
+							keys['CHECKSUM_SIZE'].get(index, None),
 							keys['CHECKSUM_MD5'].get(index, None),
+							keys['CHECKSUM_RMD160'].get(index, None),
+							keys['CHECKSUM_SHA1'].get(index, None),
+							keys['CHECKSUM_SHA256'].get(index, None),
+							keys['CHECKSUM_SHA512'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
 							keys['PATCHES'].get(index, []),
 							keys['ADDITIONAL_FILES'].get(index, []))
