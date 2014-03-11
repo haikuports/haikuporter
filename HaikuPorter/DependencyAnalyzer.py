@@ -79,9 +79,15 @@ class PortNode(object):
 					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
 				])
 		try:
-			with open(os.devnull, "w") as devnull:
-				check_call(args, stdout=devnull, stderr=devnull)
+			print '=' * 70
+			print 'checking prerequires of ' + self.port.name
+			print '=' * 70
+			print '    ' + ' '.join(args)
+			check_call(args)
+			print 'ok'
+			print '-' * 70
 		except CalledProcessError:
+			print '-' * 70
 			return False
 
 		# check build requires
@@ -94,9 +100,15 @@ class PortNode(object):
 					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
 				])
 		try:
-			with open(os.devnull, "w") as devnull:
-				check_call(args, stdout=devnull, stderr=devnull)
+			print '=' * 70
+			print 'checking buildrequires of ' + self.port.name
+			print '=' * 70
+			print '    ' + ' '.join(args)
+			check_call(args)
+			print 'ok'
+			print '-' * 70
 		except CalledProcessError:
+			print '-' * 70
 			return False
 
 		return True
