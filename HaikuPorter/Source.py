@@ -29,18 +29,12 @@ from subprocess import check_call
 # -- A source archive (or checkout) -------------------------------------------
 
 class Source(object):
-	def __init__(self, port, index, uris, fetchTargetName, sizeChecksum,
-				 md5Checksum, rmd160Checksum, sha1Checksum, sha256Checksum,
-				 sha512Checksum, sourceDir, patches, additionalFiles):
+	def __init__(self, port, index, uris, fetchTargetName, checksums,
+				 sourceDir, patches, additionalFiles):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
-		self.sizeChecksum = sizeChecksum
-		self.md5Checksum = md5Checksum
-		self.rmd160Checksum = rmd160Checksum
-		self.sha1Checksum = sha1Checksum
-		self.sha256Checksum = sha256Checksum
-		self.sha512Checksum = sha512Checksum
+		self.checksums = checksums
 		self.patches = patches
 		self.additionalFiles = additionalFiles
 
@@ -207,31 +201,27 @@ class Source(object):
 		if not self.sourceFetcher.sourceShouldBeValidated:
 			return
 
-		if not self.sizeChecksum:
+		if not 'size' in self.checksums:
 			warn('No CHECKSUM_SIZE key found in recipe for '
 				 + self.fetchTargetName)
-		if not self.md5Checksum:
+		if not 'md5' in self.checksums:
 			warn('No CHECKSUM_MD5 key found in recipe for '
 				 + self.fetchTargetName)
-		if not self.rmd160Checksum:
+		if not 'rmd160' in self.checksums:
 			warn('No CHECKSUM_RMD160 key found in recipe for '
 				 + self.fetchTargetName)
-		if not self.sha1Checksum:
-			warn('No CHECKSUM_SHA1 key found in recipe for '
-				 + self.fetchTargetName)
-		if not self.sha256Checksum:
-			warn('No CHECKSUM_SHA256 key found in recipe for '
-				 + self.fetchTargetName)
-		if not self.sha512Checksum:
+		if not 'sha512' in self.checksums:
 			warn('No CHECKSUM_SHA512 key found in recipe for '
 				 + self.fetchTargetName)
+
+		if not 'md5' in self.checksums and not 'rmd160' in self.checksums \
+		and not 'sha512' in self.checksums:
+			sysExit('No checksum found!')
 
 		print 'Validating checksums of ' + self.fetchTargetName
 		size = 0
 		md5 = hashlib.md5()
 		rmd160 = hashlib.new('ripemd160')
-		sha1 = hashlib.sha1()
-		sha256 = hashlib.sha256()
 		sha512 = hashlib.sha512()
 
 		f = open(self.fetchTarget, 'rb')
@@ -244,28 +234,22 @@ class Source(object):
 			size += len(d)
 			md5.update(d)
 			rmd160.update(d)
-			sha1.update(d)
-			sha256.update(d)
 			sha512.update(d)
 		f.close()
 
-		if self.sizeChecksum and size != self.sizeChecksum:
-			sysExit('Expected size: ' + str(self.sizeChecksum) + '\n'
+		if 'size' in self.checksums and size != self.checksums['size']:
+			sysExit('Expected size: ' + str(self.checksums['size']) + '\n'
 					+ 'Found size: ' + str(size))
-		if self.md5Checksum and md5.hexdigest() != self.md5Checksum:
-			sysExit('Expected MD5: ' + self.md5Checksum + '\n'
+		if 'md5' in self.checksums and md5.hexdigest() != self.checksums['md5']:
+			sysExit('Expected MD5: ' + self.checksums['md5'] + '\n'
 					+ 'Found MD5: ' + md5.hexdigest())
-		if self.rmd160Checksum and rmd160.hexdigest() != self.rmd160Checksum:
-			sysExit('Expected RIPEMD-160: ' + self.rmd160Checksum + '\n'
+		if 'rmd160' in self.checksums \
+		and rmd160.hexdigest() != self.checksums['rmd160']:
+			sysExit('Expected RIPEMD-160: ' + self.checksums['rmd160'] + '\n'
 					+ 'Found RIPEMD-160: ' + rmd160.hexdigest())
-		if self.sha1Checksum and sha1.hexdigest() != self.sha1Checksum:
-			sysExit('Expected SHA-1: ' + self.sha1Checksum + '\n'
-					+ 'Found SHA-1: ' + sha1.hexdigest())
-		if self.sha256Checksum and sha256.hexdigest() != self.sha256Checksum:
-			sysExit('Expected SHA-256: ' + self.sha256Checksum + '\n'
-					+ 'Found SHA-256: ' + sha256.hexdigest())
-		if self.sha512Checksum and sha512.hexdigest() != self.sha512Checksum:
-			sysExit('Expected SHA-512: ' + self.sha512Checksum + '\n'
+		if 'sha512' in self.checksums \
+		and sha512.hexdigest() != self.checksums['sha512']:
+			sysExit('Expected SHA-512: ' + self.checksums['sha512'] + '\n'
 					+ 'Found SHA-512: ' + sha512.hexdigest())
 
 	def isFromSourcePackage(self):
