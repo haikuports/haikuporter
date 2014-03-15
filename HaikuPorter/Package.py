@@ -20,7 +20,7 @@ from HaikuPorter.RecipeTypes import Architectures, Status
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
 from HaikuPorter.Utils import (check_output, escapeForPackageInfo,
 							   haikuporterRepoUrl, haikuportsRepoUrl,
-							   naturalCompare, sysExit)
+							   naturalCompare, sysExit, warn)
 
 import os
 import shutil
@@ -511,13 +511,15 @@ class SourcePackage(Package):
 				licenseFilePath = port.licensesDir + '/' + licenseFileName
 				shutil.copy(licenseFilePath, licensesTargetDir)
 
-		# add ReadMe
+		# add ReadMe with references to the used repositories
 		if os.path.exists(Configuration.getTreePath() + '/.git'):
-			haikuportsRev \
-				= check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
-							   cwd=Configuration.getTreePath())
-		else:
-			haikuportsRev = '<unknown>'
+			try:
+				haikuportsRev \
+					= check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
+								   cwd=Configuration.getTreePath())
+			except:
+				warn('unable to determine revision of haikuports tree')
+				haikuportsRev = '<unknown>'
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
 			readmeFile.write((
 				'These are the sources (and optionally patches) that were\n'
