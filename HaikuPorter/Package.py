@@ -161,7 +161,9 @@ class Package(object):
 		"""Write a PackageInfo-file for this package into the repository"""
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		if buildPlatform.getName() == 'Haiku':
+		if getOption('createSourcePackagesForBootstrap'):
+			requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES' ]
+		elif buildPlatform.getName() == 'Haiku':
 			requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
 		else:
 			requires = [ 'BUILD_REQUIRES', 'REQUIRES' ]

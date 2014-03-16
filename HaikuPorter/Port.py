@@ -432,22 +432,37 @@ class Port(object):
 		workRepositoryPath = self.workDir + '/repository'
 		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
 
-		requiresTypes = [ 'BUILD_REQUIRES' ]
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
-											 			  workRepositoryPath)
-		requiredPackages \
-			= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
-										'required ports', 
-										buildPlatform.isHaiku(),
-										[ workRepositoryPath ])
-
-		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
-											 			  workRepositoryPath)
-		prerequiredPackages \
-			= self._resolveDependencies(packageInfoFiles, [ packagesPath],
-										'prerequired ports', True,
-										[ workRepositoryPath ])
+		if getOption('createSourcePackagesForBootstrap'):
+			# we need both build-requires and -prerequires when collecting
+			# the sources needed for the bootstrap and we must not consider
+			# buildhost packages
+			requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES' ]
+			packageInfoFiles = self._generatePackageInfoFiles(
+				requiresTypes, workRepositoryPath)
+			requiredPackages \
+				= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
+											'required or prerequired ports', 
+											False, [ workRepositoryPath ])
+			prerequiredPackages = []
+		else:
+			# we need build-requires and -prerequires, but only for the latter
+			# we are allowed to consider buildhost packages
+			requiresTypes = [ 'BUILD_REQUIRES' ]
+			packageInfoFiles = self._generatePackageInfoFiles(
+				requiresTypes, workRepositoryPath)
+			requiredPackages \
+				= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
+											'required ports', 
+											buildPlatform.isHaiku(),
+											[ workRepositoryPath ])
+	
+			requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+			packageInfoFiles = self._generatePackageInfoFiles(
+				requiresTypes, workRepositoryPath)
+			prerequiredPackages \
+				= self._resolveDependencies(packageInfoFiles, [ packagesPath], 
+											'prerequired ports', True, 
+											[ workRepositoryPath ])
 
 		# return list of unique ports which need to be built before this one
 		processedPackages = set()
