@@ -201,56 +201,65 @@ class Source(object):
 		if not self.sourceFetcher.sourceShouldBeValidated:
 			return
 
-		if not 'size' in self.checksums:
-			warn('No CHECKSUM_SIZE key found in recipe for '
-				 + self.fetchTargetName)
-		if not 'md5' in self.checksums:
-			warn('No CHECKSUM_MD5 key found in recipe for '
-				 + self.fetchTargetName)
-		if not 'rmd160' in self.checksums:
-			warn('No CHECKSUM_RMD160 key found in recipe for '
-				 + self.fetchTargetName)
-		if not 'sha512' in self.checksums:
-			warn('No CHECKSUM_SHA512 key found in recipe for '
-				 + self.fetchTargetName)
-
-		if not 'md5' in self.checksums and not 'rmd160' in self.checksums \
-		and not 'sha512' in self.checksums:
-			sysExit('No checksum found!')
-
 		print 'Validating checksums of ' + self.fetchTargetName
 		size = 0
 		md5 = hashlib.md5()
 		rmd160 = hashlib.new('ripemd160')
 		sha512 = hashlib.sha512()
 
-		f = open(self.fetchTarget, 'rb')
-		while True:
-			d = f.read(16384)
+		with open(self.fetchTarget, 'rb') as f:
+			while True:
+				data = f.read(16384)
+				if not data:
+					break
+				size += len(data)
+				md5.update(data)
+				rmd160.update(data)
+				sha512.update(data)
 
-			if not d:
-				break
+		missingChecksumCount = 0
+		if 'size' in self.checksums: 
+			if size != self.checksums['size']:
+				sysExit('Expected size: ' + str(self.checksums['size']) + '\n'
+						+ 'Found size:    ' + str(size))
+		else:
+			missingChecksumCount += 1
+			warn('No CHECKSUM_SIZE key found in recipe for '
+				 + self.fetchTargetName)
+		if 'md5' in self.checksums:
+			if md5.hexdigest() != self.checksums['md5']:
+				sysExit('Expected MD5: ' + self.checksums['md5'] + '\n'
+						+ 'Found MD5:    ' + md5.hexdigest())
+		if 'rmd160' in self.checksums:
+			if rmd160.hexdigest() != self.checksums['rmd160']:
+				sysExit('Expected RIPEMD-160: ' + self.checksums['rmd160']
+						+ '\nFound RIPEMD-160:    ' + rmd160.hexdigest())
+		else:
+			missingChecksumCount += 1
+			warn('No CHECKSUM_RMD160 key found in recipe for '
+				 + self.fetchTargetName)
+		if 'sha512' in self.checksums:
+			if sha512.hexdigest() != self.checksums['sha512']:
+				sysExit('Expected SHA-512: ' + self.checksums['sha512'] + '\n'
+						+ 'Found SHA-512:    ' + sha512.hexdigest())
+		else:
+			missingChecksumCount += 1
+			warn('No CHECKSUM_SHA512 key found in recipe for '
+				 + self.fetchTargetName)
 
-			size += len(d)
-			md5.update(d)
-			rmd160.update(d)
-			sha512.update(d)
-		f.close()
+		if missingChecksumCount > 0:
+			print '----- CHECKSUM TEMPLATE -----'
+			if not 'size' in self.checksums:
+				print 'CHECKSUM_SIZE="%s"' % size
+			if not 'rmd160' in self.checksums:
+				print 'CHECKSUM_RMD160="%s"' % rmd160.hexdigest()
+			if not 'sha512' in self.checksums:
+				print 'CHECKSUM_SHA512="%s"' % sha512.hexdigest()
+			print '-----------------------------'
 
-		if 'size' in self.checksums and size != self.checksums['size']:
-			sysExit('Expected size: ' + str(self.checksums['size']) + '\n'
-					+ 'Found size: ' + str(size))
-		if 'md5' in self.checksums and md5.hexdigest() != self.checksums['md5']:
-			sysExit('Expected MD5: ' + self.checksums['md5'] + '\n'
-					+ 'Found MD5: ' + md5.hexdigest())
-		if 'rmd160' in self.checksums \
-		and rmd160.hexdigest() != self.checksums['rmd160']:
-			sysExit('Expected RIPEMD-160: ' + self.checksums['rmd160'] + '\n'
-					+ 'Found RIPEMD-160: ' + rmd160.hexdigest())
-		if 'sha512' in self.checksums \
-		and sha512.hexdigest() != self.checksums['sha512']:
-			sysExit('Expected SHA-512: ' + self.checksums['sha512'] + '\n'
-					+ 'Found SHA-512: ' + sha512.hexdigest())
+		if (not 'md5' in self.checksums and not 'rmd160' in self.checksums 
+				and not 'sha512' in self.checksums):
+			sysExit('No checksum found in recipe!')
 
 	def isFromSourcePackage(self):
 		"""Determines whether or not this source comes from a source package"""
