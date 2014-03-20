@@ -259,7 +259,10 @@ class Source(object):
 
 		if (not 'md5' in self.checksums and not 'rmd160' in self.checksums 
 				and not 'sha512' in self.checksums):
-			sysExit('No checksum found in recipe!')
+			if not Configuration.shallAllowUnsafeSources():
+				sysExit('No checksum found in recipe!')
+			else:
+				warn('No checksum found in recipe!')
 
 	def isFromSourcePackage(self):
 		"""Determines whether or not this source comes from a source package"""

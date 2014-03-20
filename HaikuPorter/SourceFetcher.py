@@ -113,6 +113,10 @@ class SourceFetcherForBazaar(object):
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
 	def fetch(self):
+		if not Configuration.shallAllowUnsafeSources():
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
+
 		ensureCommandIsAvailable('bzr')
 		command = 'bzr checkout --lightweight'
 		if self.rev:
@@ -141,6 +145,10 @@ class SourceFetcherForCvs(object):
 		(self.uri, self.module) = uri[6:].rsplit('/', 1)
 
 	def fetch(self):
+		if not Configuration.shallAllowUnsafeSources():
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
+
 		baseDir = os.path.dirname(self.fetchTarget)
 
 		ensureCommandIsAvailable('cvs')
@@ -198,6 +206,10 @@ class SourceFetcherForFossil(object):
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
 	def fetch(self):
+		if not Configuration.shallAllowUnsafeSources():
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
+
 		ensureCommandIsAvailable('fossil')
 		fossilDir = self.fetchTarget + '.fossil'
 		if os.path.exists(fossilDir):
@@ -228,6 +240,10 @@ class SourceFetcherForGit(object):
 			self.rev = 'HEAD'
 
 	def fetch(self):
+		if not Configuration.shallAllowUnsafeSources():
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
+
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
 		check_call(command, shell=True)
@@ -298,6 +314,10 @@ class SourceFetcherForMercurial(object):
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
 	def fetch(self):
+		if not Configuration.shallAllowUnsafeSources():
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
+
 		ensureCommandIsAvailable('hg')
 		command = 'hg clone'
 		if self.rev:
@@ -367,6 +387,10 @@ class SourceFetcherForSubversion(object):
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
 	def fetch(self):
+		if not Configuration.shallAllowUnsafeSources():
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
+
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'
 		if self.rev:
