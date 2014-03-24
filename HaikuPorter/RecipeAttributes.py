@@ -95,13 +95,6 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': True,
 	},
-	'CHECKSUM_SHA256': {
-		'type': types.StringType,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
 	'CHECKSUM_SHA512': {
 		'type': types.StringType,
 		'required': False,
