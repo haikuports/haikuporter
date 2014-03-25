@@ -204,7 +204,17 @@ class Source(object):
 		print 'Validating checksums of ' + self.fetchTargetName
 		size = 0
 		md5 = hashlib.md5()
-		rmd160 = hashlib.new('ripemd160')
+
+		try:
+			rmd160 = hashlib.new('ripemd160')
+		except ValueError:
+			rmd160 = None
+			warn('Warning: Python hashlib without support for ripemd160!')
+			warn('Removing CHECKSUM_RMD160 from recipe for current run!')
+			if 'rmd160' in self.checksums:
+				del self.checksums['rmd160']
+			pass
+
 		sha512 = hashlib.sha512()
 
 		with open(self.fetchTarget, 'rb') as f:
@@ -214,7 +224,8 @@ class Source(object):
 					break
 				size += len(data)
 				md5.update(data)
-				rmd160.update(data)
+				if rmd160:
+					rmd160.update(data)
 				sha512.update(data)
 
 		missingChecksumCount = 0
@@ -234,7 +245,7 @@ class Source(object):
 			if rmd160.hexdigest() != self.checksums['rmd160']:
 				sysExit('Expected RIPEMD-160: ' + self.checksums['rmd160']
 						+ '\nFound RIPEMD-160:    ' + rmd160.hexdigest())
-		else:
+		elif rmd160:
 			missingChecksumCount += 1
 			warn('No CHECKSUM_RMD160 key found in recipe for '
 				 + self.fetchTargetName)
@@ -251,7 +262,7 @@ class Source(object):
 			print '----- CHECKSUM TEMPLATE -----'
 			if not 'size' in self.checksums:
 				print 'CHECKSUM_SIZE="%s"' % size
-			if not 'rmd160' in self.checksums:
+			if rmd160 and not 'rmd160' in self.checksums:
 				print 'CHECKSUM_RMD160="%s"' % rmd160.hexdigest()
 			if not 'sha512' in self.checksums:
 				print 'CHECKSUM_SHA512="%s"' % sha512.hexdigest()
