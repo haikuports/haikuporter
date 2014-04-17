@@ -549,7 +549,7 @@ class Main(object):
 
 	def _checkSourceTree(self, portArgument):
 		if portArgument:
-			print 'Checking recipe: ' + portArgument
+			print 'Checking ports of: ' + portArgument
 
 			allPorts = self.repository.getAllPorts()
 			portVersionsByName = self.repository.getPortVersionsByName()
