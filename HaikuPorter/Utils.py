@@ -15,12 +15,12 @@ import tarfile
 import zipfile
 
 if sys.stdout.isatty():
-	colorRed = '\033[1;31m'
-	colorYellow = '\033[1;33m'
+	colorWarning = '\033[1;36m'
+	colorError = '\033[1;35m'
 	colorReset = '\033[1;m'
 else:
-	colorRed = ''
-	colorYellow = ''
+	colorWarning= ''
+	colorError = ''
 	colorReset = ''
 
 # path to haikuports-tree --------------------------------------------------
@@ -46,7 +46,7 @@ def check_output(*popenargs, **kwargs):
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
-	message = '\n'.join([colorRed + '*** ' + line + colorReset
+	message = '\n'.join([colorError + 'Error: ' + line + colorReset
 		for line in message.split('\n') ])
 	sys.exit(message)
 
@@ -54,7 +54,7 @@ def sysExit(message):
 def warn(message):
 	"""print a warning"""
 
-	message = '\n'.join([colorYellow + '* ' + line +colorReset
+	message = '\n'.join([colorWarning + 'Warning: ' + line +colorReset
 		for line in message.split('\n') ])
 	print(message)
 

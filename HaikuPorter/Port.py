@@ -249,7 +249,7 @@ class Port(object):
 				if key not in entries:
 					# complain about missing required values
 					if recipeAttributes[baseKey]['required']:
-						sysExit("Required value '%s' not present (in %s)"
+						sysExit("No %s found (in %s)"
 								% (key, self.recipeFilePath))
 
 					# set default value, as no other value has been provided
