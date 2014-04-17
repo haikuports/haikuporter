@@ -77,7 +77,10 @@ class Main(object):
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
 			self._createRepositoryIfNeeded(True)
-			self._checkSourceTree()
+			if not args:
+				self._checkSourceTree("")
+			else:
+				self._checkSourceTree(args[0])
 			sys.exit()
 
 		# if requested, list all ports in the HaikuPorts tree
@@ -544,17 +547,34 @@ class Main(object):
 				hierarchy.append([item, subdirList])
 		return None
 
-	def _checkSourceTree(self):
-		print 'Checking HaikuPorts tree at: ' + self.treePath
+	def _checkSourceTree(self, portArgument):
+		if portArgument:
+			print 'Checking recipe: ' + portArgument
 
-		allPorts = self.repository.getAllPorts()
-		portVersionsByName = self.repository.getPortVersionsByName()
-		for portName in sorted(portVersionsByName.keys(), key=str.lower):
-			for version in portVersionsByName[portName]:
-				portID = portName + '-' + version
+			allPorts = self.repository.getAllPorts()
+			portVersionsByName = self.repository.getPortVersionsByName()
+
+			if portArgument not in portVersionsByName:
+				sys.exit('%s is not a known port!' % portArgument)
+
+			for version in portVersionsByName[portArgument]:
+				portID = portArgument + '-' + version
 				port = allPorts[portID]
 				print '%s   [%s]' % (portID, port.category)
 				try:
 					port.validateRecipeFile(True)
 				except SystemExit as e:
 					print e.code
+		else:
+			print 'Checking HaikuPorts tree at: ' + self.treePath
+			allPorts = self.repository.getAllPorts()
+			portVersionsByName = self.repository.getPortVersionsByName()
+			for portName in sorted(portVersionsByName.keys(), key=str.lower):
+				for version in portVersionsByName[portName]:
+					portID = portName + '-' + version
+					port = allPorts[portID]
+					print '%s   [%s]' % (portID, port.category)
+					try:
+						port.validateRecipeFile(True)
+					except SystemExit as e:
+						print e.code
