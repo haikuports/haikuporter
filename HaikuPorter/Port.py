@@ -621,7 +621,10 @@ class Port(object):
 		if (getOption('createSourcePackagesForBootstrap')
 			or getOption('createSourcePackages')):
 			requiredPackages = []
-			prerequiredPackages = []
+			if buildPlatform.usesChroot():
+				prerequiredPackages = self._getPackagesNeededForScriptlets(packagesPath)
+			else:
+				prerequiredPackages = []
 		else:
 			requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
 			prerequiredPackages \
@@ -1095,6 +1098,19 @@ class Port(object):
 			packageInfoFiles.append(packageInfoFile)
 
 		return packageInfoFiles
+
+	def _getPackagesNeededForScriptlets(self, packagesPath):
+		"""Determine the set of packages that must be linked into
+		   the build environment (chroot) for the scriptlets"""
+
+		requiresTypes = [ 'SCRIPTLET_PREREQUIRES' ]
+		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
+
+		neededPackages = self._resolveDependencies(
+			packageInfoFiles, [ packagesPath ],
+			'needed packages for scriptlets', True)
+
+		return neededPackages
 
 	def _getPackagesPrerequiredForBuild(self, packagesPath):
 		"""Determine the set of prerequired packages that must be linked into
