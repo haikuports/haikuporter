@@ -7,7 +7,7 @@
 # Copyright 2009 HaikuBot (aka RISC)
 # Copyright 2010-2011 Jack Laxson (Jrabbit)
 # Copyright 2011 Ingo Weinhold
-# Copyright 2013 Oliver Tappe
+# Copyright 2013-2014 Oliver Tappe
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
@@ -794,19 +794,9 @@ class Port(object):
 		keys = self.recipeKeys
 		basedOnSourcePackage = False
 		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
-			checksums = {}
-
-			if keys['CHECKSUM_SIZE'].get(index, None):
-				checksums['size'] = keys['CHECKSUM_SIZE'].get(index, None)
-			if keys['CHECKSUM_MD5'].get(index, None):
-				checksums['md5'] = keys['CHECKSUM_MD5'].get(index, None)
-			if keys['CHECKSUM_RMD160'].get(index, None):
-				checksums['rmd160'] = keys['CHECKSUM_RMD160'].get(index, None)
-			if keys['CHECKSUM_SHA512'].get(index, None):
-				checksums['sha512'] = keys['CHECKSUM_SHA512'].get(index, None)
-
 			source = Source(self, index, keys['SRC_URI'][index],
-							keys['SRC_FILENAME'].get(index, None), checksums,
+							keys['SRC_FILENAME'].get(index, None),
+							keys['CHECKSUM_SHA256'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
 							keys['PATCHES'].get(index, []),
 							keys['ADDITIONAL_FILES'].get(index, []))

@@ -7,7 +7,7 @@
 # Copyright 2009 HaikuBot (aka RISC)
 # Copyright 2010-2011 Jack Laxson (Jrabbit)
 # Copyright 2011 Ingo Weinhold
-# Copyright 2013 Oliver Tappe
+# Copyright 2013-2014 Oliver Tappe
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
@@ -29,12 +29,12 @@ from subprocess import check_call
 # -- A source archive (or checkout) -------------------------------------------
 
 class Source(object):
-	def __init__(self, port, index, uris, fetchTargetName, checksums,
+	def __init__(self, port, index, uris, fetchTargetName, checksum,
 				 sourceDir, patches, additionalFiles):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
-		self.checksums = checksums
+		self.checksum = checksum
 		self.patches = patches
 		self.additionalFiles = additionalFiles
 
@@ -196,80 +196,31 @@ class Source(object):
 		port.setFlag('unpack', self.index)
 
 	def validateChecksum(self, port):
-		"""Make sure that the MD5-checksum matches the expectations"""
+		"""Make sure that the SHA256-checksum matches the expectations"""
 
 		if not self.sourceFetcher.sourceShouldBeValidated:
 			return
 
-		print 'Validating checksums of ' + self.fetchTargetName
-		size = 0
-		md5 = hashlib.md5()
-
-		try:
-			rmd160 = hashlib.new('ripemd160')
-		except ValueError:
-			rmd160 = None
-			warn('Warning: Python hashlib without support for ripemd160!')
-			warn('Removing CHECKSUM_RMD160 from recipe for current run!')
-			if 'rmd160' in self.checksums:
-				del self.checksums['rmd160']
-			pass
-
-		sha512 = hashlib.sha512()
+		print 'Validating checksum of ' + self.fetchTargetName
+		sha256 = hashlib.sha256()
 
 		with open(self.fetchTarget, 'rb') as f:
 			while True:
 				data = f.read(16384)
 				if not data:
 					break
-				size += len(data)
-				md5.update(data)
-				if rmd160:
-					rmd160.update(data)
-				sha512.update(data)
+				sha256.update(data)
 
-		missingChecksumCount = 0
-		if 'size' in self.checksums: 
-			if size != self.checksums['size']:
-				sysExit('Expected size: ' + str(self.checksums['size']) + '\n'
-						+ 'Found size:    ' + str(size))
+		if self.checksum != None:
+			if sha256.hexdigest() != self.checksum:
+				sysExit('Expected SHA-256: ' + self.checksum + '\n'
+						+ 'Found SHA-256:    ' + sha256.hexdigest())
 		else:
-			missingChecksumCount += 1
-			warn('No CHECKSUM_SIZE key found in recipe for '
-				 + self.fetchTargetName)
-		if 'md5' in self.checksums:
-			if md5.hexdigest() != self.checksums['md5']:
-				sysExit('Expected MD5: ' + self.checksums['md5'] + '\n'
-						+ 'Found MD5:    ' + md5.hexdigest())
-		if 'rmd160' in self.checksums:
-			if rmd160.hexdigest() != self.checksums['rmd160']:
-				sysExit('Expected RIPEMD-160: ' + self.checksums['rmd160']
-						+ '\nFound RIPEMD-160:    ' + rmd160.hexdigest())
-		elif rmd160:
-			missingChecksumCount += 1
-			warn('No CHECKSUM_RMD160 key found in recipe for '
-				 + self.fetchTargetName)
-		if 'sha512' in self.checksums:
-			if sha512.hexdigest() != self.checksums['sha512']:
-				sysExit('Expected SHA-512: ' + self.checksums['sha512'] + '\n'
-						+ 'Found SHA-512:    ' + sha512.hexdigest())
-		else:
-			missingChecksumCount += 1
-			warn('No CHECKSUM_SHA512 key found in recipe for '
-				 + self.fetchTargetName)
-
-		if missingChecksumCount > 0:
 			print '----- CHECKSUM TEMPLATE -----'
-			if not 'size' in self.checksums:
-				print 'CHECKSUM_SIZE="%s"' % size
-			if rmd160 and not 'rmd160' in self.checksums:
-				print 'CHECKSUM_RMD160="%s"' % rmd160.hexdigest()
-			if not 'sha512' in self.checksums:
-				print 'CHECKSUM_SHA512="%s"' % sha512.hexdigest()
+			print 'CHECKSUM_SHA256="%s"' % sha256.hexdigest()
 			print '-----------------------------'
 
-		if (not 'md5' in self.checksums and not 'rmd160' in self.checksums 
-				and not 'sha512' in self.checksums):
+		if (self.checksum == None):
 			if not Configuration.shallAllowUnsafeSources():
 				sysExit('No checksum found in recipe!')
 			else:

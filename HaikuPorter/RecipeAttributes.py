@@ -67,35 +67,7 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': True,
 	},
-	'CHECKSUM_SIZE': {
-		'type': types.IntType,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
-	'CHECKSUM_MD5': {
-		'type': types.StringType,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
-	'CHECKSUM_RMD160': {
-		'type': types.StringType,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
-	'CHECKSUM_SHA1': {
-		'type': types.StringType,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
-	'CHECKSUM_SHA512': {
+	'CHECKSUM_SHA256': {
 		'type': types.StringType,
 		'required': False,
 		'default': {},
