@@ -21,6 +21,10 @@ import types
 
 # -- recipe keys and their attributes -----------------------------------------
 
+def getRecipeFormatVersion():
+	"""Returns the current version of the recipe format"""
+	return 1
+
 recipeAttributes = {
 	# non-extendable and non-indexable, i.e. per-port attributes
 	'BUILD_PACKAGE_ACTIVATION_PHASE': {

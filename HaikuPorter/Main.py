@@ -17,12 +17,14 @@ from HaikuPorter.Configuration import Configuration
 from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
 from HaikuPorter.Options import getOption
 from HaikuPorter.Policy import Policy
+from HaikuPorter.RecipeAttributes import getRecipeFormatVersion
 from HaikuPorter.RecipeTypes import MachineArchitecture
 from HaikuPorter.Repository import Repository
 from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl,
 							   sysExit, warn)
 
 import os
+import re
 from subprocess import check_call
 import sys
 import traceback
@@ -52,6 +54,8 @@ class Main(object):
 
 		self.treePath = Configuration.getTreePath()
 		self.outputDirectory = Configuration.getOutputDirectory()
+
+		self._checkFormatVersions()
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory)
@@ -578,3 +582,29 @@ class Main(object):
 						port.validateRecipeFile(True)
 					except SystemExit as e:
 						print e.code
+
+	def _checkFormatVersions(self):
+		# Read the format versions used by the tree and stop if they don't
+		# match the ones supported by this instance of haikuporter.
+		formatVersionsFile = self.treePath + '/FormatVersions'
+		recipeFormatVersion = 0
+		if os.path.exists(formatVersionsFile):
+			with open(formatVersionsFile, 'r') as f:
+				formatVersions = f.read()
+			recipeFormatVersionMatch = re.search('^RecipeFormatVersion=(.+?)$', 
+												 formatVersions, 
+												 flags=re.MULTILINE)
+			if recipeFormatVersionMatch:
+				try: 
+					recipeFormatVersion = int(recipeFormatVersionMatch.group(1))
+				except ValueError:
+					pass
+		
+		if recipeFormatVersion > getRecipeFormatVersion():
+			sysExit('The version of the recipe file format used in the ports '
+					'tree is newer than the one supported by haikuporter.\n'
+					'Please upgrade haikuporter.')
+		if recipeFormatVersion < getRecipeFormatVersion():
+			sysExit('The version of the recipe file format used in the ports '
+					'tree is older than the one supported by haikuporter.\n'
+					'Please upgrade the ports tree.')
