@@ -57,8 +57,16 @@ class Main(object):
 
 		self._checkFormatVersions()
 
+		# determine if haikuporter has just been invoked for a short-term 
+		# command
+		self.shallowInitIsEnough = (self.options.lint or self.options.tree 
+									or self.options.get or self.options.list
+									or self.options.search
+									or self.options.location)
+
 		# init build platform
-		buildPlatform.init(self.treePath, self.outputDirectory)
+		buildPlatform.init(self.treePath, self.outputDirectory, 
+						   self.shallowInitIsEnough)
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
@@ -448,21 +456,25 @@ class Main(object):
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture
 		targetArchitecture = buildPlatform.getTargetArchitecture()
-		if Configuration.isCrossBuildRepository():
-			targetHaikuPackage = Configuration.getCrossDevelPackage()
-			if not targetHaikuPackage:
-				if not buildPlatform.isHaiku():
-					sysExit('On this platform a haiku cross devel package must '
-			 			'be specified (via --cross-devel-package)')
-				targetHaikuPackage = ('/boot/system/develop/cross/'
-					+ 'haiku_cross_devel_sysroot_%s.hpkg') % targetArchitecture
+		if self.shallowInitIsEnough:
+			targetHaikuVersion = 'dummy'
 		else:
-			if (not buildPlatform.isHaiku()
-				and not (getOption('createSourcePackagesForBootstrap')
-					or getOption('createSourcePackages'))):
-				sysExit('Native building not supported on this platform (%s)'
-					% buildPlatform.getName())
-		targetHaikuVersion = buildPlatform.getHaikuVersion()
+			if Configuration.isCrossBuildRepository():
+				targetHaikuPackage = Configuration.getCrossDevelPackage()
+				if not targetHaikuPackage:
+					if not buildPlatform.isHaiku():
+						sysExit('On this platform a haiku cross devel package '
+				 			'must be specified (via --cross-devel-package)')
+					targetHaikuPackage = ('/boot/system/develop/cross/'
+						+ 'haiku_cross_devel_sysroot_%s.hpkg') \
+						% targetArchitecture
+			else:
+				if (not buildPlatform.isHaiku()
+					and not (getOption('createSourcePackagesForBootstrap')
+						or getOption('createSourcePackages'))):
+					sysExit('Native building not supported on this platform '
+						'(%s)' % buildPlatform.getName())
+			targetHaikuVersion = buildPlatform.getHaikuVersion()
 
 		self.shellVariables = {
 			'haikuVersion': targetHaikuVersion,
