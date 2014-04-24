@@ -88,6 +88,10 @@ class Main(object):
 
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
+			if (not buildPlatform.isHaiku() 
+				and Configuration.getLicensesDirectory() == None):
+				sysExit('LICENSES_DIRECTORY must be set in configuration on '
+					'this build platform!')
 			self._createRepositoryIfNeeded(True)
 			if not args:
 				self._checkSourceTree("")

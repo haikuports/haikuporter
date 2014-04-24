@@ -229,10 +229,6 @@ class BuildPlatformUnix(BuildPlatform):
 		self.secondaryTargetArchitectures \
 			= Configuration.getSecondaryTargetArchitectures()
 			
-		if Configuration.getLicensesDirectory() == None:
-			sysExit('LICENSES_DIRECTORY must be set in configuration on this '
-				'build platform!')
-			
 		if not shallowInitIsEnough:
 			if Configuration.getPackageCommand() == 'package':
 				sysExit('--command-package must be specified on this build '
