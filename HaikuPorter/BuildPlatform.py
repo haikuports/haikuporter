@@ -272,6 +272,9 @@ class BuildPlatformUnix(BuildPlatform):
 
 		self.crossDevelPackage = Configuration.getCrossDevelPackage()
 		targetArchitecture = Configuration.getTargetArchitecture()
+		if targetArchitecture == None:
+			sysExit('TARGET_ARCHITECTURE must be set in configuration on this '
+				'build platform!')
 		self.targetMachineTriple \
 			= MachineArchitecture.getTripleFor(targetArchitecture)
 		targetMachineAsName = self.targetMachineTriple.replace('-', '_')
