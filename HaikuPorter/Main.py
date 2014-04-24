@@ -79,12 +79,12 @@ class Main(object):
 		# if requested, checkout or update ports tree
 		if self.options.get:
 			self._updatePortsTree()
-			sys.exit()
+			return
 
 		# if requested, print the location of the haikuports source tree
 		if self.options.tree:
 			print self.treePath
-			sys.exit()
+			return
 
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
@@ -97,7 +97,7 @@ class Main(object):
 				self._checkSourceTree("")
 			else:
 				self._checkSourceTree(args[0])
-			sys.exit()
+			return
 
 		# if requested, list all ports in the HaikuPorts tree
 		if self.options.list:
@@ -105,7 +105,7 @@ class Main(object):
 			allPortNames = self.repository.searchPorts(None)
 			for portName in allPortNames:
 				print portName
-			sys.exit()
+			return
 
 		# if requested, search for a port
 		if self.options.search:
@@ -117,7 +117,7 @@ class Main(object):
 			portNames = self.repository.searchPorts(args[0])
 			for portName in portNames:
 				print portName
-			sys.exit()
+			return
 
 		if self.options.location:
 			if not args:
@@ -129,7 +129,7 @@ class Main(object):
 			portNames = self.repository.searchPorts(args[0])
 			for portName in portNames:
 				print os.path.join(self.treePath, portName)
-			sys.exit()
+			return
 
 		if self.options.portsfile:
 			# read portslist from file and convert into list of requires
@@ -269,7 +269,7 @@ class Main(object):
 				except:
 					pass
 				port.printDescription()
-				sys.exit(0)
+				return
 
 			self._validateMainPort(port, portSpec['revision'])
 
@@ -289,7 +289,7 @@ class Main(object):
 			self._validateMainPort(requiredPort)
 			port.whyIsPortRequired(self.repository.path, self.packagesPath,
 								   requiredPort)
-			sys.exit(0)
+			return
 
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:
@@ -579,7 +579,7 @@ class Main(object):
 				port = allPorts[portArgument]
 				print '%s   [%s]' % (portArgument, port.category)
 				port.validateRecipeFile(True) # exit 1 if fail
-				os._exit(0) # exit 0 if success
+				return
 			elif portArgument in portVersionsByName:
 				# Base port name
 				for version in portVersionsByName[portArgument]:
@@ -592,7 +592,7 @@ class Main(object):
 						print e.code
 			else:
 				# Unknown
-				sys.exit('%s is not a known port!' % portArgument)
+				sysExit('%s is not a known port!' % portArgument)
 				
 		else:
 			print 'Checking HaikuPorts tree at: ' + self.treePath
