@@ -570,17 +570,26 @@ class Main(object):
 			allPorts = self.repository.getAllPorts()
 			portVersionsByName = self.repository.getPortVersionsByName()
 
-			if portArgument not in portVersionsByName:
+			if portArgument in allPorts:
+				# Full port name / ver
+				port = allPorts[portArgument]
+				print '%s   [%s]' % (portArgument, port.category)
+				port.validateRecipeFile(True) # exit 1 if fail
+				os._exit(0) # exit 0 if success
+			elif portArgument in portVersionsByName:
+				# Base port name
+				for version in portVersionsByName[portArgument]:
+					portID = portArgument + '-' + version
+					port = allPorts[portID]
+					print '%s   [%s]' % (portID, port.category)
+					try:
+						port.validateRecipeFile(True)
+					except SystemExit as e:
+						print e.code
+			else:
+				# Unknown
 				sys.exit('%s is not a known port!' % portArgument)
-
-			for version in portVersionsByName[portArgument]:
-				portID = portArgument + '-' + version
-				port = allPorts[portID]
-				print '%s   [%s]' % (portID, port.category)
-				try:
-					port.validateRecipeFile(True)
-				except SystemExit as e:
-					print e.code
+				
 		else:
 			print 'Checking HaikuPorts tree at: ' + self.treePath
 			allPorts = self.repository.getAllPorts()
