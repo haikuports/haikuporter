@@ -741,11 +741,18 @@ checkedUnmount()
 
 	# retry up to 5 times to unmount the given mountpoint
 	local x=0
-	while [ $x -lt 5 ]; do
+	while true; do
 		if unmount "$mountPoint"; then
 			break
 		fi
+
 		let x+=1
+		if [ $x -ge 5 ]; then
+			echo "Giving up. FDs in use by applications:"
+			fdinfo -d "$mountPoint"
+			break;
+		fi
+
 		echo "unmounting $mountPoint failed - wait 1 second and retry ..."
 		sleep 1
 	done
