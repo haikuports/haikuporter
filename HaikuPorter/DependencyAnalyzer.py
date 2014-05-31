@@ -227,9 +227,7 @@ class DependencyAnalyzer(object):
 		self.allRequires = {}
 		for packageID in packageIDs:
 			# get the port ID for the package
-			portID = packageID
-			if portID not in allPorts:
-				portID = self.repository.getPortIdForPackageId(portID)
+			portID = self.repository.getPortIdForPackageId(packageID)
 
 			portNode = self._getPortNode(portID)
 			if portNode.areDependenciesResolved:
@@ -484,9 +482,7 @@ class DependencyAnalyzer(object):
 
 		# get the port -- that will also create nodes for all of the port's
 		# packages
-		portID = packageID
-		if portID not in self.repository.getAllPorts():
-			portID = self.repository.getPortIdForPackageId(portID)
+		portID = self.repository.getPortIdForPackageId(packageID)
 		self._getPortNode(portID)
 
 		if not packageID in self.packageNodes:

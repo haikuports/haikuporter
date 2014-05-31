@@ -385,10 +385,7 @@ class Main(object):
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
 			try:
-				if packageID in allPorts:
-					portID = packageID
-				else:
-					portID = self.repository.getPortIdForPackageId(packageID)
+				portID = self.repository.getPortIdForPackageId(packageID)
 				if portID not in requiredPortIDs:
 					requiredPort = allPorts[portID]
 					if ((getOption('createSourcePackagesForBootstrap')

@@ -48,7 +48,6 @@ class Repository(object):
 		# cut out subparts from the package name until we find a port
 		# with that name:
 		(portName, version) = packageId.rsplit('-', 1)
-		(portName, unused1, unused2) = portName.rpartition('_')
 		while portName:
 			portID = portName + '-' + version
 			if portID in self._allPorts:
@@ -64,7 +63,6 @@ class Repository(object):
 		# cut out subparts from the package name until we find a port
 		# with that name:
 		portName = packageName
-		(portName, unused1, unused2) = portName.rpartition('_')
 		while portName:
 			if portName in self._portVersionsByName:
 				return portName
@@ -374,12 +372,7 @@ class Repository(object):
 		for packageInfo in packageInfos:
 			packageInfoFileName = os.path.basename(packageInfo)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
-			portID = packageID
-
-			# what we have in portID may be a packageID instead, in which case
-			# we need to find the corresponding portID.
-			if portID not in allPorts:
-				portID = self.getPortIdForPackageId(portID)
+			portID = self.getPortIdForPackageId(packageID)
 
 			if not portID or portID not in allPorts or portID in brokenPorts:
 				if not self.quiet:
