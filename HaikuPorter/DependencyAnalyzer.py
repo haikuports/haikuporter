@@ -221,7 +221,6 @@ class DependencyAnalyzer(object):
 		# requires and build prerequires are dependencies for a port.
 		print 'Resolving dependencies ...'
 
-		allPorts = self.repository.getAllPorts()
 		self.portNodes = {}
 		self.packageNodes = {}
 		self.allRequires = {}
