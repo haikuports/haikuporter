@@ -833,13 +833,13 @@ class Port(object):
 			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
 				and not basedOnSourcePackage
 				and not getOption('noSourcePackages')):
-				package = self._createSourcePackage(name, False)
+				package = self._createSourcePackage(self.name, False)
 				self.allPackages.append(package)
 				self.packages.append(package)
 
 			# create additional rigged source package if necessary
 			if getOption('createSourcePackagesForBootstrap'):
-				package = self._createSourcePackage(name, True)
+				package = self._createSourcePackage(self.name, True)
 				self.allPackages.append(package)
 				self.packages.append(package)
 
@@ -1379,6 +1379,10 @@ class Port(object):
 
 		# a source package shares some attributes with the base package,
 		# just provides itself and has no requires:
+		if rigged:
+			name = self.name + '_source_rigged'
+		else:
+			name = self.name + '_source'
 		sourceSuffix \
 			= recipeAttributes['SUMMARY']['suffix'][PackageType.SOURCE]
 		sourceKeys.update({
@@ -1390,8 +1394,4 @@ class Port(object):
 			'PROVIDES': [ name + ' = ' + self.version ],
 			'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
 		})
-		if rigged:
-			name = self.name + '_source_rigged'
-		else:
-			name = self.name + '_source'
 		return sourcePackageFactory(name, self, sourceKeys, self.policy, rigged)
