@@ -292,7 +292,7 @@ class Configuration(object):
 			if not os.path.exists(haikuportsConf):
 				haikuportsConf = (os.path.expanduser('~')
 					+ '/config/settings/haikuports.conf')
-		
+
 		if not os.path.exists(haikuportsConf):
 			sysExit("Unable to find haikuports.conf in known search paths.\n"
 				+ "See haikuports-sample.conf for more information");

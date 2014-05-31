@@ -148,7 +148,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		# activate the build package
 		packagesDir = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
 		activeBuildPackage = packagesDir + '/' + os.path.basename(packagePath)
-		self.deactivateBuildPackage(workDir, activeBuildPackage, 
+		self.deactivateBuildPackage(workDir, activeBuildPackage,
 									revisionedName)
 
 		if not buildPlatform.usesChroot():
@@ -228,7 +228,7 @@ class BuildPlatformUnix(BuildPlatform):
 
 		self.secondaryTargetArchitectures \
 			= Configuration.getSecondaryTargetArchitectures()
-			
+
 		if not shallowInitIsEnough:
 			if Configuration.getPackageCommand() == 'package':
 				sysExit('--command-package must be specified on this build '
@@ -239,7 +239,7 @@ class BuildPlatformUnix(BuildPlatform):
 			if not Configuration.getSystemMimeDbDirectory():
 				sysExit('--system-mimedb must be specified on this build '
 					'platform!')
-	
+
 			if not Configuration.getCrossToolsDirectory():
 				sysExit('--cross-tools must be specified on this build '
 					'platform!')
@@ -252,16 +252,16 @@ class BuildPlatformUnix(BuildPlatform):
 					sysExit('The cross-tools directories for all secondary '
 						'architectures must be specified on this build '
 						'platform!')
-	
+
 				for secondaryArchitecture in self.secondaryTargetArchitectures:
 					self.secondaryTargetMachineTriples[secondaryArchitecture] \
 						= MachineArchitecture.getTripleFor(
 							secondaryArchitecture)
-	
+
 				if not Configuration.getSecondaryCrossDevelPackage(
 						self.secondaryTargetArchitectures[0]):
 					sysExit('The Haiku cross devel package for all secondary '
-						'architectures must be specified on this build ' 
+						'architectures must be specified on this build '
 						'platform!')
 
 		self.findDirectoryMap = {

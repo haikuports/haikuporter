@@ -84,10 +84,10 @@ class Source(object):
 		# set local filename from URI, unless specified explicitly
 		if not self.fetchTargetName:
 			self.fetchTargetName = uriFileName
-			
+
 		downloadMirror = Configuration.getDownloadMirror()
 		if downloadMirror:
-			# add fallback URI using a general source tarball mirror (some 
+			# add fallback URI using a general source tarball mirror (some
 			# original source sites aren't very reliable)
 			self.uris.append(downloadMirror + '/' + uriFileName + uriExtension)
 
@@ -169,7 +169,7 @@ class Source(object):
 					warn(('Unable to fetch source from %s (error: %s), '
 						  + 'trying next location.') % (uri, e))
 				else:
-					warn(('Unable to fetch source from %s (error: %s)') 
+					warn(('Unable to fetch source from %s (error: %s)')
 						 % (uri, e))
 
 		# failed to fetch source
@@ -340,7 +340,7 @@ class Source(object):
 			os.mkdir(patchSetDirectory)
 		with open(patchSetFilePath, 'w') as patchSetFile:
 			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'],
-					   stdout=patchSetFile, cwd=self.sourceDir, 
+					   stdout=patchSetFile, cwd=self.sourceDir,
 					   env=self.gitEnv)
 
 		if needToRebase:

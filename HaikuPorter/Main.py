@@ -43,7 +43,7 @@ class Main(object):
 			else:
 				print exception
 			exit(1)
-			
+
 	def run(self, args):
 		self.policy = Policy(self.options.strictPolicy)
 
@@ -57,15 +57,15 @@ class Main(object):
 
 		self._checkFormatVersions()
 
-		# determine if haikuporter has just been invoked for a short-term 
+		# determine if haikuporter has just been invoked for a short-term
 		# command
-		self.shallowInitIsEnough = (self.options.lint or self.options.tree 
+		self.shallowInitIsEnough = (self.options.lint or self.options.tree
 									or self.options.get or self.options.list
 									or self.options.search
 									or self.options.location)
 
 		# init build platform
-		buildPlatform.init(self.treePath, self.outputDirectory, 
+		buildPlatform.init(self.treePath, self.outputDirectory,
 						   self.shallowInitIsEnough)
 
 		# set up the global variables we'll inherit to the shell
@@ -88,7 +88,7 @@ class Main(object):
 
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
-			if (not buildPlatform.isHaiku() 
+			if (not buildPlatform.isHaiku()
 				and Configuration.getLicensesDirectory() == None):
 				sysExit('LICENSES_DIRECTORY must be set in configuration on '
 					'this build platform!')
@@ -590,7 +590,7 @@ class Main(object):
 			else:
 				# Unknown
 				sysExit('%s is not a known port!' % portArgument)
-				
+
 		else:
 			print 'Checking HaikuPorts tree at: ' + self.treePath
 			allPorts = self.repository.getAllPorts()
@@ -613,15 +613,15 @@ class Main(object):
 		if os.path.exists(formatVersionsFile):
 			with open(formatVersionsFile, 'r') as f:
 				formatVersions = f.read()
-			recipeFormatVersionMatch = re.search('^RecipeFormatVersion=(.+?)$', 
-												 formatVersions, 
+			recipeFormatVersionMatch = re.search('^RecipeFormatVersion=(.+?)$',
+												 formatVersions,
 												 flags=re.MULTILINE)
 			if recipeFormatVersionMatch:
-				try: 
+				try:
 					recipeFormatVersion = int(recipeFormatVersionMatch.group(1))
 				except ValueError:
 					pass
-		
+
 		if recipeFormatVersion > getRecipeFormatVersion():
 			sysExit('The version of the recipe file format used in the ports '
 					'tree is newer than the one supported by haikuporter.\n'

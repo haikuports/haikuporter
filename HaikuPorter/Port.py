@@ -28,7 +28,7 @@ from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
 										 setupChrootScript)
 from HaikuPorter.Source import Source
 from HaikuPorter.Utils import (filteredEnvironment, naturalCompare,
-							   storeStringInFile, symlinkGlob, sysExit, 
+							   storeStringInFile, symlinkGlob, sysExit,
 							   touchFile, warn)
 
 import os
@@ -172,10 +172,10 @@ class Port(object):
 		"""Make sure that the recipe has been parsed and silently parse it if
 		   it hasn't"""
 		self.parseRecipeFile(False)
-		
+
 	def parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port, unless already done"""
-		
+
 		if self.recipeHasBeenParsed:
 			return
 		try:
@@ -441,7 +441,7 @@ class Port(object):
 				requiresTypes, workRepositoryPath)
 			requiredPackages \
 				= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
-											'required or prerequired ports', 
+											'required or prerequired ports',
 											False, [ workRepositoryPath ])
 			prerequiredPackages = []
 		else:
@@ -452,16 +452,16 @@ class Port(object):
 				requiresTypes, workRepositoryPath)
 			requiredPackages \
 				= self._resolveDependencies(packageInfoFiles, [ packagesPath ],
-											'required ports', 
+											'required ports',
 											buildPlatform.isHaiku(),
 											[ workRepositoryPath ])
-	
+
 			requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
 			packageInfoFiles = self._generatePackageInfoFiles(
 				requiresTypes, workRepositoryPath)
 			prerequiredPackages \
-				= self._resolveDependencies(packageInfoFiles, [ packagesPath], 
-											'prerequired ports', True, 
+				= self._resolveDependencies(packageInfoFiles, [ packagesPath],
+											'prerequired ports', True,
 											[ workRepositoryPath ])
 
 		# return list of unique ports which need to be built before this one
@@ -490,7 +490,7 @@ class Port(object):
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
 											 			  workRepositoryPath)
 		try:
-			self._resolveDependencies(packageInfoFiles, [], 
+			self._resolveDependencies(packageInfoFiles, [],
 									  'why is port needed',
 									  buildPlatform.isHaiku(),
 									  [ workRepositoryPath ])
@@ -648,7 +648,7 @@ class Port(object):
 			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
 					= self.shellVariables['crossSysrootDir']
-			
+
 			def makeChrootFunctions():
 				def taskFunction():
 					if not getOption('quiet'):
@@ -665,9 +665,9 @@ class Port(object):
 				def failureFunction():
 					sysExit('Build has failed - stopping.')
 				return {
-					'task': taskFunction, 
-					'success': successFunction, 
-					'failure': failureFunction 
+					'task': taskFunction,
+					'success': successFunction,
+					'failure': failureFunction
 				}
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 				self._executeInChroot(chrootSetup, makeChrootFunctions())
@@ -717,7 +717,7 @@ class Port(object):
 
 		if not buildPlatform.isHaiku():
 			sysExit("Sorry, can't execute a test unless running on Haiku")
-			
+
 		self.parseRecipeFileIfNeeded()
 
 		self._recreatePackageDirectories()
@@ -742,8 +742,8 @@ class Port(object):
 			def failureFunction():
 				sysExit('Test has failed - stopping.')
 			return {
-				'task': taskFunction, 
-				'failure': failureFunction 
+				'task': taskFunction,
+				'failure': failureFunction
 			}
 		with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 			self._executeInChroot(chrootSetup, makeChrootFunctions())
@@ -1122,8 +1122,8 @@ class Port(object):
 		requiresTypes = [ 'BUILD_REQUIRES' ]
 		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
-		packages = self._resolveDependencies(packageInfoFiles, 
-											 [ packagesPath ], 
+		packages = self._resolveDependencies(packageInfoFiles,
+											 [ packagesPath ],
 											 'required packages for build',
 											 buildPlatform.isHaiku())
 
