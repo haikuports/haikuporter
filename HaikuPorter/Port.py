@@ -656,7 +656,7 @@ class Port(object):
 						for package in sorted(allPackages):
 							print '\t' + package
 					if getOption('enterChroot'):
-						self._openShell([], self.sourceDir)
+						self._openShell([ '-l' ], self.sourceDir)
 					else:
 						self._executeBuild(makePackages)
 				def successFunction():

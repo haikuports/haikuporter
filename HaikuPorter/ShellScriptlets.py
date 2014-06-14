@@ -681,6 +681,16 @@ ln -sfn /boot/system/cache/tmp tmp
 ln -sfn /boot/system/settings/etc etc
 ln -sfn /boot/system/var var
 
+# activate system inputrc in chroot, for improved navigation
+if [ -e /etc/inputrc ]; then
+	cp /etc/inputrc boot/system/settings/etc/
+fi
+# setup basic profile
+if ! [ -e boot/system/settings/etc/profile ]; then
+	echo 'export PS1="\w> "' >boot/system/settings/etc/profile
+	chmod +x boot/system/settings/etc/profile
+fi
+
 # remove any packages that may be lying around
 rm -f boot/system/packages/*.hpkg
 
