@@ -610,13 +610,14 @@ class Port(object):
 
 		self._recreatePackageDirectories()
 
-		for package in self.packages:
-			if ((getOption('createSourcePackagesForBootstrap')
-					or getOption('createSourcePackages'))
-				and package.type != PackageType.SOURCE):
-				continue
-			os.mkdir(package.packagingDir)
-			package.prepopulatePackagingDir(self)
+		# populate all non-source packages
+		if (not getOption('createSourcePackagesForBootstrap')
+			and not getOption('createSourcePackages')):
+			for package in self.packages:
+				if package.type == PackageType.SOURCE:
+					continue
+				os.mkdir(package.packagingDir)
+				package.prepopulatePackagingDir(self)
 
 		if (getOption('createSourcePackagesForBootstrap')
 			or getOption('createSourcePackages')):
@@ -689,6 +690,16 @@ class Port(object):
 				self.secondaryArchitecture, True)
 
 		if makePackages and not getOption('enterChroot'):
+			# create source package
+			for package in self.packages:
+				if package.type == PackageType.SOURCE:
+					os.makedirs(package.packagingDir)
+					package.prepopulatePackagingDir(self)
+					package.makeHpkg(self.requiresUpdater)
+					
+			# cleanup packaging directory
+			shutil.rmtree(self.packagingBaseDir)
+			
 			# move all created packages into packages folder
 			for package in self.packages:
 				if ((getOption('createSourcePackagesForBootstrap')
@@ -1281,9 +1292,6 @@ class Port(object):
 				and package.type != PackageType.SOURCE):
 				continue
 			package.makeHpkg(self.requiresUpdater)
-
-		# Clean up after ourselves
-		shutil.rmtree(self.packagingBaseDir)
 
 	def _doInstallStage(self):
 		"""Install the files resulting from the build into the packaging
