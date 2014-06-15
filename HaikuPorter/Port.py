@@ -1068,8 +1068,6 @@ class Port(object):
 				if childStatus != 0:
 					if 'failure' in chrootFunctions:
 						chrootFunctions['failure']()
-					# normally, the following should never be executed,
-					# as the error function is meant to return.
 					sysExit('chroot-task failed')
 				if 'success' in chrootFunctions:
 					chrootFunctions['success']()
@@ -1082,6 +1080,7 @@ class Port(object):
 				except:
 					pass
 				print '*** child stopped'
+				sysExit('Interrupted.')
 
 	def _generatePackageInfoFiles(self, requiresTypes, path = None):
 		"""Generates package info files with given types of requires."""
