@@ -704,10 +704,11 @@ class Port(object):
 						warn('not grabbing ' + package.hpkgName
 							 + ', as it has not been built in a chroot.')
 						continue
+					targetPackageFile \
+						= hpkgStoragePath + '/' + package.hpkgName
 					print('grabbing ' + package.hpkgName
-						  + ' and putting it into ' + hpkgStoragePath)
-					os.rename(packageFile,
-							  hpkgStoragePath + '/' + package.hpkgName)
+						  + ' and copying it to ' + targetPackageFile)
+					os.rename(packageFile, targetPackageFile)
 
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)

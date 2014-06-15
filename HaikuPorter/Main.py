@@ -418,6 +418,7 @@ class Main(object):
 
 		print '-' * 70
 		print port.category + '::' + port.versionedName
+		print '\t' + port.recipeFilePath
 		print '-' * 70
 
 		# pass-on options to port
