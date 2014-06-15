@@ -758,8 +758,19 @@ checkedUnmount()
 
 		let x+=1
 		if [ $x -ge 5 ]; then
-			echo "Giving up. FDs in use by applications:"
+			echo -e "Unable to unmount $mountPoint.\nFDs in use by applications:"
 			fdinfo -d "$mountPoint"
+			read -r -d '' message <<-"EOF"
+				Haikuporter could not unmount "'$(basename $mountPoint)'" volume
+				in chroot.
+				What would you like to do?
+				EOF
+			message=$(eval echo -e $message)
+			if alert --warning "$message" \
+				"Force unmount" 'Give up' >/dev/null; then
+				echo "Forcing unmount"
+				unmount -f "$mountPoint"
+			fi
 			break;
 		fi
 
