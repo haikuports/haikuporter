@@ -212,7 +212,7 @@ class Package(object):
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.workDir = '/'
 
-	def prepopulatePackagingDir(self, port):
+	def populatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
 		licenseDir = port.baseDir + '/licenses'
@@ -467,7 +467,7 @@ class Package(object):
 # -- A source package ---------------------------------------------------------
 
 class SourcePackage(Package):
-	def prepopulatePackagingDir(self, port):
+	def populatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
 		if self.isRiggedSourcePackage:
@@ -475,7 +475,7 @@ class SourcePackage(Package):
 		else:
 			print "Populating source package ..."
 
-		super(SourcePackage, self).prepopulatePackagingDir(port)
+		super(SourcePackage, self).populatePackagingDir(port)
 
 		targetBaseDir = (self.packagingDir + '/develop/sources/'
 						 + port.revisionedName)

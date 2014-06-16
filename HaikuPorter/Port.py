@@ -617,7 +617,7 @@ class Port(object):
 				if package.type == PackageType.SOURCE:
 					continue
 				os.mkdir(package.packagingDir)
-				package.prepopulatePackagingDir(self)
+				package.populatePackagingDir(self)
 
 		if (getOption('createSourcePackagesForBootstrap')
 			or getOption('createSourcePackages')):
@@ -694,7 +694,7 @@ class Port(object):
 			for package in self.packages:
 				if package.type == PackageType.SOURCE:
 					os.makedirs(package.packagingDir)
-					package.prepopulatePackagingDir(self)
+					package.populatePackagingDir(self)
 					package.makeHpkg(self.requiresUpdater)
 					
 			# cleanup packaging directory
