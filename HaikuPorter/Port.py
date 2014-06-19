@@ -1298,9 +1298,12 @@ class Port(object):
 		   folder"""
 
 		# activate build package if required at this stage
-		if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.INSTALL:
+		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.INSTALL
+			and not (getOption('createSourcePackagesForBootstrap')
+					 or getOption('createSourcePackages'))):
 			for package in self.packages:
-				package.activateBuildPackage()
+				if package.type != PackageType.SOURCE:
+					package.activateBuildPackage()
 
 		print 'Collecting files to be packaged ...'
 		self._doRecipeAction(Phase.INSTALL, self.sourceDir)
@@ -1309,9 +1312,12 @@ class Port(object):
 		"""Test the build results"""
 
 		# activate build package if required at this stage
-		if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.TEST:
+		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.TEST
+			and not (getOption('createSourcePackagesForBootstrap')
+					 or getOption('createSourcePackages'))):
 			for package in self.packages:
-				package.activateBuildPackage()
+				if package.type != PackageType.SOURCE:
+					package.activateBuildPackage()
 
 		print 'Testing ...'
 		self._doRecipeAction(Phase.TEST, self.sourceDir)
