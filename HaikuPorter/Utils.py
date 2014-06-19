@@ -102,7 +102,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		zipFile.close()
 	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
 		ensureCommandIsAvailable('xz')
-		Popen(['xz', '-d', '-k', archiveFile]).wait()
+		Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
 			tarFile = tarfile.open(tar, 'r')
