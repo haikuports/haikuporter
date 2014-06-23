@@ -693,14 +693,15 @@ class Port(object):
 			# create source package
 			for package in self.packages:
 				if package.type == PackageType.SOURCE:
-					os.makedirs(package.packagingDir)
+					if not os.path.exists(package.packagingDir):
+						os.makedirs(package.packagingDir)
 					package.populatePackagingDir(self)
 					package.makeHpkg(self.requiresUpdater)
-					
+
 			# cleanup packaging directory
 			if os.path.exists(self.packagingBaseDir):
 				shutil.rmtree(self.packagingBaseDir)
-			
+
 			# move all created packages into packages folder
 			for package in self.packages:
 				if ((getOption('createSourcePackagesForBootstrap')
