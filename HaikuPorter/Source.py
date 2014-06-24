@@ -85,13 +85,14 @@ class Source(object):
 		if not self.fetchTargetName:
 			self.fetchTargetName = uriFileName
 			
-		if not port.name in self.fetchTargetName:
+		checkedTargetName = self.fetchTargetName.lower().replace('-', '_')
+		if not port.name.lower() in checkedTargetName:
 			sysExit("Target filename of download '%s' does not contain the "
 					"port name ('%s'), but that is required for mirroring "
 					"purposes - suggested fix is to set %s explicitly."
 					% (self.fetchTargetName, port.name, 
-					   'SOURCE_FILENAME' if self.index == '1' \
-					   else 'SOURCE_FILENAME_' + self.index))
+					   'SRC_FILENAME' if self.index == '1' \
+					   else 'SRC_FILENAME_' + self.index))
 			
 		downloadMirror = Configuration.getDownloadMirror()
 		if downloadMirror:
