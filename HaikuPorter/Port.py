@@ -174,7 +174,8 @@ class Port(object):
 		self.parseRecipeFile(False)
 
 	def parseRecipeFile(self, showWarnings):
-		"""Parse the recipe-file of the specified port, unless already done"""
+		"""Parse the recipe-file of the specified port, unless already done.
+		   Any exceptions that are triggered by the recipe are caught."""
 
 		if self.recipeHasBeenParsed:
 			return
@@ -182,6 +183,12 @@ class Port(object):
 			self._parseRecipeFile(showWarnings)
 		finally:
 			self.recipeHasBeenParsed = True
+
+	def parseRecipeFileRaisingExceptions(self, showWarnings):
+		"""Parse the recipe-file of the specified port, raising exceptions
+		   when there are problems."""
+
+		self._parseRecipeFile(showWarnings)
 
 	def validateRecipeFile(self, showWarnings = False):
 		"""Validate the syntax and contents of the recipe file"""

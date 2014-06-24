@@ -91,12 +91,9 @@ class Repository(object):
 				if warnAboutSkippedVersions:
 					warn('skipping %s, as the recipe is broken' % portID)
 					try:
-						if self.verbose:
-							port.validateRecipeFile(True)
-						port.parseRecipeFile(True)
+						port.parseRecipeFileRaisingExceptions(True)
 					except SystemExit as e:
-						if self.verbose:
-							print e.code
+						print e.code
 				continue
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
@@ -352,9 +349,7 @@ class Repository(object):
 						if os.path.exists(mainPackageInfoFile):
 							brokenPorts.append(portID)
 						else:
-							if not self.quiet and not self.verbose:
-								print '\trecipe for %s is still broken' % portID
-							if self.verbose:
+							if not self.quiet:
 								print '\trecipe for %s is still broken:' % portID
 								print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
