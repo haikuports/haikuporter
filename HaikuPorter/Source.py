@@ -84,16 +84,7 @@ class Source(object):
 		# set local filename from URI, unless specified explicitly
 		if not self.fetchTargetName:
 			self.fetchTargetName = uriFileName
-			
-		checkedTargetName = self.fetchTargetName.lower().replace('-', '_')
-		if not port.name.lower() in checkedTargetName:
-			sysExit("Target filename of download '%s' does not contain the "
-					"port name ('%s'), but that is required for mirroring "
-					"purposes - suggested fix is to set %s explicitly."
-					% (self.fetchTargetName, port.name, 
-					   'SRC_FILENAME' if self.index == '1' \
-					   else 'SRC_FILENAME_' + self.index))
-			
+
 		downloadMirror = Configuration.getDownloadMirror()
 		if downloadMirror:
 			# add fallback URI using a general source tarball mirror (some
