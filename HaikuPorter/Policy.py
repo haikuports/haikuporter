@@ -220,7 +220,9 @@ class Policy(object):
 					break
 
 			if not libraryPath:
-				self._violation('can\'t find used library "%s"' % library)
+				# Don't complain if we're running on non-haiku host.
+				if os.path.exists('/boot/system/lib'):
+					self._violation('can\'t find used library "%s"' % library)
 				return False
 
 			# Find out which package the library belongs to.
