@@ -89,7 +89,9 @@ class Source(object):
 		if downloadMirror:
 			# add fallback URI using a general source tarball mirror (some
 			# original source sites aren't very reliable)
-			self.uris.append(downloadMirror + '/' + uriFileName + uriExtension)
+			recipeDirName = os.path.basename(port.baseDir)
+			self.uris.append(downloadMirror + '/' + recipeDirName + '/'
+							 + uriFileName + uriExtension)
 
 		self.sourceFetcher = None
 		self.fetchTarget = port.downloadDir + '/' + self.fetchTargetName
