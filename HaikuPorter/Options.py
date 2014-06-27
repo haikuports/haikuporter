@@ -234,8 +234,9 @@ def parseOptions():
 	if getOption('enterChroot'):
 		setattr(__Options__, 'noSourcePackages', True)
 	elif not isCommandAvailable('git'):
-		warn("deactivating creation of source packages as 'git' is not "
-			 "available")
+		if not getOption('doBootstrap'):
+			warn("deactivating creation of source packages as 'git' is not "
+				 "available")
 		setattr(__Options__, 'noSourcePackages', True)
 
 	return (__Options__, args)
