@@ -11,6 +11,7 @@ from HaikuPorter.Port import Port
 from HaikuPorter.Utils import (check_output, touchFile, versionCompare, warn)
 
 import glob
+import json
 import os
 import re
 import shutil
@@ -34,42 +35,31 @@ class Repository(object):
 		self.quiet = quiet
 		self.verbose = verbose
 
+		self._portIdForPackageIdFilePath \
+			= self.path + '/.portIdForPackageIdMap'
+		self._portNameForPackageNameFilePath \
+			= self.path + '/.portNameForPackageNameMap'
+
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
-		if (os.path.isdir(self.path)
-			and os.listdir(self.path)):
+		self._initPortForPackageMaps()
+		if (os.path.isdir(self.path) and os.listdir(self.path)
+			and os.path.exists(self._portIdForPackageIdFilePath)
+			and os.path.exists(self._portNameForPackageNameFilePath)):
 			self._updateRepository()
 		else:
 			self._populateRepository(preserveFlags)
+		self._writePortForPackageMaps()
 
 	def getPortIdForPackageId(self, packageId):
 		"""return the port-ID for the given package-ID"""
 
-		# cut out subparts from the package name until we find a port
-		# with that name:
-		(portName, version) = packageId.rsplit('-', 1)
-		while portName:
-			portID = portName + '-' + version
-			if portID in self._allPorts:
-				return portID
-			(portName, unused1, unused2) = portName.rpartition('_')
-
-		# no corresponding port-ID was found
-		return None
+		return self._portIdForPackageId.get(packageId, None)
 
 	def getPortNameForPackageName(self, packageName):
 		"""return the port name for the given package name"""
 
-		# cut out subparts from the package name until we find a port
-		# with that name:
-		portName = packageName
-		while portName:
-			if portName in self._portVersionsByName:
-				return portName
-			(portName, unused1, unused2) = portName.rpartition('_')
-
-		# no corresponding port-ID was found
-		return None
+		return self._portNameForPackageName.get(packageName, None)
 
 	def getAllPorts(self):
 		return self._allPorts
@@ -224,6 +214,44 @@ class Repository(object):
 		for portName in self._portVersionsByName.keys():
 			self._portVersionsByName[portName].sort(cmp=versionCompare)
 
+	def _initPortForPackageMaps(self):
+		"""Initialize dictionaries that map package names/IDs to port 
+		   names/IDs"""
+		   
+		self._portIdForPackageId = {}
+		if os.path.exists(self._portIdForPackageIdFilePath):
+			try:
+				with open(self._portIdForPackageIdFilePath, 'r') as fh:
+					self._portIdForPackageId = json.load(fh)
+			except BaseException as e:
+				print e
+		
+		self._portNameForPackageName = {}
+		if os.path.exists(self._portNameForPackageNameFilePath):
+			try:
+				with open(self._portNameForPackageNameFilePath, 'r') as fh:
+					self._portNameForPackageName = json.load(fh)
+			except BaseException as e:
+				print e
+		
+	def _writePortForPackageMaps(self):
+		"""Writes dictionaries that map package names/IDs to port 
+		   names/IDs to a file"""
+		   
+		try:
+			with open(self._portIdForPackageIdFilePath, 'w') as fh:
+				json.dump(self._portIdForPackageId, fh, sort_keys = True,
+						  indent = 4, separators = (',', ' : '))
+		except BaseException as e:
+			print e
+		
+		try:
+			with open(self._portNameForPackageNameFilePath, 'w') as fh:
+				json.dump(self._portNameForPackageName, fh, sort_keys = True,
+						  indent = 4, separators = (',', ' : '))
+		except BaseException as e:
+			print e
+
 	def _populateRepository(self, preserveFlags):
 		"""Remove and refill the repository with all PackageInfo-files from
 		   parseable recipes"""
@@ -260,6 +288,11 @@ class Repository(object):
 							if not self.quiet:
 								print
 						port.writePackageInfosIntoRepository(newRepositoryPath)
+						for package in port.packages:
+							self._portIdForPackageId[package.versionedName] \
+								= port.versionedName
+							self._portNameForPackageName[package.name] \
+								= port.name
 						break
 					else:
 						# take notice of skipped recipe file
@@ -341,6 +374,11 @@ class Repository(object):
 					if not self.quiet:
 						print '\tupdating package infos of ' + portID
 					port.writePackageInfosIntoRepository(self.path)
+					for package in port.packages:
+						self._portIdForPackageId[package.versionedName] \
+							= port.versionedName
+						self._portNameForPackageName[package.name] \
+							= port.name
 
 				except SystemExit as e:
 					if not higherVersionIsActive:
@@ -354,6 +392,7 @@ class Repository(object):
 								print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
 		self._removeStalePackageInfos(brokenPorts)
+		self._removeStalePortForPackageMappings(brokenPorts)
 
 	def _removeStalePackageInfos(self, brokenPorts):
 		"""check for any package-infos that no longer have a corresponding
@@ -391,6 +430,25 @@ class Repository(object):
 			if not os.path.exists(obsoleteDir):
 				os.mkdir(obsoleteDir)
 			os.rename(package, obsoletePackage)
+
+	def _removeStalePortForPackageMappings(self, brokenPorts):
+		"""drops any port-for-package mappings that refer to non-existing or
+		   broken ports"""
+
+		for packageId, portId in self._portIdForPackageId.items():
+			if portId not in self._allPorts or portId in brokenPorts:
+				del self._portIdForPackageId[packageId]
+		
+		for packageName, portName in self._portNameForPackageName.items():
+			if portName not in self._portVersionsByName:
+				del self._portNameForPackageName[packageName]
+			for version in self._portVersionsByName[portName]:
+				portId = portName + '-' + version
+				if portId not in brokenPorts:
+					break
+			else:
+				# no version exists of this port that is not broken
+				del self._portNameForPackageName[packageName]
 
 	def _partiallyExtractSourcePackageIfNeeded(self, sourcePackageName):
 		"""extract the recipe and potentially contained patches/licenses from
