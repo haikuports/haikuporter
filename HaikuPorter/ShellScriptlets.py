@@ -699,6 +699,10 @@ if ! [ -e boot/system/settings/etc/profile ]; then
 	echo 'export PS1="\w> "' >boot/system/settings/etc/profile
 	chmod +x boot/system/settings/etc/profile
 fi
+# copy network settings
+if ! [ -e boot/system/settings/network ]; then
+	cp -r /system/settings/network boot/system/settings/
+fi
 
 # remove any packages that may be lying around
 rm -f boot/system/packages/*.hpkg
