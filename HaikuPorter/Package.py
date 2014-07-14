@@ -58,8 +58,14 @@ class Package(object):
 	def __init__(self, packageType, name, port, recipeKeys, policy,
 				 isRiggedSourcePackage = False):
 		self.type = packageType
-		self.name = name
-		self.version = port.version
+		if 'PACKAGE_NAME' in recipeKeys:
+			self.name = recipeKeys['PACKAGE_NAME']
+		if not self.name:
+			self.name = name
+		if 'PACKAGE_VERSION' in recipeKeys:
+			self.version = recipeKeys['PACKAGE_VERSION']
+		if not self.version:
+			self.version = port.version
 		self.revision = port.revision
 		self.secondaryArchitecture = port.secondaryArchitecture
 
