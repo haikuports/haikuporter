@@ -19,6 +19,7 @@ scriptletPrerequirements = r'''
 	cmd:${targetMachinePrefix}readelf
 	cmd:sed
 	cmd:${targetMachinePrefix}strip
+	cmd:xres
 '''
 
 def getScriptletPrerequirements(targetMachineTripleAsName = None):
@@ -425,6 +426,30 @@ fixPkgconfig()
 	done
 
 	rm -r $sourcePkgconfigDir
+}
+
+addResourcesToBinaries()
+{
+	# Usage: addResourcesToBinaries <rdefPath> <path> ...
+	if [ $# -lt 2 ]; then
+		echo >&2 "Usage: addResourcesToBinaries <rdefPath> <path> ..."
+		exit 1
+	fi
+
+	local rdefPath="$1"
+	shift 1
+
+	local rsrcPath="/tmp/tmp_resources_$$.rsrc"
+	rm -f "$rsrcPath"
+	rc -o "$rsrcPath" "$rdefPath"
+
+	while [ $# -gt 0 ]; do
+		local path="$1"
+		shift 1
+
+		xres -o "$path" "$rsrcPath"
+	done
+	rm -f "$rsrcPath"
 }
 
 symlinkRelative()
