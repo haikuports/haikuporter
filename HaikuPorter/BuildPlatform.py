@@ -313,6 +313,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:sed',
 			'cmd:strip',
 			'cmd:tar',
+			'cmd:xres',
 			'cmd:zcat',
 			'cmd:' + targetMachineAsName + '_objcopy',
 			'cmd:' + targetMachineAsName + '_readelf',
