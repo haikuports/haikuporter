@@ -663,10 +663,7 @@ class Port(object):
 						print 'chroot has these packages active:'
 						for package in sorted(allPackages):
 							print '\t' + package
-					if getOption('enterChroot'):
-						self._openShell([ '-l' ], self.sourceDir)
-					else:
-						self._executeBuild(makePackages)
+					self._executeBuild(makePackages)
 				def successFunction():
 					# tell the shell scriptlets that the task has succeeded
 					chrootSetup.buildOk = True
@@ -1244,7 +1241,8 @@ class Port(object):
 
 		print 'Building ...'
 		self._doRecipeAction(Phase.BUILD, self.sourceDir)
-		self.setFlag('build')
+		if not getOption('enterChroot'):
+			self.setFlag('build')
 
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
@@ -1290,6 +1288,9 @@ class Port(object):
 				if os.path.exists(dir) and not os.listdir(dir):
 					os.rmdir(dir)
 
+		if getOption('enterChroot'):
+			return
+
 		# create hpkg-directory if needed
 		if not os.path.exists(self.hpkgDir):
 			os.makedirs(self.hpkgDir)
@@ -1333,6 +1334,11 @@ class Port(object):
 	def _doRecipeAction(self, action, dir):
 		"""Run the specified action, as defined in the recipe file"""
 
+		if getOption('enterChroot'):
+			print "opening chroot shell for " + action
+			ps1 = action + '-chroot:' + os.environ['PS1']
+			self._openShell([], self.sourceDir, { 'PS1' : ps1 })
+			return
 		# execute the requested action via a shell ...
 		shellVariables = self.shellVariables.copy()
 		shellVariables['fileToParse'] = self.preparedRecipeFile
@@ -1343,12 +1349,13 @@ class Port(object):
 		storeStringInFile(wrapperScriptContent, wrapperScript)
 		self._openShell(['-c', '. ' + wrapperScript], dir)
 
-	def _openShell(self, params = [], dir = '/'):
+	def _openShell(self, params = [], dir = '/', env = {}):
 		"""Sets up environment and runs a shell with the given parameters"""
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
 		shellEnv = filteredEnvironment()
+		shellEnv.update(env)
 		if Configuration.isCrossBuildRepository():
 			# include cross development tools in path automatically
 			crossToolsPaths = buildPlatform.getCrossToolsBinPaths(self.workDir)
