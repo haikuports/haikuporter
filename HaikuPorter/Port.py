@@ -530,7 +530,6 @@ class Port(object):
 		self.parseRecipeFileIfNeeded()
 		for source in self.sources:
 			source.fetch(self)
-			source.validateChecksum(self)
 
 	def unpackSource(self):
 		"""Unpack the source archive(s)"""
