@@ -203,6 +203,11 @@ class Source(object):
 		if not self.sourceFetcher.sourceShouldBeValidated:
 			return
 
+		# Check to see if the source was already unpacked.
+		if port.checkFlag('validate', self.index) and not getOption('force'):
+			print 'Skipping checksum validation of ' + self.fetchTargetName
+			return
+
 		print 'Validating checksum of ' + self.fetchTargetName
 		sha256 = hashlib.sha256()
 
@@ -227,6 +232,8 @@ class Source(object):
 				sysExit('No checksum found in recipe!')
 			else:
 				warn('No checksum found in recipe!')
+
+		port.setFlag('validate', self.index)
 
 	def isFromSourcePackage(self):
 		"""Determines whether or not this source comes from a source package"""
