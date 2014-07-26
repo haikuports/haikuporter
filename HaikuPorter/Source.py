@@ -107,7 +107,7 @@ class Source(object):
 	def fetch(self, port):
 		"""Fetch the source from one of the URIs given in the recipe.
 		   If the sources have already been fetched, setup an appropriate
-		   source fetcher object.
+		   source fetcher object
 		"""
 
 		# create download dir
@@ -161,12 +161,10 @@ class Source(object):
 				sourceFetcher.fetch()
 
 				# ok, fetching the source was successful, we keep the source
-				# fetcher, validate the checksum if any and store the URI that
-				# the source came from for later runs
+				# fetcher and store the URI that the source came from for
+				# later runs
 				self.sourceFetcher = sourceFetcher
-				self.validateChecksum(port)
 				storeStringInFile(uri, self.fetchTarget + '.uri')
-				
 				return
 			except Exception as e:
 				if uri != self.uris[-1]:
