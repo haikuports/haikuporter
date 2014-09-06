@@ -118,6 +118,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 					sysExit('sub-directory %s not found in archive' % subdir)
 			tarFile.extractall(targetBaseDir)
 			tarFile.close()
+			os.remove(tar)
 	else:
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
