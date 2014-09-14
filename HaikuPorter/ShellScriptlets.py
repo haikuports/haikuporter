@@ -205,6 +205,11 @@ done
 recipeActionScript = commonRecipeScriptHead + r'''
 
 # provide defaults for every action
+PATCH()
+{
+    true
+}
+
 BUILD()
 {
 	true
