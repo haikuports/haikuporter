@@ -224,7 +224,9 @@ class Source(object):
 						+ 'Found SHA-256:    ' + sha256.hexdigest())
 		else:
 			print '----- CHECKSUM TEMPLATE -----'
-			print 'CHECKSUM_SHA256="%s"' % sha256.hexdigest()
+			print 'CHECKSUM_SHA256%(index)s="%(digest)s"' % { 
+				"digest": sha256.hexdigest(),
+				"index": ("_" + self.index) if self.index != "1" else "" }
 			print '-----------------------------'
 
 		if (self.checksum == None):
