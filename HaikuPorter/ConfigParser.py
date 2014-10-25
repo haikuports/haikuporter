@@ -37,8 +37,7 @@ class ConfigParser(object):
 		wrapperScript = (getShellVariableSetters(shellVariables)
 			+ configFileEvaluatorScript)
 		try:
-			output = check_output(['/bin/bash', '-c', wrapperScript],
-								  env=shellEnv)
+			output = check_output(['bash', '-c', wrapperScript], env=shellEnv)
 		except (OSError, CalledProcessError):
 			sysExit("Can't evaluate config file: " + filename)
 

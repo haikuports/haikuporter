@@ -56,7 +56,7 @@ class ChrootSetup(object):
 		os.chdir(self.path)
 		shellEnv = filteredEnvironment()
 		shellEnv.update(self.envVars)
-		check_call(['/bin/bash', '-c', setupChrootScript], env=shellEnv)
+		check_call(['bash', '-c', setupChrootScript], env=shellEnv)
 		return self
 
 	def __exit__(self, ignoredType, value, traceback):
@@ -66,7 +66,7 @@ class ChrootSetup(object):
 		shellEnv.update(self.envVars)
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
-		check_call(['/bin/bash', '-c', cleanupChrootScript], env=shellEnv)
+		check_call(['bash', '-c', cleanupChrootScript], env=shellEnv)
 
 
 # -- A single port with its recipe, allows to execute actions -----------------
@@ -200,7 +200,7 @@ class Port(object):
 		if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
 			os.makedirs(os.path.dirname(self.preparedRecipeFile))
 
-		prepareRecipeCommand = [ '/bin/bash', '-c',
+		prepareRecipeCommand = [ 'bash', '-c',
 			'sed \'s,^\\(REVISION="[^"]*"\\),\\1; updateRevisionVariables ,\' '
 				+ self.recipeFilePath + ' > ' + self.preparedRecipeFile]
 		check_call(prepareRecipeCommand)
@@ -1376,7 +1376,7 @@ class Port(object):
 		shellEnv['LC_ALL'] = 'POSIX'
 
 		# execute the requested action via a shell ...
-		args = [ '/bin/bash' ]
+		args = [ 'bash' ]
 		args += params
 		check_call(args, cwd=dir, env=shellEnv)
 
