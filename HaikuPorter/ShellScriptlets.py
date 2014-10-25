@@ -353,23 +353,26 @@ prepareInstalledDevelLib()
 	local sonameLib=""
 	local soname=""
 	local readelf=$(getTargetArchitectureCommand readelf)
+	local hasReadelf=0
 
-	command -v sed >/dev/null 2>&1
-	if [ $? -ne 0 ]; then
+	if ! command -v sed >/dev/null 2>&1; then
 		echo >&2 "prepareInstalledDevelLib needs sed in BUILD_PREREQUIRES"
 		exit 1
 	fi
 
-	command -v $readelf >/dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		echo >&2 "prepareInstalledDevelLib needs $readelf in BUILD_PREREQUIRES"
-		exit 1
-	fi
+	command -v $readelf >/dev/null 2>&1 && hasReadelf=1
 
 	for lib in $installDestDir$libDir/${libBaseName}${soPattern:-.so*}; do
 		if [ -f $lib -a ! -h $lib ]; then
+			if [ "$hasReadelf" != 1 ]; then
+				echo >&2 "prepareInstalledDevelLib needs $readelf in BUILD_PREREQUIRES"
+				exit 1
+			fi
+
 			sharedLib=$lib
+			set +e
 			sonameLine=$($readelf --dynamic $lib | grep SONAME)
+			set -e
 			if [ -n "$sonameLine" ]; then
 				soname=$(echo "$sonameLine" | sed 's,.*\[\(.*\)\].*,\1,')
 				if [ "$soname" != "$sonameLine" ]; then
