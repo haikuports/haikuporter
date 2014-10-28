@@ -8,8 +8,8 @@
 
 # TODO: use 'python2' in the shebang once we have that symlink on Haiku
 import sys
-if sys.version[0] != '2':
-	sys.exit('Sorry, haikuporter currently requires python version 2')
+if sys.version_info[:2] != (2, 7):
+	sys.exit('Sorry, haikuporter currently requires python version 2.7')
 
 # -- Modules ------------------------------------------------------------------
 
