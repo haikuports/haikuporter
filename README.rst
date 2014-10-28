@@ -31,6 +31,7 @@ Key here are the tools expand and unexpand. Unfortunately, their names and param
 Installing in a development environment
 ---------------------------------------
 
+
 It is common to develop projects in a virtual environment "virtualenv" which is insulates the project from the system install and vice-versa. Haiku's support for this is currently limited.
 
 In the checkout folder create a virtualenv:
@@ -45,6 +46,7 @@ This manipulates some environment variables which some people like to avoid. You
 Add the test tools
 ++++++++++++++++++
 
+
 pytest is the test framework. Python comes with unit test support but many Python people prefer pytest because it does not remind them of Java! pytest can run unit tests which is great on existing projects. The much more Pythonic syntax and test discovery are the main differences to unit test
 
 In your virtualenv:
@@ -55,3 +57,8 @@ Then run your tests:
 
 `py.test -rf HaikuPorter`
 
+
+Additional tools
+++++++++++++++++
+
+Support for running the tests in different conditions is provided by tox. Support for coverage information is provided by pytest-cov.
