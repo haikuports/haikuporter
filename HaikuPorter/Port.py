@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 #
 # Copyright 2007-2011 Brecht Machiels
 # Copyright 2009-2010 Chris Roberts
@@ -12,36 +13,49 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.BuildPlatform import buildPlatform
-from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Options import getOption
-from HaikuPorter.Package import (PackageType, sourcePackageFactory,
-                                 packageFactory)
-from HaikuPorter.RecipeAttributes import getRecipeAttributes
-from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, Phase,
-                                     Status)
-from HaikuPorter.RequiresUpdater import RequiresUpdater
-from HaikuPorter.ShellScriptlets import (cleanupChrootScript,
-                                         getShellVariableSetters,
-                                         recipeActionScript,
-                                         setupChrootScript)
-from HaikuPorter.Source import Source
-from HaikuPorter.Utils import (filteredEnvironment, naturalCompare,
-                               storeStringInFile, symlinkGlob, sysExit,
-                               touchFile, warn)
-
 import os
 import shutil
 import signal
 from subprocess import check_call, CalledProcessError
 import traceback
 
+from .BuildPlatform import buildPlatform
+from .ConfigParser import ConfigParser
+from .Configuration import Configuration
+from .Options import getOption
+from .Package import (
+    PackageType,
+    sourcePackageFactory,
+    packageFactory,
+)
+from .RecipeAttributes import getRecipeAttributes
+from .RecipeTypes import (
+    Extendable,
+    MachineArchitecture,
+    Phase,
+    Status)
+from .RequiresUpdater import RequiresUpdater
+from .ShellScriptlets import (
+    cleanupChrootScript,
+    getShellVariableSetters,
+    recipeActionScript,
+    setupChrootScript,
+)
+from .Source import Source
+from .Utils import (
+    filteredEnvironment,
+    naturalCompare,
+    storeStringInFile,
+    symlinkGlob,
+    sysExit,
+    touchFile,
+    warn,
+)
+
 
 # -- Modules preloaded for chroot ---------------------------------------------
 # These modules need to be preloaded in order to avoid problems with python
 # trying to dynamically load them inside a chroot environment
-from encodings import string_escape
 
 
 # -- Scoped resource for chroot environments ----------------------------------
@@ -72,7 +86,7 @@ class ChrootSetup(object):
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
     def __init__(self, name, version, category, baseDir, outputDir,
-                 globalShellVariables, policy, secondaryArchitecture = None):
+                 globalShellVariables, policy, secondaryArchitecture=None):
         self.baseName = name
         self.secondaryArchitecture = secondaryArchitecture
         self.name = name
@@ -88,7 +102,7 @@ class Port(object):
 
         if secondaryArchitecture:
             self.workDir = (self.outputDir + '/work-' + secondaryArchitecture
-                + '-' + self.version)
+                            + '-' + self.version)
             self.effectiveTargetArchitecture = self.secondaryArchitecture
         else:
             self.workDir = self.outputDir + '/work-' + self.version
@@ -190,7 +204,7 @@ class Port(object):
 
         self._parseRecipeFile(showWarnings)
 
-    def validateRecipeFile(self, showWarnings = False):
+    def validateRecipeFile(self, showWarnings=False):
         """Validate the syntax and contents of the recipe file"""
 
         if not os.path.exists(self.recipeFilePath):
@@ -200,9 +214,9 @@ class Port(object):
         if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
             os.makedirs(os.path.dirname(self.preparedRecipeFile))
 
-        prepareRecipeCommand = [ 'bash', '-c',
-            'sed \'s,^\\(REVISION="[^"]*"\\),\\1; updateRevisionVariables ,\' '
-                + self.recipeFilePath + ' > ' + self.preparedRecipeFile]
+        prepareRecipeCommand = ['bash', '-c',
+                                'sed \'s,^\\(REVISION="[^"]*"\\),\\1; updateRevisionVariables ,\' '
+                                + self.recipeFilePath + ' > ' + self.preparedRecipeFile]
         check_call(prepareRecipeCommand)
 
         # adjust recipe attributes for meta ports
@@ -249,7 +263,7 @@ class Port(object):
                             else:
                                 recipeKeys[baseKey] = baseEntries[baseKey]
                             continue
-                                # inherited values don't need to be checked
+                            # inherited values don't need to be checked
                 else:
                     key = baseKey
 
@@ -267,7 +281,7 @@ class Port(object):
                 if baseKey == 'SUMMARY':
                     if '\n' in entries[key]:
                         sysExit('%s must be a single line of text (%s).'
-                            % (key, self.recipeFilePath))
+                                % (key, self.recipeFilePath))
                     if len(entries[key]) > 70 and showWarnings:
                         warn('%s exceeds 70 chars (in %s)'
                              % (key, self.recipeFilePath))
@@ -319,7 +333,7 @@ class Port(object):
             for fileExtension in ['diff', 'patch', 'patchset']:
                 suffixes = ['', '-' + self.effectiveTargetArchitecture]
                 if self.effectiveTargetArchitecture \
-                    == MachineArchitecture.X86_GCC2:
+                        == MachineArchitecture.X86_GCC2:
                     suffixes.append('-gcc2')
                 else:
                     suffixes.append('-gcc4')
@@ -328,10 +342,10 @@ class Port(object):
                                                  fileExtension)
                     if (os.path.exists(self.patchesDir + '/' + patchFileName)
                         and not patchFileName in allPatches):
-                            if showWarnings:
-                                warn('Patch file %s is not referenced in '
-                                     'PATCHES, so it will not be used'
-                                     % patchFileName)
+                        if showWarnings:
+                            warn('Patch file %s is not referenced in '
+                                 'PATCHES, so it will not be used'
+                                 % patchFileName)
 
         return recipeKeysByExtension
 
@@ -370,7 +384,7 @@ class Port(object):
         status = self.getStatusOnTargetArchitecture()
         allowUntested = Configuration.shallAllowUntested()
         return (status == Status.STABLE
-            or (status == Status.UNTESTED and allowUntested))
+                or (status == Status.UNTESTED and allowUntested))
 
     def hasBrokenRecipe(self):
         """Returns whether or not the recipe for this port is broken (i.e. it
@@ -396,7 +410,7 @@ class Port(object):
         for package in self.packages:
             package.removePackageInfoFromRepository(repositoryPath)
 
-    def generatePackageInfoFiles(self, requiresTypes, targetPath = None):
+    def generatePackageInfoFiles(self, requiresTypes, targetPath=None):
         """Generates package info files with given types of requires."""
 
         self.parseRecipeFileIfNeeded()
@@ -443,33 +457,33 @@ class Port(object):
             # we need both build-requires and -prerequires when collecting
             # the sources needed for the bootstrap and we must not consider
             # buildhost packages
-            requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES' ]
+            requiresTypes = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES']
             packageInfoFiles = self._generatePackageInfoFiles(
                 requiresTypes, workRepositoryPath)
             requiredPackages \
-                = self._resolveDependencies(packageInfoFiles, [ packagesPath ],
+                = self._resolveDependencies(packageInfoFiles, [packagesPath],
                                             'required or prerequired ports',
-                                            False, [ workRepositoryPath ])
+                                            False, [workRepositoryPath])
             prerequiredPackages = []
         else:
             # we need build-requires and -prerequires, but only for the latter
             # we are allowed to consider buildhost packages
-            requiresTypes = [ 'BUILD_REQUIRES' ]
+            requiresTypes = ['BUILD_REQUIRES']
             packageInfoFiles = self._generatePackageInfoFiles(
                 requiresTypes, workRepositoryPath)
             requiredPackages \
-                = self._resolveDependencies(packageInfoFiles, [ packagesPath ],
+                = self._resolveDependencies(packageInfoFiles, [packagesPath],
                                             'required ports',
                                             buildPlatform.isHaiku(),
-                                            [ workRepositoryPath ])
+                                            [workRepositoryPath])
 
-            requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+            requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
             packageInfoFiles = self._generatePackageInfoFiles(
                 requiresTypes, workRepositoryPath)
             prerequiredPackages \
-                = self._resolveDependencies(packageInfoFiles, [ packagesPath],
+                = self._resolveDependencies(packageInfoFiles, [packagesPath],
                                             'prerequired ports', True,
-                                            [ workRepositoryPath ])
+                                            [workRepositoryPath])
 
         # return list of unique ports which need to be built before this one
         processedPackages = set()
@@ -493,24 +507,24 @@ class Port(object):
         # fail with an appropriate message
         requiredPort.removePackageInfosFromRepository(workRepositoryPath)
 
-        requiresTypes = [ 'BUILD_REQUIRES' ]
+        requiresTypes = ['BUILD_REQUIRES']
         packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
                                                           workRepositoryPath)
         try:
             self._resolveDependencies(packageInfoFiles, [],
                                       'why is port needed',
                                       buildPlatform.isHaiku(),
-                                      [ workRepositoryPath ])
+                                      [workRepositoryPath])
         except SystemExit:
             return
 
-        requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+        requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
         packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
                                                           workRepositoryPath)
         try:
             self._resolveDependencies(packageInfoFiles, [],
                                       'why is port needed', True,
-                                      [ workRepositoryPath ])
+                                      [workRepositoryPath])
         except SystemExit:
             return
 
@@ -611,7 +625,7 @@ class Port(object):
         # reset build flag if recipe is newer (unless that's prohibited)
         if (not getOption('preserveFlags') and self.checkFlag('build')
             and (os.path.getmtime(self.recipeFilePath)
-                 > os.path.getmtime(self.workDir + '/flag.build'))):
+                     > os.path.getmtime(self.workDir + '/flag.build'))):
             print 'unsetting build flag, as recipe is newer'
             self.unsetFlag('build')
 
@@ -664,16 +678,20 @@ class Port(object):
                         for package in sorted(allPackages):
                             print '\t' + package
                     self._executeBuild(makePackages)
+
                 def successFunction():
                     # tell the shell scriptlets that the task has succeeded
                     chrootSetup.buildOk = True
+
                 def failureFunction():
                     sysExit('Build has failed - stopping.')
+
                 return {
                     'task': taskFunction,
                     'success': successFunction,
                     'failure': failureFunction
                 }
+
             with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
                 self._executeInChroot(chrootSetup, makeChrootFunctions())
         else:
@@ -683,15 +701,15 @@ class Port(object):
                     print '\t' + package
 
             buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
-                self.secondaryArchitecture, allPackages)
+                                                         self.secondaryArchitecture, allPackages)
             try:
                 self._executeBuild(makePackages)
             except:
                 buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-                    self.secondaryArchitecture, False)
+                                                             self.secondaryArchitecture, False)
                 raise
             buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-                self.secondaryArchitecture, True)
+                                                         self.secondaryArchitecture, True)
 
         if makePackages and not getOption('enterChroot'):
             # create source package
@@ -709,15 +727,15 @@ class Port(object):
             # move all created packages into packages folder
             for package in self.packages:
                 if ((getOption('createSourcePackagesForBootstrap')
-                        or getOption('createSourcePackages'))
+                     or getOption('createSourcePackages'))
                     and package.type != PackageType.SOURCE):
                     continue
                 packageFile = self.hpkgDir + '/' + package.hpkgName
                 if os.path.exists(packageFile):
                     if not (buildPlatform.usesChroot()
-                        or Configuration.isCrossBuildRepository()
-                        or getOption('createSourcePackagesForBootstrap')
-                        or getOption('createSourcePackages')):
+                            or Configuration.isCrossBuildRepository()
+                            or getOption('createSourcePackagesForBootstrap')
+                            or getOption('createSourcePackages')):
                         warn('not grabbing ' + package.hpkgName
                              + ', as it has not been built in a chroot.')
                         continue
@@ -742,7 +760,7 @@ class Port(object):
 
         requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
         prerequiredPackages \
-                = self._getPackagesPrerequiredForBuild(packagesPath)
+            = self._getPackagesPrerequiredForBuild(packagesPath)
         self.policy.setPort(self, requiredPackages)
 
         allPackages = set(requiredPackages + prerequiredPackages)
@@ -757,22 +775,25 @@ class Port(object):
         def makeChrootFunctions():
             def taskFunction():
                 self._executeTest()
+
             def failureFunction():
                 sysExit('Test has failed - stopping.')
+
             return {
                 'task': taskFunction,
                 'failure': failureFunction
             }
+
         with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
             self._executeInChroot(chrootSetup, makeChrootFunctions())
 
-    def setFlag(self, name, index = '1'):
+    def setFlag(self, name, index='1'):
         if index == '1':
             touchFile('%s/flag.%s' % (self.workDir, name))
         else:
             touchFile('%s/flag.%s-%s' % (self.workDir, name, index))
 
-    def unsetFlag(self, name, index = '1'):
+    def unsetFlag(self, name, index='1'):
         if index == '1':
             flagFile = '%s/flag.%s' % (self.workDir, name)
         else:
@@ -781,7 +802,7 @@ class Port(object):
         if os.path.exists(flagFile):
             os.remove(flagFile)
 
-    def checkFlag(self, name, index = '1'):
+    def checkFlag(self, name, index='1'):
         if index == '1':
             return os.path.exists('%s/flag.%s' % (self.workDir, name))
 
@@ -958,19 +979,19 @@ class Port(object):
                 = buildPlatform.getCrossSysrootDirectory(self.workDir)
 
         relativeConfigureDirs = {
-            'dataDir':          'data',
-            'dataRootDir':      'data',
-            'binDir':           'bin' + secondaryArchSubDir,
-            'sbinDir':          'bin' + secondaryArchSubDir,
-            'libDir':           'lib' + secondaryArchSubDir,
-            'includeDir':       'develop/headers' + secondaryArchSubDir,
-            'oldIncludeDir':    'develop/headers' + secondaryArchSubDir,
-            'docDir':           'documentation/packages/' + self.name,
-            'infoDir':          'documentation/info',
-            'manDir':           'documentation/man',
-            'libExecDir':       'lib',
-            'sharedStateDir':   'var',
-            'localStateDir':    'var',
+            'dataDir': 'data',
+            'dataRootDir': 'data',
+            'binDir': 'bin' + secondaryArchSubDir,
+            'sbinDir': 'bin' + secondaryArchSubDir,
+            'libDir': 'lib' + secondaryArchSubDir,
+            'includeDir': 'develop/headers' + secondaryArchSubDir,
+            'oldIncludeDir': 'develop/headers' + secondaryArchSubDir,
+            'docDir': 'documentation/packages/' + self.name,
+            'infoDir': 'documentation/info',
+            'manDir': 'documentation/man',
+            'libExecDir': 'lib',
+            'sharedStateDir': 'var',
+            'localStateDir': 'var',
             # sysconfdir is only defined in configDirs below, since it is not
             # necessarily below prefix
         }
@@ -984,15 +1005,15 @@ class Port(object):
         # --psdir=DIR             ps documentation [DOCDIR]
 
         portPackageLinksDir = (basePrefix
-            + buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY')
-            + '/' + revisionedName)
+                               + buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY')
+                               + '/' + revisionedName)
         self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
         prefix = portPackageLinksDir + '/.self'
 
         configureDirs = {
-            'prefix':       prefix,
-            'sysconfDir':   portPackageLinksDir + '/.settings',
+            'prefix': prefix,
+            'sysconfDir': portPackageLinksDir + '/.settings',
         }
 
         for name, value in relativeConfigureDirs.iteritems():
@@ -1015,17 +1036,17 @@ class Port(object):
         # use finddir to get them (also for the configure variables above), but
         # we want relative paths here.
         relativeOtherDirs = {
-            'addOnsDir':        'add-ons' + secondaryArchSubDir,
-            'appsDir':          'apps',
-            'debugInfoDir':     'develop/debug',
-            'developDir':       'develop',
-            'developDocDir':    'develop/documentation/'  + self.name,
-            'developLibDir':    'develop/lib' + secondaryArchSubDir,
+            'addOnsDir': 'add-ons' + secondaryArchSubDir,
+            'appsDir': 'apps',
+            'debugInfoDir': 'develop/debug',
+            'developDir': 'develop',
+            'developDocDir': 'develop/documentation/' + self.name,
+            'developLibDir': 'develop/lib' + secondaryArchSubDir,
             'documentationDir': 'documentation',
-            'fontsDir':         'data/fonts',
-            'postInstallDir':   'boot/post-install',
-            'preferencesDir':   'preferences',
-            'settingsDir':      'settings',
+            'fontsDir': 'data/fonts',
+            'postInstallDir': 'boot/post-install',
+            'preferencesDir': 'preferences',
+            'settingsDir': 'settings',
         }
 
         for name, value in relativeOtherDirs.iteritems():
@@ -1088,7 +1109,7 @@ class Port(object):
                 print '*** child stopped'
                 sysExit('Interrupted.')
 
-    def _generatePackageInfoFiles(self, requiresTypes, path = None):
+    def _generatePackageInfoFiles(self, requiresTypes, path=None):
         """Generates package info files with given types of requires."""
 
         if not path:
@@ -1110,11 +1131,11 @@ class Port(object):
         """Determine the set of packages that must be linked into
            the build environment (chroot) for the scriptlets"""
 
-        requiresTypes = [ 'SCRIPTLET_PREREQUIRES' ]
+        requiresTypes = ['SCRIPTLET_PREREQUIRES']
         packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
         neededPackages = self._resolveDependencies(
-            packageInfoFiles, [ packagesPath ],
+            packageInfoFiles, [packagesPath],
             'needed packages for scriptlets', True)
 
         return neededPackages
@@ -1123,11 +1144,11 @@ class Port(object):
         """Determine the set of prerequired packages that must be linked into
            the build environment (chroot) for the build stage"""
 
-        requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
+        requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
         packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
         prereqPackages = self._resolveDependencies(
-            packageInfoFiles, [ packagesPath ],
+            packageInfoFiles, [packagesPath],
             'prerequired packages for build', True)
 
         return prereqPackages
@@ -1136,11 +1157,11 @@ class Port(object):
         """Determine the set of packages that must be linked into the
            build environment (chroot) for the build stage"""
 
-        requiresTypes = [ 'BUILD_REQUIRES' ]
+        requiresTypes = ['BUILD_REQUIRES']
         packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
 
         packages = self._resolveDependencies(packageInfoFiles,
-                                             [ packagesPath ],
+                                             [packagesPath],
                                              'required packages for build',
                                              buildPlatform.isHaiku())
 
@@ -1152,7 +1173,7 @@ class Port(object):
         self._createBuildPackages()
 
         if not (getOption('createSourcePackagesForBootstrap')
-            or getOption('createSourcePackages')):
+                or getOption('createSourcePackages')):
             try:
                 self._doBuildStage()
             except BaseException:
@@ -1275,15 +1296,15 @@ class Port(object):
                     if os.path.exists(archBinDir):
                         for entry in os.listdir(archBinDir):
                             os.symlink(self.secondaryArchitecture + '/' + entry,
-                                binDir + '/' + entry + '-'
-                                    + self.secondaryArchitecture)
+                                       binDir + '/' + entry + '-'
+                                       + self.secondaryArchitecture)
 
             # For the main package remove certain empty directories. Typically
             # contents is moved from the main package installation directory
             # tree to the packaging directories of sibling packages, which may
             # leave empty directories behind.
-            for dirName in [ 'add-ons', 'apps', 'bin', 'data', 'develop',
-                    'documentation', 'lib', 'preferences' ]:
+            for dirName in ['add-ons', 'apps', 'bin', 'data', 'develop',
+                            'documentation', 'lib', 'preferences']:
                 dir = self.packagingBaseDir + '/' + self.name + '/' + dirName
                 if os.path.exists(dir) and not os.listdir(dir):
                     os.rmdir(dir)
@@ -1337,19 +1358,19 @@ class Port(object):
         if getOption('enterChroot'):
             print "opening chroot shell for " + action
             ps1 = action + '-chroot:' + os.environ['PS1']
-            self._openShell([], self.sourceDir, { 'PS1' : ps1 })
+            self._openShell([], self.sourceDir, {'PS1': ps1})
             return
         # execute the requested action via a shell ...
         shellVariables = self.shellVariables.copy()
         shellVariables['fileToParse'] = self.preparedRecipeFile
         shellVariables['recipeAction'] = action
         wrapperScriptContent = (getShellVariableSetters(shellVariables)
-            + recipeActionScript)
+                                + recipeActionScript)
         wrapperScript = self.workDir + '/wrapper-script'
         storeStringInFile(wrapperScriptContent, wrapperScript)
         self._openShell(['-c', '. ' + wrapperScript], dir)
 
-    def _openShell(self, params = [], dir = '/', env = {}):
+    def _openShell(self, params=[], dir='/', env={}):
         """Sets up environment and runs a shell with the given parameters"""
 
         # set up the shell environment -- we want it to inherit some of our
@@ -1359,13 +1380,13 @@ class Port(object):
         if Configuration.isCrossBuildRepository():
             # include cross development tools in path automatically
             crossToolsPaths = buildPlatform.getCrossToolsBinPaths(self.workDir)
-            shellEnv['PATH'] = ':'.join(crossToolsPaths + [ shellEnv['PATH'] ])
+            shellEnv['PATH'] = ':'.join(crossToolsPaths + [shellEnv['PATH']])
         elif self.secondaryArchitecture:
             # include secondary architecture tools in path
             secondaryArchPaths = [
-                '/boot/system/bin/' + self.secondaryArchitecture ]
+                '/boot/system/bin/' + self.secondaryArchitecture]
             shellEnv['PATH'] = ':'.join(
-                secondaryArchPaths + [ shellEnv['PATH'] ])
+                secondaryArchPaths + [shellEnv['PATH']])
 
         # Request scripting language (perl, python) modules to be installed
         # into vendor directories automatically.
@@ -1376,17 +1397,17 @@ class Port(object):
         shellEnv['LC_ALL'] = 'POSIX'
 
         # execute the requested action via a shell ...
-        args = [ 'bash' ]
+        args = ['bash']
         args += params
         check_call(args, cwd=dir, env=shellEnv)
 
     def _resolveDependencies(self, packageInfoFiles, repositories, description,
-            considerBuildhostPackages, fallbackRepositories = []):
+                             considerBuildhostPackages, fallbackRepositories=[]):
         """Resolve dependencies of one or more package-infos"""
 
         try:
             return buildPlatform.resolveDependencies(packageInfoFiles,
-                repositories, considerBuildhostPackages, fallbackRepositories)
+                                                     repositories, considerBuildhostPackages, fallbackRepositories)
         except (CalledProcessError, LookupError):
             sysExit(('unable to resolve %s for %s\n'
                      + '\tpackage-infos:\n\t\t%s\n'
@@ -1421,7 +1442,7 @@ class Port(object):
             'DESCRIPTION': baseKeys['DESCRIPTION'],
             'HOMEPAGE': baseKeys['HOMEPAGE'],
             'LICENSE': baseKeys['LICENSE'],
-            'PROVIDES': [ name + ' = ' + self.version ],
+            'PROVIDES': [name + ' = ' + self.version],
             'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
         })
         return sourcePackageFactory(name, self, sourceKeys, self.policy, rigged)
