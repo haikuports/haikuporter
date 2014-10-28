@@ -1,0 +1,10 @@
+The following have contributed to this project:
+
+* Oliver Tappe
+* Brecht Machiels
+* Ingo Weinhold
+* Chris Roberts
+* Scott McCreary
+* Alexander Deynichenko
+* HaikuBot (aka RISC)
+* Jack Laxson
