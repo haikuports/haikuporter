@@ -119,6 +119,25 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			tarFile.extractall(targetBaseDir)
 			tarFile.close()
 			os.remove(tar)
+	elif archiveFile.split('/')[-1].split('.')[-1] == 'lz':
+		ensureCommandIsAvailable('lzip')
+		Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
+		tar = archiveFile[:-3]
+		if tarfile.is_tarfile(tar):
+			tarFile = tarfile.open(tar, 'r')
+			members = None
+			if subdir:
+				if not subdir.endswith('/'):
+					subdir += '/'
+				members = [
+					member for member in tarFile.getmembers()
+					if member.name.startswith(subdir)
+				]
+				if not members:
+					sysExit('sub-directory %s not found in archive' % subdir)
+			tarFile.extractall(targetBaseDir)
+			tarFile.close()
+			os.remove(tar)
 	else:
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
