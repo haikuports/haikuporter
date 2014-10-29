@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # -*- coding: utf-8 -*-
 #
 # Copyright 2013 Oliver Tappe
@@ -5,15 +6,30 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText,
-                                     MachineArchitecture, Phase, ProvidesList,
-                                     RequiresList, Status, YesNo)
-from HaikuPorter.ShellScriptlets import (configFileEvaluatorScript,
-                                         getShellVariableSetters)
-from HaikuPorter.Utils import check_output, filteredEnvironment, sysExit, warn
-
 from subprocess import CalledProcessError
 import types
+
+from .RecipeTypes import (
+    Architectures,
+    Extendable,
+    LinesOfText,
+    MachineArchitecture,
+    Phase,
+    ProvidesList,
+    RequiresList,
+    Status,
+    YesNo,
+)
+from .ShellScriptlets import (
+    configFileEvaluatorScript,
+    getShellVariableSetters,
+)
+from .Utils import (
+    check_output,
+    filteredEnvironment,
+    sysExit,
+    warn,
+)
 
 
 # -- haikuports.conf and *.recipe parser --------------------------------
@@ -35,7 +51,7 @@ class ConfigParser(object):
         shellVariables['fileToParse'] = filename
 
         wrapperScript = (getShellVariableSetters(shellVariables)
-            + configFileEvaluatorScript)
+                         + configFileEvaluatorScript)
         try:
             output = check_output(['bash', '-c', wrapperScript], env=shellEnv)
         except (OSError, CalledProcessError):
@@ -99,7 +115,7 @@ class ConfigParser(object):
             entries = self.entriesByExtension[extension]
 
             valueString = valueString.replace(r'\n', '\n')
-                # replace quoted newlines by real newlines
+            # replace quoted newlines by real newlines
 
             if attributes[baseKey]['indexable']:
                 if not baseKey in entries:
@@ -121,12 +137,12 @@ class ConfigParser(object):
                     sysExit('evaluating file %s produced illegal value '
                             '"%s" for key %s, expected an <integer> value'
                             % (filename, valueString, key))
-            elif attrType in [ types.ListType, ProvidesList, RequiresList ]:
+            elif attrType in [types.ListType, ProvidesList, RequiresList]:
                 values = [v.strip() for v in valueString.splitlines()]
                 values = [v for v in values if len(v) > 0]
                 # explicitly protect against '-' in names of provides or
                 # requires declarations
-                if attrType in [ ProvidesList, RequiresList ]:
+                if attrType in [ProvidesList, RequiresList]:
                     for value in values:
                         if '-' in value.split()[0]:
                             sysExit('evaluating file %s produced illegal value '
@@ -199,9 +215,9 @@ class ConfigParser(object):
             else:
                 sysExit('type of key %s in file %s is unsupported'
                         % (key, filename))
-        # for entries in self.entriesByExtension.values():
-        #   for key in entries:
-        #       print key + " = " + str(entries[key])
+                # for entries in self.entriesByExtension.values():
+                # for key in entries:
+                #       print key + " = " + str(entries[key])
 
     def getEntriesForExtension(self, extension):
         if extension in self.entriesByExtension:
