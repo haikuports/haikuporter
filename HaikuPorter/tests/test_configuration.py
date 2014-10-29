@@ -1,19 +1,8 @@
 from __future__ import absolute_import
 
-import pytest
 
-
-@pytest.fixture
-def dummy_cfg(monkeypatch):
-    from .. Configuration import  Configuration
-    def do_nothing():
-        pass
-    monkeypatch.setattr(Configuration, "_readConfigurationFile", do_nothing())
-    return Configuration
-
-
-def test_configuration(dummy_cfg):
-    cfg = dummy_cfg()
+def test_configuration(DummyConfiguration):
+    cfg = DummyConfiguration.configuration
     assert cfg.treePath is None
     assert cfg.targetArchitecture is None
     assert cfg.secondaryArchitectures is None
@@ -32,4 +21,3 @@ def test_configuration(dummy_cfg):
     assert cfg.crossDevelPackage is None
     assert cfg.secondaryCrossDevelPackages is None
     assert cfg.outputDirectory is None
-

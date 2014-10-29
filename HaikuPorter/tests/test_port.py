@@ -9,7 +9,7 @@ def test_chroot_ctor(tmpdir):
     assert chroot.envVars == []
 
 
-def test_port_ctor():
+def test_port_ctor(DummyConfiguration):
     from .. Port import Port
     port = Port(
         name="test",
