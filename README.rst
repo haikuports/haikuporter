@@ -57,8 +57,27 @@ Then run your tests:
 
 `py.test -rf HaikuPorter`
 
+There is also a profile test coverage statistics:
+
+`py.test --cov=HaikuPorter`
+
 
 Additional tools
 ++++++++++++++++
 
 Support for running the tests in different conditions is provided by tox. Support for coverage information is provided by pytest-cov.
+
+You can install a common set:
+
+`pip install -U -r requirements.txt`
+
+
+Documentation
+-------------
+
+
+There is now support for Sphinx-based documentation. This is best generated using the tox profile:
+
+`tox -e doc`
+
+The documentation will be generated into the html folder.
