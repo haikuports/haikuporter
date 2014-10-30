@@ -116,6 +116,8 @@ class Repository(object):
 		self._allPorts = {}
 		self._portVersionsByName = {}
 
+        ## REFACTOR into separate methods
+
 		# every existing input source package defines a port (which overrules
 		# any corresponding port in the recipe tree)
 		if os.path.exists(self.inputSourcePackagesPath):
@@ -215,9 +217,9 @@ class Repository(object):
 			self._portVersionsByName[portName].sort(cmp=versionCompare)
 
 	def _initPortForPackageMaps(self):
-		"""Initialize dictionaries that map package names/IDs to port 
+		"""Initialize dictionaries that map package names/IDs to port
 		   names/IDs"""
-		   
+
 		self._portIdForPackageId = {}
 		if os.path.exists(self._portIdForPackageIdFilePath):
 			try:
@@ -225,7 +227,7 @@ class Repository(object):
 					self._portIdForPackageId = json.load(fh)
 			except BaseException as e:
 				print e
-		
+
 		self._portNameForPackageName = {}
 		if os.path.exists(self._portNameForPackageNameFilePath):
 			try:
@@ -233,18 +235,18 @@ class Repository(object):
 					self._portNameForPackageName = json.load(fh)
 			except BaseException as e:
 				print e
-		
+
 	def _writePortForPackageMaps(self):
-		"""Writes dictionaries that map package names/IDs to port 
+		"""Writes dictionaries that map package names/IDs to port
 		   names/IDs to a file"""
-		   
+
 		try:
 			with open(self._portIdForPackageIdFilePath, 'w') as fh:
 				json.dump(self._portIdForPackageId, fh, sort_keys = True,
 						  indent = 4, separators = (',', ' : '))
 		except BaseException as e:
 			print e
-		
+
 		try:
 			with open(self._portNameForPackageNameFilePath, 'w') as fh:
 				json.dump(self._portNameForPackageName, fh, sort_keys = True,
@@ -316,6 +318,7 @@ class Repository(object):
 		allPorts = self.getAllPorts()
 
 		brokenPorts = []
+        ## REFACTOR into separate methods
 
 		# check for all known ports if their recipe has been changed
 		if not self.quiet:
@@ -438,7 +441,7 @@ class Repository(object):
 		for packageId, portId in self._portIdForPackageId.items():
 			if portId not in self._allPorts or portId in brokenPorts:
 				del self._portIdForPackageId[packageId]
-		
+
 		for packageName, portName in self._portNameForPackageName.items():
 			if portName not in self._portVersionsByName:
 				del self._portNameForPackageName[packageName]
