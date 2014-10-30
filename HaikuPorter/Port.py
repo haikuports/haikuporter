@@ -207,6 +207,7 @@ class Port(object):
 	def validateRecipeFile(self, showWarnings=False):
 		"""Validate the syntax and contents of the recipe file"""
 
+        ## REFACTOR this into a separate method
 		if not os.path.exists(self.recipeFilePath):
 			sysExit(self.name + ' version ' + self.version + ' not found.')
 
@@ -240,6 +241,10 @@ class Port(object):
 		# base entries (extension '')
 		baseEntries = recipeConfig.getEntriesForExtension('')
 		allPatches = []
+
+        ## REFACTOR this loop and its children look unrelated
+        ## Looping over different loops in parallel is often best done using zip / itertools.izip
+        ## But I'm guessing!
 		for extension in sorted(extensions):
 			entries = recipeConfig.getEntriesForExtension(extension)
 			recipeKeys = {}
@@ -453,6 +458,9 @@ class Port(object):
 		workRepositoryPath = self.workDir + '/repository'
 		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
 
+        ## REFACTOR (into separate methods?) that return the arguments as required for calls to
+        ## self._resolveDependencies
+        ## The fn(**kw) signature might be useful where kw is a dictionary
 		if getOption('createSourcePackagesForBootstrap'):
 			# we need both build-requires and -prerequires when collecting
 			# the sources needed for the bootstrap and we must not consider
@@ -599,8 +607,10 @@ class Port(object):
 		if self.isMetaPort:
 			return
 
-		s = 1
-		for source in self.sources:
+        ## REFACTOR you might want to handle the first item outside the loop
+        ## and then loop over the rest
+        ## use enumerate to avoid your own couters
+		for s, source in enumerate(self.sources, 1):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
 				archPatchSetFileName = (self.name + '-' + self.version + '-'
@@ -615,12 +625,13 @@ class Port(object):
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
 			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
 			source.extractPatchset(patchSetFilePath, archPatchSetFilePath)
-			s += 1
 
 	def build(self, packagesPath, makePackages, hpkgStoragePath):
 		"""Build the port and collect the resulting package(s)"""
 
 		self.parseRecipeFileIfNeeded()
+
+        ## REFACTOR branching into separate methods
 
 		# reset build flag if recipe is newer (unless that's prohibited)
 		if (not getOption('preserveFlags') and self.checkFlag('build')
@@ -748,6 +759,7 @@ class Port(object):
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
 
+    ## REFACTOR consider renaming so the method won't be picked up by test discovery at some point
 	def test(self, packagesPath):
 		"""Test the port"""
 
@@ -832,6 +844,8 @@ class Port(object):
 		self.sources = []
 		keys = self.recipeKeys
 		basedOnSourcePackage = False
+        ## REFACTOR it looks like this method should be setup and dispatch
+
 		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
 			source = Source(self, index, keys['SRC_URI'][index],
 							keys['SRC_FILENAME'].get(index, None),
@@ -907,6 +921,8 @@ class Port(object):
 		   others need reevaluation in the shell script after the revision is
 		   known.
 		"""
+
+        ## REFACTOR into separate methods and/or utility functions
 		if forParsing:
 			revision = '$REVISION'
 			fullVersion = self.version + '-' + revision
@@ -1268,6 +1284,8 @@ class Port(object):
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
 
+
+        ## REFACTOR into separate methods for each loop
 		if not (getOption('createSourcePackagesForBootstrap')
 				or getOption('createSourcePackages')):
 			# Create the settings directory in the packaging directory, if
