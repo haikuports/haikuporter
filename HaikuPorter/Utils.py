@@ -15,13 +15,13 @@ import tarfile
 import zipfile
 
 if sys.stdout.isatty():
-    colorWarning = '\033[1;36m'
-    colorError = '\033[1;35m'
-    colorReset = '\033[1;m'
+	colorWarning = '\033[1;36m'
+	colorError = '\033[1;35m'
+	colorReset = '\033[1;m'
 else:
-    colorWarning= ''
-    colorError = ''
-    colorReset = ''
+	colorWarning= ''
+	colorError = ''
+	colorReset = ''
 
 # path to haikuports-tree --------------------------------------------------
 haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
@@ -30,251 +30,253 @@ haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 haikuporterRepoUrl = 'git@bitbucket.org:haikuports/haikuporter.git'
 
 def check_output(*popenargs, **kwargs):
-    """local clone of subprocess.check_output() provided by python-2.7
-       TODO: drop this once we have upgraded python to 2.7"""
-    process = Popen(stdout=PIPE, *popenargs, **kwargs)
-    output, unused_err = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        cmd = kwargs.get("args")
-        if cmd is None:
-            cmd = popenargs[0]
-        raise CalledProcessError(retcode, cmd)
-    return output
+	"""local clone of subprocess.check_output() provided by python-2.7
+	   TODO: drop this once we have upgraded python to 2.7"""
+	process = Popen(stdout=PIPE, *popenargs, **kwargs)
+	output, unused_err = process.communicate()
+	retcode = process.poll()
+	if retcode:
+		cmd = kwargs.get("args")
+		if cmd is None:
+			cmd = popenargs[0]
+		raise CalledProcessError(retcode, cmd)
+	return output
 
 
 def sysExit(message):
-    """wrap invocation of sys.exit()"""
+	"""wrap invocation of sys.exit()"""
 
-    message = '\n'.join([colorError + 'Error: ' + line + colorReset
-        for line in message.split('\n') ])
-    sys.exit(message)
+	message = '\n'.join([colorError + 'Error: ' + line + colorReset
+		for line in message.split('\n') ])
+	sys.exit(message)
 
 
 def warn(message):
-    """print a warning"""
+	"""print a warning"""
 
-    message = '\n'.join([colorWarning + 'Warning: ' + line +colorReset
-        for line in message.split('\n') ])
-    print(message)
+	message = '\n'.join([colorWarning + 'Warning: ' + line +colorReset
+		for line in message.split('\n') ])
+	print(message)
 
 
 def printError(*args):
-    """print a to stderr"""
+	"""print a to stderr"""
 
-    sys.stderr.write(' '.join(map(str, args)) + '\n')
+	sys.stderr.write(' '.join(map(str, args)) + '\n')
 
 
 def escapeForPackageInfo(string):
-    """escapes string to be used within "" quotes in a .PackageInfo file"""
+	"""escapes string to be used within "" quotes in a .PackageInfo file"""
 
-    return string.replace('\\', '\\\\').replace('"', '\\"')
+	return string.replace('\\', '\\\\').replace('"', '\\"')
 
 def unpackArchive(archiveFile, targetBaseDir, subdir):
-    """Unpack archive into a directory"""
+	"""Unpack archive into a directory"""
 
-    if subdir and not subdir.endswith('/'):
-        subdir += '/'
-    # unpack source archive
-    if tarfile.is_tarfile(archiveFile):
-        tarFile = tarfile.open(archiveFile, 'r')
-        members = None
-        if subdir:
-            members = [
-                member for member in tarFile.getmembers()
-                if member.name.startswith(subdir)
-            ]
-            if not members:
-                sysExit('sub-directory %s not found in archive' % subdir)
-        tarFile.extractall(targetBaseDir, members)
-        tarFile.close()
-    elif zipfile.is_zipfile(archiveFile):
-        zipFile = zipfile.ZipFile(archiveFile, 'r')
-        names = None
-        if subdir:
-            names = [
-                name for name in zipFile.namelist()
-                if name.startswith(subdir)
-            ]
-            if not names:
-                sysExit('sub-directory %s not found in archive' % subdir)
-        zipFile.extractall(targetBaseDir, names)
-        zipFile.close()
-    elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
-        ensureCommandIsAvailable('xz')
-        Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
-        tar = archiveFile[:-3]
-        if tarfile.is_tarfile(tar):
-            tarFile = tarfile.open(tar, 'r')
-            members = None
-            if subdir:
-                if not subdir.endswith('/'):
-                    subdir += '/'
-                members = [
-                    member for member in tarFile.getmembers()
-                    if member.name.startswith(subdir)
-                ]
-                if not members:
-                    sysExit('sub-directory %s not found in archive' % subdir)
-            tarFile.extractall(targetBaseDir)
-            tarFile.close()
-            os.remove(tar)
-    elif archiveFile.split('/')[-1].split('.')[-1] == 'lz':
-        ensureCommandIsAvailable('lzip')
-        Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
-        tar = archiveFile[:-3]
-        if tarfile.is_tarfile(tar):
-            tarFile = tarfile.open(tar, 'r')
-            members = None
-            if subdir:
-                if not subdir.endswith('/'):
-                    subdir += '/'
-                members = [
-                    member for member in tarFile.getmembers()
-                    if member.name.startswith(subdir)
-                ]
-                if not members:
-                    sysExit('sub-directory %s not found in archive' % subdir)
-            tarFile.extractall(targetBaseDir)
-            tarFile.close()
-            os.remove(tar)
-    else:
-        sysExit('Unrecognized archive type in file '
-                + archiveFile)
+    ## REFACTOR into separate functions and dispatch
+
+	if subdir and not subdir.endswith('/'):
+		subdir += '/'
+	# unpack source archive
+	if tarfile.is_tarfile(archiveFile):
+		tarFile = tarfile.open(archiveFile, 'r')
+		members = None
+		if subdir:
+			members = [
+				member for member in tarFile.getmembers()
+				if member.name.startswith(subdir)
+			]
+			if not members:
+				sysExit('sub-directory %s not found in archive' % subdir)
+		tarFile.extractall(targetBaseDir, members)
+		tarFile.close()
+	elif zipfile.is_zipfile(archiveFile):
+		zipFile = zipfile.ZipFile(archiveFile, 'r')
+		names = None
+		if subdir:
+			names = [
+				name for name in zipFile.namelist()
+				if name.startswith(subdir)
+			]
+			if not names:
+				sysExit('sub-directory %s not found in archive' % subdir)
+		zipFile.extractall(targetBaseDir, names)
+		zipFile.close()
+	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
+		ensureCommandIsAvailable('xz')
+		Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
+		tar = archiveFile[:-3]
+		if tarfile.is_tarfile(tar):
+			tarFile = tarfile.open(tar, 'r')
+			members = None
+			if subdir:
+				if not subdir.endswith('/'):
+					subdir += '/'
+				members = [
+					member for member in tarFile.getmembers()
+					if member.name.startswith(subdir)
+				]
+				if not members:
+					sysExit('sub-directory %s not found in archive' % subdir)
+			tarFile.extractall(targetBaseDir)
+			tarFile.close()
+			os.remove(tar)
+	elif archiveFile.split('/')[-1].split('.')[-1] == 'lz':
+		ensureCommandIsAvailable('lzip')
+		Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
+		tar = archiveFile[:-3]
+		if tarfile.is_tarfile(tar):
+			tarFile = tarfile.open(tar, 'r')
+			members = None
+			if subdir:
+				if not subdir.endswith('/'):
+					subdir += '/'
+				members = [
+					member for member in tarFile.getmembers()
+					if member.name.startswith(subdir)
+				]
+				if not members:
+					sysExit('sub-directory %s not found in archive' % subdir)
+			tarFile.extractall(targetBaseDir)
+			tarFile.close()
+			os.remove(tar)
+	else:
+		sysExit('Unrecognized archive type in file '
+				+ archiveFile)
 
 def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst = True):
-    """Populates targetDir with symlinks to all files from sourceDir"""
+	"""Populates targetDir with symlinks to all files from sourceDir"""
 
-    files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir) ]
-    symlinkFiles(files, targetDir)
+	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir) ]
+	symlinkFiles(files, targetDir)
 
 def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst = True):
-    """Populates targetDir with symlinks to all files matching given globSpec"""
+	"""Populates targetDir with symlinks to all files matching given globSpec"""
 
-    files = glob.glob(globSpec)
-    symlinkFiles(files, targetDir)
+	files = glob.glob(globSpec)
+	symlinkFiles(files, targetDir)
 
 def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
-    """Populates targetDir with symlinks to all the given files"""
+	"""Populates targetDir with symlinks to all the given files"""
 
-    if os.path.exists(targetDir) and emptyTargetDirFirst:
-        shutil.rmtree(targetDir)
-    if not os.path.exists(targetDir):
-        os.makedirs(targetDir)
-    for sourceFile in sourceFiles:
-        os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
+	if os.path.exists(targetDir) and emptyTargetDirFirst:
+		shutil.rmtree(targetDir)
+	if not os.path.exists(targetDir):
+		os.makedirs(targetDir)
+	for sourceFile in sourceFiles:
+		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
 
 def touchFile(file):
-    """Touches given file, making sure that its modification date is bumped"""
+	"""Touches given file, making sure that its modification date is bumped"""
 
-    if os.path.exists(file):
-        os.utime(file, None)
-    else:
-        open(file, 'w').close()
+	if os.path.exists(file):
+		os.utime(file, None)
+	else:
+		open(file, 'w').close()
 
 def storeStringInFile(string, file):
-    """Stores the given string in the file with the given name"""
+	"""Stores the given string in the file with the given name"""
 
-    with open(file, 'w') as fo:
-        fo.write(string)
+	with open(file, 'w') as fo:
+		fo.write(string)
 
 def readStringFromFile(file):
-    """Returns the contents of the file with the given name as a string"""
+	"""Returns the contents of the file with the given name as a string"""
 
-    with open(file, 'r') as fo:
-        return fo.read()
+	with open(file, 'r') as fo:
+		return fo.read()
 
 availableCommands = {}
 def isCommandAvailable(command):
-    """returns whether the given command is available"""
+	"""returns whether the given command is available"""
 
-    if command in availableCommands:
-        return availableCommands[command]
+	if command in availableCommands:
+		return availableCommands[command]
 
-    for path in os.environ['PATH'].split(':'):
-        if os.path.exists(path + '/' + command):
-            availableCommands[command] = True
-            return True
+	for path in os.environ['PATH'].split(':'):
+		if os.path.exists(path + '/' + command):
+			availableCommands[command] = True
+			return True
 
-    availableCommands[command] = False
-    return False
+	availableCommands[command] = False
+	return False
 
 def ensureCommandIsAvailable(command):
-    """checks if the given command is available and bails if not"""
+	"""checks if the given command is available and bails if not"""
 
-    if not isCommandAvailable(command):
-        sysExit("'" + command + "' is not available, please install it")
+	if not isCommandAvailable(command):
+		sysExit("'" + command + "' is not available, please install it")
 
 def naturalCompare(left, right):
-    """performs a natural compare between the two given strings - returns:
-        -1 if left is lower than right
-         1 if left is higher than right
-         0 if both are equal"""
+	"""performs a natural compare between the two given strings - returns:
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both are equal"""
 
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
-    return cmp(alphanum_key(left), alphanum_key(right))
+	convert = lambda text: int(text) if text.isdigit() else text.lower()
+	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+	return cmp(alphanum_key(left), alphanum_key(right))
 
 def bareVersionCompare(left, right):
-    """Compares two given bare versions - returns:
-        -1 if left is lower than right
-         1 if left is higher than right
-         0 if both versions are equal"""
+	"""Compares two given bare versions - returns:
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both versions are equal"""
 
-    leftElements = left.split('.')
-    rightElements = right.split('.')
+	leftElements = left.split('.')
+	rightElements = right.split('.')
 
-    index = 0
-    leftElementCount = len(leftElements)
-    rightElementCount = len(rightElements)
-    while True:
-        if index + 1 > leftElementCount:
-            if index + 1 > rightElementCount:
-                return 0
-            else:
-                return -1
-        elif index + 1 > rightElementCount:
-            return 1
+	index = 0
+	leftElementCount = len(leftElements)
+	rightElementCount = len(rightElements)
+	while True:
+		if index + 1 > leftElementCount:
+			if index + 1 > rightElementCount:
+				return 0
+			else:
+				return -1
+		elif index + 1 > rightElementCount:
+			return 1
 
-        result = naturalCompare(leftElements[index], rightElements[index])
-        if result != 0:
-            return result
+		result = naturalCompare(leftElements[index], rightElements[index])
+		if result != 0:
+			return result
 
-        index += 1
+		index += 1
 
 def versionCompare(left, right):
-    """Compares two given versions that may include a pre-release - returns
-        -1 if left is lower than right
-         1 if left is higher than right
-         0 if both versions are equal"""
+	"""Compares two given versions that may include a pre-release - returns
+		-1 if left is lower than right
+		 1 if left is higher than right
+		 0 if both versions are equal"""
 
-    leftElements = left.split('~', 1)
-    rightElements = right.split('~', 1)
+	leftElements = left.split('~', 1)
+	rightElements = right.split('~', 1)
 
-    result = bareVersionCompare(leftElements[0], rightElements[0])
-    if result != 0:
-        return result
+	result = bareVersionCompare(leftElements[0], rightElements[0])
+	if result != 0:
+		return result
 
-    if len(leftElements) < 2:
-        if len(rightElements) < 2:
-            return 0
-        else:
-            return -1
-    elif len(rightElements) < 2:
-        return 1
+	if len(leftElements) < 2:
+		if len(rightElements) < 2:
+			return 0
+		else:
+			return -1
+	elif len(rightElements) < 2:
+		return 1
 
-    # compare pre-release strings
-    return naturalCompare(leftElements[1], rightElements[1])
+	# compare pre-release strings
+	return naturalCompare(leftElements[1], rightElements[1])
 
 def filteredEnvironment():
-    """returns a filtered version of os.environ, such that none of the
-       variables that we export for one port leak into the shell environment
-       of another"""
+	"""returns a filtered version of os.environ, such that none of the
+	   variables that we export for one port leak into the shell environment
+	   of another"""
 
-    env = {}
+	env = {}
 
-    for key in ['LANG', 'LIBRARY_PATH', 'PATH']:
-        if key in os.environ:
-            env[key] = os.environ[key]
+	for key in ['LANG', 'LIBRARY_PATH', 'PATH']:
+		if key in os.environ:
+			env[key] = os.environ[key]
 
-    return env
+	return env
