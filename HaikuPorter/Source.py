@@ -38,6 +38,8 @@ class Source(object):
 		self.patches = patches
 		self.additionalFiles = additionalFiles
 
+        ## REFACTOR use property setters to handle branching based on instance variables
+
 		if index == '1':
 			self.sourceBaseDir = port.sourceBaseDir
 		else:
@@ -224,7 +226,7 @@ class Source(object):
 						+ 'Found SHA-256:	 ' + sha256.hexdigest())
 		else:
 			print '----- CHECKSUM TEMPLATE -----'
-			print 'CHECKSUM_SHA256%(index)s="%(digest)s"' % { 
+			print 'CHECKSUM_SHA256%(index)s="%(digest)s"' % {
 				"digest": sha256.hexdigest(),
 				"index": ("_" + self.index) if self.index != "1" else "" }
 			print '-----------------------------'
