@@ -277,12 +277,13 @@ class Source(object):
 
 				if patch.endswith('.patchset'):
 					print 'Applying patchset "%s" ...' % patch
-					check_call(['git', 'am', '-3', patch], cwd=self.sourceDir,
+					check_call(['git', 'am', '--ignore-whitespace', '-3',
+								patch], cwd=self.sourceDir,
 							   env=self.gitEnv)
 				else:
 					print 'Applying patch "%s" ...' % patch
-					check_call(['git', 'apply', '-p1', '--index', patch],
-							   cwd=self.sourceDir)
+					check_call(['git', 'apply', '--ignore-whitespace', '-p1',
+								'--index', patch], cwd=self.sourceDir)
 					check_call(['git', 'commit', '-q', '-m', 'applying patch %s'
 								% os.path.basename(patch)],
 							   cwd=self.sourceDir, env=self.gitEnv)
