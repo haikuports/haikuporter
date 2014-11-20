@@ -147,7 +147,8 @@ class Repository(object):
 									  + '/input-source-packages/' + name)
 				self._allPorts[name + '-' + version] \
 					= Port(name, version, '<source-package>', portPath,
-						   portOutputPath, self.shellVariables, self.policy)
+						   portOutputPath, self.path, self.shellVariables,
+						   self.policy)
 
 		# collect ports from the recipe tree
 		for category in sorted(os.listdir(self.treePath)):
@@ -190,7 +191,7 @@ class Repository(object):
 							self._portVersionsByName[name].append(version)
 						self._allPorts[name + '-' + version] = Port(name,
 							version, category, portPath, portOutputPath,
-							self.shellVariables, self.policy)
+							self.path, self.shellVariables, self.policy)
 					else:
 						# invalid argument
 						if not self.quiet:
@@ -204,8 +205,8 @@ class Repository(object):
 			for port in self._allPorts.values():
 				for architecture in secondaryArchitectures:
 					newPort = Port(port.baseName, port.version, port.category,
-						port.baseDir, port.outputDir, self.shellVariables,
-						port.policy, architecture)
+						port.baseDir, port.outputDir, self.path,
+						self.shellVariables, port.policy, architecture)
 					self._allPorts[newPort.versionedName] = newPort
 
 					name = newPort.name
@@ -258,7 +259,7 @@ class Repository(object):
 			print e
 
 	def _populateRepository(self, preserveFlags):
-		"""Remove and refill the repository with all PackageInfo-files from
+		"""Remove and refill the repository with all DependencyInfo-files from
 		   parseable recipes"""
 
 		if os.path.exists(self.path):
@@ -292,7 +293,7 @@ class Repository(object):
 						else:
 							if not self.quiet:
 								print
-						port.writePackageInfosIntoRepository(newRepositoryPath)
+						port.writeDependencyInfosIntoRepository(newRepositoryPath)
 						for package in port.packages:
 							self._portIdForPackageId[package.versionedName] \
 								= port.versionedName
@@ -316,7 +317,7 @@ class Repository(object):
 		os.rename(newRepositoryPath, self.path)
 
 	def _updateRepository(self):
-		"""Update all PackageInfo-files in the repository as needed"""
+		"""Update all DependencyInfo-files in the repository as needed"""
 
 		allPorts = self.allPorts
 
@@ -340,13 +341,14 @@ class Repository(object):
 						 <= os.path.getmtime(skippedDir + '/' + portID))):
 					continue
 
-				# update all package-infos of port if the recipe is newer than
-				# the main package-info of that port
-				mainPackageInfoFile = (self.path + '/' + port.packageInfoName)
-				if (os.path.exists(mainPackageInfoFile)
+				# update all dependency-infos of port if the recipe is newer
+				# than the main package-info of that port
+				mainDependencyInfoFile = (self.path + '/'
+										  + port.dependencyInfoName)
+				if (os.path.exists(mainDependencyInfoFile)
 					and not higherVersionIsActive
 					and (os.path.getmtime(port.recipeFilePath)
-						 <= os.path.getmtime(mainPackageInfoFile))):
+						 <= os.path.getmtime(mainDependencyInfoFile))):
 					higherVersionIsActive = True
 					break
 
@@ -355,12 +357,12 @@ class Repository(object):
 					port.parseRecipeFile(False)
 
 					if higherVersionIsActive:
-						# remove package infos from lower version, if it exists
-						if os.path.exists(mainPackageInfoFile):
+						# remove dependency infos from lower version, if it exists
+						if os.path.exists(mainDependencyInfoFile):
 							if not self.quiet:
-								print('\tremoving package-infos for ' + portID
-									  + ', as newer version is active')
-							port.removePackageInfosFromRepository(self.path)
+								print('\tremoving dependency-infos for '
+									  + portID + ', as newer version is active')
+							port.removeDependencyInfosFromRepository(self.path)
 							port.obsoletePackages(self.packagesPath)
 							break
 						continue
@@ -378,8 +380,8 @@ class Repository(object):
 						os.remove(skippedDir + '/' + portID)
 
 					if not self.quiet:
-						print '\tupdating package infos of ' + portID
-					port.writePackageInfosIntoRepository(self.path)
+						print '\tupdating dependency infos of ' + portID
+					port.writeDependencyInfosIntoRepository(self.path)
 					for package in port.packages:
 						self._portIdForPackageId[package.versionedName] \
 							= port.versionedName
@@ -390,42 +392,43 @@ class Repository(object):
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
 						touchFile(skippedDir + '/' + portID)
-						if os.path.exists(mainPackageInfoFile):
+						if os.path.exists(mainDependencyInfoFile):
 							brokenPorts.append(portID)
 						else:
 							if not self.quiet:
 								print '\trecipe for %s is still broken:' % portID
 								print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
-		self._removeStalePackageInfos(brokenPorts)
+		self._removeStaleDependencyInfos(brokenPorts)
 		self._removeStalePortForPackageMappings(brokenPorts)
 
-	def _removeStalePackageInfos(self, brokenPorts):
-		"""check for any package-infos that no longer have a corresponding
+	def _removeStaleDependencyInfos(self, brokenPorts):
+		"""check for any dependency-infos that no longer have a corresponding
 		   recipe file"""
 
 		allPorts = self.allPorts
 
 		if not self.quiet:
-			print "Looking for stale package-infos ..."
-		packageInfos = glob.glob(self.path + '/*.PackageInfo')
-		for packageInfo in packageInfos:
-			packageInfoFileName = os.path.basename(packageInfo)
-			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+			print "Looking for stale dependency-infos ..."
+		dependencyInfos = glob.glob(self.path + '/*.DependencyInfo')
+		for dependencyInfo in dependencyInfos:
+			dependencyInfoFileName = os.path.basename(dependencyInfo)
+			packageID \
+				= dependencyInfoFileName[:dependencyInfoFileName.rindex('.')]
 			portID = self.getPortIdForPackageId(packageID)
 
 			if not portID or portID not in allPorts or portID in brokenPorts:
 				if not self.quiet:
-					print '\tremoving ' + packageInfoFileName
-				os.remove(packageInfo)
+					print '\tremoving ' + dependencyInfoFileName
+				os.remove(dependencyInfo)
 
 				# obsolete corresponding package, if any
-				self._removePackagesForPackageInfo(packageInfo)
+				self._removePackagesForDependencyInfo(dependencyInfo)
 
-	def _removePackagesForPackageInfo(self, packageInfo):
-		"""remove all packages for the given package-info"""
+	def _removePackagesForDependencyInfo(self, dependencyInfo):
+		"""remove all packages for the given dependency-info"""
 
-		(packageSpec, unused) = os.path.basename(packageInfo).rsplit('.', 1)
+		(packageSpec, unused) = os.path.basename(dependencyInfo).rsplit('.', 1)
 		packages = glob.glob(self.packagesPath + '/' + packageSpec + '-*.hpkg')
 		obsoleteDir = self.packagesPath + '/.obsolete'
 		for package in packages:

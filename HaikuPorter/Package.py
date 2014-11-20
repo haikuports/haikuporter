@@ -22,6 +22,7 @@ from HaikuPorter.Utils import (check_output, escapeForPackageInfo,
 							   haikuporterRepoUrl, haikuportsRepoUrl,
 							   naturalCompare, sysExit, warn)
 
+import json
 import os
 import shutil
 from subprocess import check_call
@@ -81,6 +82,7 @@ class Package(object):
 		self.revisionedName = self.name + '-' + self.fullVersion
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
+		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
 
 		self.isRiggedSourcePackage = isRiggedSourcePackage
 
@@ -160,23 +162,19 @@ class Package(object):
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
 
-	def writePackageInfoIntoRepository(self, repositoryPath):
-		"""Write a PackageInfo-file for this package into the repository"""
+	def writeDependencyInfoIntoRepository(self, repositoryPath):
+		"""Write a DependencyInfo-file for this package into the repository"""
 
-		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		if (getOption('createSourcePackagesForBootstrap')
-			or buildPlatform.name == 'Haiku'):
-			requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
-		else:
-			requires = [ 'BUILD_REQUIRES', 'REQUIRES' ]
-		self.generatePackageInfo(packageInfoFile, requires, True)
+		dependencyInfoFile = repositoryPath + '/' + self.dependencyInfoName
+		requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
+		self.generateDependencyInfo(dependencyInfoFile, requires)
 
-	def removePackageInfoFromRepository(self, repositoryPath):
-		"""Remove PackageInfo-file from repository, if it's there"""
+	def removeDependencyInfoFromRepository(self, repositoryPath):
+		"""Remove DependencyInfo-file from repository, if it's there"""
 
-		packageInfoFile = repositoryPath + '/' + self.packageInfoName
-		if os.path.exists(packageInfoFile):
-			os.remove(packageInfoFile)
+		dependencyInfoFile = repositoryPath + '/' + self.dependencyInfoName
+		if os.path.exists(dependencyInfoFile):
+			os.remove(dependencyInfoFile)
 
 	def obsoletePackage(self, packagesPath):
 		"""Moves the package-file into the 'obsolete' sub-directory"""
@@ -190,20 +188,19 @@ class Package(object):
 				os.mkdir(obsoleteDir)
 			os.rename(packageFile, obsoletePackage)
 
-	def generatePackageInfoWithoutProvides(self, packageInfoPath,
-			requiresToUse):
-		"""Create a .PackageInfo file that doesn't include any provides except
-		   for the one matching the package name"""
+	def generateDependencyInfoWithoutProvides(self, dependencyInfoPath,
+											  requiresToUse):
+		"""Create a .DependencyInfo file that doesn't include any provides
+		   except for the one matching the package name"""
 
-		self._generatePackageInfo(packageInfoPath, requiresToUse, True, True,
-								  False, Architectures.ANY)
+		self._generateDependencyInfo(dependencyInfoPath, requiresToUse,
+									 fakeProvides = True,
+									 architectures = Architectures.ANY)
 
-	def generatePackageInfo(self, packageInfoPath, requiresToUse, quiet):
-		"""Create a .PackageInfo file for inclusion in a package or for
-		   dependency resolving"""
+	def generateDependencyInfo(self, dependencyInfoPath, requiresToUse):
+		"""Create a .DependencyInfo file (used for dependency resolving)"""
 
-		self._generatePackageInfo(packageInfoPath, requiresToUse, quiet, False,
-								  True, self.architecture)
+		self._generateDependencyInfo(dependencyInfoPath, requiresToUse)
 
 	def adjustToChroot(self):
 		"""Adjust directories to chroot()-ed environment"""
@@ -234,8 +231,9 @@ class Package(object):
 		else:
 			requiresName = 'REQUIRES'
 
-		self.generatePackageInfo(self.packagingDir + '/.PackageInfo',
-								 [ requiresName ], getOption('quiet'))
+		self._generatePackageInfo(self.packagingDir + '/.PackageInfo',
+								  [ requiresName ], getOption('quiet'), False,
+								  True, self.architecture)
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
@@ -467,6 +465,63 @@ class Package(object):
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
 
+	def _generateDependencyInfo(self, dependencyInfoPath, requiresToUse,
+								**kwargs):
+		"""Create a .DependencyInfo file (used for dependency resolving)"""
+
+		architecture = kwargs.get('architecture', self.architecture)
+		fakeProvides = kwargs.get('fakeProvides', False)
+
+		# If it exists, remove the file first. Otherwise we might write to the
+		# wrong file, if it is a symlink.
+		if os.path.exists(dependencyInfoPath):
+			os.remove(dependencyInfoPath)
+
+		with open(dependencyInfoPath, 'w') as infoFile:
+			dependencyInfo = {
+				'name' : self.name,
+				'version' : self.version,
+				'architecture' : architecture,
+				'provides' : self.recipeKeys['PROVIDES'],
+				'requires' : [],
+				'buildRequires' : [],
+				'buildPrerequires' : [],
+			}
+
+			if fakeProvides:
+				dependencyInfo['provides'] = []
+
+			requiresKeyMap = {
+				'BUILD_REQUIRES' : 'buildRequires',
+				'BUILD_PREREQUIRES' : 'buildPrerequires',
+				'REQUIRES' : 'requires',
+				'SCRIPTLET_PREREQUIRES' : 'buildPrerequires',
+			}
+			for requiresKey in requiresToUse:
+				if requiresKey == 'SCRIPTLET_PREREQUIRES':
+					# Add prerequirements for executing chroot scriptlets.
+					# For cross-built packages, pass in the target machine name,
+					# but take care to not do that for packages that implement
+					# the cross-building themselves (i.e. binutils and gcc),
+					# as those are running in the context of the build machine.
+					targetMachineTripleAsName = self.targetMachineTripleAsName
+					if (Configuration.isCrossBuildRepository()
+						and '_cross_' in self.name):
+						targetMachineTripleAsName = ''
+					requiresForKey = getScriptletPrerequirements(
+						targetMachineTripleAsName)
+				else:
+					requiresForKey = self.recipeKeys[requiresKey]
+
+				requiresList = dependencyInfo[requiresKeyMap[requiresKey]]
+				for require in requiresForKey:
+					require = require.partition('#')[0].strip()
+					if require and require not in requiresList:
+						requiresList.append(require)
+
+			json.dump(dependencyInfo, infoFile, sort_keys = True,
+					  indent = 4, separators = (',', ' : '))
+			infoFile.write('\n')
 
 # -- A source package ---------------------------------------------------------
 

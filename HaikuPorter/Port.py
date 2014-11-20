@@ -86,7 +86,8 @@ class ChrootSetup(object):
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
 	def __init__(self, name, version, category, baseDir, outputDir,
-				 globalShellVariables, policy, secondaryArchitecture=None):
+				 repositoryDir, globalShellVariables, policy,
+				 secondaryArchitecture=None):
 		self.baseName = name
 		self.secondaryArchitecture = secondaryArchitecture
 		self.name = name
@@ -96,6 +97,7 @@ class Port(object):
 		self.versionedName = self.name + '-' + version
 		self.category = category
 		self.baseDir = baseDir
+		self.repositoryDir = repositoryDir
 		self.recipeIsBroken = False
 		self.recipeHasBeenParsed = False
 
@@ -113,6 +115,7 @@ class Port(object):
 							   + self.version + '.recipe')
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
+		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
 
 		self.revision = None
 		self.fullVersion = None
@@ -402,25 +405,17 @@ class Port(object):
 				pass
 		return self.recipeIsBroken
 
-	def writePackageInfosIntoRepository(self, repositoryPath):
-		"""Write one PackageInfo-file per stable package into the repository"""
-
+	def writeDependencyInfosIntoRepository(self, repositoryPath):
+		"""Write one DependencyInfo-file per package into the repository"""
 		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
-			package.writePackageInfoIntoRepository(repositoryPath)
+			package.writeDependencyInfoIntoRepository(repositoryPath)
 
-	def removePackageInfosFromRepository(self, repositoryPath):
-		"""Remove all PackageInfo-files for this port from the repository"""
-
+	def removeDependencyInfosFromRepository(self, repositoryPath):
+		"""Remove all DependencyInfo-files for this port from the repository"""
 		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
-			package.removePackageInfoFromRepository(repositoryPath)
-
-	def generatePackageInfoFiles(self, requiresTypes, targetPath=None):
-		"""Generates package info files with given types of requires."""
-
-		self.parseRecipeFileIfNeeded()
-		return self._generatePackageInfoFiles(requiresTypes, targetPath)
+			package.removeDependencyInfoFromRepository(repositoryPath)
 
 	def obsoletePackages(self, packagesPath):
 		"""Moves all package-files into the 'obsolete' sub-directory"""
@@ -458,52 +453,23 @@ class Port(object):
 		   within the haikuports tree will be raised as an error here.
 		"""
 
-		workRepositoryPath = self.workDir + '/repository'
-		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
-
-		## REFACTOR (into separate methods?) that return the arguments as required for calls to
-		## self._resolveDependencies
-		## The fn(**kw) signature might be useful where kw is a dictionary
-		if getOption('createSourcePackagesForBootstrap'):
-			# we need both build-requires and -prerequires when collecting
-			# the sources needed for the bootstrap and we must not consider
-			# buildhost packages
-			requiresTypes = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES']
-			packageInfoFiles = self._generatePackageInfoFiles(
-				requiresTypes, workRepositoryPath)
-			requiredPackages \
-				= self._resolveDependencies(packageInfoFiles, [packagesPath],
-											'required or prerequired ports',
-											False, [workRepositoryPath])
-			prerequiredPackages = []
-		else:
-			# we need build-requires and -prerequires, but only for the latter
-			# we are allowed to consider buildhost packages
-			requiresTypes = ['BUILD_REQUIRES']
-			packageInfoFiles = self._generatePackageInfoFiles(
-				requiresTypes, workRepositoryPath)
-			requiredPackages \
-				= self._resolveDependencies(packageInfoFiles, [packagesPath],
-											'required ports',
-											buildPlatform.isHaiku,
-											[workRepositoryPath])
-
-			requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
-			packageInfoFiles = self._generatePackageInfoFiles(
-				requiresTypes, workRepositoryPath)
-			prerequiredPackages \
-				= self._resolveDependencies(packageInfoFiles, [packagesPath],
-											'prerequired ports', True,
-											[workRepositoryPath])
+		dependencyInfoFiles = self.getDependencyInfoFiles(repositoryPath)
+		requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
+						 'SCRIPTLET_PREREQUIRES']
+		requiredPackages = self._resolveDependencies(
+			dependencyInfoFiles, requiresTypes,
+			[packagesPath, repositoryPath], 'required or prerequired ports',
+			stopAtHpkgs=True
+		)
 
 		# return list of unique ports which need to be built before this one
 		processedPackages = set()
 		result = []
-		for package in requiredPackages + prerequiredPackages:
+		for package in requiredPackages:
 			if package in processedPackages:
 				continue
 			processedPackages.add(package)
-			if package.startswith(workRepositoryPath):
+			if package.startswith(repositoryPath):
 				result.append(package)
 		return result
 
@@ -512,35 +478,38 @@ class Port(object):
 		   of this port."""
 
 		workRepositoryPath = self.workDir + '/repository'
-		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
+		symlinkGlob(repositoryPath + '/*.DependencyInfo', workRepositoryPath)
 
 		# drop package-infos for the required port, such that pkgman will
 		# fail with an appropriate message
-		requiredPort.removePackageInfosFromRepository(workRepositoryPath)
+		requiredPort.removeDependencyInfosFromRepository(workRepositoryPath)
 
-		requiresTypes = ['BUILD_REQUIRES']
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
-														  workRepositoryPath)
+		dependencyInfoFiles = self.getDependencyInfoFiles(workRepositoryPath)
+		requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
+						 'SCRIPTLET_PREREQUIRES']
 		try:
-			self._resolveDependencies(packageInfoFiles, [],
-									  'why is port needed',
-									  buildPlatform.isHaiku,
-									  [workRepositoryPath])
-		except SystemExit:
-			return
-
-		requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes,
-														  workRepositoryPath)
-		try:
-			self._resolveDependencies(packageInfoFiles, [],
-									  'why is port needed', True,
-									  [workRepositoryPath])
+			self._resolveDependencies(
+				dependencyInfoFiles, requiresTypes,
+				[packagesPath, workRepositoryPath],
+				'required or prerequired ports',
+				stopAtHpkgs=True
+			)
 		except SystemExit:
 			return
 
 		warn("port %s doesn't seem to be required by %s"
 			 % (requiredPort.versionedName, self.versionedName))
+
+	def getDependencyInfoFiles(self, repositoryPath):
+		"""Returns the list of dependency info files for this port that should
+		   be in the given repository repositoryPath."""
+
+		dependencyInfoFiles = [
+			repositoryPath + '/' + package.dependencyInfoName
+			for package in self.packages
+		]
+
+		return dependencyInfoFiles
 
 	def cleanWorkDirectory(self):
 		"""Clean the working directory"""
@@ -1128,34 +1097,15 @@ class Port(object):
 				print '*** child stopped'
 				sysExit('Interrupted.')
 
-	def _generatePackageInfoFiles(self, requiresTypes, path=None):
-		"""Generates package info files with given types of requires."""
-
-		if not path:
-			path = self.packageInfoDir
-		if not os.path.exists(path):
-			os.makedirs(path)
-
-		packageInfoFiles = []
-
-		for package in self.packages:
-			packageInfoFile = (path + '/' + package.packageInfoName)
-			package.generatePackageInfoWithoutProvides(packageInfoFile,
-													   requiresTypes)
-			packageInfoFiles.append(packageInfoFile)
-
-		return packageInfoFiles
-
 	def _getPackagesNeededForScriptlets(self, packagesPath):
 		"""Determine the set of packages that must be linked into
 		   the build environment (chroot) for the scriptlets"""
 
 		requiresTypes = ['SCRIPTLET_PREREQUIRES']
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
-
+		dependencyInfoFiles = self.getDependencyInfoFiles(self.repositoryDir)
 		neededPackages = self._resolveDependencies(
-			packageInfoFiles, [packagesPath],
-			'needed packages for scriptlets', True)
+			dependencyInfoFiles, requiresTypes, [packagesPath],
+			'needed packages for scriptlets')
 
 		return neededPackages
 
@@ -1164,11 +1114,10 @@ class Port(object):
 		   the build environment (chroot) for the build stage"""
 
 		requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
-
+		dependencyInfoFiles = self.getDependencyInfoFiles(self.repositoryDir)
 		prereqPackages = self._resolveDependencies(
-			packageInfoFiles, [packagesPath],
-			'prerequired packages for build', True)
+			dependencyInfoFiles, requiresTypes, [packagesPath],
+			'prerequired packages for build')
 
 		return prereqPackages
 
@@ -1177,12 +1126,11 @@ class Port(object):
 		   build environment (chroot) for the build stage"""
 
 		requiresTypes = ['BUILD_REQUIRES']
-		packageInfoFiles = self._generatePackageInfoFiles(requiresTypes)
-
-		packages = self._resolveDependencies(packageInfoFiles,
+		dependencyInfoFiles = self.getDependencyInfoFiles(self.repositoryDir)
+		packages = self._resolveDependencies(dependencyInfoFiles,
+											 requiresTypes,
 											 [packagesPath],
-											 'required packages for build',
-											 buildPlatform.isHaiku)
+											 'required packages for build')
 
 		return packages
 
@@ -1421,20 +1369,21 @@ class Port(object):
 		args += params
 		check_call(args, cwd=targetDir, env=shellEnv)
 
-	def _resolveDependencies(self, packageInfoFiles, repositories, description,
-							 considerBuildhostPackages, fallbackRepositories=[]):
+	def _resolveDependencies(self, dependencyInfoFiles, requiresTypes,
+							 repositories, description, **kwargs):
 		"""Resolve dependencies of one or more package-infos"""
 
 		try:
-			return buildPlatform.resolveDependencies(packageInfoFiles,
-													 repositories, considerBuildhostPackages, fallbackRepositories)
+			return buildPlatform.resolveDependencies(dependencyInfoFiles,
+													 requiresTypes,
+													 repositories, **kwargs)
 		except (CalledProcessError, LookupError):
 			sysExit(('unable to resolve %s for %s\n'
-					 + '\tpackage-infos:\n\t\t%s\n'
+					 + '\tdependency-infos:\n\t\t%s\n'
 					 + '\trepositories:\n\t\t%s\n')
 					% (description, self.versionedName,
-					   '\n\t\t'.join(packageInfoFiles),
-					   '\n\t\t'.join(repositories)))
+					   '\n\t\t'.join(dependencyInfoFiles),
+					   repositories))
 
 	def _createSourcePackage(self, name, rigged):
 		# copy all recipe attributes from base package, but set defaults

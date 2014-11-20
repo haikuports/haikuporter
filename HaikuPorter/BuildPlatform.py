@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2013 Haiku, Inc.
+# Copyright 2013-2014 Haiku, Inc.
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
 
 from HaikuPorter.Configuration import Configuration
+from HaikuPorter.DependencyResolver import DependencyResolver
 from HaikuPorter.Options import getOption
 from HaikuPorter.PackageInfo import PackageInfo
 from HaikuPorter.RecipeTypes import Architectures, MachineArchitecture
-from HaikuPorter.RequiresUpdater import RequiresUpdater
 from HaikuPorter.Utils import (check_output, printError, sysExit)
 
 import os
@@ -63,6 +63,14 @@ class BuildPlatform(object):
 			return self.crossSysrootDir
 		return workDir + self.crossSysrootDir
 
+	def resolveDependencies(self, dependencyInfoFiles, requiresTypes,
+							repositories, **kwargs):
+		if not dependencyInfoFiles:
+			return
+		resolver = DependencyResolver(self, requiresTypes, repositories,
+									  **kwargs)
+		return resolver.determineRequiredPackagesFor(dependencyInfoFiles)
+
 
 # -- BuildPlatformHaiku class -------------------------------------------------
 
@@ -87,7 +95,7 @@ class BuildPlatformHaiku(BuildPlatform):
 			haikuPackageInfo.architecture)
 		if not machine:
 			sysExit('Unsupported Haiku build platform architecture %s'
-				% haikuPackageInfo.architecture)
+					% haikuPackageInfo.architecture)
 
 		super(BuildPlatformHaiku, self).init(treePath, outputDirectory,
 			haikuPackageInfo.architecture, machine)
@@ -112,27 +120,15 @@ class BuildPlatformHaiku(BuildPlatform):
 				= check_output(['/bin/finddir', which]).rstrip()  # drop newline
 		return self.findDirectoryCache[which]
 
-	def resolveDependencies(self, packageInfoFiles, repositories,
-			considerBuildhostPackages, fallbackRepositories = []):
-		# Always add the system packages.
-		repositories = list(repositories)
-		repositories.append(
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
-		repositories += fallbackRepositories
+	def resolveDependencies(self, dependencyInfoFiles, requiresTypes,
+							repositories, **kwargs):
 
-		args = ([ '/bin/pkgman', 'resolve-dependencies' ]
-				+ packageInfoFiles + repositories)
-		try:
-			with open(os.devnull, "w") as devnull:
-				output = check_output(args, stderr=devnull)
-			return output.splitlines()
-		except CalledProcessError:
-			# call again, so the error is shown
-			try:
-				check_call(args)
-			except:
-				pass
-			raise
+		systemPackagesDir \
+			= buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+		if systemPackagesDir not in repositories:
+			repositories.append(systemPackagesDir)
+		return super(BuildPlatformHaiku, self).resolveDependencies(
+			dependencyInfoFiles, requiresTypes, repositories, **kwargs)
 
 	def isSystemPackage(self, packagePath):
 		return packagePath.startswith(
@@ -169,6 +165,9 @@ class BuildPlatformHaiku(BuildPlatform):
 
 	def getInstallDestDir(self, workDir):
 		return None
+
+	def getImplicitProvides(self, forBuildHost):
+		return []
 
 	def setupNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
 			requiredPackages):
@@ -279,6 +278,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'binutils_cross_' + targetArchitecture,
 			'gcc_cross_' + targetArchitecture,
 			'coreutils',
+			'diffutils',
 			'cmd:aclocal',
 			'cmd:autoconf',
 			'cmd:autoheader',
@@ -286,7 +286,9 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:autoreconf',
 			'cmd:awk',
 			'cmd:bash',
+			'cmd:cat',
 			'cmd:cmake',
+			'cmd:cmp',
 			'cmd:find',
 			'cmd:flex',
 			'cmd:gcc',
@@ -354,8 +356,7 @@ class BuildPlatformUnix(BuildPlatform):
 	@property
 	def haikuVersion(self):
 		targetHaikuPackage = Configuration.getCrossDevelPackage()
-		targetHaikuPackageInfo = PackageInfo(targetHaikuPackage)
-		return targetHaikuPackageInfo.version
+		return PackageInfo(targetHaikuPackage).version
 
 	def usesChroot(self):
 		return False
@@ -364,52 +365,6 @@ class BuildPlatformUnix(BuildPlatform):
 		if not which in self.findDirectoryMap:
 			sysExit('Unsupported findDirectory() constant "%s"' % which)
 		return self.findDirectoryMap[which]
-
-	def resolveDependencies(self, packageInfoFiles, repositories,
-			considerBuildhostPackages, fallbackRepositories = []):
-		# Use the RequiresUpdater to resolve the dependencies.
-		requiresUpdater = RequiresUpdater([], packageInfoFiles)
-		repositories += fallbackRepositories
-		for repository in repositories:
-			for package in os.listdir(repository):
-				if not (package.endswith('.hpkg')
-						or package.endswith('.PackageInfo')):
-					continue
-				# Only cross packages are build-host packages, everything
-				# else are target packages
-				isCrossPackage = '_cross_' in package
-				if considerBuildhostPackages == isCrossPackage:
-					requiresUpdater.addPackageFile(repository + '/' + package)
-
-		for packageInfoFile in packageInfoFiles:
-			requiresUpdater.addPackageFile(packageInfoFile)
-
-		pendingPackages = list(packageInfoFiles)
-		result = set(pendingPackages)
-
-		while pendingPackages:
-			package = pendingPackages.pop()
-			packageInfo = PackageInfo(package)
-			for requires in packageInfo.requires:
-				if considerBuildhostPackages:
-					if requires.name in self.implicitBuildHostProvides:
-						continue
-				else:
-					if requires.name in self.implicitBuildTargetProvides:
-						continue
-
-				provides = requiresUpdater.getMatchingProvides(requires)
-				if not provides:
-					printError('requires "%s" of package "%s" could not be '
-						'resolved' % (str(requires), package))
-					raise LookupError()
-
-				providingPackage = provides.package
-				if not providingPackage in result:
-					result.add(providingPackage)
-					pendingPackages.append(providingPackage)
-
-		return list(result - set(packageInfoFiles))
 
 	def isSystemPackage(self, packagePath):
 		return False
@@ -434,6 +389,11 @@ class BuildPlatformUnix(BuildPlatform):
 
 	def getInstallDestDir(self, workDir):
 		return self.getCrossSysrootDirectory(workDir)
+
+	def getImplicitProvides(self, forBuildHost):
+		if forBuildHost:
+			return self.implicitBuildHostProvides
+		return self.implicitBuildTargetProvides
 
 	def setupNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
 			requiredPackages):
@@ -611,7 +571,7 @@ class BuildPlatformUnix(BuildPlatform):
 		# create the package links directory for the package and the .self
 		# symlink
 		packageLinksDir = (installRoot + '/packages/'
-						   + packageInfo.versiondedName)
+						   + packageInfo.versionedName)
 		if os.path.exists(packageLinksDir):
 			shutil.rmtree(packageLinksDir)
 		os.makedirs(packageLinksDir)
