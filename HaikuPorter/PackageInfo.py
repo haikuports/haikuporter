@@ -8,6 +8,7 @@
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Utils import (check_output, sysExit)
 
+import json
 import os
 import re
 
@@ -71,6 +72,8 @@ class PackageInfo(object):
 
 		if path.endswith('.hpkg') or path.endswith('.PackageInfo'):
 			self._parseFromHpkgOrPackageInfoFile()
+		elif path.endswith('.DependencyInfo'):
+			self._parseFromDependencyInfoFile()
 		else:
 			sysExit("don't know how to extract package-info from " + path)
 
@@ -104,6 +107,30 @@ class PackageInfo(object):
 				self.provides.append(Resolvable(line[9:].lstrip()))
 			elif line.startswith('requires:'):
 				self.requires.append(ResolvableExpression(line[9:].lstrip()))
+
+	def _parseFromDependencyInfoFile(self):
+		with open(self.path, 'r') as fh:
+			dependencyInfo = json.load(fh)
+
+		# get various single-occurrence fields
+		self.name = dependencyInfo['name']
+		self.version = dependencyInfo['version']
+		self.architecture = dependencyInfo['architecture']
+
+		# get provides and requires
+		self.provides = [
+			Resolvable(p) for p in dependencyInfo['provides']
+		]
+		self.requires = [
+			ResolvableExpression(r) for r in dependencyInfo['requires']
+		]
+		self.buildRequires = [
+			ResolvableExpression(r) for r in dependencyInfo['buildRequires']
+		]
+		self.buildPrerequires = [
+			ResolvableExpression(r) for r in dependencyInfo['buildPrerequires']
+		]
+		pass
 
 	def _extractField(self, output, fieldName):
 		result = self._extractOptionalField(output, fieldName)
