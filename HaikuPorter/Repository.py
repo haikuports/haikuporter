@@ -62,10 +62,12 @@ class Repository(object):
 
 		return self._portNameForPackageName.get(packageName, None)
 
-	def getAllPorts(self):
+	@property
+	def allPorts(self):
 		return self._allPorts
 
-	def getPortVersionsByName(self):
+	@property
+	def portVersionsByName(self):
 		return self._portVersionsByName
 
 	def getActiveVersionOf(self, portName, warnAboutSkippedVersions = False):
@@ -78,7 +80,7 @@ class Repository(object):
 		for version in reversed(versions):
 			portID = portName + '-' + version
 			port = self._allPorts[portID]
-			if port.hasBrokenRecipe():
+			if port.hasBrokenRecipe:
 				if warnAboutSkippedVersions:
 					warn('skipping %s, as the recipe is broken' % portID)
 					try:
@@ -86,9 +88,9 @@ class Repository(object):
 					except SystemExit as e:
 						print e.code
 				continue
-			if not port.isBuildableOnTargetArchitecture():
+			if not port.isBuildableOnTargetArchitecture:
 				if warnAboutSkippedVersions:
-					status = port.getStatusOnTargetArchitecture()
+					status = port.statusOnTargetArchitecture
 					warn(('skipping %s, as it is %s on the target '
 						  + 'architecture.') % (portID, status))
 				continue
@@ -103,7 +105,7 @@ class Repository(object):
 			reSearch = re.compile(regExp)
 
 		ports = []
-		portNames = self.getPortVersionsByName().keys()
+		portNames = self.portVersionsByName.keys()
 		for portName in portNames:
 			if not regExp or reSearch.search(portName):
 				ports.append(portName)
@@ -270,7 +272,7 @@ class Repository(object):
 		if not self.quiet:
 			print 'Populating repository ...'
 
-		allPorts = self.getAllPorts()
+		allPorts = self.allPorts
 		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version
@@ -281,7 +283,7 @@ class Repository(object):
 						sys.stdout.write('\r\t%s' % port.versionedName)
 						sys.stdout.flush()
 					port.parseRecipeFile(False)
-					if port.isBuildableOnTargetArchitecture():
+					if port.isBuildableOnTargetArchitecture:
 						if (port.checkFlag('build')
 							and not preserveFlags):
 							if not self.quiet:
@@ -301,7 +303,7 @@ class Repository(object):
 						# take notice of skipped recipe file
 						touchFile(skippedDir + '/' + portID)
 						if not self.quiet:
-							status = port.getStatusOnTargetArchitecture()
+							status = port.statusOnTargetArchitecture
 							print((' is skipped, as it is %s on target '
 								  + 'architecture') % status)
 				except SystemExit as e:
@@ -316,7 +318,7 @@ class Repository(object):
 	def _updateRepository(self):
 		"""Update all PackageInfo-files in the repository as needed"""
 
-		allPorts = self.getAllPorts()
+		allPorts = self.allPorts
 
 		brokenPorts = []
         ## REFACTOR into separate methods
@@ -363,10 +365,10 @@ class Repository(object):
 							break
 						continue
 
-					if not port.isBuildableOnTargetArchitecture():
+					if not port.isBuildableOnTargetArchitecture:
 						touchFile(skippedDir + '/' + portID)
 						if not self.quiet:
-							status = port.getStatusOnTargetArchitecture()
+							status = port.statusOnTargetArchitecture
 							print(('\t%s is still marked as %s on target '
 								   + 'architecture') % (portID, status))
 						continue
@@ -402,7 +404,7 @@ class Repository(object):
 		"""check for any package-infos that no longer have a corresponding
 		   recipe file"""
 
-		allPorts = self.getAllPorts()
+		allPorts = self.allPorts
 
 		if not self.quiet:
 			print "Looking for stale package-infos ..."

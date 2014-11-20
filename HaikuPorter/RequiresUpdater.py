@@ -19,9 +19,6 @@ class ProvidesInfo(Resolvable):
 		super(ProvidesInfo, self).__init__(providesString)
 		self.package = package
 
-	def getPackage(self):
-		return self.package
-
 # -- RequiresUpdater class ----------------------------------------------------
 
 class RequiresUpdater(object):
@@ -30,7 +27,7 @@ class RequiresUpdater(object):
 
 		# get the provides for the port packages
 		for package in portPackages:
-			for providesString in package.getRecipeKeys()['PROVIDES']:
+			for providesString in package.recipeKeys['PROVIDES']:
 				self._addPackageProvidesInfo(package.revisionedName,
 					providesString)
 
@@ -45,7 +42,7 @@ class RequiresUpdater(object):
 		except CalledProcessError:
 			sysExit('failed to get provides for package "%s"' % package)
 
-		for provides in packageInfo.getProvides():
+		for provides in packageInfo.provides:
 			self._addPackageProvidesInfo(package, str(provides))
 
 	def addPackages(self, directory):
@@ -62,9 +59,9 @@ class RequiresUpdater(object):
 		return result
 
 	def getMatchingProvides(self, resolvableExpression):
-		name = resolvableExpression.getName()
-		operator = resolvableExpression.getOperator()
-		version = resolvableExpression.getVersion()
+		name = resolvableExpression.name
+		operator = resolvableExpression.operator
+		version = resolvableExpression.version
 
 		if not name in self.providesMap:
 			return None
@@ -101,8 +98,8 @@ class RequiresUpdater(object):
 			partialRequires = requires[:-4].rstrip()
 
 		resolvableExpression = ResolvableExpression(partialRequires)
-		name = resolvableExpression.getName()
-		operator = resolvableExpression.getOperator()
+		name = resolvableExpression.name
+		operator = resolvableExpression.operator
 
 		# check whether there's a matching provides and, if so, replace the
 		# given requires
@@ -128,7 +125,7 @@ class RequiresUpdater(object):
 
 	def _addPackageProvidesInfo(self, package, providesString):
 		provides = ProvidesInfo(package, providesString.strip())
-		if provides.getName() in self.providesMap:
-			self.providesMap[provides.getName()].append(provides)
+		if provides.name in self.providesMap:
+			self.providesMap[provides.name].append(provides)
 		else:
-			self.providesMap[provides.getName()] = [ provides ]
+			self.providesMap[provides.name] = [ provides ]

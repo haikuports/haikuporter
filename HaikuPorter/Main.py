@@ -88,7 +88,7 @@ class Main(object):
 
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
-			if (not buildPlatform.isHaiku()
+			if (not buildPlatform.isHaiku
 				and Configuration.getLicensesDirectory() == None):
 				sysExit('LICENSES_DIRECTORY must be set in configuration on '
 					'this build platform!')
@@ -166,7 +166,7 @@ class Main(object):
 			# pretend the meta port responsible for building a list of ports
 			# has been specified on the cmdline
 			metaPortSpec = 'meta_portsfile-1'
-			if not metaPortSpec in self.repository.getAllPorts():
+			if not metaPortSpec in self.repository.allPorts:
 				sysExit("no recipe found for '%s'" % metaPortSpec)
 			self.portSpecs.append(
 				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
@@ -179,8 +179,8 @@ class Main(object):
 			print 'After that, all other available ports will be built, too'
 			portsNotYetBuilt = []
 			for portId in portsToBuild:
-				port = self.repository.getAllPorts()[portId]
-				mainPackage = port.getMainPackage()
+				port = self.repository.allPorts[portId]
+				mainPackage = port.mainPackage
 				if (mainPackage
 					and os.path.exists(
 						self.packagesPath + '/' + mainPackage.hpkgName)):
@@ -190,10 +190,10 @@ class Main(object):
 				portsNotYetBuilt.append(portId)
 				bootstrapPorts.add(portId)
 			# add all other ports, such that all available ports will be built
-			for portId in self.repository.getAllPorts().keys():
+			for portId in self.repository.allPorts.keys():
 				if not portId in bootstrapPorts:
-					port = self.repository.getAllPorts()[portId]
-					mainPackage = port.getMainPackage()
+					port = self.repository.allPorts[portId]
+					mainPackage = port.mainPackage
 					if (mainPackage
 						and os.path.exists(
 							self.packagesPath + '/' + mainPackage.hpkgName)):
@@ -220,8 +220,8 @@ class Main(object):
 			self.options.package = False
 
 		# collect all available ports and validate each specified port
-		allPorts = self.repository.getAllPorts()
-		portVersionsByName = self.repository.getPortVersionsByName()
+		allPorts = self.repository.allPorts
+		portVersionsByName = self.repository.portVersionsByName
 		for portSpec in self.portSpecs:
 
 			# validate name of port
@@ -329,8 +329,8 @@ class Main(object):
 					% (port.versionedName, revision, port.revision))
 
 		# warn when the port is not buildable on this architecture
-		if not port.isBuildableOnTargetArchitecture():
-			status = port.getStatusOnTargetArchitecture()
+		if not port.isBuildableOnTargetArchitecture:
+			status = port.statusOnTargetArchitecture
 			warn('Port %s is %s on this architecture.'
 				 % (port.versionedName, status))
 			if not self.options.yes:
@@ -363,7 +363,7 @@ class Main(object):
 		print port.category + '::' + port.versionedName
 		print '=' * 70
 
-		allPorts = self.repository.getAllPorts()
+		allPorts = self.repository.allPorts
 
 		# HPKGs are usually written into the 'packages' directory, but when
 		# an obsolete port (one that's not in the repository) is being built,
@@ -390,7 +390,7 @@ class Main(object):
 					requiredPort = allPorts[portID]
 					if ((getOption('createSourcePackagesForBootstrap')
 							or getOption('createSourcePackages'))
-						and (not requiredPort.getSourcePackage()
+						and (not requiredPort.sourcePackage
 							or requiredPort.sourcePackageExists(targetPath))):
 						continue
 					requiredPortsToBuild.append(requiredPort)
@@ -457,30 +457,30 @@ class Main(object):
 
 	def _initGlobalShellVariables(self):
 		# get the target haiku version and architecture
-		targetArchitecture = buildPlatform.getTargetArchitecture()
+		targetArchitecture = buildPlatform.targetArchitecture
 		if self.shallowInitIsEnough:
 			targetHaikuVersion = 'dummy'
 		else:
 			if Configuration.isCrossBuildRepository():
 				targetHaikuPackage = Configuration.getCrossDevelPackage()
 				if not targetHaikuPackage:
-					if not buildPlatform.isHaiku():
+					if not buildPlatform.isHaiku:
 						sysExit('On this platform a haiku cross devel package '
 							'must be specified (via --cross-devel-package)')
 					targetHaikuPackage = ('/boot/system/develop/cross/'
 						+ 'haiku_cross_devel_sysroot_%s.hpkg') \
 						% targetArchitecture
 			else:
-				if (not buildPlatform.isHaiku()
+				if (not buildPlatform.isHaiku
 					and not (getOption('createSourcePackagesForBootstrap')
 						or getOption('createSourcePackages'))):
 					sysExit('Native building not supported on this platform '
-						'(%s)' % buildPlatform.getName())
-			targetHaikuVersion = buildPlatform.getHaikuVersion()
+						'(%s)' % buildPlatform.name)
+			targetHaikuVersion = buildPlatform.haikuVersion
 
 		self.shellVariables = {
 			'haikuVersion': targetHaikuVersion,
-			'buildArchitecture': buildPlatform.getArchitecture(),
+			'buildArchitecture': buildPlatform.architecture,
 			'targetArchitecture': targetArchitecture,
 			'jobs': str(self.options.jobs),
 		}
@@ -492,7 +492,7 @@ class Main(object):
 		if Configuration.isCrossBuildRepository():
 			self.shellVariables['isCrossRepository'] = 'true';
 
-			buildMachineTriple = buildPlatform.getMachineTriple()
+			buildMachineTriple = buildPlatform.machineTriple
 			targetMachineTriple \
 				= MachineArchitecture.getTripleFor(targetArchitecture)
 
@@ -569,8 +569,8 @@ class Main(object):
 		if portArgument:
 			print 'Checking ports of: ' + portArgument
 
-			allPorts = self.repository.getAllPorts()
-			portVersionsByName = self.repository.getPortVersionsByName()
+			allPorts = self.repository.allPorts
+			portVersionsByName = self.repository.portVersionsByName
 
 			if portArgument in allPorts:
 				# Full port name / ver
@@ -594,8 +594,8 @@ class Main(object):
 
 		else:
 			print 'Checking HaikuPorts tree at: ' + self.treePath
-			allPorts = self.repository.getAllPorts()
-			portVersionsByName = self.repository.getPortVersionsByName()
+			allPorts = self.repository.allPorts
+			portVersionsByName = self.repository.portVersionsByName
 			for portName in sorted(portVersionsByName.keys(), key=str.lower):
 				for version in portVersionsByName[portName]:
 					portID = portName + '-' + version

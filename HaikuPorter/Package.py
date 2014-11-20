@@ -160,15 +160,12 @@ class Package(object):
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
 
-	def getRecipeKeys(self):
-		return self.recipeKeys
-
 	def writePackageInfoIntoRepository(self, repositoryPath):
 		"""Write a PackageInfo-file for this package into the repository"""
 
 		packageInfoFile = repositoryPath + '/' + self.packageInfoName
 		if (getOption('createSourcePackagesForBootstrap')
-			or buildPlatform.getName() == 'Haiku'):
+			or buildPlatform.name == 'Haiku'):
 			requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
 		else:
 			requires = [ 'BUILD_REQUIRES', 'REQUIRES' ]

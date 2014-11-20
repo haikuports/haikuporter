@@ -56,7 +56,7 @@ class Policy(object):
 		for package in port.packages:
 			self.portPackagesProvides[package.name] = (
 				self._parseResolvableExpressionList(
-					package.getRecipeKeys()['PROVIDES']))
+					package.recipeKeys['PROVIDES']))
 
 		# Create a map with the packages' provides. We need that later when
 		# checking the created package.
@@ -91,7 +91,7 @@ class Policy(object):
 
 	def _parseResolvableExpressionListForKey(self, keyName):
 		return self._parseResolvableExpressionList(
-			self.package.getRecipeKeys()[keyName])
+			self.package.recipeKeys[keyName])
 
 	def _parseResolvableExpressionList(self, list):
 		names = set()
@@ -303,7 +303,7 @@ class Policy(object):
 		types = { False: 'file', True: 'directory' }
 		globalWritableFiles = {}
 		fileTypes = {}
-		for item in self.package.getRecipeKeys()['GLOBAL_WRITABLE_FILES']:
+		for item in self.package.recipeKeys['GLOBAL_WRITABLE_FILES']:
 			if item.strip().startswith('#'):
 				continue
 
@@ -368,7 +368,7 @@ class Policy(object):
 				fileTypes, path + '/' + entry)
 
 	def _checkUserSettingsFiles(self):
-		for item in self.package.getRecipeKeys()['USER_SETTINGS_FILES']:
+		for item in self.package.recipeKeys['USER_SETTINGS_FILES']:
 			if item.strip().startswith('#'):
 				continue
 
@@ -391,7 +391,7 @@ class Policy(object):
 	def _checkPostInstallScripts(self):
 		# check whether declared files exist
 		declaredFiles = set()
-		for file in self.package.getRecipeKeys()['POST_INSTALL_SCRIPTS']:
+		for file in self.package.recipeKeys['POST_INSTALL_SCRIPTS']:
 			if file.lstrip().startswith('#'):
 				continue
 

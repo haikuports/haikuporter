@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2013 Haiku, Inc.
+# Copyright 2013-2014 Haiku, Inc.
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
@@ -42,15 +42,6 @@ class Resolvable(object):
 			result += ' (compatible >= ' + self.compatibleVersion + ')'
 		return result
 
-	def getName(self):
-		return self.name
-
-	def getVersion(self):
-		return self.version
-
-	def getCompatibleVersion(self):
-		return self.compatibleVersion
-
 
 # -- ResolvableExpression class -----------------------------------------------
 
@@ -70,15 +61,6 @@ class ResolvableExpression(object):
 		if self.operator:
 			return self.name + ' ' + self.operator + ' ' + self.version
 		return self.name
-
-	def getName(self):
-		return self.name
-
-	def getOperator(self):
-		return self.operator
-
-	def getVersion(self):
-		return self.version
 
 
 # -- PackageInfo class --------------------------------------------------------
@@ -111,23 +93,9 @@ class PackageInfo(object):
 			elif line.startswith('requires:'):
 				self.requires.append(ResolvableExpression(line[9:].lstrip()))
 
-	def getName(self):
-		return self.name
-
-	def getVersion(self):
-		return self.version
-
-	def getArchitecture(self):
-		return self.architecture
-
-	def getInstallPath(self):
-		return self.installPath
-
-	def getProvides(self):
-		return self.provides
-
-	def getRequires(self):
-		return self.requires
+	@property
+	def versionedName(self):
+		return self.name + '-' + self.version
 
 	def _extractField(self, output, fieldName):
 		result = self._extractOptionalField(output, fieldName)

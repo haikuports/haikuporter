@@ -106,8 +106,7 @@ class Port(object):
 			self.effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
 			self.workDir = self.outputDir + '/work-' + self.version
-			self.effectiveTargetArchitecture \
-				= buildPlatform.getTargetArchitecture()
+			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
 
 		self.isMetaPort = self.category == 'meta-ports'
 
@@ -229,8 +228,8 @@ class Port(object):
 		# parse the recipe file
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
 									self.shellVariables)
-		extensions = recipeConfig.getExtensions()
-		self.definedPhases = recipeConfig.getDefinedPhases()
+		extensions = recipeConfig.extensions
+		self.definedPhases = recipeConfig.definedPhases
 
 		if '' not in extensions:
 			sysExit('No base package defined in (in %s)' % self.recipeFilePath)
@@ -371,7 +370,8 @@ class Port(object):
 			print 'ARCHITECTURE: %s' % package.architecture
 		print '*' * 80
 
-	def getStatusOnTargetArchitecture(self):
+	@property
+	def statusOnTargetArchitecture(self):
 		"""Return the status of this port on the target architecture"""
 
 		try:
@@ -383,14 +383,16 @@ class Port(object):
 		except:
 			return Status.UNSUPPORTED
 
+	@property
 	def isBuildableOnTargetArchitecture(self):
 		"""Returns whether or not this port is buildable on the target
 		   architecture"""
-		status = self.getStatusOnTargetArchitecture()
+		status = self.statusOnTargetArchitecture
 		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
 				or (status == Status.UNTESTED and allowUntested))
 
+	@property
 	def hasBrokenRecipe(self):
 		"""Returns whether or not the recipe for this port is broken (i.e. it
 		   can't be parsed or contains errors)"""
@@ -428,13 +430,15 @@ class Port(object):
 		for package in self.packages:
 			package.obsoletePackage(packagesPath)
 
-	def getMainPackage(self):
+	@property
+	def mainPackage(self):
 		self.parseRecipeFileIfNeeded()
 		if self.packages:
 			return self.packages[0]
 		return None
 
-	def getSourcePackage(self):
+	@property
+	def sourcePackage(self):
 		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
 			if package.type == PackageType.SOURCE:
@@ -445,7 +449,7 @@ class Port(object):
 		"""Determines if the source package already exists"""
 
 		self.parseRecipeFileIfNeeded()
-		package = self.getSourcePackage()
+		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
 	def resolveBuildDependencies(self, repositoryPath, packagesPath):
@@ -482,7 +486,7 @@ class Port(object):
 			requiredPackages \
 				= self._resolveDependencies(packageInfoFiles, [packagesPath],
 											'required ports',
-											buildPlatform.isHaiku(),
+											buildPlatform.isHaiku,
 											[workRepositoryPath])
 
 			requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
@@ -521,7 +525,7 @@ class Port(object):
 		try:
 			self._resolveDependencies(packageInfoFiles, [],
 									  'why is port needed',
-									  buildPlatform.isHaiku(),
+									  buildPlatform.isHaiku,
 									  [workRepositoryPath])
 		except SystemExit:
 			return
@@ -569,7 +573,7 @@ class Port(object):
 		# skip all patches if any of the sources comes from a rigged source
 		# package (as those contain already patched sources)
 		for source in self.sources:
-			if source.isFromRiggedSourcePackage():
+			if source.isFromRiggedSourcePackage:
 				return
 
 		patched = False
@@ -763,7 +767,7 @@ class Port(object):
 	def test(self, packagesPath):
 		"""Test the port"""
 
-		if not buildPlatform.isHaiku():
+		if not buildPlatform.isHaiku:
 			sysExit("Sorry, can't execute a test unless running on Haiku")
 
 		self.parseRecipeFileIfNeeded()
@@ -853,7 +857,7 @@ class Port(object):
 							keys['SOURCE_DIR'].get(index, None),
 							keys['PATCHES'].get(index, []),
 							keys['ADDITIONAL_FILES'].get(index, []))
-			if source.isFromSourcePackage():
+			if source.isFromSourcePackage:
 				basedOnSourcePackage = True
 			self.sources.append(source)
 
@@ -1179,7 +1183,7 @@ class Port(object):
 		packages = self._resolveDependencies(packageInfoFiles,
 											 [packagesPath],
 											 'required packages for build',
-											 buildPlatform.isHaiku())
+											 buildPlatform.isHaiku)
 
 		return packages
 

@@ -40,17 +40,9 @@ class BuildPlatform(object):
 
 		self.crossSysrootDir = '/boot/cross-sysroot/' + self.targetArchitecture
 
-	def getName(self):
+	@property
+	def name(self):
 		return platform.system()
-
-	def getMachineTriple(self):
-		return self.machineTriple
-
-	def getArchitecture(self):
-		return self.architecture
-
-	def getTargetArchitecture(self):
-		return self.targetArchitecture
 
 	def getLicensesDirectory(self):
 		directory = Configuration.getLicensesDirectory()
@@ -90,23 +82,25 @@ class BuildPlatformHaiku(BuildPlatform):
 			sysExit('Failed to find Haiku system package')
 
 		haikuPackageInfo = PackageInfo('/system/packages/' + systemPackageName)
-		self.haikuVersion = haikuPackageInfo.getVersion()
+		self._haikuVersion = haikuPackageInfo.version
 		machine = MachineArchitecture.getTripleFor(
-			haikuPackageInfo.getArchitecture())
+			haikuPackageInfo.architecture)
 		if not machine:
 			sysExit('Unsupported Haiku build platform architecture %s'
-				% haikuPackageInfo.getArchitecture())
+				% haikuPackageInfo.architecture)
 
 		super(BuildPlatformHaiku, self).init(treePath, outputDirectory,
-			haikuPackageInfo.getArchitecture(), machine)
+			haikuPackageInfo.architecture, machine)
 
 		self.findDirectoryCache = {}
 
+	@property
 	def isHaiku(self):
 		return True
 
-	def getHaikuVersion(self):
-		return self.haikuVersion
+	@property
+	def haikuVersion(self):
+		return self._haikuVersion
 
 	def usesChroot(self):
 		return getOption('chroot')
@@ -353,13 +347,15 @@ class BuildPlatformUnix(BuildPlatform):
 				'gcc_cross_' + secondaryArchitecture,
 				])
 
+	@property
 	def isHaiku(self):
 		return False
 
-	def getHaikuVersion(self):
+	@property
+	def haikuVersion(self):
 		targetHaikuPackage = Configuration.getCrossDevelPackage()
 		targetHaikuPackageInfo = PackageInfo(targetHaikuPackage)
-		return targetHaikuPackageInfo.getVersion()
+		return targetHaikuPackageInfo.version
 
 	def usesChroot(self):
 		return False
@@ -394,12 +390,12 @@ class BuildPlatformUnix(BuildPlatform):
 		while pendingPackages:
 			package = pendingPackages.pop()
 			packageInfo = PackageInfo(package)
-			for requires in packageInfo.getRequires():
+			for requires in packageInfo.requires:
 				if considerBuildhostPackages:
-					if requires.getName() in self.implicitBuildHostProvides:
+					if requires.name in self.implicitBuildHostProvides:
 						continue
 				else:
-					if requires.getName() in self.implicitBuildTargetProvides:
+					if requires.name in self.implicitBuildTargetProvides:
 						continue
 
 				provides = requiresUpdater.getMatchingProvides(requires)
@@ -408,7 +404,7 @@ class BuildPlatformUnix(BuildPlatform):
 						'resolved' % (str(requires), package))
 					raise LookupError()
 
-				providingPackage = provides.getPackage()
+				providingPackage = provides.package
 				if not providingPackage in result:
 					result.add(providingPackage)
 					pendingPackages.append(providingPackage)
@@ -611,15 +607,15 @@ class BuildPlatformUnix(BuildPlatform):
 				installPath, package ]
 			check_call(args)
 		else:
-			installPath = packageInfo.getInstallPath()
+			installPath = packageInfo.installPath
 			if not installPath:
 				sysExit('Build package "%s" doesn\'t have an install path'
 					% package)
 
 		# create the package links directory for the package and the .self
 		# symlink
-		packageLinksDir = (installRoot + '/packages/' + packageInfo.getName()
-			+ '-' + packageInfo.getVersion())
+		packageLinksDir = (installRoot + '/packages/'
+						   + packageInfo.versiondedName)
 		if os.path.exists(packageLinksDir):
 			shutil.rmtree(packageLinksDir)
 		os.makedirs(packageLinksDir)

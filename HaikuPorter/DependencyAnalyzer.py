@@ -10,6 +10,7 @@ from HaikuPorter.Configuration import Configuration
 from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
 from HaikuPorter.Utils import (check_output, sysExit)
 
+import copy
 import glob
 import os
 import shutil
@@ -49,18 +50,17 @@ class PortNode(object):
 		self.indegree = 0
 		self.outdegree = 0
 
-	def getName(self):
+	@property
+	def name(self):
 		return self.portID
 
-	def getDependencies(self):
+	@property
+	def dependencies(self):
 		return self.buildRequires | self.buildPrerequires
 
+	@property
 	def isPort(self):
 		return True
-
-	def doesBuildDependOnSelf(self):
-		return not (self.buildRequires.isdisjoint(self.packageNodes)
-			and self.buildPrerequires.isdisjoint(self.packageNodes))
 
 	def addBuildRequires(self, elements):
 		self.buildRequires |= elements
@@ -121,25 +121,22 @@ class PortNode(object):
 class PackageNode(object):
 	def __init__(self, portNode, packageID):
 		self.portNode = portNode
-		self.packageID = packageID
+		self.name = packageID
 		self.requires = set()
 		self.indegree = 0
 		self.outdegree = 0
 
-	def getName(self):
-		return self.packageID
-
+	@property
 	def isPort(self):
 		return False
 
-	def getRequires(self):
-		return self.requires
-
-	def getDependencies(self):
-		dependencies = self.requires
+	@property
+	def dependencies(self):
+		dependencies = copy.copy(self.requires)
 		dependencies.add(self.portNode)
 		return dependencies
 
+	@property
 	def isSystemPackage(self):
 		return not self.portNode
 
@@ -236,7 +233,7 @@ class DependencyAnalyzer(object):
 				packageID = package.name + '-' + portNode.port.version
 				packageNode = self._getPackageNode(packageID)
 
-				recipeKeys = package.getRecipeKeys()
+				recipeKeys = package.recipeKeys
 				packageNode.addRequires(
 					self._resolveRequiresList(recipeKeys['REQUIRES']))
 				portNode.addBuildRequires(
@@ -252,7 +249,7 @@ class DependencyAnalyzer(object):
 		nonSystemPackageNodes = set()
 
 		for packageNode in self.packageNodes.itervalues():
-			if packageNode.isSystemPackage():
+			if packageNode.isSystemPackage:
 				self.systemPackageNodes.add(packageNode)
 			else:
 				nonSystemPackageNodes.add(packageNode)
@@ -263,7 +260,7 @@ class DependencyAnalyzer(object):
 			getScriptletPrerequirements())
 		self.haikuporterRequires = set()
 		for packageNode in haikuporterDependencies:
-			if not packageNode.isSystemPackage():
+			if not packageNode.isSystemPackage:
 				self.haikuporterRequires.add(packageNode)
 
 		# ... and their requires closure
@@ -271,7 +268,7 @@ class DependencyAnalyzer(object):
 		while nodeStack:
 			packageNode = nodeStack.pop()
 			portNode = packageNode.portNode
-			for dependency in packageNode.getRequires():
+			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
 					and not dependency in self.haikuporterRequires):
 					nodeStack.append(dependency)
@@ -283,7 +280,7 @@ class DependencyAnalyzer(object):
 			nodes |= portNode.packageNodes
 
 		for node in nodes:
-			for dependency in node.getDependencies():
+			for dependency in node.dependencies:
 				if dependency in nodes:
 					dependency.indegree += 1
 
@@ -296,7 +293,7 @@ class DependencyAnalyzer(object):
 		while indegreeZeroStack:
 			node = indegreeZeroStack.pop()
 			nodes.remove(node)
-			for dependency in node.getDependencies():
+			for dependency in node.dependencies:
 				if dependency in nodes:
 					dependency.indegree -= 1
 					if dependency.indegree == 0:
@@ -305,7 +302,7 @@ class DependencyAnalyzer(object):
 		# compute the out-degrees of the remaining nodes
 		for node in nodes:
 			outdegree = 0
-			for dependency in node.getDependencies():
+			for dependency in node.dependencies:
 				if dependency in nodes:
 					outdegree += 1
 			node.outdegree = outdegree
@@ -314,21 +311,21 @@ class DependencyAnalyzer(object):
 		for node in nodes:
 			if node.outdegree == 0:
 				outdegreeZeroStack.append(node)
-				print '[%s] has out-degree 0' % node.getName()
+				print '[%s] has out-degree 0' % node.name
 
 		# remove the acyclic part of the graph that depends on nothing else
 		while outdegreeZeroStack:
 			node = outdegreeZeroStack.pop()
 			nodes.remove(node)
 			for otherNode in nodes:
-				if (node in otherNode.getDependencies()
+				if (node in otherNode.dependencies
 					and otherNode in nodes):
 					otherNode.outdegree -= 1
 					if otherNode.outdegree == 0:
 						outdegreeZeroStack.append(otherNode)
 
 		self.cyclicNodes = [
-			node for node in nodes if node.isPort()
+			node for node in nodes if node.isPort
 		]
 
 		# clean up
@@ -338,15 +335,15 @@ class DependencyAnalyzer(object):
 	def printDependencies(self):
 		print 'Required system packages:'
 		for packageNode in self.systemPackageNodes:
-			print '	 %s' % packageNode.getName()
+			print '	 %s' % packageNode.name
 
 		print 'Ports required by haikuporter:'
 		for packageNode in self.haikuporterRequires:
-			print '	 %s' % packageNode.portNode.getName()
+			print '	 %s' % packageNode.portNode.name
 
 		print 'Ports depending cyclically on each other:'
 		for node in self.cyclicNodes:
-			print '	 %s (out-degree %d)' % (node.getName(), node.outdegree)
+			print '	 %s (out-degree %d)' % (node.name, node.outdegree)
 
 	def getBuildOrderForBootstrap(self):
 		packageInfoPath = self.repository.path + '/.package-infos'
@@ -359,17 +356,17 @@ class DependencyAnalyzer(object):
 		nodes = set(self.cyclicNodes)
 		while nodes:
 			lastDoneCount = len(done)
-			for node in sorted(list(nodes), key=PortNode.getName):
+			for node in sorted(list(nodes), key=PortNode.name):
 				if os.path.exists(packageInfoPath):
 					shutil.rmtree(packageInfoPath)
 				os.mkdir(packageInfoPath)
 				if node.isBuildable(packageInfoPath, doneRepositoryPath):
-					done.append(node.getName())
+					done.append(node.name)
 					nodes.remove(node)
 					node.markAsBuilt(doneRepositoryPath)
 			if lastDoneCount == len(done):
 				sysExit("None of these cyclic dependencies can be built:\n\t"
-						+ "\n\t".join(sorted(map(lambda node: node.getName(),
+						+ "\n\t".join(sorted(map(lambda node: node.name,
 												 nodes))))
 
 		shutil.rmtree(doneRepositoryPath)
@@ -456,7 +453,7 @@ class DependencyAnalyzer(object):
 			return self.portNodes[portID]
 
 		# get the port and create the port node
-		port = self.repository.getAllPorts()[portID]
+		port = self.repository.allPorts[portID]
 		portNode = PortNode(portID, port)
 		self.portNodes[portID] = portNode
 

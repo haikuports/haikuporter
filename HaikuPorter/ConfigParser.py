@@ -232,11 +232,9 @@ class ConfigParser(object):
 		else:
 			return {}
 
-	def getExtensions(self):
+	@property
+	def extensions(self):
 		return self.entriesByExtension.keys()
-
-	def getDefinedPhases(self):
-		return self.definedPhases
 
 
 ## REFACTOR - consider using simple functions for this

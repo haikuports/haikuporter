@@ -239,11 +239,13 @@ class Source(object):
 
 		port.setFlag('validate', self.index)
 
+	@property
 	def isFromSourcePackage(self):
 		"""Determines whether or not this source comes from a source package"""
 
 		return self.uris[0].lower().startswith('pkg:')
 
+	@property
 	def isFromRiggedSourcePackage(self):
 		"""Determines whether or not this source comes from a source package
 		   that has been rigged (i.e. does have the patches already applied)"""
