@@ -66,11 +66,21 @@ class ResolvableExpression(object):
 # -- PackageInfo class --------------------------------------------------------
 
 class PackageInfo(object):
-	def __init__(self, path, silent = False):
+	def __init__(self, path):
 		self.path = path
 
+		if path.endswith('.hpkg') or path.endswith('.PackageInfo'):
+			self._parseFromHpkgOrPackageInfoFile()
+		else:
+			sysExit("don't know how to extract package-info from " + path)
+
+	@property
+	def versionedName(self):
+		return self.name + '-' + self.version
+
+	def _parseFromHpkgOrPackageInfoFile(self, silent = False):
 		# get an attribute listing of the package/package info file
-		args = [ Configuration.getPackageCommand(), 'list', '-i', path ]
+		args = [ Configuration.getPackageCommand(), 'list', '-i', self.path ]
 		if silent:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(args, stderr=devnull)
@@ -83,19 +93,17 @@ class PackageInfo(object):
 		self.architecture = self._extractField(output, 'architecture')
 		self.installPath = self._extractOptionalField(output, 'install path')
 
-		# get provides and requires
+		# get provides and requires (no buildrequires or -prerequires exist)
 		self.provides = []
 		self.requires = []
+		self.buildRequires = []
+		self.buildPrerequires = []
 		for line in output.splitlines():
 			line = line.strip()
 			if line.startswith('provides:'):
 				self.provides.append(Resolvable(line[9:].lstrip()))
 			elif line.startswith('requires:'):
 				self.requires.append(ResolvableExpression(line[9:].lstrip()))
-
-	@property
-	def versionedName(self):
-		return self.name + '-' + self.version
 
 	def _extractField(self, output, fieldName):
 		result = self._extractOptionalField(output, fieldName)
