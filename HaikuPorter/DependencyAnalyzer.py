@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright 2013 Ingo Weinhold
+# Copyright 2014 Oliver Tappe
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.BuildPlatform import buildPlatform
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
-from HaikuPorter.Utils import (check_output, sysExit)
+from .BuildPlatform import buildPlatform
+from .PackageInfo import (PackageInfo, ResolvableExpression)
+from .ProvidesManager import ProvidesManager
+from .ShellScriptlets import getScriptletPrerequirements
+from .Utils import sysExit
 
 import copy
-import glob
 import os
 import shutil
-from subprocess import check_call, CalledProcessError
+from subprocess import CalledProcessError
 
 # -----------------------------------------------------------------------------
 
@@ -42,7 +43,6 @@ class PortNode(object):
 	def __init__(self, portID, port):
 		self.portID = portID
 		self.port = port
-		self.areDependenciesResolved = False
 		self.packageNodes = set()
 		self.requires = set()
 		self.buildRequires = set()
@@ -68,53 +68,26 @@ class PortNode(object):
 	def addBuildPrerequires(self, elements):
 		self.buildPrerequires |= elements
 
-	def isBuildable(self, packageInfoPath, doneRepositoryPath):
+	def isBuildable(self, repositoryPath, doneRepositoryPath):
 		# check prerequires
-		requiresTypes = [ 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES' ]
-		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes,
-															  packageInfoPath)
-		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
-				+ [
-					doneRepositoryPath,
-					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
-				])
+		dependencyInfoFiles = self.port.getDependencyInfoFiles(repositoryPath)
+		requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
+						  'SCRIPTLET_PREREQUIRES' ]
+		repositories = [
+			doneRepositoryPath,
+			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
+		];
 		try:
-			print '=' * 70
-			print 'checking prerequires of ' + self.port.name
-			print '=' * 70
-			print '	   ' + ' '.join(args)
-			check_call(args)
-			print 'ok'
-			print '-' * 70
-		except CalledProcessError:
-			print '-' * 70
-			return False
-
-		# check build requires
-		requiresTypes = [ 'BUILD_REQUIRES' ]
-		packageInfoFiles = self.port.generatePackageInfoFiles(requiresTypes,
-															  packageInfoPath)
-		args = ([ '/bin/pkgman', 'resolve-dependencies' ] + packageInfoFiles
-				+ [
-					doneRepositoryPath,
-					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
-				])
-		try:
-			print '=' * 70
-			print 'checking buildrequires of ' + self.port.name
-			print '=' * 70
-			print '	   ' + ' '.join(args)
-			check_call(args)
-			print 'ok'
-			print '-' * 70
-		except CalledProcessError:
-			print '-' * 70
+			buildPlatform.resolveDependencies(dependencyInfoFiles,
+											  requiresTypes,
+											  repositories)
+		except (CalledProcessError, LookupError):
 			return False
 
 		return True
 
 	def markAsBuilt(self, doneRepositoryPath):
-		self.port.writePackageInfosIntoRepository(doneRepositoryPath)
+		self.port.writeDependencyInfosIntoRepository(doneRepositoryPath)
 
 # -- PackageNode class ---------------------------------------------------------
 
@@ -148,68 +121,56 @@ class PackageNode(object):
 class DependencyAnalyzer(object):
 	def __init__(self, repository):
 		self.repository = repository
+		self.portNodes = {}
+		self.packageNodes = {}
+		self.packageInfos = {}
+		self.providesManager = ProvidesManager()
 
-		# Remove and re-create the no-requires repository directory. It
-		# simplifies resolving the	immediate requires for all ports.
-		print 'Preparing no-requires repository ...'
+	def printDependencies(self):
+		if not self.portNodes:
+			self._doInitialDependencyResolution()
 
-		self.noRequiresRepositoryPath = self.repository.path + '/.no-requires'
+		print 'Required system packages:'
+		for packageNode in self.systemPackageNodes:
+			print '	 %s' % packageNode.name
 
-		if os.path.exists(self.noRequiresRepositoryPath):
-			shutil.rmtree(self.noRequiresRepositoryPath)
-		os.mkdir(self.noRequiresRepositoryPath)
+		print 'Ports required by haikuporter:'
+		for packageNode in self.haikuporterRequires:
+			print '	 %s' % packageNode.portNode.name
 
-		packageInfos = glob.glob(self.repository.path + '/*.PackageInfo')
-		packageIDs = []
-		for packageInfo in packageInfos:
-			packageInfoFileName = os.path.basename(packageInfo)
-			packageIDs.append(
-				packageInfoFileName[:packageInfoFileName.rindex('.')])
-			destinationPath = (self.noRequiresRepositoryPath + '/'
-				+ packageInfoFileName)
-			self._stripRequiresFromPackageInfo(packageInfo, destinationPath)
+		print 'Ports depending cyclically on each other:'
+		for node in self.cyclicNodes:
+			print '	 %s (out-degree %d)' % (node.name, node.outdegree)
 
-		# Remove and re-create the system no-requires repository directory. It
-		# contains the package info for system packages without requires.
-		print 'Preparing no-requires system repository ...'
+	def getBuildOrderForBootstrap(self):
+		if not self.portNodes:
+			self._doInitialDependencyResolution()
 
-		self.noRequiresSystemRepositoryPath = (self.repository.path
-			+ '/.no-requires-system')
+		doneRepositoryPath = self.repository.path + '/.build-order-done'
+		if os.path.exists(doneRepositoryPath):
+			shutil.rmtree(doneRepositoryPath)
+		os.mkdir(doneRepositoryPath)
 
-		if os.path.exists(self.noRequiresSystemRepositoryPath):
-			shutil.rmtree(self.noRequiresSystemRepositoryPath)
-		os.mkdir(self.noRequiresSystemRepositoryPath)
+		done = []
+		nodes = set(self.cyclicNodes)
+		while nodes:
+			lastDoneCount = len(done)
+			for node in sorted(list(nodes), key=lambda node: node.name):
+				print '# checking if %s is buildable ...' % node.name
+				if node.isBuildable(self.repository.path, doneRepositoryPath):
+					done.append(node.name)
+					nodes.remove(node)
+					node.markAsBuilt(doneRepositoryPath)
+			if lastDoneCount == len(done):
+				sysExit("None of these cyclic dependencies can be built:\n\t"
+						+ "\n\t".join(sorted(map(lambda node: node.name,
+												 nodes))))
 
-		# we temporarily need an empty directory to check the package infos
-		self.emptyDirectory = self.noRequiresSystemRepositoryPath + '/empty'
-		os.mkdir(self.emptyDirectory)
+		shutil.rmtree(doneRepositoryPath)
 
-		for directory in [
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
-		]:
-			for package in os.listdir(directory):
-				if not package.endswith('.hpkg'):
-					continue
+		return done
 
-				# extract the package info from the package file
-				fileName = package[:-5] + '.PackageInfo'
-				destinationPath = (self.noRequiresSystemRepositoryPath + '/'
-					+ fileName)
-				sourcePath = destinationPath + '.tmp'
-				check_call([Configuration.getPackageCommand(), 'extract', '-i',
-					sourcePath, directory + '/' + package, '.PackageInfo'])
-
-				# strip the requires section from the package info
-				self._stripRequiresFromPackageInfo(sourcePath, destinationPath)
-				os.remove(sourcePath)
-
-				if not self._isPackageInfoValid(destinationPath):
-					print ('Warning: Ignoring invalid package info from %s'
-						% package)
-					os.remove(destinationPath)
-
-		os.rmdir(self.emptyDirectory)
-
+	def _doInitialDependencyResolution(self):
 		# Iterate through the packages and resolve dependencies. We build a
 		# dependency graph with two different node types: port nodes and package
 		# nodes. A port is something we want to build, a package is a what we
@@ -218,30 +179,21 @@ class DependencyAnalyzer(object):
 		# requires and build prerequires are dependencies for a port.
 		print 'Resolving dependencies ...'
 
-		self.portNodes = {}
-		self.packageNodes = {}
-		self.allRequires = {}
-		for packageID in packageIDs:
-			# get the port ID for the package
-			portID = self.repository.getPortIdForPackageId(packageID)
+		self._collectDependencyInfos(self.repository.path)
+		self._collectSystemPackages()
 
+		for portID in self.repository.allPorts.iterkeys():
 			portNode = self._getPortNode(portID)
-			if portNode.areDependenciesResolved:
-				continue
-
 			for package in portNode.port.packages:
-				packageID = package.name + '-' + portNode.port.version
+				packageID = package.versionedName
 				packageNode = self._getPackageNode(packageID)
-
-				recipeKeys = package.recipeKeys
+				packageInfo = self.packageInfos[packageID]
 				packageNode.addRequires(
-					self._resolveRequiresList(recipeKeys['REQUIRES']))
+					self._resolveRequiresList(packageInfo.requires))
 				portNode.addBuildRequires(
-					self._resolveRequiresList(recipeKeys['BUILD_REQUIRES']))
+					self._resolveRequiresList(packageInfo.buildRequires))
 				portNode.addBuildPrerequires(
-					self._resolveRequiresList(recipeKeys['BUILD_PREREQUIRES']))
-
-			portNode.areDependenciesResolved = True
+					self._resolveRequiresList(packageInfo.buildPrerequires))
 
 		# determine the needed system packages
 		self.systemPackageNodes = set()
@@ -256,8 +208,13 @@ class DependencyAnalyzer(object):
 				remainingPortNodes.add(packageNode.portNode)
 
 		# resolve the haikuporter dependencies
-		haikuporterDependencies = self._resolveRequiresList(
-			getScriptletPrerequirements())
+		scriptletPrerequirements = []
+		for spr in getScriptletPrerequirements():
+			spr = spr.partition('#')[0].strip()
+			if spr:
+				scriptletPrerequirements.append(ResolvableExpression(spr))
+		haikuporterDependencies \
+			= self._resolveRequiresList(scriptletPrerequirements)
 		self.haikuporterRequires = set()
 		for packageNode in haikuporterDependencies:
 			if not packageNode.isSystemPackage:
@@ -328,125 +285,45 @@ class DependencyAnalyzer(object):
 			node for node in nodes if node.isPort
 		]
 
-		# clean up
-		shutil.rmtree(self.noRequiresRepositoryPath)
-		shutil.rmtree(self.noRequiresSystemRepositoryPath)
+	def _collectDependencyInfos(self, path):
+		for entry in os.listdir(path):
+			if not entry.endswith('.DependencyInfo'):
+				continue
+			dependencyInfoFile = path + '/' + entry
+			try:
+				packageInfo = PackageInfo(dependencyInfoFile)
+			except CalledProcessError:
+				print ('Warning: Ignoring broken dependency-info file "%s"'
+					   % dependencyInfoFile)
+			self.providesManager.addProvidesFromPackageInfo(packageInfo)
+			self.packageInfos[packageInfo.versionedName] = packageInfo
 
-	def printDependencies(self):
-		print 'Required system packages:'
-		for packageNode in self.systemPackageNodes:
-			print '	 %s' % packageNode.name
-
-		print 'Ports required by haikuporter:'
-		for packageNode in self.haikuporterRequires:
-			print '	 %s' % packageNode.portNode.name
-
-		print 'Ports depending cyclically on each other:'
-		for node in self.cyclicNodes:
-			print '	 %s (out-degree %d)' % (node.name, node.outdegree)
-
-	def getBuildOrderForBootstrap(self):
-		packageInfoPath = self.repository.path + '/.package-infos'
-		doneRepositoryPath = self.repository.path + '/.build-order-done'
-		if os.path.exists(doneRepositoryPath):
-			shutil.rmtree(doneRepositoryPath)
-		os.mkdir(doneRepositoryPath)
-
-		done = []
-		nodes = set(self.cyclicNodes)
-		while nodes:
-			lastDoneCount = len(done)
-			for node in sorted(list(nodes), key=PortNode.name):
-				if os.path.exists(packageInfoPath):
-					shutil.rmtree(packageInfoPath)
-				os.mkdir(packageInfoPath)
-				if node.isBuildable(packageInfoPath, doneRepositoryPath):
-					done.append(node.name)
-					nodes.remove(node)
-					node.markAsBuilt(doneRepositoryPath)
-			if lastDoneCount == len(done):
-				sysExit("None of these cyclic dependencies can be built:\n\t"
-						+ "\n\t".join(sorted(map(lambda node: node.name,
-												 nodes))))
-
-		shutil.rmtree(doneRepositoryPath)
-		shutil.rmtree(packageInfoPath)
-
-		return done
+	def _collectSystemPackages(self):
+		path = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+		for entry in os.listdir(path):
+			if not entry.endswith('.hpkg'):
+				continue
+			packageFile = path + '/' + entry
+			try:
+				packageInfo = PackageInfo(packageFile)
+			except CalledProcessError:
+				print ('Warning: Ignoring broken package file "%s"'
+					   % packageFile)
+			self.providesManager.addProvidesFromPackageInfo(packageInfo)
 
 	def _resolveRequiresList(self, requiresList):
 		dependencies = set()
 		for requires in requiresList:
-			# filter comments
-			index = requires.find('#')
-			if index >= 0:
-				requires = requires[:index]
-			requires = requires.strip()
-			if not requires:
-				continue
-
-			# resolve the requires
-			if requires in self.allRequires:
-				resolved = self.allRequires[requires]
-			else:
-				resolved = self._resolveRequires(requires)
-				self.allRequires[requires] = resolved
-			if resolved:
-				dependencies.add(resolved)
+			providesInfo = self.providesManager.getMatchingProvides(requires)
+			if providesInfo:
+				isSystemPackage \
+					= buildPlatform.isSystemPackage(providesInfo.path)
+				packageNode = self._getPackageNode(providesInfo.packageID,
+												   isSystemPackage)
+				dependencies.add(packageNode)
 			else:
 				print 'Warning: Ignoring unresolvable requires "%s"' % requires
 		return dependencies
-
-	def _resolveRequires(self, requires):
-		# write the dummy package info with the requires to be resolved
-		dummyPath = (self.noRequiresRepositoryPath
-			+ '/_dummy_-1-1-any.PackageInfo')
-		with open(dummyPath, 'w') as dummyFile:
-			dummyFile.write(requiresDummyPackageInfo % requires)
-
-		# let pkgman resolve the dependency
-		isSystemPackage = False
-		args = [ '/bin/pkgman', 'resolve-dependencies', dummyPath,
-			self.noRequiresRepositoryPath ]
-		try:
-			with open(os.devnull, "w") as devnull:
-				output = check_output(args, stderr=devnull)
-		except CalledProcessError:
-			try:
-				args[-1] = self.noRequiresSystemRepositoryPath
-				with open(os.devnull, "w") as devnull:
-					output = check_output(args, stderr=devnull)
-					isSystemPackage = True
-			except CalledProcessError:
-				return None
-
-		lines = output.splitlines()
-		if not lines:
-			return None
-		if len(lines) > 1:
-			print 'Warning: Got multiple results for requires "%s"' % requires
-
-		packageID = os.path.basename(lines[0])
-		suffix = '.PackageInfo'
-		if packageID.endswith(suffix):
-			packageID = packageID[:-len(suffix)]
-		packageIDComponents = packageID.split('-')
-		if len(packageIDComponents) > 1:
-			packageID = packageIDComponents[0] + '-' + packageIDComponents[1]
-		else:
-			packageID = packageIDComponents[0]
-
-		return self._getPackageNode(packageID, isSystemPackage)
-
-	def _isPackageInfoValid(self, packageInfoPath):
-		args = [ '/bin/pkgman', 'resolve-dependencies', packageInfoPath,
-			self.emptyDirectory ]
-		try:
-			with open(os.devnull, "w") as devnull:
-				check_call(args, stderr=devnull)
-				return True
-		except CalledProcessError:
-			return False
 
 	def _getPortNode(self, portID):
 		if portID in self.portNodes:
@@ -460,7 +337,7 @@ class DependencyAnalyzer(object):
 		# also create nodes for all of the port's packages
 		portNode.port.parseRecipeFile(False)
 		for package in port.packages:
-			packageID = package.name + '-' + port.version
+			packageID = package.versionedName
 			packageNode = PackageNode(portNode, packageID)
 			self.packageNodes[packageID] = packageNode
 			portNode.packageNodes.add(packageNode)
@@ -484,17 +361,3 @@ class DependencyAnalyzer(object):
 		if not packageID in self.packageNodes:
 			sysExit('package "%s" doesn\'t seem to exist' % packageID)
 		return self.packageNodes[packageID]
-
-	def _stripRequiresFromPackageInfo(self, sourcePath, destinationPath):
-		with open(sourcePath, 'r') as sourceFile:
-			with open(destinationPath, 'w') as destinationFile:
-				isInRequires = False
-				for line in sourceFile:
-					if isInRequires:
-						if line == '}\n':
-							isInRequires = False
-					else:
-						if line == 'requires {\n':
-							isInRequires = True
-						else:
-							destinationFile.write(line)
