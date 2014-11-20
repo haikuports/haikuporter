@@ -119,14 +119,14 @@ recipeAttributes = {
 		'type': RequiresList,
 		'required': False,
 		'default': [],
-		'extendable': Extendable.DEFAULT,
+		'extendable': Extendable.INHERITED,
 		'indexable': False,
 	},
 	'BUILD_REQUIRES': {
 		'type': RequiresList,
 		'required': False,
 		'default': [],
-		'extendable': Extendable.DEFAULT,
+		'extendable': Extendable.INHERITED,
 		'indexable': False,
 	},
 	'CONFLICTS': {
