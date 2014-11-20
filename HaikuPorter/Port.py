@@ -96,16 +96,15 @@ class Port(object):
 		self.versionedName = self.name + '-' + version
 		self.category = category
 		self.baseDir = baseDir
-		self.outputDir = outputDir
 		self.recipeIsBroken = False
 		self.recipeHasBeenParsed = False
 
 		if secondaryArchitecture:
-			self.workDir = (self.outputDir + '/work-' + secondaryArchitecture
+			self.workDir = (outputDir + '/work-' + secondaryArchitecture
 							+ '-' + self.version)
 			self.effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
-			self.workDir = self.outputDir + '/work-' + self.version
+			self.workDir = outputDir + '/work-' + self.version
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
 
 		self.isMetaPort = self.category == 'meta-ports'
@@ -159,7 +158,7 @@ class Port(object):
 			if Configuration.shallDownloadInPortDirectory():
 				self.downloadDir = self.baseDir + '/download'
 			else:
-				self.downloadDir = self.outputDir + '/download'
+				self.downloadDir = outputDir + '/download'
 			self.patchesDir = self.baseDir + '/patches'
 			self.licensesDir = self.baseDir + '/licenses'
 			self.additionalFilesDir = self.baseDir + '/additional-files'
@@ -1241,7 +1240,6 @@ class Port(object):
 		# unset directories which can't be reached from inside the chroot
 		self.baseDir = None
 		self.downloadDir = None
-		self.outputDirectory = None
 
 		# the recipe file has a fixed same name in the chroot
 		self.preparedRecipeFile = '/port.recipe'
