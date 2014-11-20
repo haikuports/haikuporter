@@ -339,14 +339,14 @@ class Package(object):
 			# These keys aren't mandatory so we need to check if they exist
 			if self.recipeKeys['LICENSE']:
 				infoFile.write('licenses {\n')
-				for license in self.recipeKeys['LICENSE']:
-					infoFile.write('\t"' + license + '"\n')
+				for aLicense in self.recipeKeys['LICENSE']:
+					infoFile.write('\t"' + aLicense + '"\n')
 				infoFile.write('}\n')
 
 			if self.recipeKeys['COPYRIGHT']:
 				infoFile.write('copyrights {\n')
-				for copyright in self.recipeKeys['COPYRIGHT']:
-					infoFile.write('\t"' + copyright + '"\n')
+				for aCopyright in self.recipeKeys['COPYRIGHT']:
+					infoFile.write('\t"' + aCopyright + '"\n')
 				infoFile.write('}\n')
 
 			requires = []
@@ -444,17 +444,17 @@ class Package(object):
 	def _writePackageInfoListByKey(self, infoFile, key, keyword):
 		self._writePackageInfoList(infoFile, self.recipeKeys[key], keyword)
 
-	def _writePackageInfoList(self, infoFile, list, keyword):
-		if list:
+	def _writePackageInfoList(self, infoFile, theList, keyword):
+		if theList:
 			infoFile.write(keyword + ' {\n')
-			for item in list:
+			for item in theList:
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
 
-	def _writePackageInfoListQuotePaths(self, infoFile, list, keyword):
-		if list:
+	def _writePackageInfoListQuotePaths(self, infoFile, theList, keyword):
+		if theList:
 			infoFile.write(keyword + ' {\n')
-			for item in list:
+			for item in theList:
 				# quote unquoted components that look like paths
 				components = ConfigParser.splitItem(item)
 				item = ''

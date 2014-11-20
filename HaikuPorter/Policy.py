@@ -93,9 +93,9 @@ class Policy(object):
 		return self._parseResolvableExpressionList(
 			self.package.recipeKeys[keyName])
 
-	def _parseResolvableExpressionList(self, list):
+	def _parseResolvableExpressionList(self, theList):
 		names = set()
-		for item in list:
+		for item in theList:
 			match = re.match('[^-/=!<>\s]+', item)
 			if match:
 				names.add(match.group(0))
@@ -153,12 +153,12 @@ class Policy(object):
 			return
 
 		# check all files in bin/ and lib[/<arch>]
-		for dir in ['bin', 'lib' + self.secondaryArchSubDir]:
-			if not os.path.exists(dir):
+		for directory in ['bin', 'lib' + self.secondaryArchSubDir]:
+			if not os.path.exists(directory):
 				continue
 
-			for entry in os.listdir(dir):
-				path = dir + '/' + entry
+			for entry in os.listdir(directory):
+				path = directory + '/' + entry
 				if os.path.isfile(path):
 					self._checkLibraryDependenciesOfFile(path)
 
@@ -389,29 +389,29 @@ class Policy(object):
 						% (components[2], components[0]))
 
 	def _checkPostInstallScripts(self):
-		# check whether declared files exist
+		# check whether declared scripts exist
 		declaredFiles = set()
-		for file in self.package.recipeKeys['POST_INSTALL_SCRIPTS']:
-			if file.lstrip().startswith('#'):
+		for script in self.package.recipeKeys['POST_INSTALL_SCRIPTS']:
+			if script.lstrip().startswith('#'):
 				continue
 
-			components = ConfigParser.splitItemAndUnquote(file)
+			components = ConfigParser.splitItemAndUnquote(script)
 			if not components:
 				continue
-			file = components[0]
-			declaredFiles.add(file)
+			script = components[0]
+			declaredFiles.add(script)
 
-			if not os.path.exists(file):
+			if not os.path.exists(script):
 				self._violation('Package declares non-existent post-install '
-					'script "%s"' % file)
+					'script "%s"' % script)
 
-		# check whether existing files are declared
+		# check whether existing scripts are declared
 		postInstallDir='boot/post-install'
 		if os.path.exists(postInstallDir):
-			for file in os.listdir(postInstallDir):
-				path = postInstallDir + '/' + file
+			for script in os.listdir(postInstallDir):
+				path = postInstallDir + '/' + script
 				if not path in declaredFiles:
-					self._violation('file "%s" not declared as post-install '
+					self._violation('script "%s" not declared as post-install '
 						'script' % path)
 
 	def _violation(self, message):

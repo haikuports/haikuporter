@@ -178,7 +178,7 @@ class Port(object):
 	def __enter__(self):
 		return self
 
-	def __exit__(self, type, value, traceback):
+	def __exit__(self, theType, value, traceback):
 		pass
 
 	def parseRecipeFileIfNeeded(self):
@@ -1327,9 +1327,9 @@ class Port(object):
 			# leave empty directories behind.
 			for dirName in ['add-ons', 'apps', 'bin', 'data', 'develop',
 							'documentation', 'lib', 'preferences']:
-				dir = self.packagingBaseDir + '/' + self.name + '/' + dirName
-				if os.path.exists(dir) and not os.listdir(dir):
-					os.rmdir(dir)
+				path = self.packagingBaseDir + '/' + self.name + '/' + dirName
+				if os.path.exists(path) and not os.listdir(path):
+					os.rmdir(path)
 
 		if getOption('enterChroot'):
 			return
@@ -1374,7 +1374,7 @@ class Port(object):
 		print 'Testing ...'
 		self._doRecipeAction(Phase.TEST, self.sourceDir)
 
-	def _doRecipeAction(self, action, dir):
+	def _doRecipeAction(self, action, targetDir):
 		"""Run the specified action, as defined in the recipe file"""
 
 		if getOption('enterChroot'):
@@ -1390,9 +1390,9 @@ class Port(object):
 								+ recipeActionScript)
 		wrapperScript = self.workDir + '/wrapper-script'
 		storeStringInFile(wrapperScriptContent, wrapperScript)
-		self._openShell(['-c', '. ' + wrapperScript], dir)
+		self._openShell(['-c', '. ' + wrapperScript], targetDir)
 
-	def _openShell(self, params=[], dir='/', env={}):
+	def _openShell(self, params=[], targetDir='/', env={}):
 		"""Sets up environment and runs a shell with the given parameters"""
 
 		# set up the shell environment -- we want it to inherit some of our
@@ -1421,7 +1421,7 @@ class Port(object):
 		# execute the requested action via a shell ...
 		args = ['bash']
 		args += params
-		check_call(args, cwd=dir, env=shellEnv)
+		check_call(args, cwd=targetDir, env=shellEnv)
 
 	def _resolveDependencies(self, packageInfoFiles, repositories, description,
 							 considerBuildhostPackages, fallbackRepositories=[]):

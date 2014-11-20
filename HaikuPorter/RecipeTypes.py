@@ -33,7 +33,7 @@ class MachineArchitecture(str):
     ## REFACTOR make this a module constant as it will otherwise create an object on every call
 	@staticmethod
 	def getTripleFor(architecture):
-		dict = {
+		archMap = {
 			Architectures.ARM: 'arm-unknown-haiku',
 			Architectures.M68K: 'm68k-unknown-haiku',
 			Architectures.PPC: 'powerpc-apple-haiku',
@@ -44,8 +44,8 @@ class MachineArchitecture(str):
 				# for x86_gcc2. Unfortunately that would cause us a lot of work
 				# to adjust the GNU autotools and autotools based build systems.
 		}
-		if architecture in dict:
-			return dict[architecture]
+		if architecture in archMap:
+			return archMap[architecture]
 		return None
 
 	@staticmethod

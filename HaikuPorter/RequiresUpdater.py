@@ -73,12 +73,12 @@ class RequiresUpdater(object):
 			if not provides.version:
 				continue
 			matches = {
-				'<':	lambda cmp: cmp < 0,
-				'<=':	lambda cmp: cmp <= 0,
-				'==':	lambda cmp: cmp == 0,
-				'!=':	lambda cmp: cmp != 0,
-				'>=':	lambda cmp: cmp >= 0,
-				'>':	lambda cmp: cmp > 0,
+				'<':	lambda compareResult: compareResult < 0,
+				'<=':	lambda compareResult: compareResult <= 0,
+				'==':	lambda compareResult: compareResult == 0,
+				'!=':	lambda compareResult: compareResult != 0,
+				'>=':	lambda compareResult: compareResult >= 0,
+				'>':	lambda compareResult: compareResult > 0,
 			}[operator](versionCompare(provides.version, version))
 			if not matches:
 				continue

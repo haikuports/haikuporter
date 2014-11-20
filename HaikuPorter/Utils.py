@@ -166,24 +166,24 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
 
-def touchFile(file):
+def touchFile(theFile):  # @DontTrace
 	"""Touches given file, making sure that its modification date is bumped"""
 
-	if os.path.exists(file):
-		os.utime(file, None)
+	if os.path.exists(theFile):
+		os.utime(theFile, None)
 	else:
-		open(file, 'w').close()
+		open(theFile, 'w').close()
 
-def storeStringInFile(string, file):
+def storeStringInFile(string, theFile):
 	"""Stores the given string in the file with the given name"""
 
-	with open(file, 'w') as fo:
+	with open(theFile, 'w') as fo:
 		fo.write(string)
 
-def readStringFromFile(file):
+def readStringFromFile(theFile):
 	"""Returns the contents of the file with the given name as a string"""
 
-	with open(file, 'r') as fo:
+	with open(theFile, 'r') as fo:
 		return fo.read()
 
 availableCommands = {}
