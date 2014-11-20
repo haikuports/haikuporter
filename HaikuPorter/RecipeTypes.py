@@ -9,7 +9,7 @@ import re
 
 # Defines the set of real machines architectures that are supported.
 class MachineArchitecture(str):
-    ## REFACTOR collections.namedtuple might make more sense
+	## REFACTOR collections.namedtuple might make more sense
 
 	ARM = 'arm'
 	M68K = 'm68k'
@@ -30,7 +30,7 @@ class MachineArchitecture(str):
 			Architectures.X86_GCC2,
 		]
 
-    ## REFACTOR make this a module constant as it will otherwise create an object on every call
+	## REFACTOR make this a module constant as it will otherwise create an object on every call
 	@staticmethod
 	def getTripleFor(architecture):
 		archMap = {

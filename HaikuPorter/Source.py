@@ -38,7 +38,7 @@ class Source(object):
 		self.patches = patches
 		self.additionalFiles = additionalFiles
 
-        ## REFACTOR use property setters to handle branching based on instance variables
+		## REFACTOR use property setters to handle branching based on instance variables
 
 		if index == '1':
 			self.sourceBaseDir = port.sourceBaseDir

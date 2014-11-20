@@ -73,7 +73,7 @@ def escapeForPackageInfo(string):
 def unpackArchive(archiveFile, targetBaseDir, subdir):
 	"""Unpack archive into a directory"""
 
-    ## REFACTOR into separate functions and dispatch
+	## REFACTOR into separate functions and dispatch
 
 	if subdir and not subdir.endswith('/'):
 		subdir += '/'

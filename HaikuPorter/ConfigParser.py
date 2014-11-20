@@ -37,8 +37,8 @@ from .Utils import (
 class ConfigParser(object):
 	def __init__(self, filename, attributes, shellVariables={}):
 
-    ## REFACTOR environment setup and conf location into a single function that then calls the ConfigParser
-    ## and either passes in the file path or the contents of the file
+		## REFACTOR environment setup and conf location into a single function that then calls the ConfigParser
+		## and either passes in the file path or the contents of the file
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
@@ -65,7 +65,7 @@ class ConfigParser(object):
 
 		lines = output.splitlines()
 		for line in lines:
-            ## REFACTOR into a testable method that can parse a single line
+			## REFACTOR into a testable method that can parse a single line
 			key, separator, valueString = line.partition('=')
 			if not separator:
 				sysExit('evaluating file %s produced illegal '
@@ -127,7 +127,7 @@ class ConfigParser(object):
 				if not baseKey in entries:
 					entries[baseKey] = {}
 
-            ## REFACTOR into one method per if/elif branch
+			## REFACTOR into one method per if/elif branch
 			attrType = attributes[baseKey]['type']
 			if attrType == types.StringType:
 				if attributes[baseKey]['indexable']:
@@ -237,7 +237,7 @@ class ConfigParser(object):
 		return self.entriesByExtension.keys()
 
 
-## REFACTOR - consider using simple functions for this
+	## REFACTOR - consider using simple functions for this
 	@staticmethod
 	def splitItem(string):
 		components = []

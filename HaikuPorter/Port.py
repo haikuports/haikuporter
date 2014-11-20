@@ -206,7 +206,7 @@ class Port(object):
 	def validateRecipeFile(self, showWarnings=False):
 		"""Validate the syntax and contents of the recipe file"""
 
-        ## REFACTOR this into a separate method
+		## REFACTOR this into a separate method
 		if not os.path.exists(self.recipeFilePath):
 			sysExit(self.name + ' version ' + self.version + ' not found.')
 
@@ -241,9 +241,9 @@ class Port(object):
 		baseEntries = recipeConfig.getEntriesForExtension('')
 		allPatches = []
 
-        ## REFACTOR this loop and its children look unrelated
-        ## Looping over different loops in parallel is often best done using zip / itertools.izip
-        ## But I'm guessing!
+		## REFACTOR this loop and its children look unrelated
+		## Looping over different loops in parallel is often best done using zip / itertools.izip
+		## But I'm guessing!
 		for extension in sorted(extensions):
 			entries = recipeConfig.getEntriesForExtension(extension)
 			recipeKeys = {}
@@ -462,9 +462,9 @@ class Port(object):
 		workRepositoryPath = self.workDir + '/repository'
 		symlinkGlob(repositoryPath + '/*.PackageInfo', workRepositoryPath)
 
-        ## REFACTOR (into separate methods?) that return the arguments as required for calls to
-        ## self._resolveDependencies
-        ## The fn(**kw) signature might be useful where kw is a dictionary
+		## REFACTOR (into separate methods?) that return the arguments as required for calls to
+		## self._resolveDependencies
+		## The fn(**kw) signature might be useful where kw is a dictionary
 		if getOption('createSourcePackagesForBootstrap'):
 			# we need both build-requires and -prerequires when collecting
 			# the sources needed for the bootstrap and we must not consider
@@ -611,9 +611,9 @@ class Port(object):
 		if self.isMetaPort:
 			return
 
-        ## REFACTOR you might want to handle the first item outside the loop
-        ## and then loop over the rest
-        ## use enumerate to avoid your own couters
+		## REFACTOR you might want to handle the first item outside the loop
+		## and then loop over the rest
+		## use enumerate to avoid your own couters
 		for s, source in enumerate(self.sources, 1):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
@@ -635,7 +635,7 @@ class Port(object):
 
 		self.parseRecipeFileIfNeeded()
 
-        ## REFACTOR branching into separate methods
+		## REFACTOR branching into separate methods
 
 		# reset build flag if recipe is newer (unless that's prohibited)
 		if (not getOption('preserveFlags') and self.checkFlag('build')
@@ -763,7 +763,7 @@ class Port(object):
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
 
-    ## REFACTOR consider renaming so the method won't be picked up by test discovery at some point
+	## REFACTOR consider renaming so the method won't be picked up by test discovery at some point
 	def test(self, packagesPath):
 		"""Test the port"""
 
@@ -848,7 +848,7 @@ class Port(object):
 		self.sources = []
 		keys = self.recipeKeys
 		basedOnSourcePackage = False
-        ## REFACTOR it looks like this method should be setup and dispatch
+		## REFACTOR it looks like this method should be setup and dispatch
 
 		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
 			source = Source(self, index, keys['SRC_URI'][index],
@@ -926,7 +926,7 @@ class Port(object):
 		   known.
 		"""
 
-        ## REFACTOR into separate methods and/or utility functions
+		## REFACTOR into separate methods and/or utility functions
 		if forParsing:
 			revision = '$REVISION'
 			fullVersion = self.version + '-' + revision
@@ -1289,7 +1289,7 @@ class Port(object):
 		"""Create all packages suitable for distribution"""
 
 
-        ## REFACTOR into separate methods for each loop
+		## REFACTOR into separate methods for each loop
 		if not (getOption('createSourcePackagesForBootstrap')
 				or getOption('createSourcePackages')):
 			# Create the settings directory in the packaging directory, if

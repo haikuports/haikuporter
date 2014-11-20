@@ -321,7 +321,7 @@ class Repository(object):
 		allPorts = self.allPorts
 
 		brokenPorts = []
-        ## REFACTOR into separate methods
+		## REFACTOR into separate methods
 
 		# check for all known ports if their recipe has been changed
 		if not self.quiet:
