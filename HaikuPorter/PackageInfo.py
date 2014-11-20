@@ -8,6 +8,7 @@
 from HaikuPorter.Configuration import Configuration
 from HaikuPorter.Utils import (check_output, sysExit)
 
+from copy import deepcopy
 import json
 import os
 import re
@@ -67,6 +68,9 @@ class ResolvableExpression(object):
 # -- PackageInfo class --------------------------------------------------------
 
 class PackageInfo(object):
+
+	hpkgCache = {}
+
 	def __init__(self, path):
 		self.path = path
 
@@ -82,6 +86,11 @@ class PackageInfo(object):
 		return self.name + '-' + self.version
 
 	def _parseFromHpkgOrPackageInfoFile(self, silent = False):
+		if self.path.endswith('.hpkg'):
+			if self.path in PackageInfo.hpkgCache:
+				self.__dict__ = deepcopy(PackageInfo.hpkgCache[self.path])
+				return
+
 		# get an attribute listing of the package/package info file
 		args = [ Configuration.getPackageCommand(), 'list', '-i', self.path ]
 		if silent:
@@ -107,6 +116,9 @@ class PackageInfo(object):
 				self.provides.append(Resolvable(line[9:].lstrip()))
 			elif line.startswith('requires:'):
 				self.requires.append(ResolvableExpression(line[9:].lstrip()))
+
+		if self.path.endswith('.hpkg'):
+			PackageInfo.hpkgCache[self.path] = deepcopy(self.__dict__)
 
 	def _parseFromDependencyInfoFile(self):
 		with open(self.path, 'r') as fh:
