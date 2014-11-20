@@ -470,8 +470,6 @@ class BuildPlatformUnix(BuildPlatform):
 		sysrootDir = self.getCrossSysrootDirectory(workDir)
 		targetArchitecture = secondaryArchitecture \
 			if secondaryArchitecture else self.targetArchitecture
-		targetMachineTriple \
-			= self._getTargetMachineTriple(secondaryArchitecture)
 		toolsMachineTriple = self._getTargetMachineTriple(
 			secondaryArchitecture)
 
@@ -514,8 +512,6 @@ class BuildPlatformUnix(BuildPlatform):
 
 		targetArchitecture = secondaryArchitecture \
 			if secondaryArchitecture else self.targetArchitecture
-		targetMachineTriple \
-			= self._getTargetMachineTriple(secondaryArchitecture)
 		toolsMachineTriple = self._getTargetMachineTriple(
 			secondaryArchitecture)
 
