@@ -5,8 +5,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Utils import (check_output, sysExit)
+from .Configuration import Configuration
+from .Utils import (check_output, sysExit)
 
 from copy import deepcopy
 import json

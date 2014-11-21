@@ -5,9 +5,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.PackageInfo import (PackageInfo, Resolvable,
-									 ResolvableExpression)
-from HaikuPorter.Utils import (versionCompare, sysExit)
+from .PackageInfo import PackageInfo, Resolvable, ResolvableExpression
+from .Utils import versionCompare, sysExit
 
 import os
 from subprocess import CalledProcessError

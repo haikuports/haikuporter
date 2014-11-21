@@ -12,8 +12,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.__version__ import __version__
-from HaikuPorter.Utils import (isCommandAvailable, warn)
+from .__version__ import __version__
+from .Utils import isCommandAvailable, warn
 
 from optparse import OptionParser
 

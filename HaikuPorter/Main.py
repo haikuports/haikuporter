@@ -12,16 +12,15 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.BuildPlatform import buildPlatform
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.DependencyAnalyzer import DependencyAnalyzer
-from HaikuPorter.Options import getOption
-from HaikuPorter.Policy import Policy
-from HaikuPorter.RecipeAttributes import getRecipeFormatVersion
-from HaikuPorter.RecipeTypes import MachineArchitecture
-from HaikuPorter.Repository import Repository
-from HaikuPorter.Utils import (ensureCommandIsAvailable, haikuportsRepoUrl,
-							   sysExit, warn)
+from .BuildPlatform import buildPlatform
+from .Configuration import Configuration
+from .DependencyAnalyzer import DependencyAnalyzer
+from .Options import getOption
+from .Policy import Policy
+from .RecipeAttributes import getRecipeFormatVersion
+from .RecipeTypes import MachineArchitecture
+from .Repository import Repository
+from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn
 
 import os
 import re

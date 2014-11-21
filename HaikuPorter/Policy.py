@@ -5,9 +5,9 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Utils import (check_output, isCommandAvailable, sysExit)
+from .ConfigParser import ConfigParser
+from .Configuration import Configuration
+from .Utils import check_output, isCommandAvailable, sysExit
 
 import os
 import re

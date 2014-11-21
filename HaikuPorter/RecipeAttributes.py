@@ -12,9 +12,9 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Package import PackageType
-from HaikuPorter.RecipeTypes import (Architectures, Extendable, LinesOfText,
-									 Phase, ProvidesList, RequiresList, YesNo)
+from .Package import PackageType
+from .RecipeTypes import (Architectures, Extendable, LinesOfText,
+						  Phase, ProvidesList, RequiresList, YesNo)
 import copy
 import types
 

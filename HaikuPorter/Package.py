@@ -12,15 +12,15 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.BuildPlatform import buildPlatform
-from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Options import getOption
-from HaikuPorter.RecipeTypes import Architectures, Status
-from HaikuPorter.ShellScriptlets import getScriptletPrerequirements
-from HaikuPorter.Utils import (check_output, escapeForPackageInfo,
-							   haikuporterRepoUrl, haikuportsRepoUrl,
-							   naturalCompare, sysExit, warn)
+from .BuildPlatform import buildPlatform
+from .ConfigParser import ConfigParser
+from .Configuration import Configuration
+from .Options import getOption
+from .RecipeTypes import Architectures, Status
+from .ShellScriptlets import getScriptletPrerequirements
+from .Utils import (check_output, escapeForPackageInfo,
+					haikuporterRepoUrl, haikuportsRepoUrl,
+					naturalCompare, sysExit, warn)
 
 import json
 import os

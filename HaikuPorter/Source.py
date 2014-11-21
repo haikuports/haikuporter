@@ -12,13 +12,13 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Options import getOption
-from HaikuPorter.SourceFetcher import (createSourceFetcher,
-									   foldSubdirIntoSourceDir, parseCheckoutUri)
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable,
-							   readStringFromFile, storeStringInFile, sysExit,
-							   warn)
+from .Configuration import Configuration
+from .Options import getOption
+from .SourceFetcher import (createSourceFetcher, foldSubdirIntoSourceDir,
+							parseCheckoutUri)
+from .Utils import (check_output, ensureCommandIsAvailable,
+					readStringFromFile, storeStringInFile, sysExit,
+					warn)
 
 import hashlib
 import os

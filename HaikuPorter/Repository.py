@@ -5,10 +5,10 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Options import getOption
-from HaikuPorter.Port import Port
-from HaikuPorter.Utils import (check_output, touchFile, versionCompare, warn)
+from .Configuration import Configuration
+from .Options import getOption
+from .Port import Port
+from .Utils import check_output, touchFile, versionCompare, warn
 
 import glob
 import json

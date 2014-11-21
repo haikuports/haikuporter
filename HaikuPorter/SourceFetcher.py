@@ -12,9 +12,9 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.Utils import (check_output, ensureCommandIsAvailable, sysExit,
-							   unpackArchive, warn)
+from .Configuration import Configuration
+from .Utils import (check_output, ensureCommandIsAvailable, sysExit,
+					unpackArchive, warn)
 
 import os
 import re

@@ -6,10 +6,10 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.ConfigParser import ConfigParser
-from HaikuPorter.Options import getOption
-from HaikuPorter.RecipeTypes import (Extendable, MachineArchitecture, YesNo)
-from HaikuPorter.Utils import sysExit
+from .ConfigParser import ConfigParser
+from .Options import getOption
+from .RecipeTypes import (Extendable, MachineArchitecture, YesNo)
+from .Utils import sysExit
 
 import os
 import re

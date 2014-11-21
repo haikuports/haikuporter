@@ -5,18 +5,18 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from HaikuPorter.Configuration import Configuration
-from HaikuPorter.DependencyResolver import DependencyResolver
-from HaikuPorter.Options import getOption
-from HaikuPorter.PackageInfo import PackageInfo
-from HaikuPorter.RecipeTypes import Architectures, MachineArchitecture
-from HaikuPorter.Utils import (check_output, printError, sysExit)
+from .Configuration import Configuration
+from .DependencyResolver import DependencyResolver
+from .Options import getOption
+from .PackageInfo import PackageInfo
+from .RecipeTypes import Architectures, MachineArchitecture
+from .Utils import check_output, sysExit
 
 import os
 import platform
 import shutil
 import time
-from subprocess import check_call, CalledProcessError
+from subprocess import check_call
 
 
 buildPlatform = None
