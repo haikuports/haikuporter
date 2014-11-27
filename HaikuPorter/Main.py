@@ -379,7 +379,7 @@ class Main(object):
 		buildDependencies = port.resolveBuildDependencies(self.repository.path,
 														  self.packagesPath)
 		requiredPortsToBuild = []
-		requiredPortIDs = {}
+		requiredPortIDs = set()
 		for dependency in buildDependencies:
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
@@ -393,7 +393,7 @@ class Main(object):
 							or requiredPort.sourcePackageExists(targetPath))):
 						continue
 					requiredPortsToBuild.append(requiredPort)
-					requiredPortIDs[portID] = True
+					requiredPortIDs.add(portID)
 			except KeyError:
 				sysExit('Inconsistency: ' + port.versionedName
 						 + ' requires ' + packageID
