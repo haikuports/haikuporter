@@ -97,6 +97,7 @@ class Port(object):
 		self.versionedName = self.name + '-' + version
 		self.category = category
 		self.baseDir = baseDir
+		self.outputDir = outputDir
 		self.repositoryDir = repositoryDir
 		self.recipeIsBroken = False
 		self.recipeHasBeenParsed = False
