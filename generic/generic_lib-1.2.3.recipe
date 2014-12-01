@@ -1,0 +1,63 @@
+SUMMARY="Short description of ProjectX"
+DESCRIPTION="Long ProjectX description.
+Spanning several paragraphs, maybe
+ - containing
+ - bullet points etc.
+You can also have really long lines that do not fit in 80 characters and use \
+a forward-slash to wrap the line."
+HOMEPAGE="https://homepage/of/projectx.org"
+SRC_URI="https://github.com/HaikuArchives/ProjectX/archive/000000000000000000000000000000000.tar.gz"
+CHECKSUM_SHA256="000000000000000000000000000000000"
+SOURCE_DIR="$portVersionedName"
+REVISION="1"
+LICENSE="MIT"
+COPYRIGHT="2014 Developer Name"
+
+ARCHITECTURES="x86_gcc2 ?x86 ?x86_64"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	projectx$secondaryArchSuffix = $portVersion
+	lib:libprojectx$secondaryArchSuffix = $portVersion
+	"
+PROVIDES_devel="
+	projectx${secondaryArchSuffix}_devel = $portVersion
+	devel:libprojectx$secondaryArchSuffix = $portVersion
+	"
+
+REQUIRES="
+	haiku$secondaryArchSuffix >= $haikuVersion
+	"
+REQUIRES_devel="
+	haiku${secondaryArchSuffix}_devel >= $haikuVersion
+	projectx$secondaryArchSuffix == $portVersion base
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel >= $haikuVersion
+	"
+BUILD_PREREQUIRES="
+	makefile_engine
+	cmd:make
+	cmd:gcc$secondaryArchSuffix
+	cmd:mkdepend
+	"
+
+BUILD()
+{
+	make $jobArgs OBJ_DIR=objects
+}
+
+INSTALL()
+{
+	mkdir -p $libDir
+	mkdir -p $includeDir
+
+	cp -a objects/libprojectx.so $libDir
+	cp -R include/. $includeDir
+
+	prepareInstalledDevelLibs \
+		libprojectx
+	packageEntries devel \
+		$developDir
+}
