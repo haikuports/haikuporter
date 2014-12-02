@@ -56,6 +56,7 @@ from .Utils import (
 # -- Modules preloaded for chroot ---------------------------------------------
 # These modules need to be preloaded in order to avoid problems with python
 # trying to dynamically load them inside a chroot environment
+from encodings import string_escape
 
 
 # -- Scoped resource for chroot environments ----------------------------------
