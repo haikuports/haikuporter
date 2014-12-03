@@ -1366,6 +1366,9 @@ class Port(object):
 		# build (e.g. gcc)
 		shellEnv['LC_ALL'] = 'POSIX'
 
+		# define a terminal
+		shellEnv['TERM'] = 'xterm'
+
 		# execute the requested action via a shell ...
 		args = ['bash']
 		args += params
