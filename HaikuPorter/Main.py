@@ -102,7 +102,7 @@ class Main(object):
 		if self.options.list:
 			self._createRepositoryIfNeeded(True)
 			allPortNames = self.repository.searchPorts(None)
-			for portName in allPortNames:
+			for portName in sorted(allPortNames):
 				print portName
 			return
 
@@ -115,7 +115,10 @@ class Main(object):
 			self._createRepositoryIfNeeded(True)
 			portNames = self.repository.searchPorts(args[0])
 			for portName in portNames:
-				print portName
+				versions = self.repository.portVersionsByName[portName]
+				portID = portName + '-' + versions[0]
+				port = self.repository.allPorts[portID]
+				print port.category + '::' + portName
 			return
 
 		if self.options.location:
@@ -127,7 +130,10 @@ class Main(object):
 			self._createRepositoryIfNeeded(True)
 			portNames = self.repository.searchPorts(args[0])
 			for portName in portNames:
-				print os.path.join(self.treePath, portName)
+				versions = self.repository.portVersionsByName[portName]
+				portID = portName + '-' + versions[0]
+				port = self.repository.allPorts[portID]
+				print os.path.join(self.treePath, port.category, portName)
 			return
 
 		if self.options.portsfile:
