@@ -9,8 +9,9 @@ import os
 from subprocess import CalledProcessError
 
 from .Options import getOption
-from .PackageInfo import PackageInfo
+from .PackageInfo import PackageInfo, ResolvableExpression
 from .ProvidesManager import ProvidesManager
+from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import printError, sysExit
 
 # -- PackageNode class --------------------------------------------------------
@@ -98,6 +99,8 @@ class DependencyResolver(object):
 				self._addAllImmediateBuildRequiresOf(packageNode)
 			if 'BUILD_PREREQUIRES' in self._requiresTypes:
 				self._addAllImmediateBuildPrerequiresOf(packageNode)
+			if 'SCRIPTLET_PREREQUIRES' in self._requiresTypes:
+				self._addScriptletPrerequiresOf(packageNode)
 
 			# when the batch of passed in packages has been handled, we need
 			# to activate the REQUIRES, too, since these are needed to run
@@ -148,6 +151,16 @@ class DependencyResolver(object):
 		for requires in packageInfo.buildPrerequires:
 			self._addImmediate(requiredPackageInfo, requires,
 							   'build-prerequires', True)
+
+	def _addScriptletPrerequiresOf(self, requiredPackageInfo):
+		scriptletPrerequirements = []
+		for spr in getScriptletPrerequirements():
+			spr = spr.partition('#')[0].strip()
+			if spr:
+				scriptletPrerequirements.append(ResolvableExpression(spr))
+		for requires in scriptletPrerequirements:
+			self._addImmediate(requiredPackageInfo, requires,
+							   'scriptlet-prerequires', True)
 
 	def _addImmediate(self, parent, requires, typeString, forBuildhost):
 		implicitProvides = self._platform.getImplicitProvides(forBuildhost)
