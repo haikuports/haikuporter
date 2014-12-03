@@ -79,6 +79,10 @@ class BuildPlatformHaiku(BuildPlatform):
 		super(BuildPlatformHaiku, self).__init__()
 
 	def init(self, treePath, outputDirectory, shallowInitIsEnough = False):
+		if not os.path.exists('/packages'):
+			sysExit('haikuporter needs a version of Haiku with package '
+					'management support')
+
 		# get system haiku package version and architecture
 		systemPackageName = None
 		for entry in os.listdir('/system/packages'):
