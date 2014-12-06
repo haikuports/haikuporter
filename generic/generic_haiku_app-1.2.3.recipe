@@ -1,4 +1,4 @@
-SUMMARY="Short ProjectX description"
+SUMMARY="Short ProjectX description, max. 70 chars"
 DESCRIPTION="
 Long ProjectX description.
 Spanning several paragraphs, maybe
@@ -30,22 +30,17 @@ BUILD_PREREQUIRES="
 	cmd:gcc
 	cmd:mkdepend
 	"
-USER_SETTINGS_FILES="settings/projectx.config"
 
-SOURCE_DIR="$portVersionedName"
+USER_SETTINGS_FILES="settings/projectx.config"
 
 BUILD()
 {
-	make $jobArgs BUILDHOME=`finddir B_SYSTEM_DEVELOP_DIRECTORY`
+	make $jobArgs OBJ_DIR=objects
 }
 
 INSTALL()
 {
-	ARCHITECTURE=$(echo $buildArchitecture | sed 's/_/-/g')
-	cd objects.$ARCHITECTURE-release
-	
-	APPDIR=$appsDir/ProjectX
-	mkdir -p ${APPDIR}
-	cp -a ProjectX ${APPDIR}
-	addAppDeskbarSymlink ${APPDIR}/ProjectX
+	mkdir -p $appsDir
+	cp -a objects/ProjectX $appsDir
+	addAppDeskbarSymlink $appsDir/ProjectX
 }
