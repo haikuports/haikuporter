@@ -23,6 +23,26 @@ else:
 	colorError = ''
 	colorReset = ''
 
+# -- MyTarInfo -------------------------------------------------------------
+
+class MyTarInfo(tarfile.TarInfo):
+	"""Override tarfile.TarInfo in order to automatically treat hardlinks
+	   contained in tar archives as symbolic links during extraction.
+	"""
+	@classmethod
+	def frombuf(cls, buf):
+		tarinfo = tarfile.TarInfo.frombuf(buf)
+		if tarinfo.type == tarfile.LNKTYPE:
+			tarinfo.type = tarfile.SYMTYPE
+		return tarinfo
+
+	@classmethod
+	def fromtarfile(cls, theTarfile):
+		tarinfo = tarfile.TarInfo.fromtarfile(theTarfile)
+		if tarinfo.type == tarfile.LNKTYPE:
+			tarinfo.type = tarfile.SYMTYPE
+		return tarinfo
+
 # path to haikuports-tree --------------------------------------------------
 haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
 
@@ -79,7 +99,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		subdir += '/'
 	# unpack source archive
 	if tarfile.is_tarfile(archiveFile):
-		tarFile = tarfile.open(archiveFile, 'r')
+		tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
 		members = None
 		if subdir:
 			members = [
@@ -107,7 +127,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
-			tarFile = tarfile.open(tar, 'r')
+			tarFile = tarfile.open(tar, 'r', tarinfo=MyTarInfo)
 			members = None
 			if subdir:
 				if not subdir.endswith('/'):
@@ -126,7 +146,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
-			tarFile = tarfile.open(tar, 'r')
+			tarFile = tarfile.open(tar, 'r', tarinfo=MyTarInfo)
 			members = None
 			if subdir:
 				if not subdir.endswith('/'):
