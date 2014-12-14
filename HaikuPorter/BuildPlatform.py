@@ -94,7 +94,6 @@ class BuildPlatformHaiku(BuildPlatform):
 			sysExit('Failed to find Haiku system package')
 
 		haikuPackageInfo = PackageInfo('/system/packages/' + systemPackageName)
-		self._haikuVersion = haikuPackageInfo.version
 		machine = MachineArchitecture.getTripleFor(
 			haikuPackageInfo.architecture)
 		if not machine:
@@ -109,10 +108,6 @@ class BuildPlatformHaiku(BuildPlatform):
 	@property
 	def isHaiku(self):
 		return True
-
-	@property
-	def haikuVersion(self):
-		return self._haikuVersion
 
 	def usesChroot(self):
 		return getOption('chroot')
@@ -356,11 +351,6 @@ class BuildPlatformUnix(BuildPlatform):
 	@property
 	def isHaiku(self):
 		return False
-
-	@property
-	def haikuVersion(self):
-		targetHaikuPackage = Configuration.getCrossDevelPackage()
-		return PackageInfo(targetHaikuPackage).version
 
 	def usesChroot(self):
 		return False
