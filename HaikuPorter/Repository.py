@@ -8,7 +8,7 @@
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
-from .Utils import check_output, touchFile, versionCompare, warn
+from .Utils import check_output, sysExit, touchFile, versionCompare, warn
 
 import glob
 import json
@@ -23,6 +23,9 @@ from textwrap import dedent
 # -- Repository class ---------------------------------------------------------
 
 class Repository(object):
+
+	currentFormatVersion = 1
+
 	def __init__(self, treePath, outputDirectory, packagesPath, shellVariables,
 			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
@@ -36,20 +39,33 @@ class Repository(object):
 		self.quiet = quiet
 		self.verbose = verbose
 
+		self._formatVersionFilePath = self.path + '/.formatVersion'
 		self._portIdForPackageIdFilePath \
 			= self.path + '/.portIdForPackageIdMap'
 		self._portNameForPackageNameFilePath \
 			= self.path + '/.portNameForPackageNameMap'
+
+		# check repository format
+		formatVersion = self._readFormatVersion()
+		if formatVersion > Repository.currentFormatVersion:
+			sysExit('The version of the repository format used in\n\t%s' 
+					'\nis newer than the one supported by haikuporter.\n'
+					'Please upgrade haikuporter.' % self.path)
 
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
 		self._initPortForPackageMaps()
 		if (os.path.isdir(self.path) and os.listdir(self.path)
 			and os.path.exists(self._portIdForPackageIdFilePath)
-			and os.path.exists(self._portNameForPackageNameFilePath)):
+			and os.path.exists(self._portNameForPackageNameFilePath)
+			and formatVersion == Repository.currentFormatVersion):
 			self._updateRepository()
 		else:
+			if formatVersion < Repository.currentFormatVersion:
+				warn('Found old repository format - repopulating the '
+					 'repository ...')
 			self._populateRepository(preserveFlags)
+			self._writeFormatVersion()
 		self._writePortForPackageMaps()
 
 	def getPortIdForPackageId(self, packageId):
@@ -255,6 +271,31 @@ class Repository(object):
 			with open(self._portNameForPackageNameFilePath, 'w') as fh:
 				json.dump(self._portNameForPackageName, fh, sort_keys = True,
 						  indent = 4, separators = (',', ' : '))
+		except BaseException as e:
+			print e
+
+	def _readFormatVersion(self):
+		"""Read format version of repository from file"""
+		
+		formatVersion = 0
+		if os.path.exists(self._formatVersionFilePath):
+			try:
+				with open(self._formatVersionFilePath, 'r') as fh:
+					data = json.load(fh)
+				formatVersion = data.get('formatVersion', 0)
+			except BaseException as e:
+				print e
+		return formatVersion		
+
+	def _writeFormatVersion(self):
+		"""Writes the version of the repository format into a file"""
+
+		try:
+			data = {
+				'formatVersion': Repository.currentFormatVersion
+			}
+			with open(self._formatVersionFilePath, 'w') as fh:
+				json.dump(data, fh, indent = 4, separators = (',', ' : '))
 		except BaseException as e:
 			print e
 
