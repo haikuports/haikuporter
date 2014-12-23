@@ -104,7 +104,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		if subdir:
 			members = [
 				member for member in tarFile.getmembers()
-				if member.name.startswith(subdir)
+				if os.path.normpath(member.name)
+					.startswith(subdir)
 			]
 			if not members:
 				sysExit('sub-directory %s not found in archive' % subdir)
@@ -116,7 +117,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		if subdir:
 			names = [
 				name for name in zipFile.namelist()
-				if name.startswith(subdir)
+				if os.path.normpath(name).startswith(subdir)
 			]
 			if not names:
 				sysExit('sub-directory %s not found in archive' % subdir)
@@ -134,7 +135,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 					subdir += '/'
 				members = [
 					member for member in tarFile.getmembers()
-					if member.name.startswith(subdir)
+					if os.path.normpath(member.name)
+						.startswith(subdir)
 				]
 				if not members:
 					sysExit('sub-directory %s not found in archive' % subdir)
@@ -153,7 +155,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 					subdir += '/'
 				members = [
 					member for member in tarFile.getmembers()
-					if member.name.startswith(subdir)
+					if os.path.normpath(member.name)
+						.startswith(subdir)
 				]
 				if not members:
 					sysExit('sub-directory %s not found in archive' % subdir)
