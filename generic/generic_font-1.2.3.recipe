@@ -2,7 +2,7 @@ SUMMARY="Font summary"
 DESCRIPTION="Extended Font description"
 HOMEPAGE=""
 SRC_URI=""
-CHECKSUM_MD5="abc123"
+CHECKSUM_SHA256=""
 LICENSE=""
 COPYRIGHT=""
 REVISION="1"
@@ -24,7 +24,7 @@ BUILD()
 
 INSTALL()
 {
-	FONTDIR=$fontsDir/generic-font
+	FONTDIR=$fontsDir/ttfonts
 	mkdir -p ${FONTDIR}
 	cp generic-font1.ttf ${FONTDIR}
 	cp generic-font2.ttf ${FONTDIR}
