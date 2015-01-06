@@ -473,7 +473,7 @@ class Main(object):
 					+ 'haiku_cross_devel_sysroot_%s.hpkg') \
 					% targetArchitecture
 		else:
-			if (not buildPlatform.isHaiku
+			if (not buildPlatform.isHaiku and not self.shallowInitIsEnough
 				and not (getOption('createSourcePackagesForBootstrap')
 					or getOption('createSourcePackages'))):
 				sysExit('Native building not supported on this platform '
