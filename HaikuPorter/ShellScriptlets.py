@@ -436,6 +436,28 @@ fixPkgconfig()
 	rm -r $sourcePkgconfigDir
 }
 
+fixLibtoolArchives()
+{
+	if [ ! -d $installDestDir$developLibDir ]; then
+		return
+	fi
+
+	for laFile in $installDestDir$developLibDir/*.la; do
+		for laPath in `sed 's/ /\n/g' < $laFile | sed '/\/packages.*\.la/p;/.*/d'`; do
+			lib="`echo "$laPath" | sed 's,.*/,,;s/\.la//'`"
+			for dep in "lib~$lib$secondaryArchSuffix" "lib~`echo "$lib" | tr '[A-Z]' '[a-z]'`$secondaryArchSuffix" "lib~${lib%%[0-9]*}$secondaryArchSuffix"; do
+				test -h "/packages/$portRevisionedName/$dep" && break
+			done
+			if test ! -h "/packages/$portRevisionedName/$dep"; then
+				echo "unable to find devel~ symlink for '$lib'"
+				exit 1
+			fi
+			fixedLaPath="`echo "$laPath" | sed "s|/packages/[^/]*/[^/]*/|/packages/$portRevisionedName/$dep/|"`"
+			sed -i "s|$laPath|$fixedLaPath|g" "$laFile"
+		done
+	done
+}
+
 addResourcesToBinaries()
 {
 	# Usage: addResourcesToBinaries <rdefPath> <path> ...
