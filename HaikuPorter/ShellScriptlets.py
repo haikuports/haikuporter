@@ -449,8 +449,8 @@ fixLibtoolArchives()
 				test -h "/packages/$portRevisionedName/$dep" && break
 			done
 			if test ! -h "/packages/$portRevisionedName/$dep"; then
-				echo "unable to find devel~ symlink for '$lib'"
-				exit 1
+				echo >&2 "fixLibtoolArchives unable to find lib~ symlink for '$lib'"
+				continue
 			fi
 			fixedLaPath="`echo "$laPath" | sed "s|/packages/[^/]*/[^/]*/|/packages/$portRevisionedName/$dep/|"`"
 			sed -i "s|$laPath|$fixedLaPath|g" "$laFile"
