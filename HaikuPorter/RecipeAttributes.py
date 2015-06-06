@@ -261,6 +261,13 @@ recipeAttributes = {
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
+	'VENDOR': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.INHERITED,
+		'indexable': False,
+	}
 }
 
 def getRecipeAttributes():

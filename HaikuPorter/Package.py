@@ -332,7 +332,12 @@ class Package(object):
 			infoFile.write('"\n')
 
 			infoFile.write('packager\t\t"' + Configuration.getPackager() + '"\n')
-			infoFile.write('vendor\t\t\t"Haiku Project"\n')
+			if self.recipeKeys['VENDOR']:
+				infoFile.write('vendor\t\t\t"'
+							+ escapeForPackageInfo(self.recipeKeys['VENDOR'])
+							+ '"\n')
+			else:
+				infoFile.write('vendor\t\t\t"Haiku Project"\n')
 
 			# These keys aren't mandatory so we need to check if they exist
 			if self.recipeKeys['LICENSE']:
