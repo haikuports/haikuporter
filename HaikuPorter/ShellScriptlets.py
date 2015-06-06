@@ -428,9 +428,14 @@ fixPkgconfig()
 
 	for file in $sourcePkgconfigDir/*; do
 		name=$(basename $file)
-		sed -e 's,^libdir=\(.*\),libdir=${prefix}/'${relativeDevelopLibDir}',' \
-			-e 's,^includedir=\(.*\),includedir=${prefix}/'${relativeIncludeDir}',' \
-			$file > $targetPkgconfigDir/$name
+		if [ "$1" == "strict" ] ; then
+			sed -e 's,^libdir=${prefix}/lib/x86,libdir=${prefix}/'${relativeDevelopLibDir}',' \
+				$file > $targetPkgconfigDir/$name
+		else
+			sed -e 's,^libdir=\(.*\),libdir=${prefix}/'${relativeDevelopLibDir}',' \
+				-e 's,^includedir=\(.*\),includedir=${prefix}/'${relativeIncludeDir}',' \
+				$file > $targetPkgconfigDir/$name
+		fi
 	done
 
 	rm -r $sourcePkgconfigDir
