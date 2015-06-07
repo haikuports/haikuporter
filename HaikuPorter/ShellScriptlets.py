@@ -428,16 +428,9 @@ fixPkgconfig()
 
 	for file in $sourcePkgconfigDir/*; do
 		name=$(basename $file)
-		if [ grep -e "${relativeDevelopLibDir}\|${relativeIncludeDir}" $file 2>&1 >/dev/null ] ; then
-			echo >&2 "fixPkgconfig: skipping '$name'"
-			grep -e '^libdir' $file
-			grep -e '^includedir' $file
-		else
-			echo >&2 "fixPkgconfig: fixing up '$name'"
-			sed -e 's,^libdir=\(.*\),libdir=${prefix}/'${relativeDevelopLibDir}',' \
-				-e 's,^includedir=\(.*\),includedir=${prefix}/'${relativeIncludeDir}',' \
-				$file > $targetPkgconfigDir/$name
-		fi
+		sed -e 's,^libdir=\(.*\),libdir=${prefix}/'${relativeDevelopLibDir}',' \
+			-e 's,^includedir=\(.*\),includedir=${prefix}/'${relativeIncludeDir}',' \
+			$file > $targetPkgconfigDir/$name
 	done
 
 	rm -r $sourcePkgconfigDir
