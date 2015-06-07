@@ -28,7 +28,6 @@ from subprocess import check_call
 import sys
 import traceback
 
-
 # -- Main Class ---------------------------------------------------------------
 
 class Main(object):
@@ -295,6 +294,9 @@ class Main(object):
 			port.whyIsPortRequired(self.repository.path, self.packagesPath,
 								   requiredPort)
 			return
+
+		if self.options.getDependencies:
+			self.options.noDependencies = True
 
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:

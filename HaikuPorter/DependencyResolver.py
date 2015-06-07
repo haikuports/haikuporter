@@ -6,7 +6,8 @@
 # -- Modules ------------------------------------------------------------------
 
 import os
-from subprocess import CalledProcessError
+import re
+from subprocess import CalledProcessError, check_output
 
 from .Options import getOption
 from .PackageInfo import PackageInfo, ResolvableExpression
@@ -177,9 +178,20 @@ class DependencyResolver(object):
 		if not provides:
 			if isImplicit:
 				return
-			printError('%s "%s" of package "%s" could not be resolved'
-					   % (typeString, str(requires), parent.versionedName))
-			raise LookupError()
+			if getOption('getDependencies'):
+				try:
+					print('Fetching package for ' + str(requires) + ' ...')
+					output = check_output(['pkgman', 'install', '-y', str(requires)])
+					for pkg in re.findall(r'/[^/\n]+\.hpkg', output):
+						pkginfo = PackageInfo('/boot/system/packages' + pkg)
+						self._providesManager.addProvidesFromPackageInfo(pkginfo)
+						provides = self._providesManager.getMatchingProvides(requires)
+				except CalledProcessError:
+					raise LookupError()
+			else:
+				printError('%s "%s" of package "%s" could not be resolved'
+						   % (typeString, str(requires), parent.versionedName))
+				raise LookupError()
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):
