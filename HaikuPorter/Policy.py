@@ -180,7 +180,7 @@ class Policy(object):
 			if line.find('(NEEDED)') >= 0:
 				match = re.match('[^[]*\[(.*)].*', line)
 				if match:
-					library = match.group(1)
+					library = os.path.basename(match.group(1))
 					if self._isMissingLibraryDependency(library):
 						self._violation('"%s" needs library "%s", but the '
 							'package doesn\'t seem to declare that as a '
