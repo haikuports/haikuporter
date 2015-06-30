@@ -156,7 +156,7 @@ class SourceFetcherForCvs(object):
 		if self.rev:
 			# self.rev may specify a date or a revision/tag name. If it
 			# looks like a date, we assume it is one.
-			dateRegExp = re.compile('^\d{1,2}/\d{1,2}/\d{2,4}$')
+			dateRegExp = re.compile('^\d{1,2}/\d{1,2}/\d{2,4}$|^\d{4}-\d{2}-\d{2}$')
 			if dateRegExp.match(self.rev):
 				command += ' -D' + self.rev
 			else:
