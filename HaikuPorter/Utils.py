@@ -44,10 +44,10 @@ class MyTarInfo(tarfile.TarInfo):
 		return tarinfo
 
 # path to haikuports-tree --------------------------------------------------
-haikuportsRepoUrl = 'git@bitbucket.org:haikuports/haikuports.git'
+haikuportsRepoUrl = 'git@github.com:haikuports/haikuports.git'
 
 # path to haikuporter-tree
-haikuporterRepoUrl = 'git@bitbucket.org:haikuports/haikuporter.git'
+haikuporterRepoUrl = 'git@github.com:haikuports/haikuporter.git'
 
 def check_output(*popenargs, **kwargs):
 	"""local clone of subprocess.check_output() provided by python-2.7
