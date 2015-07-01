@@ -1,1 +1,2 @@
-HaikuPorter/*.pyc
+*.pyc
+*.pyo
