@@ -286,6 +286,8 @@ class Port(object):
 
 				if baseKey == 'SUMMARY':
 					self._validateSUMMARY(key, entries, showWarnings)
+				elif baseKey == 'DESCRIPTION':
+					self._validateDESCRIPTION(key, entries, showWarnings)
 				elif baseKey == 'LICENSE':
 					self._validateLICENSE(key, entries, showWarnings)
 				elif baseKey == 'COPYRIGHT':
@@ -328,12 +330,24 @@ class Port(object):
 		"""Validates the 'SUMMARY' of the port."""
 		# The summary must be a single line of text, preferably not
 		# exceeding 70 characters in length
+		if key not in entries or not entries[key]:
+			sysExit('No %s found (in %s)'
+				% (key, self.recipeFilePath))
 		if '\n' in entries[key]:
 			sysExit('%s must be a single line of text (%s).'
 					% (key, self.recipeFilePath))
 		if len(entries[key]) > 70 and showWarnings:
 			warn('%s exceeds 70 chars (in %s)'
 				 % (key, self.recipeFilePath))
+
+	def _validateDESCRIPTION(self, key, entries, showWarnings):
+		"""Validates the 'DESCRIPTION' of the port."""
+		if key not in entries or not entries[key]:
+			sysExit('No %s found (in %s)'
+				% (key, self.recipeFilePath))
+		if ''.join(entries[key]) == entries['SUMMARY']:
+			sysExit('%s cannot be the same as SUMMARY (in %s)'
+				% (key, self.recipeFilePath))
 
 	def _validateLICENSE(self, key, entries, showWarnings):
 		"""Validates the 'LICENSE' of the port."""
