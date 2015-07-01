@@ -150,6 +150,7 @@ class ConfigParser(object):
 				# explicitly protect against '-' in names of provides or
 				# requires declarations
 				if attrType in [ProvidesList, RequiresList]:
+					values = [v.lower() for v in values]
 					for value in values:
 						if '-' in value.split()[0]:
 							sysExit('evaluating file %s produced illegal value '
