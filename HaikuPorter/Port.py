@@ -364,8 +364,12 @@ class Port(object):
 		# Collect all referenced patches into a single list
 		if key not in entries or not entries[key]:
 			sysExit('No %s found (in %s)'
-				 % (key, self.recipeFilePath))
-
+				% (key, self.recipeFilePath))
+		else:
+			lowerc = '\n'.join(entries[key]).lower()
+			if "copyright" in lowerc or "(c)" in lowerc or "©" in lowerc:
+				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
+					% (key, self.recipeFilePath))
 
 
 	def printDescription(self):
