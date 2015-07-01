@@ -363,9 +363,9 @@ class Port(object):
 		"""Validates the 'COPYRIGHT' of the port."""
 		# Collect all referenced patches into a single list
 		if key not in entries or not entries[key]:
-			if showWarnings:
-				warn('No %s found (in %s)'
-					 % (key, self.recipeFilePath))
+			sysExit('No %s found (in %s)'
+				 % (key, self.recipeFilePath))
+
 
 
 	def printDescription(self):
