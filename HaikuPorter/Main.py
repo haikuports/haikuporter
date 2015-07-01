@@ -38,7 +38,7 @@ class Main(object):
 		except BaseException as exception:
 			if getOption('debug'):
 				traceback.print_exc()
-			else:
+			elif type(exception).__name__ != "SystemExit":
 				print exception
 			exit(1)
 
@@ -583,6 +583,7 @@ class Main(object):
 				return
 			elif portArgument in portVersionsByName:
 				# Base port name
+				somethingFailed = False
 				for version in portVersionsByName[portArgument]:
 					portID = portArgument + '-' + version
 					port = allPorts[portID]
@@ -590,7 +591,10 @@ class Main(object):
 					try:
 						port.validateRecipeFile(True)
 					except SystemExit as e:
+						somethingFailed = True
 						print e.code
+				if somethingFailed:
+					sys.exit(1)
 			else:
 				# Unknown
 				sysExit('%s is not a known port!' % portArgument)
@@ -599,6 +603,7 @@ class Main(object):
 			print 'Checking HaikuPorts tree at: ' + self.treePath
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
+			somethingFailed = False
 			for portName in sorted(portVersionsByName.keys(), key=str.lower):
 				for version in portVersionsByName[portName]:
 					portID = portName + '-' + version
@@ -608,6 +613,9 @@ class Main(object):
 						port.validateRecipeFile(True)
 					except SystemExit as e:
 						print e.code
+						somethingFailed = True
+			if somethingFailed:
+				sys.exit(1)
 
 	def _checkFormatVersions(self):
 		# Read the format versions used by the tree and stop if they don't
