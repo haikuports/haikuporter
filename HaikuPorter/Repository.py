@@ -48,7 +48,7 @@ class Repository(object):
 		# check repository format
 		formatVersion = self._readFormatVersion()
 		if formatVersion > Repository.currentFormatVersion:
-			sysExit('The version of the repository format used in\n\t%s' 
+			sysExit('The version of the repository format used in\n\t%s'
 					'\nis newer than the one supported by haikuporter.\n'
 					'Please upgrade haikuporter.' % self.path)
 
@@ -276,7 +276,7 @@ class Repository(object):
 
 	def _readFormatVersion(self):
 		"""Read format version of repository from file"""
-		
+
 		formatVersion = 0
 		if os.path.exists(self._formatVersionFilePath):
 			try:
@@ -285,7 +285,7 @@ class Repository(object):
 				formatVersion = data.get('formatVersion', 0)
 			except BaseException as e:
 				print e
-		return formatVersion		
+		return formatVersion
 
 	def _writeFormatVersion(self):
 		"""Writes the version of the repository format into a file"""
