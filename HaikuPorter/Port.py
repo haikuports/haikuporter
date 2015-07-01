@@ -284,45 +284,12 @@ class Port(object):
 					# set default value, as no other value has been provided
 					entries[key] = recipeAttributes[baseKey]['default']
 
-				# The summary must be a single line of text, preferably not
-				# exceeding 70 characters in length
 				if baseKey == 'SUMMARY':
-					if '\n' in entries[key]:
-						sysExit('%s must be a single line of text (%s).'
-								% (key, self.recipeFilePath))
-					if len(entries[key]) > 70 and showWarnings:
-						warn('%s exceeds 70 chars (in %s)'
-							 % (key, self.recipeFilePath))
-
-				# Check for a valid license file
-				if baseKey == 'LICENSE':
-					if key in entries and entries[key]:
-						fileList = []
-						recipeLicense = entries[key]
-						for item in recipeLicense:
-							haikuLicenseList = fileList = os.listdir(
-								buildPlatform.getLicensesDirectory())
-							if (item not in fileList and self.licensesDir
-								and os.path.exists(self.licensesDir)):
-								fileList = []
-								licenses = os.listdir(self.licensesDir)
-								for filename in licenses:
-									fileList.append(filename)
-							if item not in fileList:
-								haikuLicenseList.sort()
-								sysExit('No match found for license ' + item
-										+ '\nValid license filenames included '
-										+ 'with Haiku are:\n'
-										+ '\n'.join(haikuLicenseList))
-					elif showWarnings:
-						warn('No %s found (in %s)' % (key, self.recipeFilePath))
-
-				if baseKey == 'COPYRIGHT':
-					if key not in entries or not entries[key]:
-						if showWarnings:
-							warn('No %s found (in %s)'
-								 % (key, self.recipeFilePath))
-
+					self._validateSUMMARY(key, entries, showWarnings)
+				elif baseKey == 'LICENSE':
+					self._validateLICENSE(key, entries, showWarnings)
+				elif baseKey == 'COPYRIGHT':
+					self._validateCOPYRIGHT(key, entries, showWarnings)
 				if baseKey == 'PATCHES':
 					# collect all referenced patches into a single list
 					if key in entries and entries[key]:
@@ -356,6 +323,50 @@ class Port(object):
 								 % patchFileName)
 
 		return recipeKeysByExtension
+
+	def _validateSUMMARY(self, key, entries, showWarnings):
+		"""Validates the 'SUMMARY' of the port."""
+		# The summary must be a single line of text, preferably not
+		# exceeding 70 characters in length
+		if '\n' in entries[key]:
+			sysExit('%s must be a single line of text (%s).'
+					% (key, self.recipeFilePath))
+		if len(entries[key]) > 70 and showWarnings:
+			warn('%s exceeds 70 chars (in %s)'
+				 % (key, self.recipeFilePath))
+
+	def _validateLICENSE(self, key, entries, showWarnings):
+		"""Validates the 'LICENSE' of the port."""
+		# Check for a valid license file
+		if key in entries and entries[key]:
+			fileList = []
+			recipeLicense = entries[key]
+			for item in recipeLicense:
+				haikuLicenseList = fileList = os.listdir(
+					buildPlatform.getLicensesDirectory())
+				if (item not in fileList and self.licensesDir
+					and os.path.exists(self.licensesDir)):
+					fileList = []
+					licenses = os.listdir(self.licensesDir)
+					for filename in licenses:
+						fileList.append(filename)
+				if item not in fileList:
+					haikuLicenseList.sort()
+					sysExit('No match found for license ' + item
+							+ '\nValid license filenames included '
+							+ 'with Haiku are:\n'
+							+ '\n'.join(haikuLicenseList))
+		elif showWarnings:
+			warn('No %s found (in %s)' % (key, self.recipeFilePath))
+
+	def _validateCOPYRIGHT(self, key, entries, showWarnings):
+		"""Validates the 'COPYRIGHT' of the port."""
+		# Collect all referenced patches into a single list
+		if key not in entries or not entries[key]:
+			if showWarnings:
+				warn('No %s found (in %s)'
+					 % (key, self.recipeFilePath))
+
 
 	def printDescription(self):
 		"""Show port description"""
