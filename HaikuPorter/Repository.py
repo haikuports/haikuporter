@@ -8,14 +8,14 @@
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
-from .Utils import check_output, sysExit, touchFile, versionCompare, warn
+from .Utils import sysExit, touchFile, versionCompare, warn
 
 import glob
 import json
 import os
 import re
 import shutil
-from subprocess import check_call
+from subprocess import check_call, check_output
 import sys
 from textwrap import dedent
 

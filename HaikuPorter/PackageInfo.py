@@ -6,9 +6,10 @@
 # -- Modules ------------------------------------------------------------------
 
 from .Configuration import Configuration
-from .Utils import (check_output, sysExit)
+from .Utils import sysExit
 
 from copy import deepcopy
+from subprocess import check_output
 import json
 import os
 import re

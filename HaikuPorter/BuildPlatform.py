@@ -10,13 +10,13 @@ from .DependencyResolver import DependencyResolver
 from .Options import getOption
 from .PackageInfo import PackageInfo
 from .RecipeTypes import Architectures, MachineArchitecture
-from .Utils import check_output, sysExit
+from .Utils import sysExit
 
 import os
 import platform
 import shutil
 import time
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 
 buildPlatform = None

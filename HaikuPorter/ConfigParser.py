@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 # -- Modules ------------------------------------------------------------------
 
-from subprocess import CalledProcessError
+from subprocess import CalledProcessError, check_output
 import types
 
 from .RecipeTypes import (
@@ -25,7 +25,6 @@ from .ShellScriptlets import (
 	getShellVariableSetters,
 )
 from .Utils import (
-	check_output,
 	filteredEnvironment,
 	sysExit,
 	warn,

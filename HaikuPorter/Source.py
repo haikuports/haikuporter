@@ -16,14 +16,13 @@ from .Configuration import Configuration
 from .Options import getOption
 from .SourceFetcher import (createSourceFetcher, foldSubdirIntoSourceDir,
 							parseCheckoutUri)
-from .Utils import (check_output, ensureCommandIsAvailable,
-					readStringFromFile, storeStringInFile, sysExit,
-					warn)
+from .Utils import (ensureCommandIsAvailable, readStringFromFile,
+					storeStringInFile, sysExit, warn)
 
 import hashlib
 import os
 import shutil
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 
 # -- A source archive (or checkout) -------------------------------------------

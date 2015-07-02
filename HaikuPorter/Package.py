@@ -18,14 +18,13 @@ from .Configuration import Configuration
 from .Options import getOption
 from .RecipeTypes import Architectures, Status
 from .ShellScriptlets import getScriptletPrerequirements
-from .Utils import (check_output, escapeForPackageInfo,
-					haikuporterRepoUrl, haikuportsRepoUrl,
+from .Utils import (escapeForPackageInfo, haikuporterRepoUrl, haikuportsRepoUrl,
 					naturalCompare, sysExit, warn)
 
 import json
 import os
 import shutil
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 
 # -- The supported package types ----------------------------------------------

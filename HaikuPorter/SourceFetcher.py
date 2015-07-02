@@ -13,13 +13,12 @@
 # -- Modules ------------------------------------------------------------------
 
 from .Configuration import Configuration
-from .Utils import (check_output, ensureCommandIsAvailable, sysExit,
-					unpackArchive, warn)
+from .Utils import ensureCommandIsAvailable, sysExit, unpackArchive, warn
 
 import os
 import re
 import shutil
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 
 # -----------------------------------------------------------------------------

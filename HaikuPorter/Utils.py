@@ -49,20 +49,6 @@ haikuportsRepoUrl = 'git@github.com:haikuports/haikuports.git'
 # path to haikuporter-tree
 haikuporterRepoUrl = 'git@github.com:haikuports/haikuporter.git'
 
-def check_output(*popenargs, **kwargs):
-	"""local clone of subprocess.check_output() provided by python-2.7
-	   TODO: drop this once we have upgraded python to 2.7"""
-	process = Popen(stdout=PIPE, *popenargs, **kwargs)
-	output, unused_err = process.communicate()
-	retcode = process.poll()
-	if retcode:
-		cmd = kwargs.get("args")
-		if cmd is None:
-			cmd = popenargs[0]
-		raise CalledProcessError(retcode, cmd)
-	return output
-
-
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 

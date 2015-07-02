@@ -7,8 +7,9 @@
 
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
-from .Utils import check_output, isCommandAvailable, sysExit
+from .Utils import isCommandAvailable, sysExit
 
+from subprocess import check_output
 import os
 import re
 
