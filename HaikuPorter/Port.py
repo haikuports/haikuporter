@@ -348,7 +348,7 @@ class Port(object):
 		if key not in entries or not entries[key]:
 			sysExit('No %s found (in %s)'
 				% (key, self.recipeFilePath))
-		if ''.join(entries[key]) == entries['SUMMARY']:
+		if 'SUMMARY' in entries and ''.join(entries[key]) == entries['SUMMARY']:
 			sysExit('%s cannot be the same as SUMMARY (in %s)'
 				% (key, self.recipeFilePath))
 
