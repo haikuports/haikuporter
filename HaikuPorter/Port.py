@@ -336,6 +336,9 @@ class Port(object):
 		if '\n' in entries[key]:
 			sysExit('%s must be a single line of text (%s).'
 					% (key, self.recipeFilePath))
+		if entries[key].endswith('.'):
+			sysExit('%s cannot end in "." (%s).'
+					% (key, self.recipeFilePath))
 		if len(entries[key]) > 70 and showWarnings:
 			warn('%s exceeds 70 chars (in %s)'
 				 % (key, self.recipeFilePath))
