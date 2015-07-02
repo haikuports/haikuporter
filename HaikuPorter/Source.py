@@ -280,7 +280,7 @@ class Source(object):
 				if patch.endswith('.patchset'):
 					print 'Applying patchset "%s" ...' % patch
 					check_call(['git', 'am', '--ignore-whitespace', '-3',
-								patch], cwd=self.sourceDir,
+								'--keep-cr', patch], cwd=self.sourceDir,
 							   env=self.gitEnv)
 				else:
 					print 'Applying patch "%s" ...' % patch
