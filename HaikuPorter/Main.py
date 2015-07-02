@@ -38,7 +38,10 @@ class Main(object):
 		except BaseException as exception:
 			if getOption('debug'):
 				traceback.print_exc()
-			elif type(exception).__name__ != "SystemExit":
+			elif type(exception).__name__ == "SystemExit":
+				if type(exception.code).__name__ != "int":
+					print exception.code
+			else:
 				print exception
 			exit(1)
 
