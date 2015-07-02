@@ -92,7 +92,7 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': True,
 	},
-	'SRC_FILENAME': {
+	'SOURCE_FILENAME': {
 		'type': types.StringType,
 		'required': False,
 		'default': {},
