@@ -99,7 +99,7 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': True,
 	},
-	'SRC_URI': {
+	'SOURCE_URI': {
 		'type': types.ListType,
 		'required': True,
 		'default': {},

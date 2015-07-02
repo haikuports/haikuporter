@@ -7,7 +7,7 @@ Spanning several paragraphs, maybe
 "
 
 HOMEPAGE="https://homepage/of/projectx.org"
-SRC_URI="git+https://github.com/HaikuArchives/projectx#3911030177bb2921ad7000c263988ac3615f096e"
+SOURCE_URI="git+https://github.com/HaikuArchives/projectx#3911030177bb2921ad7000c263988ac3615f096e"
 REVISION="1"
 LICENSE="MIT"
 COPYRIGHT="2013 Developer name"

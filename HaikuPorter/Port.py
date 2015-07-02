@@ -227,7 +227,7 @@ class Port(object):
 		recipeAttributes = getRecipeAttributes()
 		if self.isMetaPort:
 			recipeAttributes['HOMEPAGE']['required'] = False
-			recipeAttributes['SRC_URI']['required'] = False
+			recipeAttributes['SOURCE_URI']['required'] = False
 
 		# parse the recipe file
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
@@ -852,8 +852,8 @@ class Port(object):
 		basedOnSourcePackage = False
 		## REFACTOR it looks like this method should be setup and dispatch
 
-		for index in sorted(keys['SRC_URI'].keys(), cmp=naturalCompare):
-			source = Source(self, index, keys['SRC_URI'][index],
+		for index in sorted(keys['SOURCE_URI'].keys(), cmp=naturalCompare):
+			source = Source(self, index, keys['SOURCE_URI'][index],
 							keys['SRC_FILENAME'].get(index, None),
 							keys['CHECKSUM_SHA256'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),

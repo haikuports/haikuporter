@@ -432,4 +432,4 @@ def createSourceFetcher(uri, fetchTarget):
 	elif ':' not in lowerUri:
 		return SourceFetcherForLocalFile(uri, fetchTarget)
 	else:
-		sysExit('The protocol of SRC_URI %s is unsupported, sorry.' % uri)
+		sysExit('The protocol of SOURCE_URI %s is unsupported, sorry.' % uri)

@@ -538,16 +538,16 @@ class Repository(object):
 						'-C', self.inputSourcePackagesPath, sourcePackagePath]
 					   + entries)
 
-			# override all SRC_URIs in recipe to point to the source package
+			# override all SOURCE_URIs in recipe to point to the source package
 			textToAdd = dedent(r'''
 				# Added by haikuporter:
-				SRC_URI='pkg:%s'
+				SOURCE_URI='pkg:%s'
 				for i in {2..1000}; do
-					eval currentSrcUri=\$SRC_URI_$i
+					eval currentSrcUri=\$SOURCE_URI_$i
 					if [ -z "$currentSrcUri" ]; then
 						break
 					fi
-					eval SRC_URI_$i="$SRC_URI"
+					eval SOURCE_URI_$i="$SOURCE_URI"
 				done
 				'''[1:]) % sourcePackagePath
 			with open(recipeFilePath, 'a') as recipeFile:

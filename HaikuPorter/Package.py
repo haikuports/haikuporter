@@ -406,10 +406,10 @@ class Package(object):
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.
 			infoFile.write('source-urls {\n')
-			for index in sorted(self.recipeKeys['SRC_URI'].keys(),
+			for index in sorted(self.recipeKeys['SOURCE_URI'].keys(),
 								cmp=naturalCompare):
 				uricount = 1
-				for uri in self.recipeKeys['SRC_URI'][index]:
+				for uri in self.recipeKeys['SOURCE_URI'][index]:
 					if 'file://' in uri:
 						# skip local URIs
 						continue

@@ -1,7 +1,7 @@
 SUMMARY="Font summary"
 DESCRIPTION="Extended Font description"
 HOMEPAGE=""
-SRC_URI=""
+SOURCE_URI=""
 CHECKSUM_SHA256=""
 LICENSE=""
 COPYRIGHT=""

@@ -6,7 +6,7 @@ Spanning several paragraphs, maybe
 You can also have really long lines that do not fit in 80 characters and use \
 a forward-slash to wrap the line."
 HOMEPAGE="https://homepage/of/projectx.org"
-SRC_URI="https://github.com/HaikuArchives/ProjectX/archive/000000000000000000000000000000000.tar.gz"
+SOURCE_URI="https://github.com/HaikuArchives/ProjectX/archive/000000000000000000000000000000000.tar.gz"
 CHECKSUM_SHA256="000000000000000000000000000000000"
 SOURCE_DIR="$portVersionedName"
 REVISION="1"
