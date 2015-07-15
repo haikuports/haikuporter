@@ -336,6 +336,9 @@ class Port(object):
 		if '\n' in entries[key]:
 			sysExit('%s must be a single line of text (%s).'
 					% (key, self.recipeFilePath))
+		if entries[key][0].islower():
+			sysExit('%s must start with a capital letter (%s).'
+					% (key, self.recipeFilePath))
 		if entries[key].endswith('.'):
 			sysExit('%s cannot end in "." (%s).'
 					% (key, self.recipeFilePath))
