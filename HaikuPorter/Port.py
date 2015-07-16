@@ -378,7 +378,8 @@ class Port(object):
 					sysExit('No match found for license ' + item
 							+ '\nValid license filenames included '
 							+ 'with Haiku are:\n'
-							+ ', '.join(haikuLicenseList))
+							+ ', '.join(haikuLicenseList)
+							+ '\n(in %s)' % (self.recipeFilePath))
 		elif showWarnings:
 			warn('No %s found (in %s)' % (key, self.recipeFilePath))
 
