@@ -380,8 +380,8 @@ class Port(object):
 							+ 'with Haiku are:\n'
 							+ ', '.join(haikuLicenseList)
 							+ '\n(in %s)' % (self.recipeFilePath))
-		elif showWarnings:
-			warn('No %s found (in %s)' % (key, self.recipeFilePath))
+		else:
+			sysExit('No %s found (in %s)' % (key, self.recipeFilePath))
 
 	def _validateCOPYRIGHT(self, key, entries, showWarnings):
 		"""Validates the 'COPYRIGHT' of the port."""
