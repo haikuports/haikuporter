@@ -386,11 +386,15 @@ class Port(object):
 	def _validateCOPYRIGHT(self, key, entries, showWarnings):
 		"""Validates the 'COPYRIGHT' of the port."""
 		# Collect all referenced patches into a single list
+		fullCopyright = '\n'.join(entries[key])
 		if key not in entries or not entries[key]:
 			sysExit('No %s found (in %s)'
 				% (key, self.recipeFilePath))
+		elif "@" in fullCopyright:
+			sysExit('%s must not contain e-mail addresses (in %s)'
+				% (key, self.recipeFilePath))
 		else:
-			lowerc = '\n'.join(entries[key]).lower()
+			lowerc = fullCopyright.lower()
 			if "copyright" in lowerc or "(c)" in lowerc or "©" in lowerc:
 				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
 					% (key, self.recipeFilePath))
