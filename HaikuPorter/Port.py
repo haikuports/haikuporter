@@ -292,7 +292,7 @@ class Port(object):
 					self._validateLICENSE(key, entries, showWarnings)
 				elif baseKey == 'COPYRIGHT':
 					self._validateCOPYRIGHT(key, entries, showWarnings)
-				if baseKey == 'PATCHES':
+				elif baseKey == 'PATCHES':
 					# collect all referenced patches into a single list
 					if key in entries and entries[key]:
 						for index in entries[key].keys():
