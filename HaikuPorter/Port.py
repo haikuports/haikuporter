@@ -345,8 +345,11 @@ class Port(object):
 		if entries[key].endswith('.'):
 			sysExit('%s cannot end in "." (%s).'
 					% (key, self.recipeFilePath))
-		if len(entries[key]) > 70 and showWarnings:
-			sysExit('%s exceeds 70 chars (in %s)'
+		if entries[key].count(' ') < 2:
+			sysExit('%s must have at least 3 words (%s).'
+					% (key, self.recipeFilePath))
+		if len(entries[key]) > 80:
+			sysExit('%s exceeds 80 chars (in %s)'
 				 % (key, self.recipeFilePath))
 
 	def _validateDESCRIPTION(self, key, entries, showWarnings):
