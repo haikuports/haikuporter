@@ -393,7 +393,7 @@ class Repository(object):
 					higherVersionIsActive = True
 					break
 
-				# try tp parse updated recipe
+				# try to parse updated recipe
 				try:
 					port.parseRecipeFile(False)
 
