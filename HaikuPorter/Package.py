@@ -93,16 +93,18 @@ class Package(object):
 				self.architecture = port.targetArchitecture
 			else:
 				self.architecture = Architectures.SOURCE
-		elif port.targetArchitecture in self.recipeKeys['ARCHITECTURES']:
+		elif ((port.secondaryArchitecture is not None and
+			  port.secondaryArchitecture in self.recipeKeys['SECONDARY_ARCHITECTURES']) or
+			  port.targetArchitecture in self.recipeKeys['ARCHITECTURES']):
 			# if this package can be built for the current target architecture,
 			# we do so and create a package for the host architecture (which
 			# is the same as the target architecture, except for "_cross_"
-			# packages, which are built for the host on which the build runs.
+			# packages, which are built for the host on which the build runs.)
 			self.architecture = port.hostArchitecture
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
 		else:
-			sysExit('package %s can not be built for architecture %s'
+			sysExit('package %s cannot be built for architecture %s'
 					% (self.versionedName, port.targetArchitecture))
 
 		self.fullVersionedName = self.versionedName + '-' + self.architecture
@@ -136,11 +138,6 @@ class Package(object):
 
 	def getStatusOnSecondaryArchitecture(self, architecture,
 			secondaryArchitecture):
-		# check the primary architecture
-		primaryStatus = self.getStatusOnArchitecture(architecture)
-		if not primaryStatus in [Status.STABLE, Status.UNTESTED]:
-			return primaryStatus
-
 		# check the secondary architecture
 		if secondaryArchitecture:
 			secondaryStatus = Status.UNSUPPORTED
@@ -148,10 +145,9 @@ class Package(object):
 			if secondaryArchitecture in secondaryArchitectures:
 				secondaryStatus = secondaryArchitectures[secondaryArchitecture]
 
-			if secondaryStatus != Status.STABLE:
-				return secondaryStatus
-
-		return primaryStatus
+			return secondaryStatus
+		else:
+			raise ValueError('secondaryArchitecture is None')
 
 	def isBuildableOnSecondaryArchitecture(self, architecture,
 			secondaryArchitecture):
