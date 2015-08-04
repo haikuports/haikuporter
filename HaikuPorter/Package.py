@@ -147,7 +147,7 @@ class Package(object):
 
 			return secondaryStatus
 		else:
-			raise ValueError('secondaryArchitecture is None')
+			return self.getStatusOnArchitecture(architecture)
 
 	def isBuildableOnSecondaryArchitecture(self, architecture,
 			secondaryArchitecture):
