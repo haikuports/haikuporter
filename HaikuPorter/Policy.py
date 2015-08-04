@@ -183,6 +183,10 @@ class Policy(object):
 				if match:
 					library = os.path.basename(match.group(1))
 					if self._isMissingLibraryDependency(library):
+						if (library.startswith('libgcc') or
+							library.startswith('libstdc++') or
+							library.startswith('libsupc++')):
+							continue
 						self._violation('"%s" needs library "%s", but the '
 							'package doesn\'t seem to declare that as a '
 							'requirement' % (path, library))
