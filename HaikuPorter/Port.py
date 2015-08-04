@@ -898,7 +898,8 @@ class Port(object):
 					continue
 				haveSourcePackage = True
 
-			if package.isBuildableOnArchitecture(self.targetArchitecture):
+			if package.isBuildableOnSecondaryArchitecture(self.targetArchitecture,
+				self.secondaryArchitecture):
 				self.packages.append(package)
 
 		if not self.isMetaPort:
