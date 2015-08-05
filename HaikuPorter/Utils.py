@@ -95,6 +95,12 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			]
 			if not members:
 				sysExit('sub-directory %s not found in archive' % subdir)
+			if hasattr(os, "geteuid") and os.geteuid() == 0:
+				for member in members:
+					member.gname = ""
+					member.uname = ""
+					member.gid = 0
+					member.uid = 0
 		tarFile.extractall(targetBaseDir, members)
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
