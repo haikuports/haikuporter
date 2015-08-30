@@ -139,7 +139,7 @@ class Policy(object):
 
 				name = self._normalizeResolvableName(
 					'devel:' + entry[:suffixIndex] + self.secondaryArchSuffix)
-				if not name in self.provides:
+				if not name.lower() in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'develop/lib/' + entry))
 
