@@ -91,7 +91,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			members = [
 				member for member in tarFile.getmembers()
 				if os.path.normpath(member.name)
-					.startswith(subdir)
+					.startswith(subdir) and not os.path.normpath(member.name)
+					.endswith("/.git")
 			]
 			if not members:
 				sysExit('sub-directory %s not found in archive' % subdir)
