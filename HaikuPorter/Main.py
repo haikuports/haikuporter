@@ -545,7 +545,7 @@ class Main(object):
 			self.options.preserveFlags, quiet, verbose)
 
 	def _updatePortsTree(self):
-		"""Get/Update the port tree via svn"""
+		"""Get/Update the port tree via git"""
 		print 'Refreshing the port tree: %s' % self.treePath
 		ensureCommandIsAvailable('git')
 		if os.path.exists(self.treePath + '/.git'):
