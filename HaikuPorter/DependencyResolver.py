@@ -50,6 +50,9 @@ class PackageNode(object):
 # -- DependencyResolver class ----------------------------------------------------
 
 class DependencyResolver(object):
+
+	packageInfoCache = {}
+
 	def __init__(self, buildPlatform, requiresTypes, repositories, **kwargs):
 		self._providesManager = ProvidesManager()
 		self._platform = buildPlatform
@@ -204,8 +207,12 @@ class DependencyResolver(object):
 				self._pending.append(requiredPackageInfo)
 
 	def _parsePackageInfo(self, packageInfoFile):
+		if packageInfoFile in DependencyResolver.packageInfoCache:
+			return DependencyResolver.packageInfoCache[packageInfoFile]
+
 		try:
 			packageInfo = PackageInfo(packageInfoFile)
+			DependencyResolver.packageInfoCache[packageInfoFile] = packageInfo
 		except CalledProcessError:
 			sysExit('failed to parse "%s"' % packageInfoFile)
 
