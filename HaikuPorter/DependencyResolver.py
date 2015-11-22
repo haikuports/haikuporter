@@ -154,14 +154,10 @@ class DependencyResolver(object):
 							   'build-prerequires', True)
 
 	def _addScriptletPrerequiresOf(self, requiredPackageInfo):
-		scriptletPrerequirements = []
-		for spr in getScriptletPrerequirements():
-			spr = spr.partition('#')[0].strip()
-			if spr:
-				scriptletPrerequirements.append(ResolvableExpression(spr))
+		scriptletPrerequirements = getScriptletPrerequirements()
 		for requires in scriptletPrerequirements:
-			self._addImmediate(requiredPackageInfo, requires,
-							   'scriptlet-prerequires', True)
+			self._addImmediate(requiredPackageInfo,
+				ResolvableExpression(requires), 'scriptlet-prerequires', True)
 
 	def _addImmediate(self, parent, requires, typeString, forBuildhost):
 		implicitProvides = self._platform.getImplicitProvides(forBuildhost)

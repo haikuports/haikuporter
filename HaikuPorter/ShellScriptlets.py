@@ -34,7 +34,13 @@ def getScriptletPrerequirements(targetMachineTripleAsName = None):
 		'targetMachinePrefix': targetMachinePrefix,
 	}).splitlines()
 
-	return prerequirements
+	result = []
+	for prerequirement in prerequirements:
+		prerequirement = prerequirement.partition('#')[0].strip()
+		if prerequirement:
+			result.append(prerequirement)
+
+	return result
 
 def getShellVariableSetters(shellVariables):
 	"""Converts a dict {variableName -> value} to a string with shell code to

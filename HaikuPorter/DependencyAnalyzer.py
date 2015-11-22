@@ -208,11 +208,8 @@ class DependencyAnalyzer(object):
 				remainingPortNodes.add(packageNode.portNode)
 
 		# resolve the haikuporter dependencies
-		scriptletPrerequirements = []
-		for spr in getScriptletPrerequirements():
-			spr = spr.partition('#')[0].strip()
-			if spr:
-				scriptletPrerequirements.append(ResolvableExpression(spr))
+		scriptletPrerequirements = [ ResolvableExpression(requires)
+				for requires in getScriptletPrerequirements() ]
 		haikuporterDependencies \
 			= self._resolveRequiresList(scriptletPrerequirements)
 		self.haikuporterRequires = set()
