@@ -49,12 +49,18 @@ def parseOptions():
 	parser.add_option('-l', '--list',
 					  action='store_true', dest='list', default=False,
 					  help='list available ports')
+	parser.add_option('--list-packages',
+					  action='store_true', dest='listPackages', default=False,
+					  help='list available packages')
 	parser.add_option('-a', '--about',
 					  action='store_true', dest='about', default=False,
 					  help='show description of the specified port')
 	parser.add_option('-s', '--search',
 					  action='store_true', dest='search', default=False,
 					  help='search for a port (regex)')
+	parser.add_option('--search-packages',
+					  action='store_true', dest='searchPackages', default=False,
+					  help='search for a package (regex)')
 	parser.add_option('-o','--location',
 					  action='store_true', dest='location', default=False,
 					  help="print out the location of a recipe (via search, "

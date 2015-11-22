@@ -67,7 +67,9 @@ class Main(object):
 		# command
 		self.shallowInitIsEnough = (self.options.lint or self.options.tree
 									or self.options.get or self.options.list
+									or self.options.listPackages
 									or self.options.search
+									or self.options.searchPackages
 									or self.options.location)
 
 		# init build platform
@@ -101,26 +103,36 @@ class Main(object):
 			return
 
 		# if requested, list all ports in the HaikuPorts tree
-		if self.options.list:
+		if self.options.list or self.options.listPackages:
 			self._createRepositoryIfNeeded(True)
-			allPortNames = self.repository.searchPorts(None)
-			for portName in sorted(allPortNames):
-				print portName
+			if self.options.list:
+				allNames = self.repository.searchPorts(None)
+			else:
+				allNames = self.repository.searchPackages(None)
+
+			for name in sorted(allNames):
+				print name
 			return
 
 		# if requested, search for a port
-		if self.options.search:
+		if self.options.search or self.options.searchPackages:
 			if not args:
 				sysExit('You need to specify a search string.\n'
 						"Invoke '" + sys.argv[0] + " -h' for usage "
 						"information.")
 			self._createRepositoryIfNeeded(True)
-			portNames = self.repository.searchPorts(args[0])
-			for portName in portNames:
-				versions = self.repository.portVersionsByName[portName]
-				portID = portName + '-' + versions[0]
-				port = self.repository.allPorts[portID]
-				print port.category + '::' + portName
+
+			if self.options.search:
+				portNames = self.repository.searchPorts(args[0])
+				for portName in portNames:
+					versions = self.repository.portVersionsByName[portName]
+					portID = portName + '-' + versions[0]
+					port = self.repository.allPorts[portID]
+					print port.category + '::' + portName
+			else:
+				packageNames = self.repository.searchPackages(args[0])
+				for packageName in packageNames:
+					print packageName
 			return
 
 		if self.options.location:
