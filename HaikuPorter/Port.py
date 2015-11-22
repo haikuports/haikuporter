@@ -494,11 +494,14 @@ class Port(object):
 		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
-	def resolveBuildDependencies(self, repositoryPath, packagesPath):
+	def resolveBuildDependencies(self, repositoryPath, packagesPath,
+		presentDependencyPackages = None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
 		   Any build requirements a port may have that can not be fulfilled from
 		   within the haikuports tree will be raised as an error here.
+		   If supplied, a list of present build dependency packages is filled
+		   out along the way.
 		"""
 
 		dependencyInfoFiles = self.getDependencyInfoFiles(repositoryPath)
@@ -507,7 +510,8 @@ class Port(object):
 		requiredPackages = self._resolveDependencies(
 			dependencyInfoFiles, requiresTypes,
 			[packagesPath, repositoryPath], 'required or prerequired ports',
-			stopAtHpkgs=True
+			stopAtHpkgs = presentDependencyPackages == None,
+			presentDependencyPackages = presentDependencyPackages
 		)
 
 		# return list of unique ports which need to be built before this one

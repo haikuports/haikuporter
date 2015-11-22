@@ -59,6 +59,8 @@ class DependencyResolver(object):
 		self._requiresTypes = requiresTypes
 		self._repositories = repositories
 		self._stopAtHpkgs = kwargs.get('stopAtHpkgs', False)
+		self._presentDependencyPackages = kwargs.get(
+			'presentDependencyPackages', None)
 		self._packageNodes = []
 
 	def determineRequiredPackagesFor(self, dependencyInfoFiles):
@@ -194,6 +196,11 @@ class DependencyResolver(object):
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):
+			if (self._presentDependencyPackages != None
+				and not requiredPackageInfo.path
+					in self._presentDependencyPackages):
+				self._presentDependencyPackages.append(requiredPackageInfo.path)
+
 			self._addPackageNode(requiredPackageInfo, not self._stopAtHpkgs)
 		else:
 			parent.bumpDependencyCount()
