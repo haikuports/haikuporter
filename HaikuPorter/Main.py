@@ -72,7 +72,8 @@ class Main(object):
 									or self.options.search
 									or self.options.searchPackages
 									or self.options.about
-									or self.options.location)
+									or self.options.location
+									or self.options.buildMaster)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
@@ -80,6 +81,10 @@ class Main(object):
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
+
+		if self.options.buildMaster:
+			from .BuildMaster import BuildMaster
+			self.buildMaster = BuildMaster(self.packagesPath)
 
 		# if requested, checkout or update ports tree
 		if self.options.get:
@@ -348,6 +353,9 @@ class Main(object):
 				for violation in Policy.violationsByPort[portName]:
 					print '\t' + violation
 
+		if self.options.buildMaster:
+			self.buildMaster.runBuilds()
+
 	def _listBuildDependencies(self, port):
 		print '-' * 70
 		print 'dependencies of ' + port.versionedName
@@ -436,13 +444,26 @@ class Main(object):
 			if not os.path.exists(targetPath):
 				os.makedirs(targetPath)
 
+		presentDependencyPackages = None
+		if self.options.buildMaster:
+			presentDependencyPackages = []
+
 		buildDependencies = port.resolveBuildDependencies(self.repository.path,
-														  self.packagesPath)
+			self.packagesPath, presentDependencyPackages)
+
+		if self.options.buildMaster:
+			presentDependencyPackages = [ os.path.basename(path)
+				for path in presentDependencyPackages ]
+
 		requiredPortsToBuild = []
 		requiredPortIDs = set()
+		requiredPackageIDs = set()
 		for dependency in buildDependencies:
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+			if self.options.buildMaster and not packageID in requiredPackageIDs:
+				requiredPackageIDs.add(packageID)
+
 			try:
 				portID = self.repository.getPortIdForPackageId(packageID)
 				if portID not in requiredPortIDs:
@@ -465,9 +486,18 @@ class Main(object):
 				print('\t' + requiredPort.category + '::'
 					  + requiredPort.versionedName)
 			for requiredPort in requiredPortsToBuild:
-				self._buildPort(requiredPort, True, targetPath)
+				if self.options.buildMaster:
+					requiredPort.parseRecipeFile(True)
+					self._buildMainPort(requiredPort)
+				else:
+					self._buildPort(requiredPort, True, targetPath)
 
-		self._buildPort(port, False, targetPath)
+		if self.options.buildMaster:
+			self.buildMaster.schedule(port, requiredPackageIDs,
+				presentDependencyPackages)
+			self.builtPortIDs.add(port.versionedName)
+		else:
+			self._buildPort(port, False, targetPath)
 
 	def _buildPort(self, port, parseRecipe, targetPath):
 		"""Build a single port"""

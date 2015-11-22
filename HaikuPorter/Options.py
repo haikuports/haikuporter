@@ -238,6 +238,10 @@ def parseOptions():
 		dest='listBuildDependencies', default=False,
 		help='list build dependencies of a port')
 
+	parser.add_option('--build-master', action='store_true', dest='buildMaster',
+		default=False,
+		help='run as build master and delegate builds to builders')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()

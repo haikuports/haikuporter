@@ -15,6 +15,7 @@ from .Utils import sysExit
 import os
 import platform
 import shutil
+import sys
 import time
 from subprocess import check_call, check_output
 
@@ -587,10 +588,72 @@ class BuildPlatformUnix(BuildPlatform):
 		return packageLinksDir
 
 
+# -- BuildPlatformBuildMaster class -------------------------------------------
+
+class BuildPlatformBuildMaster(BuildPlatform):
+	def __init__(self):
+		super(BuildPlatformBuildMaster, self).__init__()
+
+	def init(self, treePath, outputDirectory, packagesPath,
+			shallowInitIsEnough = False):
+
+		if Configuration.getTargetArchitecture() == None:
+			sysExit('TARGET_ARCHITECTURE must be set in configuration for '
+				+ 'build master mode!')
+		if Configuration.getPackageCommand() == 'package':
+			sysExit('--command-package must be specified for build master '
+				+ 'mode!')
+
+		super(BuildPlatformBuildMaster, self).init(treePath, outputDirectory,
+			packagesPath, Architectures.ANY, 'BuildMaster')
+
+	@property
+	def isHaiku(self):
+		return False
+
+	def usesChroot(self):
+		return False
+
+	def findDirectory(self, which):
+		return 'stub'
+
+	def isSystemPackage(self, packagePath):
+		return False
+
+	def activateBuildPackage(self, workDir, packagePath, revisionedName):
+		sysExit('activateBuildPackage() unsupported')
+
+	def deactivateBuildPackage(self, workDir, activeBuildPackage,
+			revisionedName):
+		sysExit('deactivateBuildPackage() unsupported')
+
+	def getCrossToolsBasePrefix(self, workDir):
+		sysExit('getCrossToolsBasePrefix() unsupported')
+
+	def getCrossToolsBinPaths(self, workDir):
+		sysExit('getCrossToolsBinPaths() unsupported')
+
+	def getInstallDestDir(self, workDir):
+		sysExit('getInstallDestDir() unsupported')
+
+	def getImplicitProvides(self, forBuildHost):
+		return set()
+
+	def setupNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
+			requiredPackages):
+		sysExit('setupNonChrootBuildEnvironment() unsupported')
+
+	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
+			buildOK):
+		sysExit('cleanNonChrootBuildEnvironment() unsupported')
+
 # -----------------------------------------------------------------------------
 
 # init buildPlatform
 if platform.system() == 'Haiku':
 	buildPlatform = BuildPlatformHaiku()
+elif '--build-master' in sys.argv or '--list-build-dependencies' in sys.argv:
+	# can't use parsed options here as we're imported from it
+	buildPlatform = BuildPlatformBuildMaster()
 else:
 	buildPlatform = BuildPlatformUnix()
