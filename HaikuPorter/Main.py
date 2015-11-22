@@ -74,7 +74,7 @@ class Main(object):
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
-						   self.shallowInitIsEnough)
+			self.packagesPath, self.shallowInitIsEnough)
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()

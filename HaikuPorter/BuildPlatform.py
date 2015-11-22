@@ -28,11 +28,13 @@ class BuildPlatform(object):
 	def __init__(self):
 		pass
 
-	def init(self, treePath, outputDirectory, architecture, machineTriple):
+	def init(self, treePath, outputDirectory, packagesPath, architecture,
+			machineTriple):
 		self.architecture = architecture
 		self.machineTriple = machineTriple
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
+		self.packagesPath = packagesPath
 
 		self.targetArchitecture = Configuration.getTargetArchitecture()
 		if not self.targetArchitecture:
@@ -78,7 +80,8 @@ class BuildPlatformHaiku(BuildPlatform):
 	def __init__(self):
 		super(BuildPlatformHaiku, self).__init__()
 
-	def init(self, treePath, outputDirectory, shallowInitIsEnough = False):
+	def init(self, treePath, outputDirectory, packagesPath,
+			shallowInitIsEnough = False):
 		if not os.path.exists('/packages'):
 			sysExit('haikuporter needs a version of Haiku with package '
 					'management support')
@@ -87,7 +90,11 @@ class BuildPlatformHaiku(BuildPlatform):
 
 		# get system haiku package version and architecture
 		systemPackageName = None
-		packagesDir = self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+		packagesDir = None
+		if not getOption('noSystemPackages'):
+			packagesDir = self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+		else:
+			packagesDir = packagesPath
 
 		for entry in os.listdir(packagesDir):
 			if (entry == 'haiku.hpkg'
@@ -106,7 +113,7 @@ class BuildPlatformHaiku(BuildPlatform):
 					% haikuPackageInfo.architecture)
 
 		super(BuildPlatformHaiku, self).init(treePath, outputDirectory,
-			haikuPackageInfo.architecture, machine)
+			packagesPath, haikuPackageInfo.architecture, machine)
 
 	@property
 	def isHaiku(self):
@@ -125,10 +132,12 @@ class BuildPlatformHaiku(BuildPlatform):
 	def resolveDependencies(self, dependencyInfoFiles, requiresTypes,
 							repositories, **kwargs):
 
-		systemPackagesDir \
-			= buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
-		if systemPackagesDir not in repositories:
-			repositories.append(systemPackagesDir)
+		if not getOption('noSystemPackages'):
+			systemPackagesDir \
+				= buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+			if systemPackagesDir not in repositories:
+				repositories.append(systemPackagesDir)
+
 		return super(BuildPlatformHaiku, self).resolveDependencies(
 			dependencyInfoFiles, requiresTypes, repositories, **kwargs)
 
@@ -203,7 +212,8 @@ class BuildPlatformUnix(BuildPlatform):
 	def __init__(self):
 		super(BuildPlatformUnix, self).__init__()
 
-	def init(self, treePath, outputDirectory, shallowInitIsEnough = False):
+	def init(self, treePath, outputDirectory, packagesPath,
+			shallowInitIsEnough = False):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).strip()
 
@@ -219,7 +229,7 @@ class BuildPlatformUnix(BuildPlatform):
 			architecture = Architectures.ANY
 
 		super(BuildPlatformUnix, self).init(treePath, outputDirectory,
-			architecture, machine)
+			packagesPath, architecture, machine)
 
 		self.secondaryTargetArchitectures \
 			= Configuration.getSecondaryTargetArchitectures()

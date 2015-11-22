@@ -230,6 +230,10 @@ def parseOptions():
 						   'created by the Haiku build system\'s configure '
 						   'script')
 
+	parser.add_option('--no-system-packages', action='store_true',
+		dest='noSystemPackages', default=False,
+		help='do not use system packages to resolve dependencies')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()
