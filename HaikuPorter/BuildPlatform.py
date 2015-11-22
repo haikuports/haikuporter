@@ -83,9 +83,13 @@ class BuildPlatformHaiku(BuildPlatform):
 			sysExit('haikuporter needs a version of Haiku with package '
 					'management support')
 
+		self.findDirectoryCache = {}
+
 		# get system haiku package version and architecture
 		systemPackageName = None
-		for entry in os.listdir('/system/packages'):
+		packagesDir = self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+
+		for entry in os.listdir(packagesDir):
 			if (entry == 'haiku.hpkg'
 				or (entry.startswith('haiku-') and entry.endswith('.hpkg'))):
 				systemPackageName = entry
@@ -93,7 +97,8 @@ class BuildPlatformHaiku(BuildPlatform):
 		if systemPackageName == None:
 			sysExit('Failed to find Haiku system package')
 
-		haikuPackageInfo = PackageInfo('/system/packages/' + systemPackageName)
+		haikuPackageInfo = PackageInfo(
+			os.path.join(packagesDir, systemPackageName))
 		machine = MachineArchitecture.getTripleFor(
 			haikuPackageInfo.architecture)
 		if not machine:
@@ -102,8 +107,6 @@ class BuildPlatformHaiku(BuildPlatform):
 
 		super(BuildPlatformHaiku, self).init(treePath, outputDirectory,
 			haikuPackageInfo.architecture, machine)
-
-		self.findDirectoryCache = {}
 
 	@property
 	def isHaiku(self):
