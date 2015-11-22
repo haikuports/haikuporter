@@ -70,6 +70,7 @@ class Main(object):
 									or self.options.listPackages
 									or self.options.search
 									or self.options.searchPackages
+									or self.options.about
 									or self.options.location)
 
 		# init build platform
