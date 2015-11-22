@@ -68,6 +68,7 @@ class Main(object):
 		self.shallowInitIsEnough = (self.options.lint or self.options.tree
 									or self.options.get or self.options.list
 									or self.options.listPackages
+									or self.options.listBuildDependencies
 									or self.options.search
 									or self.options.searchPackages
 									or self.options.about
@@ -293,9 +294,13 @@ class Main(object):
 				port.printDescription()
 				continue
 
+			if self.options.listBuildDependencies:
+				self._listBuildDependencies(port)
+				continue
+
 			self._validateMainPort(port, portSpec['revision'])
 
-		if self.options.about:
+		if self.options.about or self.options.listBuildDependencies:
 			return
 
 		if self.options.why:
@@ -342,6 +347,32 @@ class Main(object):
 				print 'Policy violations of %s:' + portName
 				for violation in Policy.violationsByPort[portName]:
 					print '\t' + violation
+
+	def _listBuildDependencies(self, port):
+		print '-' * 70
+		print 'dependencies of ' + port.versionedName
+
+		presentDependencyPackages = []
+		buildDependencies = port.resolveBuildDependencies(
+			self.repository.path, self.packagesPath, presentDependencyPackages)
+
+		print 'packages already present:'
+		for package in presentDependencyPackages:
+			print "\t" + os.path.basename(package)
+		print ''
+
+		print 'packages that need to be built:'
+		for dependency in buildDependencies:
+			packageInfoFileName = os.path.basename(dependency)
+			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
+			try:
+				portID = self.repository.getPortIdForPackageId(packageID)
+				print "\t" + packageID + ' -> ' + portID
+
+			except KeyError:
+				sysExit('Inconsistency: ' + port.versionedName
+					+ ' requires ' + packageID
+					+ ' but no corresponding port was found!')
 
 	def _validateMainPort(self, port, revision = None):
 		"""Parse the recipe file for the given port and get any required

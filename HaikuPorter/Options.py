@@ -234,6 +234,10 @@ def parseOptions():
 		dest='noSystemPackages', default=False,
 		help='do not use system packages to resolve dependencies')
 
+	parser.add_option('--list-build-dependencies', action='store_true',
+		dest='listBuildDependencies', default=False,
+		help='list build dependencies of a port')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()
