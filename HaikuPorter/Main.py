@@ -55,6 +55,11 @@ class Main(object):
 
 		self.treePath = Configuration.getTreePath()
 		self.outputDirectory = Configuration.getOutputDirectory()
+		self.packagesPath = Configuration.getPackagesPath()
+
+		# create path where built packages will be collected
+		if not os.path.exists(self.packagesPath):
+			os.mkdir(self.packagesPath)
 
 		self._checkFormatVersions()
 
@@ -71,11 +76,6 @@ class Main(object):
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
-
-		# create path where built packages will be collected
-		self.packagesPath = self.outputDirectory + '/packages'
-		if not os.path.exists(self.packagesPath):
-			os.mkdir(self.packagesPath)
 
 		# if requested, checkout or update ports tree
 		if self.options.get:

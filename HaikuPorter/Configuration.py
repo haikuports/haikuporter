@@ -96,6 +96,14 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'outputDirectory',
 	},
+	'PACKAGES_PATH': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'packagesPath',
+	},
 	'PACKAGE_COMMAND': {
 		'type': types.StringType,
 		'required': False,
@@ -190,11 +198,14 @@ class Configuration(object):
 		self.crossDevelPackage = None
 		self.secondaryCrossDevelPackages = None
 		self.outputDirectory = None
+		self.packagesPath = None
 
 		self._readConfigurationFile()
 
 		if not self.outputDirectory:
 			self.outputDirectory = self.treePath
+		if not self.packagesPath:
+			self.packagesPath = os.path.join(self.outputDirectory, 'packages')
 
 	@staticmethod
 	def init():
@@ -276,6 +287,10 @@ class Configuration(object):
 	@staticmethod
 	def getOutputDirectory():
 		return Configuration.configuration.outputDirectory
+
+	@staticmethod
+	def getPackagesPath():
+		return Configuration.configuration.packagesPath
 
 	@staticmethod
 	def getDownloadMirror():
