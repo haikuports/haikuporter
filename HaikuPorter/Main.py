@@ -230,8 +230,10 @@ class Main(object):
 			if not args:
 				sysExit('You need to specify a search string.\nInvoke '
 						"'" + sys.argv[0] + " -h' for usage information.")
-			self.portSpecs.append(
-				self._splitPortSpecIntoNameVersionAndRevision(args[0]))
+			self.portSpecs = [
+				self._splitPortSpecIntoNameVersionAndRevision(port)
+					for port in args
+			]
 
 		# don't build or package when not patching
 		if not self.options.patch:
@@ -288,9 +290,12 @@ class Main(object):
 				except:
 					pass
 				port.printDescription()
-				return
+				continue
 
 			self._validateMainPort(port, portSpec['revision'])
+
+		if self.options.about:
+			return
 
 		if self.options.why:
 			# find out about why another port is required
