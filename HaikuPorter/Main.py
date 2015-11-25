@@ -140,7 +140,10 @@ class Main(object):
 						versions = self.repository.portVersionsByName[portName]
 						portID = portName + '-' + versions[0]
 						port = self.repository.allPorts[portID]
-						print port.category + '::' + portName
+						if self.options.printRaw:
+							print portName
+						else:
+							print port.category + '::' + portName
 				else:
 					packageNames = self.repository.searchPackages(arg)
 					for packageName in packageNames:

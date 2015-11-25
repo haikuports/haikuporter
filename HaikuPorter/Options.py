@@ -242,6 +242,9 @@ def parseOptions():
 		default=False,
 		help='run as build master and delegate builds to builders')
 
+	parser.add_option('--print-raw', action='store_true', dest='printRaw',
+		default=False, help='print machine readable output for use by scripts')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()
