@@ -136,9 +136,17 @@ class Builder:
 			self.logger.info('building port '
 				+ scheduledBuild.port.versionedName)
 
-			command = ('cd "' + self.config['portstree']['path']
-				+ '" && ' + self.config['haikuporter']['path']
-				+ ' --config=haikuports.conf'
+			# TODO: We don't actually want to source the build host environment
+			# but the one from within the provided Haiku package. This does
+			# clash with the manipulation of PATH that is done by haikuporter
+			# to support secondary architectures and cross builds. Ideally the
+			# shell scriptlet to set up the chroot environment would take over
+			# these tasks and would initially source the environment from within
+			# the chroot and then do any necessary manipulation.
+			command = ('source /boot/system/boot/SetupEnvironment'
+				+ ' && cd "' + self.config['portstree']['path']
+				+ '" && "' + self.config['haikuporter']['path']
+				+ '" --config=haikuports.conf'
 				+ ' --no-system-packages --no-dependencies '
 				+ self.config['haikuporter']['args'] + ' '
 				+ scheduledBuild.port.versionedName)
