@@ -355,7 +355,14 @@ class Main(object):
 				self._testPort(port)
 			elif (self.options.build and not portSpec['id'] in bootstrapPorts
 				and not self.options.noDependencies):
-				self._buildMainPort(port)
+				try:
+					self._buildMainPort(port)
+				except SystemExit as exception:
+					if not self.options.buildMaster:
+						raise
+					else:
+						print(str(exception))
+
 			elif self.options.extractPatchset:
 				port.extractPatchset()
 			else:
@@ -460,12 +467,21 @@ class Main(object):
 			if not os.path.exists(targetPath):
 				os.makedirs(targetPath)
 
+		buildDependencies = None
 		presentDependencyPackages = None
 		if self.options.buildMaster:
 			presentDependencyPackages = []
-
-		buildDependencies = port.resolveBuildDependencies(self.repository.path,
-			self.packagesPath, presentDependencyPackages)
+			try:
+				buildDependencies = port.resolveBuildDependencies(
+					self.repository.path, self.packagesPath,
+					presentDependencyPackages)
+			except SystemExit as exception:
+				print('resolving build dependencies failed for port '
+					+ port.versionedName)
+				return
+		else:
+			buildDependencies = port.resolveBuildDependencies(
+				self.repository.path, self.packagesPath)
 
 		if self.options.buildMaster:
 			presentDependencyPackages = [ os.path.basename(path)
@@ -497,6 +513,9 @@ class Main(object):
 						 + ' but no corresponding port was found!')
 
 		if requiredPortsToBuild:
+			if port in requiredPortsToBuild:
+				sysExit('Port ' + port.versionedName + ' depends on itself')
+
 			print 'The following required ports will be built first:'
 			for requiredPort in requiredPortsToBuild:
 				print('\t' + requiredPort.category + '::'
@@ -504,7 +523,16 @@ class Main(object):
 			for requiredPort in requiredPortsToBuild:
 				if self.options.buildMaster:
 					requiredPort.parseRecipeFile(True)
-					self._buildMainPort(requiredPort)
+
+					try:
+						self._buildMainPort(requiredPort)
+					except SystemExit as exception:
+						print('Skipping ' + port.versionedName
+							+ ', dependency '
+							+ requiredPort.versionedName + ' cannot be built: '
+							+ str(exception))
+						sysExit('Dependency of ' + port.versionedName
+							+ ' cannot be built')
 				else:
 					self._buildPort(requiredPort, True, targetPath)
 
