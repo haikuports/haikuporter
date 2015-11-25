@@ -153,13 +153,20 @@ class Builder:
 
 			self.logger.info('running command: ' + command)
 
-			with self._remoteCommand(command) as output:
+			(output, channel) = self._remoteCommand(command)
+			with output:
 				while True:
 					line = output.readline()
 					if not line:
 						break
 
 					self.logger.info(line[:-1])
+
+			exitStatus = channel.recv_exit_status()
+			self.logger.info('command exit status: ' + str(exitStatus))
+
+			if exitStatus != 0:
+				raise Exception('build failure')
 
 			for package in scheduledBuild.port.packages:
 				self.logger.info('download package ' + package.hpkgName
@@ -186,7 +193,7 @@ class Builder:
 		channel.get_pty()
 		output = channel.makefile()
 		channel.exec_command(command)
-		return output
+		return (output, channel)
 
 	def _getFile(self, localPath, remotePath):
 		self.sftpClient.get(localPath, remotePath)
