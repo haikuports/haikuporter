@@ -289,7 +289,12 @@ class Main(object):
 				version = self.repository.getActiveVersionOf(portSpec['name'],
 															 True)
 				if not version:
-					sysExit('No version of ' + portSpec['name']
+					if self.options.buildMaster:
+						print('no version of ' + portSpec['name']
+							+ ' can be built, skipping')
+						continue
+					else:
+						sysExit('No version of ' + portSpec['name']
 							+ ' can be built')
 				portID = portSpec['name'] + '-' + version
 
@@ -339,6 +344,9 @@ class Main(object):
 
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:
+			if not 'id' in portSpec:
+				continue
+
 			port = allPorts[portSpec['id']]
 
 			if self.options.clean:
