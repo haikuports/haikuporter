@@ -133,17 +133,18 @@ class Main(object):
 						"information.")
 			self._createRepositoryIfNeeded(True)
 
-			if self.options.search:
-				portNames = self.repository.searchPorts(args[0])
-				for portName in portNames:
-					versions = self.repository.portVersionsByName[portName]
-					portID = portName + '-' + versions[0]
-					port = self.repository.allPorts[portID]
-					print port.category + '::' + portName
-			else:
-				packageNames = self.repository.searchPackages(args[0])
-				for packageName in packageNames:
-					print packageName
+			for arg in args:
+				if self.options.search:
+					portNames = self.repository.searchPorts(arg)
+					for portName in portNames:
+						versions = self.repository.portVersionsByName[portName]
+						portID = portName + '-' + versions[0]
+						port = self.repository.allPorts[portID]
+						print port.category + '::' + portName
+				else:
+					packageNames = self.repository.searchPackages(arg)
+					for packageName in packageNames:
+						print packageName
 			return
 
 		if self.options.location:
