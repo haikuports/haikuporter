@@ -214,9 +214,16 @@ class BuildMaster:
 	def __init__(self, packagesPath):
 		self.builders = []
 		self.buildThreads = []
-		self.builderConfigBaseDir = 'builders'
-		self.buildOutputBaseDir = os.path.join('buildmaster', 'output')
+		self.masterBaseDir = 'buildmaster'
+		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
+		self.buildOutputBaseDir = os.path.join(self.masterBaseDir, 'output')
+		self.buildNumberFile = os.path.join(self.masterBaseDir, 'buildnumber')
 		self.buildNumber = 0
+		try:
+			with open(self.buildNumberFile, 'r') as buildNumberFile:
+				self.buildNumber = int(buildNumberFile.read())
+		except Exception as exception:
+			pass
 
 		logHandler = logging.FileHandler(
 			os.path.join(self.buildOutputBaseDir, 'master.log'))
@@ -226,8 +233,8 @@ class BuildMaster:
 		self.logger.setLevel(logging.DEBUG)
 		self.logger.addHandler(logHandler)
 
-		for fileName in os.listdir(self.builderConfigBaseDir):
-			configFilePath = os.path.join(self.builderConfigBaseDir, fileName)
+		for fileName in os.listdir(self.builderBaseDir):
+			configFilePath = os.path.join(self.builderBaseDir, fileName)
 			if not os.path.isfile(configFilePath):
 				continue
 
@@ -238,7 +245,10 @@ class BuildMaster:
 				self.logger.error('failed to add builder from config '
 					+ configFilePath + ':' + str(exception))
 
+			self.logger.info('connecting to builder ' + builder.name)
 			if not builder.connect():
+				self.logger.error('failed to connect to builder '
+					+ builder.name)
 				continue
 
 			self.builders.append(builder)
@@ -309,8 +319,14 @@ class BuildMaster:
 						(i, scheduledBuild, self.buildNumber))
 
 					self.buildNumber += 1
+					self._persistBuildNumber()
+
 					self.buildThreads[i].start()
 					break
+
+	def _persistBuildNumber(self):
+		with open(self.buildNumberFile, 'w') as buildNumberFile:
+			buildNumberFile.write(str(self.buildNumber))
 
 	def _packagesCompleted(self, packages, available):
 		notify = False
