@@ -61,9 +61,18 @@ class Builder:
 		if not 'privateKeyFile' in self.config['ssh']:
 			raise Exception('missing ssh privateKeyFile config for builder '
 				+ self.name)
+		if not os.path.isabs(self.config['ssh']['privateKeyFile']):
+			self.config['ssh']['privateKeyFile'] = os.path.join(
+				os.path.dirname(configFilePath),
+				self.config['ssh']['privateKeyFile'])
+
 		if not 'hostKeyFile' in self.config['ssh']:
 			raise Exception('missing ssh hostKeyFile config for builder '
 				+ self.name)
+		if not os.path.isabs(self.config['ssh']['hostKeyFile']):
+			self.config['ssh']['hostKeyFile'] = os.path.join(
+				os.path.dirname(configFilePath),
+				self.config['ssh']['hostKeyFile'])
 
 		if not 'portstree' in self.config:
 			raise Exception('missing portstree config for builder ' + self.name)
