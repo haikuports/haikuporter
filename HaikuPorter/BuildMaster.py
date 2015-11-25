@@ -14,16 +14,20 @@ class ScheduledBuild:
 		self.requiredPackages = presentDependencyPackages
 		self.missingPackageIDs = set(requiredPackageIDs)
 		self.started = False
+		self.lost = False
 
 	@property
 	def buildable(self):
 		return len(self.missingPackageIDs) == 0
 
-	def packageAvailable(self, package):
+	def packageCompleted(self, package, available):
 		packageID = package.versionedName
 		if packageID in self.missingPackageIDs:
-			self.missingPackageIDs.remove(packageID)
-			self.requiredPackages.append(package.hpkgName)
+			if available:
+				self.missingPackageIDs.remove(packageID)
+				self.requiredPackages.append(package.hpkgName)
+			else:
+				self.lost = True
 
 
 class Builder:
@@ -104,7 +108,7 @@ class Builder:
 		logHandler = logging.FileHandler(logFile)
 		logHandler.setFormatter(self.formatter)
 		self.logger.addHandler(logHandler)
-		buildFailure = False
+		buildSuccess = False
 
 		try:
 			for requiredPackage in scheduledBuild.requiredPackages:
@@ -150,15 +154,14 @@ class Builder:
 
 				self.availablePackages.append(package.hpkgName)
 
+			buildSuccess = True
+
 		except Exception as exception:
 			self.logger.error('build failed: ' + str(exception))
-			buildFailure = True
 		finally:
 			self.logger.removeHandler(logHandler)
 
-		if buildFailure:
-			return None
-		return scheduledBuild.port.packages
+		return buildSuccess
 
 	def _remoteCommand(self, command):
 		transport = self.sshClient.get_transport()
@@ -241,7 +244,7 @@ class BuildMaster:
 				restart = False
 				for scheduledBuildID in self.scheduledBuilds:
 					scheduledBuild = self.scheduledBuilds[scheduledBuildID]
-					if scheduledBuild.started:
+					if scheduledBuild.started or scheduledBuild.lost:
 						continue
 
 					done = False
@@ -285,43 +288,57 @@ class BuildMaster:
 					self.buildThreads[i].start()
 					break
 
-	def _packageAvailable(self, package):
+	def _packagesCompleted(self, packages, available):
 		notify = False
-		self.logger.info('package ' + package.versionedName
-			+ ' became available')
 
+		completePackages = [] + packages
 		with self.scheduledBuildsLock:
-			for scheduledBuildID in self.scheduledBuilds:
-				scheduledBuild = self.scheduledBuilds[scheduledBuildID]
-				if not scheduledBuild.buildable:
-					scheduledBuild.packageAvailable(package)
-					if scheduledBuild.buildable:
-						notify = True
-						self.logger.info('scheduled build ' + scheduledBuildID
-							+ ' became buildable')
+			while len(completePackages) > 0:
+				package = completePackages.pop(0)
+				self.logger.info('package ' + package.versionedName + ' '
+					+ ('became available' if available else 'lost'))
+
+				for scheduledBuildID in self.scheduledBuilds:
+					scheduledBuild = self.scheduledBuilds[scheduledBuildID]
+					if not scheduledBuild.buildable and not scheduledBuild.lost:
+						scheduledBuild.packageCompleted(package, available)
+						if scheduledBuild.buildable or scheduledBuild.lost:
+							notify = True
+							self.logger.info('scheduled build '
+								+ scheduledBuildID + ' '
+								+ ('became buildable' if available else 'lost'))
+
+							if scheduledBuild.lost:
+								completePackages += scheduledBuild.port.packages
 
 		if notify:
 			with self.buildableCondition:
 				self.buildableCondition.notify()
 
 	def _buildThread(self, builderIndex, scheduledBuild, buildNumber):
+		builder = self.builders[builderIndex]
+
 		logFile = os.path.join(self.buildOutputBaseDir,
 			'build_' + str(buildNumber) + '.log')
 
-		builtPackages = self.builders[builderIndex].build(scheduledBuild,
-			logFile)
+		self.logger.info('starting build ' + str(buildNumber) + ', '
+			+ scheduledBuild.port.versionedName + ' on builder '
+			+ builder.name);
 
-		if builtPackages != None:
-			for package in builtPackages:
-				self._packageAvailable(package)
-		else:
-			self.logger.error('build ' + str(buildNumber) + ' failed')
+		buildSuccess = builder.build(scheduledBuild, logFile)
 
-			# return the build to the unstarted state
+		self.logger.info('build ' + str(buildNumber) + ', '
+			+ scheduledBuild.port.versionedName + ' '
+			+ ('succeeded' if buildSuccess else 'failed'))
+
+		if not buildSuccess and False:
+			# TODO: return the build to the unstarted state if retryable
 			with self.scheduledBuildsLock:
 				scheduledBuild.started = False
 			with self.buildableCondition:
 				self.buildableCondition.notify()
+		else:
+			self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
 
 		with self.builderLock:
 			self.buildThreads[builderIndex] = None
