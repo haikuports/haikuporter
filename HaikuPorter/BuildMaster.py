@@ -113,6 +113,12 @@ class Builder:
 				+ str(exception))
 			return False
 
+	def syncPortsTree(self, revision):
+		command = ('cd "' + self.config['portstree']['path']
+			+ '" && git fetch && git checkout ' + revision)
+		(output, channel) = self._remoteCommand(command)
+		return channel.recv_exit_status() == 0
+
 	def build(self, scheduledBuild, logFile):
 		logHandler = logging.FileHandler(logFile)
 		logHandler.setFormatter(self.formatter)
@@ -211,7 +217,7 @@ class Builder:
 
 
 class BuildMaster:
-	def __init__(self, packagesPath):
+	def __init__(self, packagesPath, portsTreeHead):
 		self.builders = []
 		self.buildThreads = []
 		self.masterBaseDir = 'buildmaster'
@@ -233,6 +239,9 @@ class BuildMaster:
 		self.logger.setLevel(logging.DEBUG)
 		self.logger.addHandler(logHandler)
 
+		self.portsTreeHead = portsTreeHead
+		self.logger.info('portstree head is at ' + self.portsTreeHead)
+
 		for fileName in os.listdir(self.builderBaseDir):
 			configFilePath = os.path.join(self.builderBaseDir, fileName)
 			if not os.path.isfile(configFilePath):
@@ -248,6 +257,12 @@ class BuildMaster:
 			self.logger.info('connecting to builder ' + builder.name)
 			if not builder.connect():
 				self.logger.error('failed to connect to builder '
+					+ builder.name)
+				continue
+
+			self.logger.info('syncing portstree on builder ' + builder.name)
+			if not builder.syncPortsTree(self.portsTreeHead):
+				self.logger.error('failed to sync portstree on builder '
 					+ builder.name)
 				continue
 

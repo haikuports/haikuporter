@@ -24,7 +24,7 @@ from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn
 
 import os
 import re
-from subprocess import check_call
+from subprocess import check_call, check_output
 import sys
 import traceback
 
@@ -83,8 +83,12 @@ class Main(object):
 		self._initGlobalShellVariables()
 
 		if self.options.buildMaster:
+			ensureCommandIsAvailable('git')
+			head = check_output(['git', 'rev-parse', 'HEAD'],
+				cwd = self.treePath)
+
 			from .BuildMaster import BuildMaster
-			self.buildMaster = BuildMaster(self.packagesPath)
+			self.buildMaster = BuildMaster(self.packagesPath, head[:-1])
 
 		# if requested, checkout or update ports tree
 		if self.options.get:
