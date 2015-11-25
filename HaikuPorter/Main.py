@@ -90,6 +90,8 @@ class Main(object):
 			from .BuildMaster import BuildMaster
 			self.buildMaster = BuildMaster(self.packagesPath, head[:-1])
 
+			self.options.noPackageObsoletion = True
+
 		# if requested, checkout or update ports tree
 		if self.options.get:
 			self._updatePortsTree()

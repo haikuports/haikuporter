@@ -418,7 +418,8 @@ class Repository(object):
 								print('\tremoving dependency-infos for '
 									  + portID + ', as newer version is active')
 							port.removeDependencyInfosFromRepository(self.path)
-							port.obsoletePackages(self.packagesPath)
+							if not getOption('noPackageObsoletion'):
+								port.obsoletePackages(self.packagesPath)
 							break
 						continue
 
