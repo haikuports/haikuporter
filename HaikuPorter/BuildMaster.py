@@ -231,7 +231,7 @@ class Builder:
 class BuildMaster:
 	def __init__(self, packagesPath, portsTreeHead):
 		self.builders = []
-		self.buildThreads = []
+		self.availableBuilders = []
 		self.masterBaseDir = 'buildmaster'
 		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
 		self.buildOutputBaseDir = os.path.join(self.masterBaseDir, 'output')
@@ -280,17 +280,18 @@ class BuildMaster:
 				continue
 
 			self.builders.append(builder)
-			self.buildThreads.append(None)
 
 		if len(self.builders) == 0:
 			sysExit('no builders available')
 
-		self.builderLock = threading.Lock()
-		self.semaphore = threading.BoundedSemaphore(value = len(self.builders))
+		self.availableBuilders += self.builders
+
 		self.scheduledBuilds = []
 		self.blockedBuilds = []
-		self.scheduledBuildsLock = threading.Lock()
 		self.buildableCondition = threading.Condition()
+			# protectes the scheduled and blocked build lists
+		self.builderCondition = threading.Condition()
+			# protects the [available] builder lists
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.logger.info('scheduling build of ' + port.versionedName)
@@ -303,56 +304,55 @@ class BuildMaster:
 			self.blockedBuilds.append(scheduledBuild)
 
 	def runBuilds(self):
-		while len(self.scheduledBuilds) > 0:
-			self._runBuilds()
-
-			# wait for all builds to finish
-			for i in range(0, len(self.builders)):
-				self.semaphore.acquire()
-
-	def _runBuilds(self):
 		while True:
 			buildToRun = None
-			with self.scheduledBuildsLock:
+			with self.buildableCondition:
 				if len(self.scheduledBuilds) > 0:
 					buildToRun = self.scheduledBuilds.pop(0)
 				elif len(self.blockedBuilds) > 0:
 					self.logger.info('nothing buildable, waiting for packages')
-					with self.buildableCondition:
-						self.scheduledBuildsLock.release()
-						self.buildableCondition.wait()
-						self.scheduledBuildsLock.acquire()
+					self.buildableCondition.wait()
 					continue
 				else:
 					break
 
 			self._runBuild(buildToRun)
 
+	def _getBuildNumber(self):
+		buildNumber = self.buildNumber
+		self.buildNumber += 1
+		self._persistBuildNumber()
+		return buildNumber
+
 	def _runBuild(self, scheduledBuild):
-		self.semaphore.acquire()
-		with self.builderLock:
-			for i in range(0, len(self.builders)):
-				if not self.buildThreads[i]:
-					self.buildThreads[i] = threading.Thread(None,
-						self._buildThread,
-						'build ' + str(self.buildNumber),
-						(i, scheduledBuild, self.buildNumber))
+		while True:
+			builder = None
+			buildNumber = -1
+			with self.builderCondition:
+				if len(self.builders) == 0:
+					sysExit('all builders lost')
 
-					self.buildNumber += 1
-					self._persistBuildNumber()
+				if len(self.availableBuilders) == 0:
+					self.builderCondition.wait()
+					continue
 
-					self.buildThreads[i].start()
-					break
+				builder = self.availableBuilders.pop(0)
+				buildNumber = self._getBuildNumber()
+
+			threading.Thread(None, self._buildThread,
+				'build ' + str(buildNumber),
+				(builder, scheduledBuild, buildNumber)).start()
+			break
 
 	def _persistBuildNumber(self):
 		with open(self.buildNumberFile, 'w') as buildNumberFile:
 			buildNumberFile.write(str(self.buildNumber))
 
 	def _packagesCompleted(self, packages, available):
-		notify = False
-
 		completePackages = [] + packages
-		with self.scheduledBuildsLock:
+		with self.buildableCondition:
+			notify = False
+
 			while len(completePackages) > 0:
 				package = completePackages.pop(0)
 				self.logger.info('package ' + package.versionedName + ' '
@@ -377,13 +377,10 @@ class BuildMaster:
 
 				self.blockedBuilds = stillBlockedBuilds
 
-		if notify:
-			with self.buildableCondition:
+			if notify:
 				self.buildableCondition.notify()
 
-	def _buildThread(self, builderIndex, scheduledBuild, buildNumber):
-		builder = self.builders[builderIndex]
-
+	def _buildThread(self, builder, scheduledBuild, buildNumber):
 		self.logger.info('starting build ' + str(buildNumber) + ', '
 			+ scheduledBuild.port.versionedName + ' on builder '
 			+ builder.name);
@@ -399,11 +396,12 @@ class BuildMaster:
 			with self.scheduledBuildsLock:
 				self.scheduledBuilds.append(scheduledBuild)
 			with self.buildableCondition:
+				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
 		else:
 			self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
 
-		with self.builderLock:
-			self.buildThreads[builderIndex] = None
+		with self.builderCondition:
+			self.availableBuilders.append(builder)
 
-		self.semaphore.release()
+			self.builderCondition.notify()
