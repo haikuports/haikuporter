@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import paramiko
+import socket
 import threading
 import time
 
@@ -156,13 +157,14 @@ class Builder:
 
 	def build(self, scheduledBuild, buildNumber):
 		if not self._setupForBuilding():
-			return False
+			return (False, True)
 
 		logHandler = logging.FileHandler(os.path.join(self.outputBaseDir,
 				'builds', str(buildNumber) + '.log'))
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
 		self.buildLogger.addHandler(logHandler)
 		buildSuccess = False
+		reschedule = True
 
 		try:
 			for requiredPackage in scheduledBuild.requiredPackages:
@@ -214,6 +216,7 @@ class Builder:
 			self.buildLogger.info('command exit status: ' + str(exitStatus))
 
 			if exitStatus != 0:
+				reschedule = False
 				raise Exception('build failure')
 
 			for package in scheduledBuild.port.packages:
@@ -228,12 +231,22 @@ class Builder:
 
 			buildSuccess = True
 
+		except (IOError, paramiko.ssh_exception.SSHException) as exception:
+			self.buildLogger.error('builder failed: ' + str(exception))
+			self.available = False
+			self.lost = True
+
+		except socket.error as exception:
+			self.buildLogger.error('connection failed: ' + str(exception))
+			self.available = False
+
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
+
 		finally:
 			self.buildLogger.removeHandler(logHandler)
 
-		return buildSuccess
+		return (buildSuccess, reschedule)
 
 	def _remoteCommand(self, command):
 		transport = self.sshClient.get_transport()
@@ -404,16 +417,14 @@ class BuildMaster:
 			+ scheduledBuild.port.versionedName + ' on builder '
 			+ builder.name);
 
-		buildSuccess = builder.build(scheduledBuild, buildNumber)
+		(buildSuccess, reschedule) = builder.build(scheduledBuild, buildNumber)
 
 		self.logger.info('build ' + str(buildNumber) + ', '
 			+ scheduledBuild.port.versionedName + ' '
 			+ ('succeeded' if buildSuccess else 'failed'))
 
-		if not buildSuccess and False:
-			# TODO: return the build to the schedule if retryable
-			with self.scheduledBuildsLock:
-				self.scheduledBuilds.append(scheduledBuild)
+		if not buildSuccess and reschedule:
+			self.logger.info('transient error, rescheduling build')
 			with self.buildableCondition:
 				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
@@ -421,6 +432,10 @@ class BuildMaster:
 			self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
 
 		with self.builderCondition:
-			self.availableBuilders.append(builder)
+			if builder.lost:
+				self.logger.error('builder ' + builder.name + ' lost')
+				self.builders.remove(builder)
+			else:
+				self.availableBuilders.append(builder)
 
 			self.builderCondition.notify()
