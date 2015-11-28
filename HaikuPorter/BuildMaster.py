@@ -31,15 +31,23 @@ class ScheduledBuild:
 
 
 class Builder:
-	def __init__(self, configFilePath, packagesPath):
+	def __init__(self, configFilePath, packagesPath, outputBaseDir):
 		self._loadConfig(configFilePath)
 		self.availablePackages = []
 		self.packagesPath = packagesPath
+		self.outputBaseDir = outputBaseDir
 
 		self.logger = logging.getLogger('builders.' + self.name)
 		self.logger.setLevel(logging.DEBUG)
-		self.formatter = logging.Formatter('%(asctime)s builder '
-			+ self.name + ': %(message)s')
+
+		formatter = logging.Formatter('%(asctime)s: %(message)s')
+		logHandler = logging.FileHandler(
+			os.path.join(outputBaseDir, 'builders', self.name + '.log'))
+		logHandler.setFormatter(formatter)
+		self.logger.addHandler(logHandler)
+
+		self.buildLogger = logging.getLogger('builders.' + self.name + '.build')
+		self.buildLogger.setLevel(logging.DEBUG)
 
 	def _loadConfig(self, configFilePath):
 		with open(configFilePath, 'r') as configFile:
@@ -95,7 +103,7 @@ class Builder:
 			self.sshClient = paramiko.SSHClient()
 			self.sshClient.load_host_keys(self.config['ssh']['hostKeyFile'])
 
-			print('trying to connect to builder ' + self.name)
+			self.logger.info('trying to connect to builder ' + self.name)
 			self.sshClient.connect(hostname = self.config['ssh']['host'],
 				port = int(self.config['ssh']['port']),
 				username = self.config['ssh']['user'],
@@ -106,23 +114,25 @@ class Builder:
 			self.sftpClient = self.sshClient.open_sftp()
 			self._getAvailablePackages()
 
-			print('connected to builder ' + self.name)
+			self.logger.info('connected to builder ' + self.name)
 			return True
 		except Exception as exception:
-			print('failed to connect to builder ' + self.name + ': '
+			self.logger.info('failed to connect to builder ' + self.name + ': '
 				+ str(exception))
 			return False
 
 	def syncPortsTree(self, revision):
 		command = ('cd "' + self.config['portstree']['path']
 			+ '" && git fetch && git checkout ' + revision)
+		self.logger.info('running command: ' + command)
 		(output, channel) = self._remoteCommand(command)
 		return channel.recv_exit_status() == 0
 
-	def build(self, scheduledBuild, logFile):
-		logHandler = logging.FileHandler(logFile)
-		logHandler.setFormatter(self.formatter)
-		self.logger.addHandler(logHandler)
+	def build(self, scheduledBuild, buildNumber):
+		logHandler = logging.FileHandler(os.path.join(self.outputBaseDir,
+				'builds', str(buildNumber) + '.log'))
+		logHandler.setFormatter(logging.Formatter('%(message)s'))
+		self.buildLogger.addHandler(logHandler)
 		buildSuccess = False
 
 		try:
@@ -130,8 +140,8 @@ class Builder:
 				if requiredPackage in self.availablePackages:
 					continue
 
-				self.logger.info('upload required package ' + requiredPackage
-					+ ' to builder')
+				self.buildLogger.info('upload required package '
+					+ requiredPackage + ' to builder')
 
 				self._putFile(os.path.join(self.packagesPath, requiredPackage),
 					self.config['portstree']['packagesPath'] + '/'
@@ -139,7 +149,7 @@ class Builder:
 
 				self.availablePackages.append(requiredPackage)
 
-			self.logger.info('building port '
+			self.buildLogger.info('building port '
 				+ scheduledBuild.port.versionedName)
 
 			# TODO: We don't actually want to source the build host environment
@@ -158,7 +168,8 @@ class Builder:
 				+ self.config['haikuporter']['args'] + ' '
 				+ scheduledBuild.port.versionedName)
 
-			self.logger.info('running command: ' + command)
+			self.buildLogger.info('running command: ' + command)
+			self.buildLogger.propagate = False
 
 			(output, channel) = self._remoteCommand(command)
 			with output:
@@ -167,16 +178,17 @@ class Builder:
 					if not line:
 						break
 
-					self.logger.info(line[:-1])
+					self.buildLogger.info(line[:-1])
 
+			self.buildLogger.propagate = True
 			exitStatus = channel.recv_exit_status()
-			self.logger.info('command exit status: ' + str(exitStatus))
+			self.buildLogger.info('command exit status: ' + str(exitStatus))
 
 			if exitStatus != 0:
 				raise Exception('build failure')
 
 			for package in scheduledBuild.port.packages:
-				self.logger.info('download package ' + package.hpkgName
+				self.buildLogger.info('download package ' + package.hpkgName
 					+ ' from builder')
 
 				self._getFile(self.config['portstree']['packagesPath'] + '/'
@@ -188,9 +200,9 @@ class Builder:
 			buildSuccess = True
 
 		except Exception as exception:
-			self.logger.error('build failed: ' + str(exception))
+			self.buildLogger.info('build failed: ' + str(exception))
 		finally:
-			self.logger.removeHandler(logHandler)
+			self.buildLogger.removeHandler(logHandler)
 
 		return buildSuccess
 
@@ -250,7 +262,8 @@ class BuildMaster:
 
 			builder = None
 			try:
-				builder = Builder(configFilePath, packagesPath)
+				builder = Builder(configFilePath, packagesPath,
+					self.buildOutputBaseDir)
 			except Exception as exception:
 				self.logger.error('failed to add builder from config '
 					+ configFilePath + ':' + str(exception))
@@ -374,14 +387,11 @@ class BuildMaster:
 	def _buildThread(self, builderIndex, scheduledBuild, buildNumber):
 		builder = self.builders[builderIndex]
 
-		logFile = os.path.join(self.buildOutputBaseDir,
-			'build_' + str(buildNumber) + '.log')
-
 		self.logger.info('starting build ' + str(buildNumber) + ', '
 			+ scheduledBuild.port.versionedName + ' on builder '
 			+ builder.name);
 
-		buildSuccess = builder.build(scheduledBuild, logFile)
+		buildSuccess = builder.build(scheduledBuild, buildNumber)
 
 		self.logger.info('build ' + str(buildNumber) + ', '
 			+ scheduledBuild.port.versionedName + ' '
