@@ -30,11 +30,16 @@ class ScheduledBuild:
 
 
 class Builder:
-	def __init__(self, configFilePath, packagesPath, outputBaseDir):
+	def __init__(self, configFilePath, packagesPath, outputBaseDir,
+			portsTreeHead):
 		self._loadConfig(configFilePath)
 		self.availablePackages = []
+		self.portsTreeHead = portsTreeHead
 		self.packagesPath = packagesPath
 		self.outputBaseDir = outputBaseDir
+
+		self.available = False
+		self.lost = False
 
 		self.logger = logging.getLogger('builders.' + self.name)
 		self.logger.setLevel(logging.DEBUG)
@@ -97,7 +102,7 @@ class Builder:
 		if not 'args' in self.config['haikuporter']:
 			self.config['haikuporter']['args'] = ''
 
-	def connect(self):
+	def _connect(self):
 		try:
 			self.sshClient = paramiko.SSHClient()
 			self.sshClient.load_host_keys(self.config['ssh']['hostKeyFile'])
@@ -113,21 +118,46 @@ class Builder:
 			self.sftpClient = self.sshClient.open_sftp()
 			self._getAvailablePackages()
 
-			self.logger.info('connected to builder ' + self.name)
+			self.logger.info('connected to builder')
 			return True
 		except Exception as exception:
-			self.logger.info('failed to connect to builder ' + self.name + ': '
+			self.logger.info('failed to connect to builder: '
 				+ str(exception))
 			return False
 
-	def syncPortsTree(self, revision):
-		command = ('cd "' + self.config['portstree']['path']
-			+ '" && git fetch && git checkout ' + revision)
-		self.logger.info('running command: ' + command)
-		(output, channel) = self._remoteCommand(command)
-		return channel.recv_exit_status() == 0
+	def _syncPortsTree(self, revision):
+		try:
+			command = ('cd "' + self.config['portstree']['path']
+				+ '" && git fetch && git checkout ' + revision)
+			self.logger.info('running command: ' + command)
+			(output, channel) = self._remoteCommand(command)
+			return channel.recv_exit_status() == 0
+		except Exception as exception:
+			self.logger.info('failed to sync ports tree: '
+				+ str(exception))
+			return False
+
+	def _setupForBuilding(self):
+		if self.available:
+			return True
+		if self.lost:
+			return False
+
+		if not self._connect():
+			self.lost = True
+			return False
+
+		if not self._syncPortsTree(self.portsTreeHead):
+			self.lost = True
+			return False
+
+		self.available = True
+		return True
 
 	def build(self, scheduledBuild, buildNumber):
+		if not self._setupForBuilding():
+			return False
+
 		logHandler = logging.FileHandler(os.path.join(self.outputBaseDir,
 				'builds', str(buildNumber) + '.log'))
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
@@ -262,21 +292,10 @@ class BuildMaster:
 			builder = None
 			try:
 				builder = Builder(configFilePath, packagesPath,
-					self.buildOutputBaseDir)
+					self.buildOutputBaseDir, portsTreeHead)
 			except Exception as exception:
 				self.logger.error('failed to add builder from config '
 					+ configFilePath + ':' + str(exception))
-
-			self.logger.info('connecting to builder ' + builder.name)
-			if not builder.connect():
-				self.logger.error('failed to connect to builder '
-					+ builder.name)
-				continue
-
-			self.logger.info('syncing portstree on builder ' + builder.name)
-			if not builder.syncPortsTree(self.portsTreeHead):
-				self.logger.error('failed to sync portstree on builder '
-					+ builder.name)
 				continue
 
 			self.builders.append(builder)
