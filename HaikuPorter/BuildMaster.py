@@ -13,7 +13,6 @@ class ScheduledBuild:
 		self.port = port
 		self.requiredPackages = presentDependencyPackages
 		self.missingPackageIDs = set(requiredPackageIDs)
-		self.started = False
 		self.lost = False
 
 	@property
@@ -288,54 +287,46 @@ class BuildMaster:
 
 		self.builderLock = threading.Lock()
 		self.semaphore = threading.BoundedSemaphore(value = len(self.builders))
-		self.scheduledBuilds = {}
+		self.scheduledBuilds = []
+		self.blockedBuilds = []
 		self.scheduledBuildsLock = threading.Lock()
 		self.buildableCondition = threading.Condition()
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
-		if port.versionedName in self.scheduledBuilds:
-			sysExit('scheduling duplicate: ' + port.versionedName)
-
 		self.logger.info('scheduling build of ' + port.versionedName)
-		self.scheduledBuilds[port.versionedName] = ScheduledBuild(port,
-			requiredPackageIDs, presentDependencyPackages)
+		scheduledBuild = ScheduledBuild(port, requiredPackageIDs,
+			presentDependencyPackages)
+
+		if scheduledBuild.buildable:
+			self.scheduledBuilds.append(scheduledBuild)
+		else:
+			self.blockedBuilds.append(scheduledBuild)
 
 	def runBuilds(self):
+		while len(self.scheduledBuilds) > 0:
+			self._runBuilds()
+
+			# wait for all builds to finish
+			for i in range(0, len(self.builders)):
+				self.semaphore.acquire()
+
+	def _runBuilds(self):
 		while True:
+			buildToRun = None
 			with self.scheduledBuildsLock:
-				done = True
-				restart = False
-				for scheduledBuildID in self.scheduledBuilds:
-					scheduledBuild = self.scheduledBuilds[scheduledBuildID]
-					if scheduledBuild.started or scheduledBuild.lost:
-						continue
-
-					done = False
-					if not scheduledBuild.buildable:
-						continue
-
-					scheduledBuild.started = True
-					self.scheduledBuildsLock.release()
-					self._runBuild(scheduledBuild)
-					self.scheduledBuildsLock.acquire()
-					restart = True
-					break
-
-				if restart:
+				if len(self.scheduledBuilds) > 0:
+					buildToRun = self.scheduledBuilds.pop(0)
+				elif len(self.blockedBuilds) > 0:
+					self.logger.info('nothing buildable, waiting for packages')
+					with self.buildableCondition:
+						self.scheduledBuildsLock.release()
+						self.buildableCondition.wait()
+						self.scheduledBuildsLock.acquire()
 					continue
-
-				if done:
+				else:
 					break
 
-				self.logger.info('nothing else buildable, waiting for packages')
-				with self.buildableCondition:
-					self.scheduledBuildsLock.release()
-					self.buildableCondition.wait()
-					self.scheduledBuildsLock.acquire()
-
-		# wait for all builds to finish
-		for i in range(0, len(self.builders)):
-			self.semaphore.acquire()
+			self._runBuild(buildToRun)
 
 	def _runBuild(self, scheduledBuild):
 		self.semaphore.acquire()
@@ -367,18 +358,24 @@ class BuildMaster:
 				self.logger.info('package ' + package.versionedName + ' '
 					+ ('became available' if available else 'lost'))
 
-				for scheduledBuildID in self.scheduledBuilds:
-					scheduledBuild = self.scheduledBuilds[scheduledBuildID]
-					if not scheduledBuild.buildable and not scheduledBuild.lost:
-						scheduledBuild.packageCompleted(package, available)
-						if scheduledBuild.buildable or scheduledBuild.lost:
-							notify = True
-							self.logger.info('scheduled build '
-								+ scheduledBuildID + ' '
-								+ ('became buildable' if available else 'lost'))
+				stillBlockedBuilds = []
+				for blockedBuild in self.blockedBuilds:
+					blockedBuild.packageCompleted(package, available)
+					if blockedBuild.buildable or blockedBuild.lost:
+						notify = True
+						self.logger.info('scheduled build '
+							+ blockedBuild.port.versionedName + ' '
+							+ ('became buildable' if available else 'lost'))
 
-							if scheduledBuild.lost:
-								completePackages += scheduledBuild.port.packages
+						if blockedBuild.buildable:
+							self.scheduledBuilds.append(blockedBuild)
+						else:
+							# the build was lost, propagate lost packages
+							completePackages += blockedBuild.port.packages
+					else:
+						stillBlockedBuilds.append(blockedBuild)
+
+				self.blockedBuilds = stillBlockedBuilds
 
 		if notify:
 			with self.buildableCondition:
@@ -398,9 +395,9 @@ class BuildMaster:
 			+ ('succeeded' if buildSuccess else 'failed'))
 
 		if not buildSuccess and False:
-			# TODO: return the build to the unstarted state if retryable
+			# TODO: return the build to the schedule if retryable
 			with self.scheduledBuildsLock:
-				scheduledBuild.started = False
+				self.scheduledBuilds.append(scheduledBuild)
 			with self.buildableCondition:
 				self.buildableCondition.notify()
 		else:
