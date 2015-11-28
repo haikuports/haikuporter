@@ -246,6 +246,9 @@ def parseOptions():
 		dest='noPackageObsoletion', default=False,
 		help='do not move obsolete packages out of packages dir')
 
+	parser.add_option('--literal-search-strings', action='store_true',
+		dest='literalSearchStrings', default=False,
+		help='treat search strings as literals instead of as expressions')
 	parser.add_option('--print-raw', action='store_true', dest='printRaw',
 		default=False, help='print machine readable output for use by scripts')
 
