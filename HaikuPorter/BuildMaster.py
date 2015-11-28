@@ -271,6 +271,33 @@ class Builder:
 				self.availablePackages.append(entry)
 
 
+class MockBuilder:
+	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
+		self.name = name
+		self.buildCount = 0
+		self.failedBuilds = 0
+		self.buildFailInterval = buildFailInterval
+		self.builderFailInterval = builderFailInterval
+		self.lostAfter = lostAfter
+		self.lost = False
+
+	def build(self, scheduledBuild, buildNumber):
+		self.buildCount += 1
+		if self.buildCount >= self.lostAfter:
+			self.lost = True
+			time.sleep(1)
+			return (False, True)
+
+		buildSuccess = self.buildCount % self.buildFailInterval != 0
+		if not buildSuccess:
+			time.sleep(2)
+			self.failedBuilds += 1
+			return (False, self.failedBuilds % self.builderFailInterval != 0)
+
+		time.sleep(3)
+		return (True, False)
+
+
 class BuildMaster:
 	def __init__(self, packagesPath, portsTreeHead):
 		self.builders = []
