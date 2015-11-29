@@ -117,9 +117,9 @@ class Repository(object):
 	def searchPorts(self, regExp):
 		"""Search for one or more ports in the HaikuPorts tree, returning
 		   a list of found matches"""
-		if getOption('literalSearchStrings'):
-			regExp = re.escape(regExp)
 		if regExp:
+			if getOption('literalSearchStrings'):
+				regExp = re.escape(regExp)
 			reSearch = re.compile(regExp)
 
 		ports = []
@@ -133,9 +133,9 @@ class Repository(object):
 	def searchPackages(self, regExp):
 		"""Search for one or more packages in the HaikuPorts tree, returning
 		   a list of found matches"""
-		if getOption('literalSearchStrings'):
-			regExp = re.escape(regExp)
 		if regExp:
+			if getOption('literalSearchStrings'):
+				regExp = re.escape(regExp)
 			reSearch = re.compile(regExp)
 
 		packages = []
