@@ -30,6 +30,10 @@ class ProvidesManager(object):
 	def __init__(self):
 		self._providesMap = {}
 
+	def addProvidesFromPackage(self, package):
+		for providesString in package.recipeKeys['PROVIDES']:
+			self._addPackageProvidesInfo(package.revisionedName, providesString)
+
 	def addProvidesFromPackageInfo(self, packageInfo):
 		for provides in packageInfo.provides:
 			self._addPackageProvidesInfo(packageInfo, str(provides))

@@ -22,13 +22,11 @@ class ProvidesInfo(Resolvable):
 
 class RequiresUpdater(object):
 	def __init__(self, portPackages, requiredPackages):
-		self.providesMap = {}
+		self._providesManager = ProvidesManager()
 
 		# get the provides for the port packages
 		for package in portPackages:
-			for providesString in package.recipeKeys['PROVIDES']:
-				self._addPackageProvidesInfo(package.revisionedName,
-					providesString)
+			self._providesManager.addProvidesFromPackage(package)
 
 		# get the provides for the required packages
 		for package in requiredPackages:
@@ -41,8 +39,7 @@ class RequiresUpdater(object):
 		except CalledProcessError:
 			sysExit('failed to get provides for package "%s"' % package)
 
-		for provides in packageInfo.provides:
-			self._addPackageProvidesInfo(package, str(provides))
+		self._providesManager.addProvidesFromPackageInfo(packageInfo)
 
 	def addPackages(self, directory):
 		for package in os.listdir(directory):
@@ -58,35 +55,7 @@ class RequiresUpdater(object):
 		return result
 
 	def getMatchingProvides(self, resolvableExpression):
-		name = resolvableExpression.name
-		operator = resolvableExpression.operator
-		version = resolvableExpression.version
-
-		if not name in self.providesMap:
-			return None
-
-		providesList = self.providesMap[name]
-		for provides in providesList:
-			if not operator:
-				return provides
-			if not provides.version:
-				continue
-			matches = {
-				'<':	lambda compareResult: compareResult < 0,
-				'<=':	lambda compareResult: compareResult <= 0,
-				'==':	lambda compareResult: compareResult == 0,
-				'!=':	lambda compareResult: compareResult != 0,
-				'>=':	lambda compareResult: compareResult >= 0,
-				'>':	lambda compareResult: compareResult > 0,
-			}[operator](versionCompare(provides.version, version))
-			if not matches:
-				continue
-			if (provides.compatibleVersion
-				and versionCompare(provides.compatibleVersion, version)
-					> 0):
-				continue
-			return provides
-		return None
+		self._providesManager.getMatchingProvides(resolvableExpression)
 
 	def _updateRequires(self, requires):
 		# split the requires string
@@ -121,10 +90,3 @@ class RequiresUpdater(object):
 		if isBase:
 			result += ' base'
 		return result
-
-	def _addPackageProvidesInfo(self, package, providesString):
-		provides = ProvidesInfo(package, providesString.strip())
-		if provides.name in self.providesMap:
-			self.providesMap[provides.name].append(provides)
-		else:
-			self.providesMap[provides.name] = [ provides ]
