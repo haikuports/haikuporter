@@ -1,10 +1,12 @@
 from .Utils import sysExit
 
+import errno
 import json
 import logging
 import os
 import paramiko
 import socket
+import stat
 import threading
 import time
 
@@ -35,6 +37,7 @@ class Builder:
 			portsTreeHead):
 		self._loadConfig(configFilePath)
 		self.availablePackages = []
+		self.visiblePackages = []
 		self.portsTreeHead = portsTreeHead
 		self.packagesPath = packagesPath
 		self.outputBaseDir = outputBaseDir
@@ -95,6 +98,9 @@ class Builder:
 		if not 'packagesPath' in self.config['portstree']:
 			self.config['portstree']['packagesPath'] \
 				= self.config['portstree']['path'] + '/packages'
+		if not 'packagesCachePath' in self.config['portstree']:
+			self.config['portstree']['packagesCachePath'] \
+				= self.config['portstree']['packagesPath'] + '/.cache'
 
 		if not 'haikuporter' in self.config:
 			self.config['haikuporter'] = {}
@@ -117,12 +123,11 @@ class Builder:
 				timeout = 10)
 
 			self.sftpClient = self.sshClient.open_sftp()
-			self._getAvailablePackages()
 
 			self.logger.info('connected to builder')
 			return True
 		except Exception as exception:
-			self.logger.info('failed to connect to builder: '
+			self.logger.error('failed to connect to builder: '
 				+ str(exception))
 			return False
 
@@ -134,7 +139,35 @@ class Builder:
 			(output, channel) = self._remoteCommand(command)
 			return channel.recv_exit_status() == 0
 		except Exception as exception:
-			self.logger.info('failed to sync ports tree: '
+			self.logger.error('failed to sync ports tree: '
+				+ str(exception))
+			return False
+
+	def _createNeededDirs(self):
+		try:
+			self._ensureDirExists(self.config['portstree']['packagesPath'])
+			self._ensureDirExists(self.config['portstree']['packagesCachePath'])
+			return True
+		except Exception as exception:
+			self.logger.error('failed to create needed dirs: '
+				+ str(exception))
+			return False
+
+	def _getAvailablePackages(self):
+		try:
+			self._clearVisiblePackages()
+
+			for entry in self._listDir(
+					self.config['portstree']['packagesCachePath']):
+				if not entry.endswith('.hpkg'):
+					continue
+
+				if not entry in self.availablePackages:
+					self.availablePackages.append(entry)
+
+			return True
+		except Exception as exception:
+			self.logger.error('failed to get available packages: '
 				+ str(exception))
 			return False
 
@@ -149,6 +182,14 @@ class Builder:
 			return False
 
 		if not self._syncPortsTree(self.portsTreeHead):
+			self.lost = True
+			return False
+
+		if not self._createNeededDirs():
+			self.lost = True
+			return False
+
+		if not self._getAvailablePackages():
 			self.lost = True
 			return False
 
@@ -167,18 +208,10 @@ class Builder:
 		reschedule = True
 
 		try:
+			self._clearVisiblePackages()
 			for requiredPackage in scheduledBuild.requiredPackages:
-				if requiredPackage in self.availablePackages:
-					continue
-
-				self.buildLogger.info('upload required package '
-					+ requiredPackage + ' to builder')
-
-				self._putFile(os.path.join(self.packagesPath, requiredPackage),
-					self.config['portstree']['packagesPath'] + '/'
-						+ requiredPackage)
-
-				self.availablePackages.append(requiredPackage)
+				self._makePackageAvailable(requiredPackage)
+				self._makePackageVisible(requiredPackage)
 
 			self.buildLogger.info('building port '
 				+ scheduledBuild.port.versionedName)
@@ -227,8 +260,7 @@ class Builder:
 						+ package.hpkgName,
 					os.path.join(self.packagesPath, package.hpkgName))
 
-				self.availablePackages.append(package.hpkgName)
-
+			self._clearVisiblePackages()
 			buildSuccess = True
 
 		except (IOError, paramiko.ssh_exception.SSHException) as exception:
@@ -262,13 +294,70 @@ class Builder:
 	def _putFile(self, remotePath, localPath):
 		self.sftpClient.put(remotePath, localPath)
 
+	def _symlink(self, sourcePath, destPath):
+		self.sftpClient.symlink(sourcePath, destPath)
+
+	def _ensureDirExists(self, path):
+		try:
+			attributes = self.sftpClient.stat(path)
+			if not stat.S_ISDIR(attributes.st_mode):
+				raise IOError(errno.EEXISTS, 'file exists')
+		except IOError as exception:
+			if exception.errno != errno.ENOENT:
+				raise
+
+			self.sftpClient.mkdir(path)
+
 	def _listDir(self, remotePath):
 		return self.sftpClient.listdir(remotePath)
 
-	def _getAvailablePackages(self):
-		for entry in self._listDir(self.config['portstree']['packagesPath']):
-			if entry.endswith('.hpkg'):
+	def _makePackageAvailable(self, packageName):
+		if packageName in self.availablePackages:
+			return
+
+		self.logger.info('upload package ' + packageName + ' to builder')
+		self._putFile(os.path.join(self.packagesPath, packageName),
+			self.config['portstree']['packagesCachePath'] + '/' + packageName)
+
+		self.availablePackages.append(packageName)
+
+	def _clearVisiblePackages(self):
+		basePath = self.config['portstree']['packagesPath']
+		cachePath = self.config['portstree']['packagesCachePath']
+		for entry in self._listDir(basePath):
+			if not entry.endswith('.hpkg'):
+				continue
+
+			entryPath = basePath + '/' + entry
+			attributes = self.sftpClient.lstat(entryPath)
+			if stat.S_ISLNK(attributes.st_mode):
+				self.logger.debug('removing symlink to package ' + entry)
+				self.sftpClient.remove(entryPath)
+			else:
+				# Unfortunately we can't use SFTPClient.rename as that uses the
+				# rename command (vs. posix-rename) which uses hardlinks which
+				# fail on BFS
+				self.logger.info('moving package ' + entry + ' to cache')
+				cacheEntryPath = cachePath + '/' + entry
+				(output, channel) = self._remoteCommand('mv "'
+					+ entryPath + '" "' + cacheEntryPath + '"')
+				if channel.recv_exit_status() != 0:
+					raise IOError('failed to move file to cache')
+
 				self.availablePackages.append(entry)
+
+		self.visiblePackages = []
+
+	def _makePackageVisible(self, packageName):
+		if packageName in self.visiblePackages:
+			return
+
+		self.logger.debug('making package ' + packageName + ' visible')
+		self._symlink(
+			self.config['portstree']['packagesCachePath'] + '/' + packageName,
+			self.config['portstree']['packagesPath'] + '/' + packageName)
+
+		self.visiblePackages.append(packageName)
 
 
 class MockBuilder:
