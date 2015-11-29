@@ -15,7 +15,7 @@ then
 	exit 2
 fi
 
-git pull --ff
+git pull --ff-only
 if [ $? -ne 0 ]
 then
 	echo "git pull failed, manual fixing needed"
