@@ -44,6 +44,8 @@ class Builder:
 
 		self.available = False
 		self.lost = False
+		self.connectionErrors = 0
+		self.maxConnectionErrors = 10
 
 		self.logger = logging.getLogger('builders.' + self.name)
 		self.logger.setLevel(logging.DEBUG)
@@ -126,10 +128,19 @@ class Builder:
 			self.sftpClient = self.sshClient.open_sftp()
 
 			self.logger.info('connected to builder')
+			self.connectionErrors = 0
 			return True
 		except Exception as exception:
 			self.logger.error('failed to connect to builder: '
 				+ str(exception))
+
+			self.connectionErrors += 1
+			if self.connectionErrors >= self.maxConnectionErrors:
+				self.logger.error('giving up on builder after '
+					+ str(self.connectionErrors)
+					+ ' consecutive connection errors')
+				self.lost = True
+
 			# avoid DoSing the remote host
 			time.sleep(5)
 			raise
