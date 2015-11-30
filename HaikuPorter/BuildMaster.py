@@ -240,6 +240,10 @@ class Builder:
 			exitStatus = channel.recv_exit_status()
 			self.buildLogger.info('command exit status: ' + str(exitStatus))
 
+			if exitStatus < 0 and not channel.get_transport().is_active():
+				self.available = False
+				raise Exception('builder disconnected')
+
 			if exitStatus != 0:
 				reschedule = False
 				raise Exception('build failure')
