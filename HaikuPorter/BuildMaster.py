@@ -130,7 +130,9 @@ class Builder:
 		except Exception as exception:
 			self.logger.error('failed to connect to builder: '
 				+ str(exception))
-			return False
+			# avoid DoSing the remote host
+			time.sleep(5)
+			raise
 
 	def _syncPortsTree(self, revision):
 		try:
@@ -142,7 +144,7 @@ class Builder:
 		except Exception as exception:
 			self.logger.error('failed to sync ports tree: '
 				+ str(exception))
-			return False
+			raise
 
 	def _createNeededDirs(self):
 		try:
@@ -152,7 +154,7 @@ class Builder:
 		except Exception as exception:
 			self.logger.error('failed to create needed dirs: '
 				+ str(exception))
-			return False
+			raise
 
 	def _getAvailablePackages(self):
 		try:
@@ -170,7 +172,7 @@ class Builder:
 		except Exception as exception:
 			self.logger.error('failed to get available packages: '
 				+ str(exception))
-			return False
+			raise
 
 	def _setupForBuilding(self):
 		if self.available:
@@ -178,29 +180,15 @@ class Builder:
 		if self.lost:
 			return False
 
-		if not self._connect():
-			self.lost = True
-			return False
-
-		if not self._syncPortsTree(self.portsTreeHead):
-			self.lost = True
-			return False
-
-		if not self._createNeededDirs():
-			self.lost = True
-			return False
-
-		if not self._getAvailablePackages():
-			self.lost = True
-			return False
+		self._connect()
+		self._syncPortsTree(self.portsTreeHead)
+		self._createNeededDirs()
+		self._getAvailablePackages()
 
 		self.available = True
 		return True
 
 	def build(self, scheduledBuild, buildNumber):
-		if not self._setupForBuilding():
-			return (False, True)
-
 		logHandler = logging.FileHandler(os.path.join(self.outputBaseDir,
 				'builds', str(buildNumber) + '.log'))
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
@@ -209,6 +197,9 @@ class Builder:
 		reschedule = True
 
 		try:
+			if not self._setupForBuilding():
+				return (False, True)
+
 			self._clearVisiblePackages()
 			for requiredPackage in scheduledBuild.requiredPackages:
 				self._makePackageAvailable(requiredPackage)
@@ -264,14 +255,14 @@ class Builder:
 			self._clearVisiblePackages()
 			buildSuccess = True
 
+		except socket.error as exception:
+			self.buildLogger.error('connection failed: ' + str(exception))
+			self.available = False
+
 		except (IOError, paramiko.ssh_exception.SSHException) as exception:
 			self.buildLogger.error('builder failed: ' + str(exception))
 			self.available = False
 			self.lost = True
-
-		except socket.error as exception:
-			self.buildLogger.error('connection failed: ' + str(exception))
-			self.available = False
 
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
