@@ -251,6 +251,9 @@ def parseOptions():
 		help='treat search strings as literals instead of as expressions')
 	parser.add_option('--print-raw', action='store_true', dest='printRaw',
 		default=False, help='print machine readable output for use by scripts')
+	parser.add_option('--print-filenames', action='store_true',
+		dest='printFilenames', default=False, help='print filenames instead of '
+			+ 'package names in package listings and searches')
 
 	global __Options__
 

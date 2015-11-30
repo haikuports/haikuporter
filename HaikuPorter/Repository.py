@@ -130,7 +130,18 @@ class Repository(object):
 
 		return sorted(ports)
 
-	def searchPackages(self, regExp):
+	def _fileNameForPackageName(self, packageName):
+		portName = self._portNameForPackageName[packageName]
+		portVersion = self.getActiveVersionOf(portName)
+		if not portVersion:
+			return None
+
+		port = self._allPorts[portName + '-' + portVersion]
+		for package in port.packages:
+			if package.name == packageName:
+				return package.hpkgName
+
+	def searchPackages(self, regExp, returnFileNames = True):
 		"""Search for one or more packages in the HaikuPorts tree, returning
 		   a list of found matches"""
 		if regExp:
@@ -142,6 +153,11 @@ class Repository(object):
 		packageNames = self._portNameForPackageName.keys()
 		for packageName in packageNames:
 			if not regExp or reSearch.search(packageName):
+				if returnFileNames:
+					packageName = self._fileNameForPackageName(packageName)
+					if not packageName:
+						continue
+
 				packages.append(packageName)
 
 		return sorted(packages)

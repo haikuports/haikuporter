@@ -121,7 +121,8 @@ class Main(object):
 			if self.options.list:
 				allNames = self.repository.searchPorts(None)
 			else:
-				allNames = self.repository.searchPackages(None)
+				allNames = self.repository.searchPackages(None,
+					self.options.printFilenames)
 
 			for name in sorted(allNames):
 				print name
@@ -147,7 +148,8 @@ class Main(object):
 						else:
 							print port.category + '::' + portName
 				else:
-					packageNames = self.repository.searchPackages(arg)
+					packageNames = self.repository.searchPackages(arg,
+						self.options.printFilenames)
 					for packageName in packageNames:
 						print packageName
 			return
