@@ -12,14 +12,14 @@ fi
 if [ -z "$HAIKUPORTER" ]
 then
 	echo "HAIKUPORTER environment variable not set"
-	exit 2
+	exit 1
 fi
 
 git pull --ff-only
 if [ $? -ne 0 ]
 then
 	echo "git pull failed, manual fixing needed"
-	exit $?
+	exit 2
 fi
 
 REVISIONS_FILE="buildmaster/processed_rev"
@@ -58,7 +58,10 @@ echo "ports to be built: $EXPANDED_PORTS"
 
 "$HAIKUPORTER" --debug --build-master $EXPANDED_PORTS
 
-if [ $? -eq 0 ]
+if [ $? -ne 0 ]
 then
-	echo "$HEAD_REVISION" > "$REVISIONS_FILE"
+	echo "build master failed"
+	exit 3
 fi
+
+echo "$HEAD_REVISION" > "$REVISIONS_FILE"
