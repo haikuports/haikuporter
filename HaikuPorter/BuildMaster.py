@@ -122,6 +122,7 @@ class Builder:
 				compress = True, allow_agent = False, look_for_keys = False,
 				timeout = 10)
 
+			self.sshClient.get_transport().set_keepalive(15)
 			self.sftpClient = self.sshClient.open_sftp()
 
 			self.logger.info('connected to builder')
