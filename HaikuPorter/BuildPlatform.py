@@ -332,7 +332,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:less',
 			'cmd:login',
 			'cmd:passwd',
-			'cmd:sh',
+			'cmd:bash',
 			'cmd:zcat'
 		])
 
