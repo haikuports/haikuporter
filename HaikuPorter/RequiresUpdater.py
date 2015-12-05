@@ -6,6 +6,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from .PackageInfo import PackageInfo, Resolvable, ResolvableExpression
+from .ProvidesManager import ProvidesManager
 from .Utils import versionCompare, sysExit
 
 import os
