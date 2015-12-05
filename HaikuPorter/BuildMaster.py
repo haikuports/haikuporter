@@ -299,6 +299,7 @@ class Builder:
 					os.path.join(self.packagesPath, package.hpkgName))
 
 			self._clearVisiblePackages()
+			self.buildLogger.info('build completed successfully')
 			buildSuccess = True
 
 		except socket.error as exception:
