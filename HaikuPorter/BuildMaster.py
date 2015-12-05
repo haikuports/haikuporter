@@ -534,6 +534,7 @@ class BuildMaster:
 			# protectes the scheduled builds lists
 		self.builderCondition = threading.Condition()
 			# protects the builders lists
+		self.statusLock = threading.Lock()
 
 		self._setBuildStatus('preparing')
 
@@ -744,5 +745,6 @@ class BuildMaster:
 		self._dumpStatus()
 
 	def _dumpStatus(self):
-		with open(self.statusOutputPath, 'w') as outputFile:
-			outputFile.write(json.dumps(self.status))
+		with self.statusLock:
+			with open(self.statusOutputPath, 'w') as outputFile:
+				outputFile.write(json.dumps(self.status))
