@@ -443,10 +443,14 @@ class BuildMaster:
 
 		self.scheduledBuilds = []
 		self.blockedBuilds = []
+		self.completeBuilds = []
+		self.failedBuilds = []
+		self.lostBuilds = []
+
 		self.buildableCondition = threading.Condition()
-			# protectes the scheduled and blocked build lists
+			# protectes the scheduled builds lists
 		self.builderCondition = threading.Condition()
-			# protects the [available] builder lists
+			# protects the builders lists
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.logger.info('scheduling build of ' + port.versionedName)
@@ -459,6 +463,8 @@ class BuildMaster:
 			self.blockedBuilds.append(scheduledBuild)
 
 	def runBuilds(self):
+		self._ensureConsistentSchedule()
+
 		while True:
 			self._runBuilds()
 			self._waitForBuildsToComplete()
@@ -541,6 +547,7 @@ class BuildMaster:
 							self.scheduledBuilds.append(blockedBuild)
 						else:
 							# the build was lost, propagate lost packages
+							self.lostBuilds.append(blockedBuild)
 							completePackages += blockedBuild.port.packages
 					else:
 						stillBlockedBuilds.append(blockedBuild)
@@ -549,6 +556,12 @@ class BuildMaster:
 
 			if notify:
 				self.buildableCondition.notify()
+
+	def _buildComplete(self, scheduledBuild, buildSuccess, listToUse):
+		with self.buildableCondition:
+			listToUse.append(scheduledBuild)
+
+		self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
 
 	def _buildThread(self, builder, scheduledBuild, buildNumber):
 		self.logger.info('starting build ' + str(buildNumber) + ', '
@@ -567,7 +580,8 @@ class BuildMaster:
 				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
 		else:
-			self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
+			self._buildComplete(scheduledBuild, buildSuccess,
+				self.completeBuilds if buildSuccess else self.failedBuilds)
 
 		with self.builderCondition:
 			if builder.lost:
@@ -577,3 +591,27 @@ class BuildMaster:
 				self.availableBuilders.append(builder)
 
 			self.builderCondition.notify()
+
+	def _ensureConsistentSchedule(self):
+		buildingPackagesIDs = []
+		for scheduledBuild in self.scheduledBuilds + self.blockedBuilds:
+			for package in scheduledBuild.port.packages:
+				if not package.versionedName in buildingPackagesIDs:
+					buildingPackagesIDs.append(package.versionedName)
+
+		brokenBuilds = []
+		for blockedBuild in self.blockedBuilds:
+			for missingPackageID in blockedBuild.missingPackageIDs:
+				if not missingPackageID in buildingPackagesIDs:
+					brokenBuilds.append(blockedBuild)
+					break
+
+		for brokenBuild in brokenBuilds:
+			self.logger.error('missing package ' + missingPackageID
+				+ ' of blocked build ' + blockedBuild.port.versionedName
+				+ ' is not scheduled')
+			self._buildComplete(brokenBuild, False, self.lostBuilds)
+
+		for lostBuild in self.lostBuilds:
+			if lostBuild in self.blockedBuilds:
+				self.blockedBuilds.remove(lostBuild)
