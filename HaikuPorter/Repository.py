@@ -498,8 +498,9 @@ class Repository(object):
 					print '\tremoving ' + dependencyInfoFileName
 				os.remove(dependencyInfo)
 
-				# obsolete corresponding package, if any
-				self._removePackagesForDependencyInfo(dependencyInfo)
+				if not getOption('noPackageObsoletion'):
+					# obsolete corresponding package, if any
+					self._removePackagesForDependencyInfo(dependencyInfo)
 
 	def _removePackagesForDependencyInfo(self, dependencyInfo):
 		"""remove all packages for the given dependency-info"""
