@@ -91,6 +91,7 @@ class Main(object):
 			self.buildMaster = BuildMaster(self.packagesPath, head[:-1])
 
 			self.options.noPackageObsoletion = True
+			self.options.ignoreMessages = True
 
 		# if requested, checkout or update ports tree
 		if self.options.get:
@@ -436,7 +437,7 @@ class Main(object):
 				else:
 					sys.exit(1)
 
-		if port.recipeKeys['MESSAGE']:
+		if not self.options.ignoreMessages and port.recipeKeys['MESSAGE']:
 			print port.recipeKeys['MESSAGE']
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')

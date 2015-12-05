@@ -254,6 +254,9 @@ def parseOptions():
 	parser.add_option('--print-filenames', action='store_true',
 		dest='printFilenames', default=False, help='print filenames instead of '
 			+ 'package names in package listings and searches')
+	parser.add_option('--ignore-messages', action='store_true',
+		dest='ignoreMessages', default=False,
+		help='ignore messages within recipes')
 
 	global __Options__
 
