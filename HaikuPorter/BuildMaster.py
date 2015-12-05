@@ -460,6 +460,13 @@ class BuildMaster:
 
 	def runBuilds(self):
 		while True:
+			self._runBuilds()
+			self._waitForBuildsToComplete()
+			if len(self.scheduledBuilds) == 0:
+				break
+
+	def _runBuilds(self):
+		while True:
 			buildToRun = None
 			with self.buildableCondition:
 				if len(self.scheduledBuilds) > 0:
@@ -472,6 +479,14 @@ class BuildMaster:
 					break
 
 			self._runBuild(buildToRun)
+
+	def _waitForBuildsToComplete(self):
+		while True:
+			with self.builderCondition:
+				if len(self.availableBuilders) == len(self.builders):
+					break
+
+				self.builderCondition.wait()
 
 	def _getBuildNumber(self):
 		buildNumber = self.buildNumber
