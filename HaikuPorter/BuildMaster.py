@@ -14,8 +14,11 @@ import time
 class ScheduledBuild:
 	def __init__(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.port = port
+		self.resultingPackages \
+			= [ package.hpkgName for package in self.port.packages ]
 		self.requiredPackages = presentDependencyPackages
 		self.missingPackageIDs = set(requiredPackageIDs)
+		self.buildNumbers = []
 		self.lost = False
 
 	@property
@@ -30,6 +33,23 @@ class ScheduledBuild:
 				self.requiredPackages.append(package.hpkgName)
 			else:
 				self.lost = True
+
+	@property
+	def status(self):
+		return {
+			'port': {
+				'name': self.port.name,
+				'version': self.port.version,
+				'revision': self.port.revision,
+				'revisionedName': self.port.revisionedName
+			},
+			'resultingPackages': self.resultingPackages,
+			'requiredPackages': list(self.requiredPackages),
+			'missingPackageIDs': list(self.missingPackageIDs),
+			'buildable': self.buildable,
+			'buildNumbers': self.buildNumbers,
+			'lost': self.lost
+		}
 
 
 class Builder:
@@ -46,6 +66,8 @@ class Builder:
 		self.lost = False
 		self.connectionErrors = 0
 		self.maxConnectionErrors = 10
+
+		self.currentBuild = None
 
 		self.logger = logging.getLogger('builders.' + self.name)
 		self.logger.setLevel(logging.DEBUG)
@@ -207,6 +229,11 @@ class Builder:
 		buildSuccess = False
 		reschedule = True
 
+		self.currentBuild = {
+			'build': scheduledBuild.status,
+			'number': buildNumber
+		}
+
 		try:
 			if not self._setupForBuilding():
 				return (False, True)
@@ -285,6 +312,7 @@ class Builder:
 		finally:
 			self.buildLogger.removeHandler(logHandler)
 
+		self.currentBuild = None
 		return (buildSuccess, reschedule)
 
 	def _remoteCommand(self, command):
@@ -366,6 +394,18 @@ class Builder:
 
 		self.visiblePackages.append(packageName)
 
+	@property
+	def status(self):
+		return {
+			'name': self.name,
+			'lost': self.lost,
+			'available': self.available,
+			'availablePackages': self.availablePackages,
+			'connectionErrors': self.connectionErrors,
+			'maxConnectionErrors': self.maxConnectionErrors,
+			'currentBuild': self.currentBuild
+		}
+
 
 class MockBuilder:
 	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
@@ -376,22 +416,45 @@ class MockBuilder:
 		self.builderFailInterval = builderFailInterval
 		self.lostAfter = lostAfter
 		self.lost = False
+		self.currentBuild = None
 
 	def build(self, scheduledBuild, buildNumber):
-		self.buildCount += 1
-		if self.buildCount >= self.lostAfter:
-			self.lost = True
+		buildSuccess = False
+		reschedule = True
+
+		self.currentBuild = {
+			'build': scheduledBuild.status,
+			'number': buildNumber
+		}
+
+		try:
+			self.buildCount += 1
+			if self.buildCount >= self.lostAfter:
+				self.lost = True
+				time.sleep(1)
+				raise Exception('lost')
+
+			buildSuccess = self.buildCount % self.buildFailInterval != 0
+			if not buildSuccess:
+				time.sleep(1)
+				self.failedBuilds += 1
+				reschedule = self.failedBuilds % self.builderFailInterval == 0
+				raise Exception('failed')
+
 			time.sleep(1)
-			return (False, True)
+		except Exception as exception:
+			pass
 
-		buildSuccess = self.buildCount % self.buildFailInterval != 0
-		if not buildSuccess:
-			time.sleep(2)
-			self.failedBuilds += 1
-			return (False, self.failedBuilds % self.builderFailInterval != 0)
+		self.currentBuild = None
+		return (buildSuccess, reschedule)
 
-		time.sleep(3)
-		return (True, False)
+	@property
+	def status(self):
+		return {
+			'name': self.name,
+			'lost': self.lost,
+			'currentBuild': self.currentBuild
+		}
 
 
 class BuildMaster:
@@ -420,6 +483,9 @@ class BuildMaster:
 		self.portsTreeHead = portsTreeHead
 		self.logger.info('portstree head is at ' + self.portsTreeHead)
 
+		self.statusOutputPath = os.path.join(self.buildOutputBaseDir,
+			'status.json')
+
 		for fileName in os.listdir(self.builderBaseDir):
 			configFilePath = os.path.join(self.builderBaseDir, fileName)
 			if not os.path.isfile(configFilePath):
@@ -442,6 +508,7 @@ class BuildMaster:
 		self.availableBuilders += self.builders
 
 		self.scheduledBuilds = []
+		self.activeBuilds = []
 		self.blockedBuilds = []
 		self.completeBuilds = []
 		self.failedBuilds = []
@@ -451,6 +518,8 @@ class BuildMaster:
 			# protectes the scheduled builds lists
 		self.builderCondition = threading.Condition()
 			# protects the builders lists
+
+		self._setBuildStatus('preparing')
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.logger.info('scheduling build of ' + port.versionedName)
@@ -462,14 +531,19 @@ class BuildMaster:
 		else:
 			self.blockedBuilds.append(scheduledBuild)
 
+		self._setBuildStatus('scheduling')
+
 	def runBuilds(self):
 		self._ensureConsistentSchedule()
 
+		self._setBuildStatus('starting builds')
 		while True:
 			self._runBuilds()
 			self._waitForBuildsToComplete()
 			if len(self.scheduledBuilds) == 0:
 				break
+
+		self._setBuildStatus('complete')
 
 	def _runBuilds(self):
 		while True:
@@ -477,8 +551,10 @@ class BuildMaster:
 			with self.buildableCondition:
 				if len(self.scheduledBuilds) > 0:
 					buildToRun = self.scheduledBuilds.pop(0)
+					self.activeBuilds.append(buildToRun)
 				elif len(self.blockedBuilds) > 0:
 					self.logger.info('nothing buildable, waiting for packages')
+					self._setBuildStatus('waiting for packages')
 					self.buildableCondition.wait()
 					continue
 				else:
@@ -492,6 +568,7 @@ class BuildMaster:
 				if len(self.availableBuilders) == len(self.builders):
 					break
 
+				self._setBuildStatus('waiting for all builds to complete')
 				self.builderCondition.wait()
 
 	def _getBuildNumber(self):
@@ -509,6 +586,7 @@ class BuildMaster:
 					sysExit('all builders lost')
 
 				if len(self.availableBuilders) == 0:
+					self._setBuildStatus('waiting for available builders')
 					self.builderCondition.wait()
 					continue
 
@@ -559,6 +637,8 @@ class BuildMaster:
 
 	def _buildComplete(self, scheduledBuild, buildSuccess, listToUse):
 		with self.buildableCondition:
+			if scheduledBuild in self.activeBuilds:
+				self.activeBuilds.remove(scheduledBuild)
 			listToUse.append(scheduledBuild)
 
 		self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
@@ -566,7 +646,9 @@ class BuildMaster:
 	def _buildThread(self, builder, scheduledBuild, buildNumber):
 		self.logger.info('starting build ' + str(buildNumber) + ', '
 			+ scheduledBuild.port.versionedName + ' on builder '
-			+ builder.name);
+			+ builder.name)
+
+		scheduledBuild.buildNumbers.append(buildNumber)
 
 		(buildSuccess, reschedule) = builder.build(scheduledBuild, buildNumber)
 
@@ -577,6 +659,7 @@ class BuildMaster:
 		if not buildSuccess and reschedule:
 			self.logger.info('transient error, rescheduling build')
 			with self.buildableCondition:
+				self.activeBuilds.remove(scheduledBuild)
 				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
 		else:
@@ -615,3 +698,28 @@ class BuildMaster:
 		for lostBuild in self.lostBuilds:
 			if lostBuild in self.blockedBuilds:
 				self.blockedBuilds.remove(lostBuild)
+
+	@property
+	def status(self):
+		return {
+			'builds': {
+				'active': [ build.status for build in self.activeBuilds ],
+				'scheduled': [ build.status for build in self.scheduledBuilds ],
+				'blocked': [ build.status for build in self.blockedBuilds ],
+				'complete': [ build.status for build in self.completeBuilds ],
+				'failed': [ build.status for build in self.failedBuilds ],
+				'lost': [ build.status for build in self.lostBuilds ]
+			},
+			'builders': [ builder.status for builder in self.builders ],
+			'nextBuildNumber': self.buildNumber,
+			'portsTreeHead': self.portsTreeHead,
+			'buildStatus': self.buildStatus
+		}
+
+	def _setBuildStatus(self, buildStatus):
+		self.buildStatus = buildStatus
+		self._dumpStatus()
+
+	def _dumpStatus(self):
+		with open(self.statusOutputPath, 'w') as outputFile:
+			outputFile.write(json.dumps(self.status))
