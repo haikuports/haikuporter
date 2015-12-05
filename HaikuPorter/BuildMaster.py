@@ -221,18 +221,27 @@ class Builder:
 		self.available = True
 		return True
 
-	def build(self, scheduledBuild, buildNumber):
+	def setBuild(self, scheduledBuild, buildNumber):
 		logHandler = logging.FileHandler(os.path.join(self.outputBaseDir,
 				'builds', str(buildNumber) + '.log'))
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
 		self.buildLogger.addHandler(logHandler)
-		buildSuccess = False
-		reschedule = True
 
 		self.currentBuild = {
-			'build': scheduledBuild.status,
-			'number': buildNumber
+			'build': scheduledBuild,
+			'status': scheduledBuild.status,
+			'number': buildNumber,
+			'logHandler': logHandler
 		}
+
+	def unsetBuild(self):
+		self.buildLogger.removeHandler(self.currentBuild['logHandler'])
+		self.currentBuild = None
+
+	def runBuild(self):
+		scheduledBuild = self.currentBuild['build']
+		buildSuccess = False
+		reschedule = True
 
 		try:
 			if not self._setupForBuilding():
@@ -314,10 +323,6 @@ class Builder:
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
 
-		finally:
-			self.buildLogger.removeHandler(logHandler)
-
-		self.currentBuild = None
 		return (buildSuccess, reschedule)
 
 	def _remoteCommand(self, command):
@@ -408,7 +413,10 @@ class Builder:
 			'availablePackages': self.availablePackages,
 			'connectionErrors': self.connectionErrors,
 			'maxConnectionErrors': self.maxConnectionErrors,
-			'currentBuild': self.currentBuild
+			'currentBuild': {
+				'build': self.currentBuild['status'],
+				'number': self.currentBuild['number']
+			} if self.currentBuild else None
 		}
 
 
@@ -423,14 +431,18 @@ class MockBuilder:
 		self.lost = False
 		self.currentBuild = None
 
-	def build(self, scheduledBuild, buildNumber):
-		buildSuccess = False
-		reschedule = True
-
+	def setBuild(self, scheduledBuild, buildNumber):
 		self.currentBuild = {
 			'build': scheduledBuild.status,
 			'number': buildNumber
 		}
+
+	def unsetBuild(self):
+		self.currentBuild = None
+
+	def runBuild(self):
+		buildSuccess = False
+		reschedule = True
 
 		try:
 			self.buildCount += 1
@@ -450,7 +462,6 @@ class MockBuilder:
 		except Exception as exception:
 			pass
 
-		self.currentBuild = None
 		return (buildSuccess, reschedule)
 
 	@property
@@ -655,7 +666,12 @@ class BuildMaster:
 
 		scheduledBuild.buildNumbers.append(buildNumber)
 
-		(buildSuccess, reschedule) = builder.build(scheduledBuild, buildNumber)
+		builder.setBuild(scheduledBuild, buildNumber)
+		self._dumpStatus()
+
+		(buildSuccess, reschedule) = builder.runBuild()
+
+		builder.unsetBuild()
 
 		self.logger.info('build ' + str(buildNumber) + ', '
 			+ scheduledBuild.port.versionedName + ' '
@@ -679,6 +695,8 @@ class BuildMaster:
 				self.availableBuilders.append(builder)
 
 			self.builderCondition.notify()
+
+		self._dumpStatus()
 
 	def _ensureConsistentSchedule(self):
 		buildingPackagesIDs = []
