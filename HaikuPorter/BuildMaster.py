@@ -746,5 +746,7 @@ class BuildMaster:
 
 	def _dumpStatus(self):
 		with self.statusLock:
-			with open(self.statusOutputPath, 'w') as outputFile:
+			tempFile = self.statusOutputPath + '.temp'
+			with open(tempFile, 'w') as outputFile:
 				outputFile.write(json.dumps(self.status))
+			os.rename(tempFile, self.statusOutputPath)
