@@ -257,10 +257,14 @@ class Builder:
 				+ ' && cd "' + self.config['portstree']['path']
 				+ '" && "' + self.config['haikuporter']['path']
 				+ '" --config=haikuports.conf'
+				+ ' --no-package-obsoletion --clean "'
+				+ scheduledBuild.port.versionedName
+				+ '" && "' + self.config['haikuporter']['path']
+				+ '" --config=haikuports.conf'
 				+ ' --no-system-packages --no-dependencies'
 				+ ' --no-package-obsoletion '
-				+ self.config['haikuporter']['args'] + ' '
-				+ scheduledBuild.port.versionedName)
+				+ self.config['haikuporter']['args'] + ' "'
+				+ scheduledBuild.port.versionedName + '"')
 
 			self.buildLogger.info('running command: ' + command)
 			self.buildLogger.propagate = False
