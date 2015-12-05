@@ -306,7 +306,6 @@ class Main(object):
 			if portID not in allPorts:
 				sysExit(portID + ' not found in tree.')
 			port = allPorts[portID]
-			portSpec['id'] = portID
 
 			# show port description, if requested
 			if self.options.about:
@@ -321,7 +320,10 @@ class Main(object):
 				self._listBuildDependencies(port)
 				continue
 
-			self._validateMainPort(port, portSpec['revision'])
+			if not self._validateMainPort(port, portSpec['revision']):
+				continue
+
+			portSpec['id'] = portID
 
 		if self.options.about or self.options.listBuildDependencies:
 			return
@@ -428,6 +430,9 @@ class Main(object):
 			status = port.statusOnTargetArchitecture
 			warn('Port %s is %s on this architecture.'
 				 % (port.versionedName, status))
+			if self.options.buildMaster:
+				return False
+
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')
 				if answer == '':
@@ -447,6 +452,8 @@ class Main(object):
 					print ' ok'
 				else:
 					sys.exit(1)
+
+		return True
 
 	def _buildMainPort(self, port):
 		"""Build the given port with all its dependencies"""
