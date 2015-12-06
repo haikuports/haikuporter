@@ -85,11 +85,11 @@ a, a:visited {
 	background-color: #fffff8;
 }
 
-#completeBuilds {
+#completeBuilds, #activeBuilders {
 	background-color: #f0fff0;
 }
 
-#failedBuilds {
+#failedBuilds, #lostBuilders {
 	background-color: #fff0f0;
 }
 
