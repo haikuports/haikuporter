@@ -13,13 +13,18 @@
 		</a>
 		<div id="statusPage">
 			<div>
+				<div class="labeled">
+					<div class="label">Select buildrun</div>
+					<select id="buildrunSelector">
+						<option value="">current</option>
+					</select>
+					<div id="loadStatus">Initializing</div>
+				</div>
 				<h1>Buildrun Info</h1>
 				<div class="labeled">
 					<div class="label">Log</div>
-					<div>
-						<a href="output/master.log" target="_blank">
-							Master log
-						</a>
+					<div id="masterLog">
+						Master log
 					</div>
 				</div>
 				<div class="labeled">
