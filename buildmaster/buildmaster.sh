@@ -16,46 +16,79 @@ then
 	exit 1
 fi
 
-git pull --ff-only
-if [ $? -ne 0 ]
+case "$1" in
+	update)
+		git pull --ff-only
+		if [ $? -ne 0 ]
+		then
+			echo "git pull failed, manual fixing needed"
+			exit 2
+		fi
+
+		REVISIONS_FILE="$BASE_DIR/processed_rev"
+		PREVIOUS_REVISION=$(cat "$REVISIONS_FILE")
+		HEAD_REVISION=$(git rev-parse HEAD)
+
+		if [ "$PREVIOUS_REVISION" == "$HEAD_REVISION" ]
+		then
+			echo "no new revisions"
+			exit 0
+		fi
+
+		echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
+
+		ADDED_MODIFIED_PORTS=$(git diff-tree -r --name-only \
+				--diff-filter ACMTR $PREVIOUS_REVISION..$HEAD_REVISION \
+			| grep '\.recipe$' \
+			| sed 's|.*/.*/\(.*\)-.*$|\1|' \
+			| sort -u)
+
+		if [ -z "$ADDED_MODIFIED_PORTS" ]
+		then
+			echo "no ports changed"
+			exit 0
+		fi
+
+		echo "added/modified ports: $ADDED_MODIFIED_PORTS"
+
+		# Expand possibly available secondary arch ports as well.
+		PORTS_TO_BUILD=$("$HAIKUPORTER" --print-raw --literal-search-strings \
+			--search $ADDED_MODIFIED_PORTS)
+	;;
+	everything)
+		PORTS_TO_BUILD=$("$HAIKUPORTER" --print-raw --list)
+	;;
+	build)
+		PORTS_TO_BUILD="$2"
+	;;
+	*)
+		cat <<EOF
+usage: $0 <mode> [<args>]
+
+Where mode can be one of the following modes:
+
+	update
+		Fetch the git repository and make a buildrun for all recipes
+		that were added/changed since the last update.
+
+	everything
+		Make a buildrun to build all current ports (this takes a while).
+
+	build <ports>
+		Make a buildrun to build the specified ports.
+
+EOF
+		exit 1
+	;;
+esac
+
+if [ -z "$PORTS_TO_BUILD" ]
 then
-	echo "git pull failed, manual fixing needed"
+	echo "no ports to build specified"
 	exit 2
 fi
 
-REVISIONS_FILE="$BASE_DIR/processed_rev"
-PREVIOUS_REVISION=$(cat "$REVISIONS_FILE")
-HEAD_REVISION=$(git rev-parse HEAD)
-
-if [ "$PREVIOUS_REVISION" == "$HEAD_REVISION" ]
-then
-	echo "no new revisions"
-	exit 0
-fi
-
-echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
-
-ADDED_MODIFIED_PORTS=$(git diff-tree -r --name-only --diff-filter ACMTR \
-		$PREVIOUS_REVISION..$HEAD_REVISION \
-	| grep '\.recipe$' \
-	| sed 's|.*/.*/\(.*\)-.*$|\1|' \
-	| sort -u \
-	| tr '\n' ' ')
-
-if [ -z "$ADDED_MODIFIED_PORTS" ]
-then
-	echo "no ports changed"
-	exit 0
-fi
-
-echo "added/modified ports: $ADDED_MODIFIED_PORTS"
-
-# Expand possibly available secondary arch ports as well.
-EXPANDED_PORTS=$("$HAIKUPORTER" --print-raw --literal-search-strings --search \
-		$ADDED_MODIFIED_PORTS \
-	| tr '\n' ' ')
-
-echo "ports to be built: $EXPANDED_PORTS"
+echo "ports to be built: $PORTS_TO_BUILD"
 
 BUILDRUN_FILE="$BASE_DIR/last_buildrun"
 BUILDRUN=$(expr $(cat "$BUILDRUN_FILE" 2> /dev/null) + 1)
@@ -70,7 +103,7 @@ rm "$BASE_DIR/output"
 ln -s "$BUILDRUN_OUTPUT_DIR/output" "$BASE_DIR"
 
 "$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
-	--build-master $EXPANDED_PORTS
+	--build-master $PORTS_TO_BUILD
 
 if [ $? -ne 0 ]
 then
@@ -78,4 +111,8 @@ then
 	exit 3
 fi
 
-echo "$HEAD_REVISION" > "$REVISIONS_FILE"
+case "$1" in
+	update)
+		echo "$HEAD_REVISION" > "$REVISIONS_FILE"
+	;;
+esac
