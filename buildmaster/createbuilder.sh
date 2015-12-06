@@ -94,6 +94,16 @@ ask_parameter "remote packages cache path" "$PORTSTREE_PACKAGES_PATH/.cache" \
 ask_parameter "remote haikuporter command" "" HAIKUPORTER_PATH yes
 ask_parameter "haikuporter arguments" "" HAIKUPORTER_ARGS no
 
+if [ ! -d "$BASE_DIR" ]
+then
+	mkdir -p "$BASE_DIR"
+fi
+
+if [ ! -d "$BASE_DIR/$KEY_DIR" ]
+then
+	mkdir -p "$BASE_DIR/$KEY_DIR"
+fi
+
 echo "writing config file to $CONFIG_FILE"
 cat > "$CONFIG_FILE" <<JSON
 {
