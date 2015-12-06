@@ -1,6 +1,7 @@
 #!/bin/bash
 
-CONFIG_FILE="buildmaster/config"
+BASE_DIR="$(pwd)/buildmaster"
+CONFIG_FILE="$BASE_DIR/config"
 source "$CONFIG_FILE"
 
 if [ $? -ne 0 ]
@@ -22,7 +23,7 @@ then
 	exit 2
 fi
 
-REVISIONS_FILE="buildmaster/processed_rev"
+REVISIONS_FILE="$BASE_DIR/processed_rev"
 PREVIOUS_REVISION=$(cat "$REVISIONS_FILE")
 HEAD_REVISION=$(git rev-parse HEAD)
 
