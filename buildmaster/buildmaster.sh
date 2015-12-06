@@ -57,7 +57,20 @@ EXPANDED_PORTS=$("$HAIKUPORTER" --print-raw --literal-search-strings --search \
 
 echo "ports to be built: $EXPANDED_PORTS"
 
-"$HAIKUPORTER" --debug --build-master $EXPANDED_PORTS
+BUILDRUN_FILE="$BASE_DIR/last_buildrun"
+BUILDRUN=$(expr $(cat "$BUILDRUN_FILE" 2> /dev/null) + 1)
+BUILDRUN_OUTPUT_DIR="$BASE_DIR/buildruns/$BUILDRUN"
+BUILDRUN_INDEX="$BASE_DIR/buildruns.txt"
+
+echo "buildruns/$BUILDRUN" >> "$BUILDRUN_INDEX"
+echo "$BUILDRUN" > "$BUILDRUN_FILE"
+
+# Remove and relink the current output dir.
+rm "$BASE_DIR/output"
+ln -s "$BUILDRUN_OUTPUT_DIR/output" "$BASE_DIR"
+
+"$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
+	--build-master $EXPANDED_PORTS
 
 if [ $? -ne 0 ]
 then
