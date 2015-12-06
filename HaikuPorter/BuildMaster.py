@@ -567,16 +567,21 @@ class BuildMaster:
 		self._setBuildStatus('scheduling')
 
 	def runBuilds(self):
-		self._ensureConsistentSchedule()
+		try:
+			self._ensureConsistentSchedule()
 
-		self._setBuildStatus('starting builds')
-		while True:
-			self._runBuilds()
-			self._waitForBuildsToComplete()
-			if len(self.scheduledBuilds) == 0:
-				break
+			self._setBuildStatus('starting builds')
+			while True:
+				self._runBuilds()
+				self._waitForBuildsToComplete()
+				if len(self.scheduledBuilds) == 0:
+					break
 
-		self._setBuildStatus('complete')
+			self._setBuildStatus('complete')
+		except KeyboardInterrupt:
+			self._setBuildStatus('aborted')
+		except Exception as exception:
+			self._setBuildStatus('failed: ' + str(exception))
 
 	def _runBuilds(self):
 		while True:
