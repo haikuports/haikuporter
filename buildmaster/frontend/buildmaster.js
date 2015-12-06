@@ -267,6 +267,10 @@ BuildMaster.prototype.showStatus = function()
 			'href': this.baseDir + 'output/builders/%s.log',
 			'target': '_blank'
 		});
+	wrapElements('#portsTreeHead', 'a', {
+			'href': 'https://github.com/haikuports/haikuports/commit/%s',
+			'target': '_blank'
+		});
 
 	removeElements('.template');
 
