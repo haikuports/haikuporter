@@ -483,7 +483,8 @@ class MockBuilder:
 
 class BuildMaster:
 	def __init__(self, packagesPath, portsTreeHead):
-		self.builders = []
+		self.activeBuilders = []
+		self.lostBuilders = []
 		self.availableBuilders = []
 		self.masterBaseDir = 'buildmaster'
 		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
@@ -532,12 +533,12 @@ class BuildMaster:
 					+ configFilePath + ':' + str(exception))
 				continue
 
-			self.builders.append(builder)
+			self.activeBuilders.append(builder)
 
-		if len(self.builders) == 0:
+		if len(self.activeBuilders) == 0:
 			sysExit('no builders available')
 
-		self.availableBuilders += self.builders
+		self.availableBuilders += self.activeBuilders
 
 		self.scheduledBuilds = []
 		self.activeBuilds = []
@@ -603,7 +604,7 @@ class BuildMaster:
 	def _waitForBuildsToComplete(self):
 		while True:
 			with self.builderCondition:
-				if len(self.availableBuilders) == len(self.builders):
+				if len(self.availableBuilders) == len(self.activeBuilders):
 					break
 
 				self._setBuildStatus('waiting for all builds to complete')
@@ -620,7 +621,8 @@ class BuildMaster:
 			builder = None
 			buildNumber = -1
 			with self.builderCondition:
-				if len(self.builders) == 0:
+				if len(self.activeBuilders) == 0:
+					self._setBuildStatus('all builders lost')
 					sysExit('all builders lost')
 
 				if len(self.availableBuilders) == 0:
@@ -712,7 +714,8 @@ class BuildMaster:
 		with self.builderCondition:
 			if builder.lost:
 				self.logger.error('builder ' + builder.name + ' lost')
-				self.builders.remove(builder)
+				self.activeBuilders.remove(builder)
+				self.lostBuilders.append(builder)
 			else:
 				self.availableBuilders.append(builder)
 
@@ -755,7 +758,10 @@ class BuildMaster:
 				'failed': [ build.status for build in self.failedBuilds ],
 				'lost': [ build.status for build in self.lostBuilds ]
 			},
-			'builders': [ builder.status for builder in self.builders ],
+			'builders': {
+				'active': [ builder.status for builder in self.activeBuilders ],
+				'lost': [ builder.status for builder in self.lostBuilders ]
+			},
 			'nextBuildNumber': self.buildNumber,
 			'portsTreeHead': self.portsTreeHead,
 			'buildStatus': self.buildStatus

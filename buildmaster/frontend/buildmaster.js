@@ -178,7 +178,6 @@ BuildMaster.prototype.showStatus = function()
 			var element = createFromTemplate('#builderTemplate');
 			mapContentFromObject(builder, {
 					'name': '.builderName',
-					'lost': '.builderLost',
 					'currentBuild.number': '.currentBuild .buildNumber',
 					'currentBuild.build.port.revisionedName':
 						'.currentBuild .revisionedName',
@@ -191,9 +190,16 @@ BuildMaster.prototype.showStatus = function()
 			var parentElement = findElement(targetSelector);
 			setElementContent('.count', builderList.length, parentElement);
 			builderList.forEach(addBuilder.bind(undefined, parentElement));
+			return builderList.length;
 		};
 
-	addBuilderList('#builders', this.status.builders);
+	var totalBuilders = 0;
+	totalBuilders += addBuilderList('#activeBuilders',
+		this.status.builders.active);
+	totalBuilders += addBuilderList('#lostBuilders',
+		this.status.builders.lost);
+
+	setElementContent('.count', totalBuilders, findElement('#builders'));
 
 	var addString = function(parentElement, className, string) {
 			var element = document.createElement('div');

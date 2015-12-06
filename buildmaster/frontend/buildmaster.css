@@ -69,7 +69,7 @@ a, a:visited {
 	background-color: red;
 }
 
-.template, #scheduledBuilds .missingPackages {
+#lostBuilders .currentBuildContainer {
 	display: none;
 }
 
