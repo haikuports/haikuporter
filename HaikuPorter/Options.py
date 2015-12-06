@@ -241,6 +241,9 @@ def parseOptions():
 	parser.add_option('--build-master', action='store_true', dest='buildMaster',
 		default=False,
 		help='run as build master and delegate builds to builders')
+	parser.add_option('--build-master-output-dir', action='store',
+		type='string', dest='buildMasterOutputDir', default=None,
+		help='specifies where build master output shall be written')
 
 	parser.add_option('--no-package-obsoletion', action='store_true',
 		dest='noPackageObsoletion', default=False,

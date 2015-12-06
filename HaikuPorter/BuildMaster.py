@@ -1,3 +1,4 @@
+from .Options import getOption
 from .Utils import sysExit
 
 import errno
@@ -60,7 +61,14 @@ class Builder:
 		self.visiblePackages = []
 		self.portsTreeHead = portsTreeHead
 		self.packagesPath = packagesPath
-		self.outputBaseDir = outputBaseDir
+
+		self.builderOutputDir = os.path.join(outputBaseDir, 'builders')
+		if not os.path.isdir(self.builderOutputDir):
+			os.makedirs(self.builderOutputDir)
+
+		self.buildOutputDir = os.path.join(outputBaseDir, 'builds')
+		if not os.path.isdir(self.buildOutputDir):
+			os.makedirs(self.buildOutputDir)
 
 		self.available = False
 		self.lost = False
@@ -74,7 +82,7 @@ class Builder:
 
 		formatter = logging.Formatter('%(asctime)s: %(message)s')
 		logHandler = logging.FileHandler(
-			os.path.join(outputBaseDir, 'builders', self.name + '.log'))
+			os.path.join(self.builderOutputDir, self.name + '.log'))
 		logHandler.setFormatter(formatter)
 		self.logger.addHandler(logHandler)
 
@@ -222,8 +230,8 @@ class Builder:
 		return True
 
 	def setBuild(self, scheduledBuild, buildNumber):
-		logHandler = logging.FileHandler(os.path.join(self.outputBaseDir,
-				'builds', str(buildNumber) + '.log'))
+		logHandler = logging.FileHandler(os.path.join(self.buildOutputDir,
+				str(buildNumber) + '.log'))
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
 		self.buildLogger.addHandler(logHandler)
 
@@ -479,7 +487,15 @@ class BuildMaster:
 		self.availableBuilders = []
 		self.masterBaseDir = 'buildmaster'
 		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
-		self.buildOutputBaseDir = os.path.join(self.masterBaseDir, 'output')
+		self.buildOutputBaseDir = getOption('buildMasterOutputDir')
+		if not self.buildOutputBaseDir:
+			self.buildOutputBaseDir = self.masterBaseDir
+
+		self.buildOutputBaseDir = os.path.join(self.buildOutputBaseDir,
+			'output')
+		if not os.path.isdir(self.buildOutputBaseDir):
+			os.makedirs(self.buildOutputBaseDir)
+
 		self.buildNumberFile = os.path.join(self.masterBaseDir, 'buildnumber')
 		self.buildNumber = 0
 		try:
