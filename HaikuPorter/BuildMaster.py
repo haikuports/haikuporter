@@ -1,3 +1,5 @@
+from .ConfigParser import ConfigParser
+from .Configuration import Configuration
 from .Options import getOption
 from .Utils import sysExit
 
@@ -133,6 +135,9 @@ class Builder:
 		if not 'packagesCachePath' in self.config['portstree']:
 			self.config['portstree']['packagesCachePath'] \
 				= self.config['portstree']['packagesPath'] + '/.cache'
+		if not 'builderConfig' in self.config['portstree']:
+			self.config['portstree']['builderConfig'] \
+				= self.config['portstree']['path'] + '/builder.conf'
 
 		if not 'haikuporter' in self.config:
 			self.config['haikuporter'] = {}
@@ -187,6 +192,29 @@ class Builder:
 				+ str(exception))
 			raise
 
+	def _writeBuilderConfig(self):
+		try:
+			config = {
+				'TREE_PATH': self.config['portstree']['path'],
+				'PACKAGES_PATH': self.config['portstree']['packagesPath'],
+				'PACKAGER': 'Builder ' + self.name \
+					+ ' <hpkg-builder@haiku-os.org>',
+				'TARGET_ARCHITECTURE': Configuration.getTargetArchitecture(),
+				'SECONDARY_TARGET_ARCHITECTURES': \
+					Configuration.getSecondaryTargetArchitectures(),
+				'ALLOW_UNTESTED': Configuration.shallAllowUntested(),
+				'ALLOW_UNSAFE_SOURCES': Configuration.shallAllowUnsafeSources()
+			}
+
+			with self._openRemoteFile(self.config['portstree']['builderConfig'],
+					'w') as remoteFile:
+				remoteFile.write(
+					ConfigParser.configurationStringFromDict(config))
+		except Exception as exception:
+			self.logger.error('failed to write builder config: '
+				+ str(exception))
+			raise
+
 	def _createNeededDirs(self):
 		try:
 			self._ensureDirExists(self.config['portstree']['packagesPath'])
@@ -223,6 +251,7 @@ class Builder:
 
 		self._connect()
 		self._syncPortsTree(self.portsTreeHead)
+		self._writeBuilderConfig()
 		self._createNeededDirs()
 		self._getAvailablePackages()
 
@@ -273,12 +302,12 @@ class Builder:
 			command = ('source /boot/system/boot/SetupEnvironment'
 				+ ' && cd "' + self.config['portstree']['path']
 				+ '" && "' + self.config['haikuporter']['path']
-				+ '" --config=haikuports.conf'
-				+ ' --no-package-obsoletion --clean "'
+				+ '" --config="' + self.config['portstree']['builderConfig']
+				+ '" --no-package-obsoletion --clean "'
 				+ scheduledBuild.port.versionedName
 				+ '" && "' + self.config['haikuporter']['path']
-				+ '" --config=haikuports.conf'
-				+ ' --no-system-packages --no-dependencies'
+				+ '" --config="' + self.config['portstree']['builderConfig']
+				+ '" --no-system-packages --no-dependencies'
 				+ ' --no-package-obsoletion '
 				+ self.config['haikuporter']['args'] + ' "'
 				+ scheduledBuild.port.versionedName + '"')
@@ -349,6 +378,9 @@ class Builder:
 
 	def _symlink(self, sourcePath, destPath):
 		self.sftpClient.symlink(sourcePath, destPath)
+
+	def _openRemoteFile(self, path, mode):
+		return self.sftpClient.open(path, mode)
 
 	def _ensureDirExists(self, path):
 		try:
