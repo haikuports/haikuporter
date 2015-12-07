@@ -133,15 +133,18 @@ class DependencyAnalyzer(object):
 			self._doInitialDependencyResolution()
 
 		print 'Required system packages:'
-		for packageNode in self.systemPackageNodes:
+		for packageNode in sorted(self.systemPackageNodes,
+				key=lambda packageNode: packageNode.name):
 			print '	 %s' % packageNode.name
 
 		print 'Ports required by haikuporter:'
-		for packageNode in self.haikuporterRequires:
+		for packageNode in sorted(self.haikuporterRequires,
+				key=lambda packageNode: packageNode.name):
 			print '	 %s' % packageNode.portNode.name
 
 		print 'Ports depending cyclically on each other:'
-		for node in self.cyclicNodes:
+		for node in sorted(sorted(self.cyclicNodes, key=lambda node: node.name),
+				key=lambda node: node.outdegree):
 			print '	 %s (out-degree %d)' % (node.name, node.outdegree)
 
 	def getBuildOrderForBootstrap(self):
