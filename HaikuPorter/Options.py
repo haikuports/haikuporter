@@ -234,6 +234,11 @@ def parseOptions():
 		dest='noSystemPackages', default=False,
 		help='do not use system packages to resolve dependencies')
 
+	parser.add_option('--system-packages-directory', action='store',
+		type='string', dest='systemPackagesDirectory', default=None,
+		help='specifies the directory to be used to look up system packages '
+			+ '(only applies to build master mode)')
+
 	parser.add_option('--list-build-dependencies', action='store_true',
 		dest='listBuildDependencies', default=False,
 		help='list build dependencies of a port')

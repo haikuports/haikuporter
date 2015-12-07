@@ -615,10 +615,15 @@ class BuildPlatformBuildMaster(BuildPlatform):
 		return False
 
 	def findDirectory(self, which):
+		if which == 'B_SYSTEM_PACKAGES_DIRECTORY':
+			systemPackagesDirectory = getOption('systemPackagesDirectory')
+			if systemPackagesDirectory:
+				return systemPackagesDirectory
 		return 'stub'
 
 	def isSystemPackage(self, packagePath):
-		return False
+		return packagePath.startswith(
+			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		sysExit('activateBuildPackage() unsupported')
