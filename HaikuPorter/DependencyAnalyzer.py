@@ -203,11 +203,14 @@ class DependencyAnalyzer(object):
 				packageNode = self._getPackageNode(packageID)
 				packageInfo = self.packageInfos[packageID]
 				packageNode.addRequires(
-					self._resolveRequiresList(packageInfo.requires))
+					self._resolveRequiresList(packageInfo.requires, portID,
+						packageID))
 				portNode.addBuildRequires(
-					self._resolveRequiresList(packageInfo.buildRequires))
+					self._resolveRequiresList(packageInfo.buildRequires, portID,
+						packageID))
 				portNode.addBuildPrerequires(
-					self._resolveRequiresList(packageInfo.buildPrerequires))
+					self._resolveRequiresList(packageInfo.buildPrerequires,
+						portID, packageID))
 
 		# determine the needed system packages
 		self.systemPackageNodes = set()
@@ -225,7 +228,8 @@ class DependencyAnalyzer(object):
 		scriptletPrerequirements = [ ResolvableExpression(requires)
 				for requires in getScriptletPrerequirements() ]
 		haikuporterDependencies \
-			= self._resolveRequiresList(scriptletPrerequirements)
+			= self._resolveRequiresList(scriptletPrerequirements,
+				'haikuporter', 'scriptlet requires')
 		self.haikuporterRequires = set()
 		for packageNode in haikuporterDependencies:
 			if not packageNode.isSystemPackage:
@@ -325,7 +329,7 @@ class DependencyAnalyzer(object):
 					   % packageFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
 
-	def _resolveRequiresList(self, requiresList):
+	def _resolveRequiresList(self, requiresList, portID, packageID):
 		dependencies = set()
 		for requires in requiresList:
 			providesInfo = self.providesManager.getMatchingProvides(requires)
@@ -336,7 +340,8 @@ class DependencyAnalyzer(object):
 												   isSystemPackage)
 				dependencies.add(packageNode)
 			else:
-				print 'Warning: Ignoring unresolvable requires "%s"' % requires
+				print('Warning: Ignoring unresolvable requires "%s" of package'
+					' %s in %s' % (requires, packageID, portID))
 		return dependencies
 
 	def _getPortNode(self, portID):
