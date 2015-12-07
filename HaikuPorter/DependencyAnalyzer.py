@@ -255,7 +255,6 @@ class DependencyAnalyzer(object):
 		nodeStack = list(self.haikuporterRequires)
 		while nodeStack:
 			packageNode = nodeStack.pop()
-			portNode = packageNode.portNode
 			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
 					and not dependency in self.haikuporterRequires):
