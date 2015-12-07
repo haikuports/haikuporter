@@ -7,6 +7,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from .BuildPlatform import buildPlatform
+from .Options import getOption
 from .PackageInfo import (PackageInfo, ResolvableExpression)
 from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
@@ -73,10 +74,11 @@ class PortNode(object):
 		dependencyInfoFiles = self.port.getDependencyInfoFiles(repositoryPath)
 		requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 						  'SCRIPTLET_PREREQUIRES' ]
-		repositories = [
-			doneRepositoryPath,
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
-		];
+		repositories = [ doneRepositoryPath ];
+		if not getOption('noSystemPackages'):
+			repositories.append(
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+
 		try:
 			buildPlatform.resolveDependencies(dependencyInfoFiles,
 											  requiresTypes,
@@ -296,6 +298,9 @@ class DependencyAnalyzer(object):
 			self.packageInfos[packageInfo.versionedName] = packageInfo
 
 	def _collectSystemPackages(self):
+		if getOption('noSystemPackages'):
+			return
+
 		path = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
 		for entry in os.listdir(path):
 			if not entry.endswith('.hpkg'):
