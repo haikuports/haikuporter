@@ -224,6 +224,22 @@ class DependencyAnalyzer(object):
 				nonSystemPackageNodes.add(packageNode)
 				remainingPortNodes.add(packageNode.portNode)
 
+		# resolve system package dependencies
+		for packageNode in self.systemPackageNodes:
+			packageInfo = self.packageInfos[packageNode.name]
+			packageNode.addRequires(
+				self._resolveRequiresList(packageInfo.requires,
+					'system packages', packageNode.name))
+
+		nodeStack = list(self.systemPackageNodes)
+		while nodeStack:
+			packageNode = nodeStack.pop()
+			for dependency in packageNode.requires:
+				if (dependency in nonSystemPackageNodes
+					and not dependency in self.systemPackageNodes):
+					nodeStack.append(dependency)
+					self.systemPackageNodes.add(dependency)
+
 		# resolve the haikuporter dependencies
 		scriptletPrerequirements = [ ResolvableExpression(requires)
 				for requires in getScriptletPrerequirements() ]
@@ -328,6 +344,7 @@ class DependencyAnalyzer(object):
 				print ('Warning: Ignoring broken package file "%s"'
 					   % packageFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
+			self.packageInfos[packageInfo.versionedName] = packageInfo
 
 	def _resolveRequiresList(self, requiresList, portID, packageID):
 		dependencies = set()
