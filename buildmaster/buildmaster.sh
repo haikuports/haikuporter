@@ -59,7 +59,7 @@ case "$1" in
 		PORTS_TO_BUILD=$("$HAIKUPORTER" --print-raw --list)
 	;;
 	build)
-		PORTS_TO_BUILD="$2"
+		PORTS_TO_BUILD="${@:2}"
 	;;
 	*)
 		cat <<EOF
