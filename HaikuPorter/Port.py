@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 # -- Modules ------------------------------------------------------------------
 
+import json
 import os
 import shutil
 import signal
@@ -86,6 +87,8 @@ class ChrootSetup(object):
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
+	recipeCacheDir = 'recipeCache'
+
 	def __init__(self, name, version, category, baseDir, outputDir,
 				 repositoryDir, globalShellVariables, policy,
 				 secondaryArchitecture=None):
@@ -110,6 +113,11 @@ class Port(object):
 		else:
 			self.workDir = outputDir + '/work-' + self.version
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
+
+		self.recipeFileCache = os.path.join(Port.recipeCacheDir, self.name
+				+ '-' + self.version + '-' + self.effectiveTargetArchitecture)
+		if not os.path.exists(Port.recipeCacheDir):
+			os.mkdir(Port.recipeCacheDir)
 
 		self.isMetaPort = self.category == 'meta-ports'
 
@@ -233,7 +241,6 @@ class Port(object):
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
 									self.shellVariables)
 		extensions = recipeConfig.extensions
-		self.definedPhases = recipeConfig.definedPhases
 
 		if '' not in extensions:
 			sysExit('No base package defined in (in %s)' % self.recipeFilePath)
@@ -324,7 +331,7 @@ class Port(object):
 								 'PATCHES, so it will not be used'
 								 % patchFileName)
 
-		return recipeKeysByExtension
+		return recipeKeysByExtension, recipeConfig.definedPhases
 
 	def _validateSUMMARY(self, key, entries, showWarnings):
 		"""Validates the 'SUMMARY' of the port."""
@@ -845,6 +852,21 @@ class Port(object):
 
 		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
 
+	def _validateOrLoadFromCache(self, showWarnings):
+		if (os.path.exists(self.recipeFileCache)
+			and os.path.getmtime(self.recipeFileCache)
+				>= os.path.getmtime(self.recipeFilePath)):
+			with open(self.recipeFileCache, 'r') as cacheFile:
+				return json.loads(cacheFile.read())
+
+		recipeKeysByExtension, definedPhases \
+			= self.validateRecipeFile(showWarnings)
+
+		with open(self.recipeFileCache, 'w') as cacheFile:
+			cacheFile.write(json.dumps((recipeKeysByExtension, definedPhases)))
+
+		return recipeKeysByExtension, definedPhases
+
 	def _parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port"""
 
@@ -855,7 +877,8 @@ class Port(object):
 		# set default SOURCE_DIR
 		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
 
-		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
+		self.recipeKeysByExtension, self.definedPhases \
+			= self._validateOrLoadFromCache(showWarnings)
 		self.recipeKeys = {}
 		for entries in self.recipeKeysByExtension.values():
 			self.recipeKeys.update(entries)
