@@ -184,7 +184,16 @@ class DependencyAnalyzer(object):
 		self._collectDependencyInfos(self.repository.path)
 		self._collectSystemPackages()
 
-		for portID in self.repository.allPorts.iterkeys():
+		allActivePorts = []
+		for portName in sorted(self.repository.portVersionsByName.keys()):
+			activePortVersion = self.repository.getActiveVersionOf(portName)
+			if not activePortVersion:
+				print 'Warning: Skipping ' + portName + ', no version active'
+				continue
+
+			allActivePorts.append(portName + '-' + activePortVersion)
+
+		for portID in allActivePorts:
 			portNode = self._getPortNode(portID)
 			for package in portNode.port.packages:
 				packageID = package.versionedName
