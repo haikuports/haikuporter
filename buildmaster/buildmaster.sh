@@ -32,7 +32,7 @@ case "$1" in
 		if [ "$PREVIOUS_REVISION" == "$HEAD_REVISION" ]
 		then
 			echo "no new revisions"
-			exit 0
+			exit 3
 		fi
 
 		echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
@@ -46,7 +46,7 @@ case "$1" in
 		if [ -z "$ADDED_MODIFIED_PORTS" ]
 		then
 			echo "no ports changed"
-			exit 0
+			exit 3
 		fi
 
 		echo "added/modified ports: $ADDED_MODIFIED_PORTS"
