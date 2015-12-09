@@ -54,7 +54,8 @@ else
 fi
 
 echo "finding newset package versions"
-for PACKAGE in $("$HAIKUPORTER" --list-packages --print-filenames 2> /dev/null)
+for PACKAGE in $("$HAIKUPORTER" --no-package-obsoletion --list-packages \
+		--print-filenames 2> /dev/null)
 do
 	PACKAGE="$PACKAGES_DIR/$PACKAGE"
 	if [ -f "$PACKAGE" -a ! -L "$PACKAGE" ]

@@ -52,11 +52,13 @@ case "$1" in
 		echo "added/modified ports: $ADDED_MODIFIED_PORTS"
 
 		# Expand possibly available secondary arch ports as well.
-		PORTS_TO_BUILD=$("$HAIKUPORTER" --print-raw --literal-search-strings \
-			--search $ADDED_MODIFIED_PORTS)
+		PORTS_TO_BUILD=$("$HAIKUPORTER" --no-package-obsoletion --print-raw \
+			--literal-search-strings --search $ADDED_MODIFIED_PORTS \
+			2> /dev/null)
 	;;
 	everything)
-		PORTS_TO_BUILD=$("$HAIKUPORTER" --print-raw --list)
+		PORTS_TO_BUILD=$("$HAIKUPORTER" --no-package-obsoletion --print-raw \
+			--list 2> /dev/null)
 	;;
 	build)
 		PORTS_TO_BUILD="${@:2}"
