@@ -853,7 +853,8 @@ class Port(object):
 		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
 
 	def _validateOrLoadFromCache(self, showWarnings):
-		if (os.path.exists(self.recipeFileCache)
+		if (os.path.exists(self.preparedRecipeFile)
+			and os.path.exists(self.recipeFileCache)
 			and os.path.getmtime(self.recipeFileCache)
 				>= os.path.getmtime(self.recipeFilePath)):
 			with open(self.recipeFileCache, 'r') as cacheFile:
