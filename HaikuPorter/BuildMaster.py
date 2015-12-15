@@ -284,6 +284,7 @@ class Builder:
 			if not self._setupForBuilding():
 				return (False, True)
 
+			self._cleanPort(scheduledBuild)
 			self._clearVisiblePackages()
 			for requiredPackage in scheduledBuild.requiredPackages:
 				self._makePackageAvailable(requiredPackage)
@@ -303,10 +304,6 @@ class Builder:
 				+ ' && cd "' + self.config['portstree']['path']
 				+ '" && "' + self.config['haikuporter']['path']
 				+ '" --config="' + self.config['portstree']['builderConfig']
-				+ '" --no-package-obsoletion --clean "'
-				+ scheduledBuild.port.versionedName
-				+ '" && "' + self.config['haikuporter']['path']
-				+ '" --config="' + self.config['portstree']['builderConfig']
 				+ '" --no-system-packages --no-dependencies'
 				+ ' --no-package-obsoletion '
 				+ self.config['haikuporter']['args'] + ' "'
@@ -316,13 +313,7 @@ class Builder:
 			self.buildLogger.propagate = False
 
 			(output, channel) = self._remoteCommand(command)
-			with output:
-				while True:
-					line = output.readline()
-					if not line:
-						break
-
-					self.buildLogger.info(line[:-1])
+			self._appendOutputToLog(output)
 
 			self.buildLogger.propagate = True
 			exitStatus = channel.recv_exit_status()
@@ -344,6 +335,7 @@ class Builder:
 						+ package.hpkgName,
 					os.path.join(self.packagesPath, package.hpkgName))
 
+			self._cleanPort(scheduledBuild)
 			self._clearVisiblePackages()
 			self.buildLogger.info('build completed successfully')
 			buildSuccess = True
@@ -395,6 +387,26 @@ class Builder:
 
 	def _listDir(self, remotePath):
 		return self.sftpClient.listdir(remotePath)
+
+	def _cleanPort(self, scheduledBuild):
+		command = ('cd "' + self.config['portstree']['path']
+			+ '" && "' + self.config['haikuporter']['path']
+			+ '" --config="' + self.config['portstree']['builderConfig']
+			+ '" --no-package-obsoletion --clean "'
+			+ scheduledBuild.port.versionedName + '"')
+
+		self.buildLogger.info('cleaning port with command: ' + command)
+		(output, channel) = self._remoteCommand(command)
+		self._appendOutputToLog(output)
+
+	def _appendOutputToLog(self, output):
+		with output:
+			while True:
+				line = output.readline()
+				if not line:
+					return
+
+				self.buildLogger.info(line[:-1])
 
 	def _makePackageAvailable(self, packageName):
 		if packageName in self.availablePackages:
