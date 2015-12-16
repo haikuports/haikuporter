@@ -888,10 +888,18 @@ class Port(object):
 			and os.path.getmtime(self.recipeFileCache)
 				>= os.path.getmtime(self.recipeFilePath)):
 			with open(self.recipeFileCache, 'r') as cacheFile:
-				return json.loads(cacheFile.read())
+				cached = json.loads(cacheFile.read())
+				if 'exception' in cached:
+					sysExit(cached['exception'])
+				return cached
 
-		recipeKeysByExtension, definedPhases \
-			= self.validateRecipeFile(showWarnings)
+		try:
+			recipeKeysByExtension, definedPhases \
+				= self.validateRecipeFile(showWarnings)
+		except SystemExit as exception:
+			with open(self.recipeFileCache, 'w') as cacheFile:
+				cacheFile.write(json.dumps({'exception': str(exception)}))
+			raise
 
 		with open(self.recipeFileCache, 'w') as cacheFile:
 			cacheFile.write(json.dumps((recipeKeysByExtension, definedPhases)))
