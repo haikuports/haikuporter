@@ -570,6 +570,29 @@ class Port(object):
 
 		return dependencyInfoFiles
 
+	def referencesFiles(self, files):
+		if self.recipeFilePath in files:
+			return True
+
+		if self.isMetaPort:
+			return False
+
+		try:
+			self.parseRecipeFileIfNeeded()
+		except:
+			return False
+
+		for source in self.sources:
+			if source.referencesFiles(files):
+				return True
+
+		if 'LICENSE' in self.recipeKeys:
+			for license in self.recipeKeys['LICENSE']:
+				if os.path.join(self.licensesDir, license) in files:
+					return True
+
+		return False
+
 	def cleanWorkDirectory(self):
 		"""Clean the working directory"""
 

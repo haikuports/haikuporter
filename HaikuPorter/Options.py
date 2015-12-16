@@ -266,6 +266,13 @@ def parseOptions():
 		dest='ignoreMessages', default=False,
 		help='ignore messages within recipes')
 
+	parser.add_option('--ports-for-files', action='store_true',
+		dest='portsForFiles', default=False,
+		help='list all ports affected by the supplied list of files')
+	parser.add_option('--active-versions-only', action='store_true',
+		dest='activeVersionsOnly', default=False,
+		help='only check in active versions of ports instead of all ports')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()

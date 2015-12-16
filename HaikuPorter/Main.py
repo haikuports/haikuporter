@@ -67,6 +67,7 @@ class Main(object):
 		# command
 		self.shallowInitIsEnough = (self.options.lint or self.options.tree
 									or self.options.get or self.options.list
+									or self.options.portsForFiles
 									or self.options.listPackages
 									or self.options.listBuildDependencies
 									or self.options.search
@@ -153,6 +154,24 @@ class Main(object):
 						self.options.printFilenames)
 					for packageName in packageNames:
 						print packageName
+			return
+
+		# if requested, print the ports related to the supplied files
+		if self.options.portsForFiles:
+			self._createRepositoryIfNeeded(True)
+
+			if self.options.activeVersionsOnly:
+				allPorts = self.repository.activePorts
+			else:
+				allPorts = self.repository.allPorts.itervalues()
+
+			files = [ arg if os.path.isabs(arg) \
+				else os.path.join(self.treePath, arg) for arg in args ]
+
+			for port in allPorts:
+				if port.referencesFiles(files):
+					print port.versionedName
+
 			return
 
 		if self.options.location:

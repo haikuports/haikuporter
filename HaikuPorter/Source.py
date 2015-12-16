@@ -266,6 +266,19 @@ class Source(object):
 		return (self.uris[0].lower().startswith('pkg:')
 				and '_source_rigged-' in self.uris[0].lower())
 
+	def referencesFiles(self, files):
+		if self.patches:
+			for patch in self.patches:
+				if patch in files:
+					return True
+
+		if self.additionalFiles:
+			for additionalFile in self.additionalFiles:
+				if additionalFile in files:
+					return True
+
+		return False
+
 	def patch(self, port):
 		"""Apply any patches to this source"""
 
