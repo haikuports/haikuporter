@@ -631,6 +631,13 @@ class Port(object):
 						source.reset()
 				raise
 
+	def populateAdditionalFiles(self):
+		"""Populates the work dir with referenced additional files"""
+
+		self.parseRecipeFileIfNeeded()
+		for source in self.sources:
+			source.populateAdditionalFiles(self.workDir)
+
 	def extractPatchset(self):
 		"""Extract patchsets from all sources"""
 

@@ -198,6 +198,20 @@ class Source(object):
 
 		port.setFlag('unpack', self.index)
 
+	def populateAdditionalFiles(self, baseDir):
+		if not self.additionalFiles:
+			return
+
+		additionalFilesDir = os.path.join(baseDir, 'additional-files')
+		if self.index != '1':
+			additionalFilesDir += '-' + self.index
+
+		if not os.path.exists(additionalFilesDir):
+			os.mkdir(additionalFilesDir)
+
+		for additionalFile in self.additionalFiles:
+			shutil.copy(additionalFile, additionalFilesDir)
+
 	def validateChecksum(self, port):
 		"""Make sure that the SHA256-checksum matches the expectations"""
 
@@ -401,19 +415,6 @@ class Source(object):
 				self.sourceExportSubdir)
 			if self.sourceSubDir:
 				foldSubdirIntoSourceDir(self.sourceSubDir, targetDir)
-
-	def exportAdditionalFiles(self, targetDir):
-		"""Export any additional files into given folder"""
-
-		if not self.additionalFiles:
-			return
-
-		if not os.path.exists(targetDir):
-			os.makedirs(targetDir)
-		for additionalFile in self.additionalFiles:
-			command = ('tar -c "%s" | tar -x -C "%s"'
-					   % (os.path.basename(additionalFile), targetDir))
-			check_call(command, cwd=os.path.dirname(additionalFile), shell=True)
 
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""
