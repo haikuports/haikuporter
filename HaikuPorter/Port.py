@@ -792,7 +792,7 @@ class Port(object):
 					targetPackageFile \
 						= hpkgStoragePath + '/' + package.hpkgName
 					print('grabbing ' + package.hpkgName
-						  + ' and copying it to ' + targetPackageFile)
+						  + ' and moving it to ' + targetPackageFile)
 					os.rename(packageFile, targetPackageFile)
 
 		if os.path.exists(self.hpkgDir):
