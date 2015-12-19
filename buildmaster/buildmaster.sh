@@ -48,6 +48,7 @@ case "$1" in
 		if [ -z "$PORTS_TO_BUILD" ]
 		then
 			echo "no ports changed"
+			echo "$HEAD_REVISION" > "$REVISIONS_FILE"
 			exit 3
 		fi
 	;;
