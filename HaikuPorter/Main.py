@@ -74,7 +74,8 @@ class Main(object):
 									or self.options.searchPackages
 									or self.options.about
 									or self.options.location
-									or self.options.buildMaster)
+									or self.options.buildMaster
+									or self.options.repositoryUpdate)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
@@ -97,6 +98,11 @@ class Main(object):
 		# if requested, checkout or update ports tree
 		if self.options.get:
 			self._updatePortsTree()
+			return
+
+		# if requested, ensure that the repository is up to date
+		if self.options.repositoryUpdate:
+			self._createRepositoryIfNeeded(False)
 			return
 
 		# if requested, print the location of the haikuports source tree

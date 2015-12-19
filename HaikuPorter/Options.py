@@ -250,6 +250,9 @@ def parseOptions():
 		type='string', dest='buildMasterOutputDir', default=None,
 		help='specifies where build master output shall be written')
 
+	parser.add_option('--repository-update', action='store_true',
+		dest='repositoryUpdate', default=False,
+		help='update dependency infos in the repository')
 	parser.add_option('--no-repository-update', action='store_true',
 		dest='noRepositoryUpdate', default=False,
 		help='do not update dependency infos in the repository')
