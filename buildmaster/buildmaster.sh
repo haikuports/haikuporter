@@ -45,7 +45,7 @@ case "$1" in
 				--active-versions-only 2> /dev/null \
 			| sort -u)
 
-		if [ -z "PORTS_TO_BUILD" ]
+		if [ -z "$PORTS_TO_BUILD" ]
 		then
 			echo "no ports changed"
 			exit 3
