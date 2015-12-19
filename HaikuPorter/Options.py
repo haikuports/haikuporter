@@ -42,7 +42,7 @@ def setCommaSeparatedList(option, opt, value, parser):
 def parseOptions():
 	"""Does command line argument parsing"""
 
-	parser =  OptionParser(
+	parser = OptionParser(
 						usage='usage: %prog [options] portname[-portversion]',
 						version='%prog ' + __version__)
 
