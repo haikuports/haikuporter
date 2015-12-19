@@ -36,25 +36,20 @@ case "$1" in
 		fi
 
 		echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
+		"$HAIKUPORTER" --no-package-obsoletion --repository-update
 
-		ADDED_MODIFIED_PORTS=$(git diff-tree -r --name-only \
-				--diff-filter ACMTR $PREVIOUS_REVISION..$HEAD_REVISION \
-			| grep '\.recipe$' \
-			| sed 's|.*/.*/\(.*\)-.*$|\1|' \
+		PORTS_TO_BUILD=$(git diff-tree -z -r --name-only --diff-filter ACMTR \
+				$PREVIOUS_REVISION..$HEAD_REVISION \
+			| xargs --null "$HAIKUPORTER" --no-package-obsoletion \
+				--no-repository-update --ports-for-files \
+				--active-versions-only 2> /dev/null \
 			| sort -u)
 
-		if [ -z "$ADDED_MODIFIED_PORTS" ]
+		if [ -z "PORTS_TO_BUILD" ]
 		then
 			echo "no ports changed"
 			exit 3
 		fi
-
-		echo "added/modified ports: $ADDED_MODIFIED_PORTS"
-
-		# Expand possibly available secondary arch ports as well.
-		PORTS_TO_BUILD=$("$HAIKUPORTER" --no-package-obsoletion --print-raw \
-			--literal-search-strings --search $ADDED_MODIFIED_PORTS \
-			2> /dev/null)
 	;;
 	everything)
 		PORTS_TO_BUILD=$("$HAIKUPORTER" --no-package-obsoletion --print-raw \
