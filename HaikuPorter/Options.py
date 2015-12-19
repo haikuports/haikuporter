@@ -250,6 +250,10 @@ def parseOptions():
 		type='string', dest='buildMasterOutputDir', default=None,
 		help='specifies where build master output shall be written')
 
+	parser.add_option('--no-repository-update', action='store_true',
+		dest='noRepositoryUpdate', default=False,
+		help='do not update dependency infos in the repository')
+
 	parser.add_option('--no-package-obsoletion', action='store_true',
 		dest='noPackageObsoletion', default=False,
 		help='do not move obsolete packages out of packages dir')

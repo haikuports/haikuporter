@@ -59,8 +59,11 @@ class Repository(object):
 			and os.path.exists(self._portIdForPackageIdFilePath)
 			and os.path.exists(self._portNameForPackageNameFilePath)
 			and formatVersion == Repository.currentFormatVersion):
-			self._updateRepository()
+			if not getOption('noRepositoryUpdate'):
+				self._updateRepository()
 		else:
+			if getOption('noRepositoryUpdate'):
+				sysExit('no or outdated repository found but no update allowed')
 			if formatVersion < Repository.currentFormatVersion:
 				warn('Found old repository format - repopulating the '
 					 'repository ...')
