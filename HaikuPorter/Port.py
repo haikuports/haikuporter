@@ -1024,7 +1024,6 @@ class Port(object):
 			'portRevision': revision,
 			'portFullVersion': fullVersion,
 			'portRevisionedName': revisionedName,
-			'portDir': self.workDir + '/port',
 			'packagerName': Configuration.getPackagerName(),
 			'packagerEmail': Configuration.getPackagerEmail(),
 		})
