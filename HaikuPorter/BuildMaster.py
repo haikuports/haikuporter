@@ -199,7 +199,6 @@ class RemoteBuilder:
 
 			self.logger.info('connected to builder')
 			self.connectionErrors = 0
-			return True
 		except Exception as exception:
 			self.logger.error('failed to connect to builder: '
 				+ str(exception))
@@ -237,7 +236,8 @@ class RemoteBuilder:
 				+ '" && git fetch && git checkout ' + revision)
 			self.logger.info('running command: ' + command)
 			(output, channel) = self._remoteCommand(command)
-			return channel.recv_exit_status() == 0
+			if channel.recv_exit_status() != 0:
+				raise Exception('sync command failed')
 		except Exception as exception:
 			self.logger.error('failed to sync ports tree: '
 				+ str(exception))
@@ -270,7 +270,6 @@ class RemoteBuilder:
 		try:
 			self._ensureDirExists(self.config['portstree']['packagesPath'])
 			self._ensureDirExists(self.config['portstree']['packagesCachePath'])
-			return True
 		except Exception as exception:
 			self.logger.error('failed to create needed dirs: '
 				+ str(exception))
@@ -287,8 +286,6 @@ class RemoteBuilder:
 
 				if not entry in self.availablePackages:
 					self.availablePackages.append(entry)
-
-			return True
 		except Exception as exception:
 			self.logger.error('failed to get available packages: '
 				+ str(exception))
