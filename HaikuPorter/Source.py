@@ -210,7 +210,12 @@ class Source(object):
 			os.mkdir(additionalFilesDir)
 
 		for additionalFile in self.additionalFiles:
-			shutil.copy(additionalFile, additionalFilesDir)
+			if os.path.isdir(additionalFile):
+				shutil.copytree(additionalFile,
+					os.path.join(additionalFilesDir,
+						os.path.basename(additionalFile)))
+			else:
+				shutil.copy(additionalFile, additionalFilesDir)
 
 	def validateChecksum(self, port):
 		"""Make sure that the SHA256-checksum matches the expectations"""
@@ -274,7 +279,14 @@ class Source(object):
 
 		if self.additionalFiles:
 			for additionalFile in self.additionalFiles:
-				if additionalFile in files:
+				if os.path.isdir(additionalFile):
+					# ensure there is a path separator at the end
+					additionalFile = os.path.join(additionalFile, '')
+					for fileName in files:
+						if os.path.commonprefix([additionalFile, fileName]) \
+								== additionalFile:
+							return True
+				elif additionalFile in files:
 					return True
 
 		return False
