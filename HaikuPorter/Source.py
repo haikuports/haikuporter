@@ -262,6 +262,11 @@ class Source(object):
 
 		# use an implicit git repository for improved patch handling.
 		ensureCommandIsAvailable('git')
+		
+		# Check to see if there are any patches that need to be applied.
+		if not self.patches and getOption('noGitRepo'):
+			return False
+
 		if not self._isInGitWorkingDirectory(self.sourceDir):
 			# import sources into pristine git repository
 			self._initImplicitGitRepo()

@@ -86,9 +86,9 @@ def parseOptions():
 	parser.add_option('-e', '--extract-patchset',
 					  action='store_true', dest='extractPatchset', default=False,
 					  help='extract current patchset(s) from port source(s)')
-	parser.add_option('-G', '--init-git',
-					  action='store_true', dest='initGitRepo', default=False,
-					  help='create git-repo(s) for port source(s)')
+	parser.add_option('-G', '--no-git-repo',
+					  action='store_true', dest='noGitRepo', default=False,
+					  help="don't create git-repo(s) for port source(s)")
 	parser.add_option('-B', '--patch-files-only',
 					  action='store_true', dest='patchFilesOnly',
 					  default=False,
