@@ -260,19 +260,18 @@ class Source(object):
 			print 'Skipping patchset for ' + self.fetchTargetName
 			return True
 
-		# use an implicit git repository for improved patch handling.
-		ensureCommandIsAvailable('git')
-		
-		# Check to see if there are any patches that need to be applied.
-		if not self.patches and getOption('noGitRepo'):
-			return False
-
-		if not self._isInGitWorkingDirectory(self.sourceDir):
-			# import sources into pristine git repository
-			self._initImplicitGitRepo()
-		elif self.patches:
-			# reset existing git repsitory before appling patchset(s) again
-			self.reset()
+		if not getOption('noGitRepo'):
+			# use an implicit git repository for improved patch handling.
+			ensureCommandIsAvailable('git')
+			if not self._isInGitWorkingDirectory(self.sourceDir):
+				# import sources into pristine git repository
+				self._initImplicitGitRepo()
+			elif self.patches:
+				# reset existing git repsitory before appling patchset(s) again
+				self.reset()
+		else:
+			# make sure the patches can still be applied if no git repo
+			ensureCommandIsAvailable('patch')
 
 		patched = False
 		try:
@@ -281,18 +280,25 @@ class Source(object):
 				if not os.path.exists(patch):
 					sysExit('patch file "' + patch + '" not found.')
 
-				if patch.endswith('.patchset'):
-					print 'Applying patchset "%s" ...' % patch
-					check_call(['git', 'am', '--ignore-whitespace', '-3',
-								'--keep-cr', patch], cwd=self.sourceDir,
-							   env=self.gitEnv)
+				if getOption('noGitRepo'):
+					print 'Applying patch(set) "%s" ...' % patch
+					check_call(['patch', '--ignore-whitespace', '-p1', '-i',
+								patch], cwd=self.sourceDir)
 				else:
-					print 'Applying patch "%s" ...' % patch
-					check_call(['git', 'apply', '--ignore-whitespace', '-p1',
-								'--index', patch], cwd=self.sourceDir)
-					check_call(['git', 'commit', '-q', '-m', 'applying patch %s'
-								% os.path.basename(patch)],
-							   cwd=self.sourceDir, env=self.gitEnv)
+					if patch.endswith('.patchset'):
+						print 'Applying patchset "%s" ...' % patch
+						check_call(['git', 'am', '--ignore-whitespace', '-3',
+									'--keep-cr', patch], cwd=self.sourceDir,
+								   env=self.gitEnv)
+					else:
+						print 'Applying patch "%s" ...' % patch
+						check_call(['git', 'apply', '--ignore-whitespace',
+									'-p1', '--index', patch],
+									cwd=self.sourceDir)
+						check_call(['git', 'commit', '-q', '-m',
+									'applying patch %s'
+									% os.path.basename(patch)],
+								   cwd=self.sourceDir, env=self.gitEnv)
 				patched = True
 		except:
 			# Don't leave behind half-patched sources.
