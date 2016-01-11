@@ -14,6 +14,7 @@ from __future__ import absolute_import
 # -- Modules ------------------------------------------------------------------
 
 import os
+import re
 import shutil
 import signal
 from subprocess import check_call, CalledProcessError
@@ -218,10 +219,12 @@ class Port(object):
 		if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
 			os.makedirs(os.path.dirname(self.preparedRecipeFile))
 
-		prepareRecipeCommand = ['bash', '-c',
-								'sed \'s,^\\(REVISION="[^"]*"\\),\\1; updateRevisionVariables ,\' '
-								+ self.recipeFilePath + ' > ' + self.preparedRecipeFile]
-		check_call(prepareRecipeCommand)
+		with open(self.recipeFilePath, 'r') as fi:
+			with open(self.preparedRecipeFile, 'w') as fo:
+				p = re.compile('(REVISION="[^"]*")')
+				for line in fi:
+					newline = p.sub(r'\1; updateRevisionVariables ', line)
+					fo.write(newline)
 
 		# adjust recipe attributes for meta ports
 		recipeAttributes = getRecipeAttributes()
