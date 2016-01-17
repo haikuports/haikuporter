@@ -676,8 +676,17 @@ extractDebugInfo()
 
 	local objcopy=$(getTargetArchitectureCommand objcopy)
 	local strip=$(getTargetArchitectureCommand strip)
+	local tmpfile=$(mktemp)
+
 	$objcopy --only-keep-debug "$path" "$debugInfoPath"
+	xres -o $tmpfile "$path"
 	$strip --strip-debug "$path"
+
+	if [ -e $tmpfile ]; then
+		xres -o "$path" $tmpfile
+		rm $tmpfile
+	fi
+
 	$objcopy --add-gnu-debuglink="$debugInfoPath" "$path"
 }
 
