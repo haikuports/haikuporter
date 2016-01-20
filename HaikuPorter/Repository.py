@@ -357,6 +357,77 @@ class Repository(object):
 						print e.code
 		os.rename(newRepositoryPath, self.path)
 
+	def supportBackwardsCompatibility(self, buildName, buildVersion):
+		"""Update all DependencyInfo-files in the repository as needed for
+		   the given port"""
+
+		allPorts = self.allPorts
+		brokenPorts = []
+		skippedDir = self.path + '/.skipped'
+
+		if not self.quiet:
+			print 'Checking if package dependencies need to be updated ...'
+
+		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+			for version in reversed(self._portVersionsByName[portName]):
+				portID = portName + '-' + version
+				port = allPorts[portID]
+
+				# ignore recipes that were skipped last time unless they've
+				# been changed since then
+				if (os.path.exists(skippedDir + '/' + portID)
+					and (os.path.getmtime(port.recipeFilePath)
+						 <= os.path.getmtime(skippedDir + '/' + portID))):
+					continue
+
+				# ignore recipes without the correct name
+				if (buildName != portName):
+					continue
+
+				mainDependencyInfoFile = (self.path + '/'
+										  + port.dependencyInfoName)
+				if (version != buildVersion):
+					# remove dependency infos from incorrect version, if it exists
+					if os.path.exists(mainDependencyInfoFile):
+						if not self.quiet:
+							print('\tremoving dependency-infos for '
+								  + portID + ', as different version is active')
+						port.removeDependencyInfosFromRepository(self.path)
+						port.obsoletePackages(self.packagesPath)
+					continue
+
+				# try to parse updated recipe
+				try:
+					port.parseRecipeFile(False)
+
+					if not port.isBuildableOnTargetArchitecture:
+						touchFile(skippedDir + '/' + portID)
+						if not self.quiet:
+							status = port.statusOnTargetArchitecture
+							print(('\t%s is still marked as %s on target '
+								   + 'architecture') % (portID, status))
+						continue
+
+					if os.path.exists(skippedDir + '/' + portID):
+						os.remove(skippedDir + '/' + portID)
+
+					if not self.quiet:
+						print '\tupdating dependency infos of ' + portID
+					port.writeDependencyInfosIntoRepository(self.path)
+					for package in port.packages:
+						self._portIdForPackageId[package.versionedName] \
+							= port.versionedName
+						self._portNameForPackageName[package.name] \
+							= port.name
+				except SystemExit as e:
+					# take notice of broken recipe file
+					touchFile(skippedDir + '/' + portID)
+					if os.path.exists(mainDependencyInfoFile):
+						brokenPorts.append(portID)
+					elif not self.quiet:
+						print '\trecipe for %s is still broken:' % portID
+						print '\n'.join(['\t'+line for line in e.code.split('\n')])
+
 	def _updateRepository(self):
 		"""Update all DependencyInfo-files in the repository as needed"""
 

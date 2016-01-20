@@ -375,6 +375,9 @@ class Main(object):
 
 		allPorts = self.repository.allPorts
 
+		# make sure the correct dependencyInfo-file has been created
+		self.repository.supportBackwardsCompatibility(port.name, port.version)
+
 		# HPKGs are usually written into the 'packages' directory, but when
 		# an obsolete port (one that's not in the repository) is being built,
 		# its packages are stored into the .obsolete subfolder of the packages
@@ -425,6 +428,9 @@ class Main(object):
 
 		if port.versionedName in self.builtPortIDs:
 			return
+
+		# make sure the correct dependencyInfo-file has been created
+		self.repository.supportBackwardsCompatibility(port.name, port.version)
 
 		print '-' * 70
 		print port.category + '::' + port.versionedName
