@@ -162,6 +162,14 @@ haikuportsAttributes = {
 		'optionAttribute': 'systemMimeDB',
 		'setAttribute': 'systemMimeDB',
 	},
+	'VENDOR': {
+		'type': types.StringType,
+		'required': False,
+		'default': 'Haiku Project',
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'vendor',
+	},
 }
 
 
@@ -190,6 +198,7 @@ class Configuration(object):
 		self.crossDevelPackage = None
 		self.secondaryCrossDevelPackages = None
 		self.outputDirectory = None
+		self.vendor = None
 
 		self._readConfigurationFile()
 
@@ -280,6 +289,10 @@ class Configuration(object):
 	@staticmethod
 	def getDownloadMirror():
 		return Configuration.configuration.downloadMirror
+
+	@staticmethod
+	def getVendor():
+		return Configuration.configuration.vendor
 
 	def _readConfigurationFile(self):
 		# Find the configuration file. It may be
