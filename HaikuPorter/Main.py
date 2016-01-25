@@ -56,6 +56,11 @@ class Main(object):
 		self.treePath = Configuration.getTreePath()
 		self.outputDirectory = Configuration.getOutputDirectory()
 
+		# if requested, checkout or update ports tree
+		if self.options.get:
+			self._updatePortsTree()
+			return
+
 		self._checkFormatVersions()
 
 		# determine if haikuporter has just been invoked for a short-term
@@ -76,11 +81,6 @@ class Main(object):
 		self.packagesPath = self.outputDirectory + '/packages'
 		if not os.path.exists(self.packagesPath):
 			os.mkdir(self.packagesPath)
-
-		# if requested, checkout or update ports tree
-		if self.options.get:
-			self._updatePortsTree()
-			return
 
 		# if requested, print the location of the haikuports source tree
 		if self.options.tree:
