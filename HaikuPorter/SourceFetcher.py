@@ -185,8 +185,6 @@ class SourceFetcherForDownload(object):
 		ensureCommandIsAvailable('wget')
 		args = [ 'wget', '-c', '--timeout=10', '--tries=3',
 				 '-O', self.fetchTarget, self.uri ]
-		if self.uri.startswith('https://'):
-			args.insert(3, '--no-check-certificate')
 		check_call(args)
 
 	def updateToRev(self, rev):
