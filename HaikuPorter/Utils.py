@@ -44,10 +44,10 @@ class MyTarInfo(tarfile.TarInfo):
 		return tarinfo
 
 # path to haikuports-tree --------------------------------------------------
-haikuportsRepoUrl = 'git@github.com:haikuports/haikuports.git'
+haikuportsRepoUrl = 'https://github.com/haikuports/haikuports.git'
 
 # path to haikuporter-tree
-haikuporterRepoUrl = 'git@github.com:haikuports/haikuporter.git'
+haikuporterRepoUrl = 'https://github.com/haikuports/haikuporter.git'
 
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
