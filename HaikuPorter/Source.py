@@ -198,6 +198,25 @@ class Source(object):
 
 		port.setFlag('unpack', self.index)
 
+	def populateAdditionalFiles(self, baseDir):
+		if not self.additionalFiles:
+			return
+
+		additionalFilesDir = os.path.join(baseDir, 'additional-files')
+		if self.index != '1':
+			additionalFilesDir += '-' + self.index
+
+		if not os.path.exists(additionalFilesDir):
+			os.mkdir(additionalFilesDir)
+
+		for additionalFile in self.additionalFiles:
+			if os.path.isdir(additionalFile):
+				shutil.copytree(additionalFile,
+					os.path.join(additionalFilesDir,
+						os.path.basename(additionalFile)))
+			else:
+				shutil.copy(additionalFile, additionalFilesDir)
+
 	def validateChecksum(self, port):
 		"""Make sure that the SHA256-checksum matches the expectations"""
 
@@ -251,6 +270,26 @@ class Source(object):
 
 		return (self.uris[0].lower().startswith('pkg:')
 				and '_source_rigged-' in self.uris[0].lower())
+
+	def referencesFiles(self, files):
+		if self.patches:
+			for patch in self.patches:
+				if patch in files:
+					return True
+
+		if self.additionalFiles:
+			for additionalFile in self.additionalFiles:
+				if os.path.isdir(additionalFile):
+					# ensure there is a path separator at the end
+					additionalFile = os.path.join(additionalFile, '')
+					for fileName in files:
+						if os.path.commonprefix([additionalFile, fileName]) \
+								== additionalFile:
+							return True
+				elif additionalFile in files:
+					return True
+
+		return False
 
 	def patch(self, port):
 		"""Apply any patches to this source"""
@@ -412,19 +451,6 @@ class Source(object):
 				self.sourceExportSubdir)
 			if self.sourceSubDir:
 				foldSubdirIntoSourceDir(self.sourceSubDir, targetDir)
-
-	def exportAdditionalFiles(self, targetDir):
-		"""Export any additional files into given folder"""
-
-		if not self.additionalFiles:
-			return
-
-		if not os.path.exists(targetDir):
-			os.makedirs(targetDir)
-		for additionalFile in self.additionalFiles:
-			command = ('tar -c "%s" | tar -x -C "%s"'
-					   % (os.path.basename(additionalFile), targetDir))
-			check_call(command, cwd=os.path.dirname(additionalFile), shell=True)
 
 	def adjustToChroot(self, port):
 		"""Adjust directories to chroot()-ed environment"""

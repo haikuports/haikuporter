@@ -42,19 +42,25 @@ def setCommaSeparatedList(option, opt, value, parser):
 def parseOptions():
 	"""Does command line argument parsing"""
 
-	parser =  OptionParser(
+	parser = OptionParser(
 						usage='usage: %prog [options] portname[-portversion]',
 						version='%prog ' + __version__)
 
 	parser.add_option('-l', '--list',
 					  action='store_true', dest='list', default=False,
 					  help='list available ports')
+	parser.add_option('--list-packages',
+					  action='store_true', dest='listPackages', default=False,
+					  help='list available packages')
 	parser.add_option('-a', '--about',
 					  action='store_true', dest='about', default=False,
 					  help='show description of the specified port')
 	parser.add_option('-s', '--search',
 					  action='store_true', dest='search', default=False,
 					  help='search for a port (regex)')
+	parser.add_option('--search-packages',
+					  action='store_true', dest='searchPackages', default=False,
+					  help='search for a package (regex)')
 	parser.add_option('-o','--location',
 					  action='store_true', dest='location', default=False,
 					  help="print out the location of a recipe (via search, "
@@ -223,6 +229,56 @@ def parseOptions():
 					  help='specifies the path to the cross-tools directory '
 						   'created by the Haiku build system\'s configure '
 						   'script')
+
+	parser.add_option('--no-system-packages', action='store_true',
+		dest='noSystemPackages', default=False,
+		help='do not use system packages to resolve dependencies')
+
+	parser.add_option('--system-packages-directory', action='store',
+		type='string', dest='systemPackagesDirectory', default=None,
+		help='specifies the directory to be used to look up system packages '
+			+ '(only applies to build master mode)')
+
+	parser.add_option('--list-build-dependencies', action='store_true',
+		dest='listBuildDependencies', default=False,
+		help='list build dependencies of a port')
+
+	parser.add_option('--build-master', action='store_true', dest='buildMaster',
+		default=False,
+		help='run as build master and delegate builds to builders')
+	parser.add_option('--build-master-output-dir', action='store',
+		type='string', dest='buildMasterOutputDir', default=None,
+		help='specifies where build master output shall be written')
+
+	parser.add_option('--repository-update', action='store_true',
+		dest='repositoryUpdate', default=False,
+		help='update dependency infos in the repository')
+	parser.add_option('--no-repository-update', action='store_true',
+		dest='noRepositoryUpdate', default=False,
+		help='do not update dependency infos in the repository')
+
+	parser.add_option('--no-package-obsoletion', action='store_true',
+		dest='noPackageObsoletion', default=False,
+		help='do not move obsolete packages out of packages dir')
+
+	parser.add_option('--literal-search-strings', action='store_true',
+		dest='literalSearchStrings', default=False,
+		help='treat search strings as literals instead of as expressions')
+	parser.add_option('--print-raw', action='store_true', dest='printRaw',
+		default=False, help='print machine readable output for use by scripts')
+	parser.add_option('--print-filenames', action='store_true',
+		dest='printFilenames', default=False, help='print filenames instead of '
+			+ 'package names in package listings and searches')
+	parser.add_option('--ignore-messages', action='store_true',
+		dest='ignoreMessages', default=False,
+		help='ignore messages within recipes')
+
+	parser.add_option('--ports-for-files', action='store_true',
+		dest='portsForFiles', default=False,
+		help='list all ports affected by the supplied list of files')
+	parser.add_option('--active-versions-only', action='store_true',
+		dest='activeVersionsOnly', default=False,
+		help='only check in active versions of ports instead of all ports')
 
 	global __Options__
 

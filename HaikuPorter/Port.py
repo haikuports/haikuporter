@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 # -- Modules ------------------------------------------------------------------
 
+import json
 import os
 import re
 import shutil
@@ -87,6 +88,8 @@ class ChrootSetup(object):
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
+	recipeCacheDir = 'recipeCache'
+
 	def __init__(self, name, version, category, baseDir, outputDir,
 				 repositoryDir, globalShellVariables, policy,
 				 secondaryArchitecture=None):
@@ -111,6 +114,11 @@ class Port(object):
 		else:
 			self.workDir = outputDir + '/work-' + self.version
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
+
+		self.recipeFileCache = os.path.join(Port.recipeCacheDir, self.name
+				+ '-' + self.version + '-' + self.effectiveTargetArchitecture)
+		if not os.path.exists(Port.recipeCacheDir):
+			os.mkdir(Port.recipeCacheDir)
 
 		self.isMetaPort = self.category == 'meta-ports'
 
@@ -236,7 +244,6 @@ class Port(object):
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
 									self.shellVariables)
 		extensions = recipeConfig.extensions
-		self.definedPhases = recipeConfig.definedPhases
 
 		if '' not in extensions:
 			sysExit('No base package defined in (in %s)' % self.recipeFilePath)
@@ -327,7 +334,7 @@ class Port(object):
 								 'PATCHES, so it will not be used'
 								 % patchFileName)
 
-		return recipeKeysByExtension
+		return recipeKeysByExtension, recipeConfig.definedPhases
 
 	def _validateSUMMARY(self, key, entries, showWarnings):
 		"""Validates the 'SUMMARY' of the port."""
@@ -497,11 +504,14 @@ class Port(object):
 		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
-	def resolveBuildDependencies(self, repositoryPath, packagesPath):
+	def resolveBuildDependencies(self, repositoryPath, packagesPath,
+		presentDependencyPackages = None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
 		   Any build requirements a port may have that can not be fulfilled from
 		   within the haikuports tree will be raised as an error here.
+		   If supplied, a list of present build dependency packages is filled
+		   out along the way.
 		"""
 
 		dependencyInfoFiles = self.getDependencyInfoFiles(repositoryPath)
@@ -510,7 +520,8 @@ class Port(object):
 		requiredPackages = self._resolveDependencies(
 			dependencyInfoFiles, requiresTypes,
 			[packagesPath, repositoryPath], 'required or prerequired ports',
-			stopAtHpkgs=True
+			stopAtHpkgs = presentDependencyPackages == None,
+			presentDependencyPackages = presentDependencyPackages
 		)
 
 		# return list of unique ports which need to be built before this one
@@ -561,6 +572,29 @@ class Port(object):
 		]
 
 		return dependencyInfoFiles
+
+	def referencesFiles(self, files):
+		if self.recipeFilePath in files:
+			return True
+
+		if self.isMetaPort:
+			return False
+
+		try:
+			self.parseRecipeFileIfNeeded()
+		except:
+			return False
+
+		for source in self.sources:
+			if source.referencesFiles(files):
+				return True
+
+		if 'LICENSE' in self.recipeKeys:
+			for license in self.recipeKeys['LICENSE']:
+				if os.path.join(self.licensesDir, license) in files:
+					return True
+
+		return False
 
 	def cleanWorkDirectory(self):
 		"""Clean the working directory"""
@@ -622,6 +656,13 @@ class Port(object):
 					for source in self.sources:
 						source.reset()
 				raise
+
+	def populateAdditionalFiles(self):
+		"""Populates the work dir with referenced additional files"""
+
+		self.parseRecipeFileIfNeeded()
+		for source in self.sources:
+			source.populateAdditionalFiles(self.workDir)
 
 	def extractPatchset(self):
 		"""Extract patchsets from all sources"""
@@ -687,7 +728,8 @@ class Port(object):
 				= self._getPackagesPrerequiredForBuild(packagesPath)
 			self.requiresUpdater \
 				= RequiresUpdater(self.packages, requiredPackages)
-			if not Configuration.isCrossBuildRepository():
+			if (not Configuration.isCrossBuildRepository()
+				and not getOption('noSystemPackages')):
 				self.requiresUpdater.addPackages(
 					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		self.policy.setPort(self, requiredPackages)
@@ -776,7 +818,7 @@ class Port(object):
 					targetPackageFile \
 						= hpkgStoragePath + '/' + package.hpkgName
 					print('grabbing ' + package.hpkgName
-						  + ' and copying it to ' + targetPackageFile)
+						  + ' and moving it to ' + targetPackageFile)
 					os.rename(packageFile, targetPackageFile)
 
 		if os.path.exists(self.hpkgDir):
@@ -843,6 +885,30 @@ class Port(object):
 
 		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
 
+	def _validateOrLoadFromCache(self, showWarnings):
+		if (os.path.exists(self.preparedRecipeFile)
+			and os.path.exists(self.recipeFileCache)
+			and os.path.getmtime(self.recipeFileCache)
+				>= os.path.getmtime(self.recipeFilePath)):
+			with open(self.recipeFileCache, 'r') as cacheFile:
+				cached = json.loads(cacheFile.read())
+				if 'exception' in cached:
+					sysExit(cached['exception'])
+				return cached
+
+		try:
+			recipeKeysByExtension, definedPhases \
+				= self.validateRecipeFile(showWarnings)
+		except SystemExit as exception:
+			with open(self.recipeFileCache, 'w') as cacheFile:
+				cacheFile.write(json.dumps({'exception': str(exception)}))
+			raise
+
+		with open(self.recipeFileCache, 'w') as cacheFile:
+			cacheFile.write(json.dumps((recipeKeysByExtension, definedPhases)))
+
+		return recipeKeysByExtension, definedPhases
+
 	def _parseRecipeFile(self, showWarnings):
 		"""Parse the recipe-file of the specified port"""
 
@@ -853,7 +919,8 @@ class Port(object):
 		# set default SOURCE_DIR
 		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
 
-		self.recipeKeysByExtension = self.validateRecipeFile(showWarnings)
+		self.recipeKeysByExtension, self.definedPhases \
+			= self._validateOrLoadFromCache(showWarnings)
 		self.recipeKeys = {}
 		for entries in self.recipeKeysByExtension.values():
 			self.recipeKeys.update(entries)
@@ -960,7 +1027,6 @@ class Port(object):
 			'portRevision': revision,
 			'portFullVersion': fullVersion,
 			'portRevisionedName': revisionedName,
-			'portDir': self.workDir + '/port',
 			'packagerName': Configuration.getPackagerName(),
 			'packagerEmail': Configuration.getPackagerEmail(),
 		})

@@ -7,6 +7,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from .BuildPlatform import buildPlatform
+from .Options import getOption
 from .PackageInfo import (PackageInfo, ResolvableExpression)
 from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
@@ -73,10 +74,11 @@ class PortNode(object):
 		dependencyInfoFiles = self.port.getDependencyInfoFiles(repositoryPath)
 		requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 						  'SCRIPTLET_PREREQUIRES' ]
-		repositories = [
-			doneRepositoryPath,
-			buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'),
-		];
+		repositories = [ doneRepositoryPath ];
+		if not getOption('noSystemPackages'):
+			repositories.append(
+				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+
 		try:
 			buildPlatform.resolveDependencies(dependencyInfoFiles,
 											  requiresTypes,
@@ -131,15 +133,18 @@ class DependencyAnalyzer(object):
 			self._doInitialDependencyResolution()
 
 		print 'Required system packages:'
-		for packageNode in self.systemPackageNodes:
+		for packageNode in sorted(self.systemPackageNodes,
+				key=lambda packageNode: packageNode.name):
 			print '	 %s' % packageNode.name
 
 		print 'Ports required by haikuporter:'
-		for packageNode in self.haikuporterRequires:
+		for packageNode in sorted(self.haikuporterRequires,
+				key=lambda packageNode: packageNode.name):
 			print '	 %s' % packageNode.portNode.name
 
 		print 'Ports depending cyclically on each other:'
-		for node in self.cyclicNodes:
+		for node in sorted(sorted(self.cyclicNodes, key=lambda node: node.name),
+				key=lambda node: node.outdegree):
 			print '	 %s (out-degree %d)' % (node.name, node.outdegree)
 
 	def getBuildOrderForBootstrap(self):
@@ -182,18 +187,30 @@ class DependencyAnalyzer(object):
 		self._collectDependencyInfos(self.repository.path)
 		self._collectSystemPackages()
 
-		for portID in self.repository.allPorts.iterkeys():
+		allActivePorts = []
+		for portName in sorted(self.repository.portVersionsByName.keys()):
+			activePortVersion = self.repository.getActiveVersionOf(portName)
+			if not activePortVersion:
+				print 'Warning: Skipping ' + portName + ', no version active'
+				continue
+
+			allActivePorts.append(portName + '-' + activePortVersion)
+
+		for portID in allActivePorts:
 			portNode = self._getPortNode(portID)
 			for package in portNode.port.packages:
 				packageID = package.versionedName
 				packageNode = self._getPackageNode(packageID)
 				packageInfo = self.packageInfos[packageID]
 				packageNode.addRequires(
-					self._resolveRequiresList(packageInfo.requires))
+					self._resolveRequiresList(packageInfo.requires, portID,
+						packageID))
 				portNode.addBuildRequires(
-					self._resolveRequiresList(packageInfo.buildRequires))
+					self._resolveRequiresList(packageInfo.buildRequires, portID,
+						packageID))
 				portNode.addBuildPrerequires(
-					self._resolveRequiresList(packageInfo.buildPrerequires))
+					self._resolveRequiresList(packageInfo.buildPrerequires,
+						portID, packageID))
 
 		# determine the needed system packages
 		self.systemPackageNodes = set()
@@ -207,14 +224,28 @@ class DependencyAnalyzer(object):
 				nonSystemPackageNodes.add(packageNode)
 				remainingPortNodes.add(packageNode.portNode)
 
+		# resolve system package dependencies
+		for packageNode in self.systemPackageNodes:
+			packageInfo = self.packageInfos[packageNode.name]
+			packageNode.addRequires(
+				self._resolveRequiresList(packageInfo.requires,
+					'system packages', packageNode.name))
+
+		nodeStack = list(self.systemPackageNodes)
+		while nodeStack:
+			packageNode = nodeStack.pop()
+			for dependency in packageNode.requires:
+				if (dependency in nonSystemPackageNodes
+					and not dependency in self.systemPackageNodes):
+					nodeStack.append(dependency)
+					self.systemPackageNodes.add(dependency)
+
 		# resolve the haikuporter dependencies
-		scriptletPrerequirements = []
-		for spr in getScriptletPrerequirements():
-			spr = spr.partition('#')[0].strip()
-			if spr:
-				scriptletPrerequirements.append(ResolvableExpression(spr))
+		scriptletPrerequirements = [ ResolvableExpression(requires)
+				for requires in getScriptletPrerequirements() ]
 		haikuporterDependencies \
-			= self._resolveRequiresList(scriptletPrerequirements)
+			= self._resolveRequiresList(scriptletPrerequirements,
+				'haikuporter', 'scriptlet requires')
 		self.haikuporterRequires = set()
 		for packageNode in haikuporterDependencies:
 			if not packageNode.isSystemPackage:
@@ -224,7 +255,6 @@ class DependencyAnalyzer(object):
 		nodeStack = list(self.haikuporterRequires)
 		while nodeStack:
 			packageNode = nodeStack.pop()
-			portNode = packageNode.portNode
 			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
 					and not dependency in self.haikuporterRequires):
@@ -299,6 +329,9 @@ class DependencyAnalyzer(object):
 			self.packageInfos[packageInfo.versionedName] = packageInfo
 
 	def _collectSystemPackages(self):
+		if getOption('noSystemPackages'):
+			return
+
 		path = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
 		for entry in os.listdir(path):
 			if not entry.endswith('.hpkg'):
@@ -310,8 +343,9 @@ class DependencyAnalyzer(object):
 				print ('Warning: Ignoring broken package file "%s"'
 					   % packageFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
+			self.packageInfos[packageInfo.versionedName] = packageInfo
 
-	def _resolveRequiresList(self, requiresList):
+	def _resolveRequiresList(self, requiresList, portID, packageID):
 		dependencies = set()
 		for requires in requiresList:
 			providesInfo = self.providesManager.getMatchingProvides(requires)
@@ -322,7 +356,8 @@ class DependencyAnalyzer(object):
 												   isSystemPackage)
 				dependencies.add(packageNode)
 			else:
-				print 'Warning: Ignoring unresolvable requires "%s"' % requires
+				print('Warning: Ignoring unresolvable requires "%s" of package'
+					' %s in %s' % (requires, packageID, portID))
 		return dependencies
 
 	def _getPortNode(self, portID):

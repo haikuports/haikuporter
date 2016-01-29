@@ -34,7 +34,13 @@ def getScriptletPrerequirements(targetMachineTripleAsName = None):
 		'targetMachinePrefix': targetMachinePrefix,
 	}).splitlines()
 
-	return prerequirements
+	result = []
+	for prerequirement in prerequirements:
+		prerequirement = prerequirement.partition('#')[0].strip()
+		if prerequirement:
+			result.append(prerequirement)
+
+	return result
 
 def getShellVariableSetters(shellVariables):
 	"""Converts a dict {variableName -> value} to a string with shell code to
@@ -749,8 +755,7 @@ mkdir -p \
 	boot/system/packages \
 	boot/system/cache/tmp \
 	boot/system/packages \
-	boot/system/settings/etc \
-	port \
+	boot/system/settings/etc
 
 ln -sfn /boot/system system
 ln -sfn /boot/system/bin bin
@@ -788,9 +793,6 @@ fi
 if [ -e boot/system/bin ]; then
 	unmount boot/system
 fi
-if [ "$(echo port/work*)" != port/work\* ]; then
-	unmount port
-fi
 
 # if it has been defined, mount the cross-build sysroot
 if [[ -n $crossSysrootDir ]]; then
@@ -809,10 +811,6 @@ fi
 # mount dev and system-packagefs
 mount -t bindfs -p "source /dev" dev
 mount -t packagefs -p "type system" boot/system
-
-# bind-mount the port directory to port/
-mount -t bindfs -p "source $portDir" port
-
 '''
 
 
@@ -877,12 +875,11 @@ fi
 
 checkedUnmount dev
 checkedUnmount boot/system
-checkedUnmount port
 
 # wipe files and directories if it is ok to do so
 if [[ $buildOk ]]; then
 	echo "cleaning chroot folder"
-	rmdir dev port
+	rmdir dev
 	rm -rf \
 		boot \
 		build-packages \

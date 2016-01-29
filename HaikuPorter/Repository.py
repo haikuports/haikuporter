@@ -59,14 +59,18 @@ class Repository(object):
 			and os.path.exists(self._portIdForPackageIdFilePath)
 			and os.path.exists(self._portNameForPackageNameFilePath)
 			and formatVersion == Repository.currentFormatVersion):
-			self._updateRepository()
+			if not getOption('noRepositoryUpdate'):
+				self._updateRepository()
 		else:
+			if getOption('noRepositoryUpdate'):
+				sysExit('no or outdated repository found but no update allowed')
 			if formatVersion < Repository.currentFormatVersion:
 				warn('Found old repository format - repopulating the '
 					 'repository ...')
 			self._populateRepository(preserveFlags)
 			self._writeFormatVersion()
 		self._writePortForPackageMaps()
+		self._activePorts = None
 
 	def getPortIdForPackageId(self, packageId):
 		"""return the port-ID for the given package-ID"""
@@ -81,6 +85,21 @@ class Repository(object):
 	@property
 	def allPorts(self):
 		return self._allPorts
+
+	@property
+	def activePorts(self):
+		if self._activePorts != None:
+			return self._activePorts
+
+		self._activePorts = []
+		for portName in self._portVersionsByName.keys():
+			activePortVersion = self.getActiveVersionOf(portName)
+			if not activePortVersion:
+				continue
+			self._activePorts.append(
+				self._allPorts[portName + '-' + activePortVersion])
+
+		return self._activePorts
 
 	@property
 	def portVersionsByName(self):
@@ -118,6 +137,8 @@ class Repository(object):
 		"""Search for one or more ports in the HaikuPorts tree, returning
 		   a list of found matches"""
 		if regExp:
+			if getOption('literalSearchStrings'):
+				regExp = re.escape(regExp)
 			reSearch = re.compile(regExp)
 
 		ports = []
@@ -127,6 +148,38 @@ class Repository(object):
 				ports.append(portName)
 
 		return sorted(ports)
+
+	def _fileNameForPackageName(self, packageName):
+		portName = self._portNameForPackageName[packageName]
+		portVersion = self.getActiveVersionOf(portName)
+		if not portVersion:
+			return None
+
+		port = self._allPorts[portName + '-' + portVersion]
+		for package in port.packages:
+			if package.name == packageName:
+				return package.hpkgName
+
+	def searchPackages(self, regExp, returnFileNames = True):
+		"""Search for one or more packages in the HaikuPorts tree, returning
+		   a list of found matches"""
+		if regExp:
+			if getOption('literalSearchStrings'):
+				regExp = re.escape(regExp)
+			reSearch = re.compile(regExp)
+
+		packages = []
+		packageNames = self._portNameForPackageName.keys()
+		for packageName in packageNames:
+			if not regExp or reSearch.search(packageName):
+				if returnFileNames:
+					packageName = self._fileNameForPackageName(packageName)
+					if not packageName:
+						continue
+
+				packages.append(packageName)
+
+		return sorted(packages)
 
 	def _initAllPorts(self):
 		# Collect all ports into a dictionary that can be keyed by
@@ -475,7 +528,8 @@ class Repository(object):
 								print('\tremoving dependency-infos for '
 									  + portID + ', as newer version is active')
 							port.removeDependencyInfosFromRepository(self.path)
-							port.obsoletePackages(self.packagesPath)
+							if not getOption('noPackageObsoletion'):
+								port.obsoletePackages(self.packagesPath)
 							break
 						continue
 
@@ -534,8 +588,9 @@ class Repository(object):
 					print '\tremoving ' + dependencyInfoFileName
 				os.remove(dependencyInfo)
 
-				# obsolete corresponding package, if any
-				self._removePackagesForDependencyInfo(dependencyInfo)
+				if not getOption('noPackageObsoletion'):
+					# obsolete corresponding package, if any
+					self._removePackagesForDependencyInfo(dependencyInfo)
 
 	def _removePackagesForDependencyInfo(self, dependencyInfo):
 		"""remove all packages for the given dependency-info"""

@@ -278,3 +278,22 @@ class ConfigParser(object):
 				component = component[1:-1]
 			unquotedComponents.append(component)
 		return unquotedComponents
+
+	@staticmethod
+	def configurationStringFromDict(config):
+		configurationString = ''
+		for key in config.keys():
+			configurationString += key + '="'
+
+			if type(config[key]) == types.ListType:
+				configurationString += reduce(
+					lambda result, item: result + ' ' + item, config[key],
+					'').strip()
+			elif type(config[key]) == types.BooleanType:
+				configurationString += 'yes' if config[key] else 'no'
+			else:
+				configurationString += str(config[key])
+
+			configurationString += '"\n'
+
+		return configurationString

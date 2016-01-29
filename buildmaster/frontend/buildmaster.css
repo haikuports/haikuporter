@@ -1,0 +1,98 @@
+body {
+	background-color: white;
+	font-family: sans-serif;
+}
+
+h1, h2 {
+	margin: 0;
+	margin-top: 1em;
+}
+
+h1 {
+	font-size: 1.5em;
+}
+
+h2 {
+	font-size: 1.1em;
+}
+
+a, a:visited {
+	color: black;
+}
+
+#topLink {
+	position: fixed;
+	top: 0;
+	right: 0;
+	padding: 0.5em;
+	background-color: white;
+}
+
+.scheduledBuild, .builder {
+	border-top: 3px solid lightgray;
+	margin-bottom: 1em;
+}
+
+.labeled > * {
+	display: inline-block;
+	vertical-align: top;
+	margin-top: 0.5em;
+}
+
+.labeled .labeled:first-child > * {
+	margin-top: 0;
+}
+
+.label {
+	width: 15em;
+}
+
+.resultingPackages, .requiredPackages, .missingPackages {
+	min-width: 30em;
+}
+
+.requiredPackages, #completeBuilds .resultingPackages {
+	background-color: lightgreen;
+}
+
+.missingPackages, #scheduledBuilds .resultingPackages,
+	#blockedBuilds .resultingPackages {
+	background-color: lightyellow;
+}
+
+.requiredPackages, .missingPackages {
+	max-height: 5em;
+	overflow-y: auto;
+}
+
+#failedBuilds .resultingPackages, #lostBuilds .resultingPackages {
+	background-color: red;
+}
+
+#lostBuilders .currentBuildContainer {
+	display: none;
+}
+
+.revisionedName, .builderName {
+	font-weight: bold;
+}
+
+.count::before {
+	content: ' - '
+}
+
+#blockedBuilds {
+	background-color: #fffff8;
+}
+
+#completeBuilds, #activeBuilders {
+	background-color: #f0fff0;
+}
+
+#failedBuilds, #lostBuilders {
+	background-color: #fff0f0;
+}
+
+#lostBuilds {
+	background-color: #fffdf0;
+}

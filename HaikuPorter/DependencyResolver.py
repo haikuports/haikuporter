@@ -50,12 +50,17 @@ class PackageNode(object):
 # -- DependencyResolver class ----------------------------------------------------
 
 class DependencyResolver(object):
+
+	packageInfoCache = {}
+
 	def __init__(self, buildPlatform, requiresTypes, repositories, **kwargs):
 		self._providesManager = ProvidesManager()
 		self._platform = buildPlatform
 		self._requiresTypes = requiresTypes
 		self._repositories = repositories
 		self._stopAtHpkgs = kwargs.get('stopAtHpkgs', False)
+		self._presentDependencyPackages = kwargs.get(
+			'presentDependencyPackages', None)
 		self._packageNodes = []
 
 	def determineRequiredPackagesFor(self, dependencyInfoFiles):
@@ -154,14 +159,10 @@ class DependencyResolver(object):
 							   'build-prerequires', True)
 
 	def _addScriptletPrerequiresOf(self, requiredPackageInfo):
-		scriptletPrerequirements = []
-		for spr in getScriptletPrerequirements():
-			spr = spr.partition('#')[0].strip()
-			if spr:
-				scriptletPrerequirements.append(ResolvableExpression(spr))
+		scriptletPrerequirements = getScriptletPrerequirements()
 		for requires in scriptletPrerequirements:
-			self._addImmediate(requiredPackageInfo, requires,
-							   'scriptlet-prerequires', True)
+			self._addImmediate(requiredPackageInfo,
+				ResolvableExpression(requires), 'scriptlet-prerequires', True)
 
 	def _addImmediate(self, parent, requires, typeString, forBuildhost):
 		implicitProvides = self._platform.getImplicitProvides(forBuildhost)
@@ -195,6 +196,11 @@ class DependencyResolver(object):
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):
+			if (self._presentDependencyPackages != None
+				and not requiredPackageInfo.path
+					in self._presentDependencyPackages):
+				self._presentDependencyPackages.append(requiredPackageInfo.path)
+
 			self._addPackageNode(requiredPackageInfo, not self._stopAtHpkgs)
 		else:
 			parent.bumpDependencyCount()
@@ -208,8 +214,12 @@ class DependencyResolver(object):
 				self._pending.append(requiredPackageInfo)
 
 	def _parsePackageInfo(self, packageInfoFile):
+		if packageInfoFile in DependencyResolver.packageInfoCache:
+			return DependencyResolver.packageInfoCache[packageInfoFile]
+
 		try:
 			packageInfo = PackageInfo(packageInfoFile)
+			DependencyResolver.packageInfoCache[packageInfoFile] = packageInfo
 		except CalledProcessError:
 			sysExit('failed to parse "%s"' % packageInfoFile)
 
