@@ -89,7 +89,6 @@ class ChrootSetup(object):
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
-	recipeCacheDir = 'recipeCache'
 
 	def __init__(self, name, version, category, baseDir, outputDir,
 				 repositoryDir, globalShellVariables, policy,
@@ -116,10 +115,11 @@ class Port(object):
 			self.workDir = outputDir + '/work-' + self.version
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
 
-		self.recipeFileCache = os.path.join(self.baseDir, Port.recipeCacheDir, self.name
+		recipeCacheDir = os.path.join(self.repositoryDir, 'recipeCache')
+		self.recipeFileCache = os.path.join(recipeCacheDir, self.name
 				+ '-' + self.version + '-' + self.effectiveTargetArchitecture)
-		if not os.path.exists(Port.recipeCacheDir):
-			os.mkdir(Port.recipeCacheDir)
+		if not os.path.exists(recipeCacheDir):
+			os.mkdir(recipeCacheDir)
 
 		self.isMetaPort = self.category == 'meta-ports'
 
