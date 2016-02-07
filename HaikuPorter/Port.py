@@ -116,7 +116,7 @@ class Port(object):
 			self.workDir = outputDir + '/work-' + self.version
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
 
-		self.recipeFileCache = os.path.join(Port.recipeCacheDir, self.name
+		self.recipeFileCache = os.path.join(self.baseDir, Port.recipeCacheDir, self.name
 				+ '-' + self.version + '-' + self.effectiveTargetArchitecture)
 		if not os.path.exists(Port.recipeCacheDir):
 			os.mkdir(Port.recipeCacheDir)
