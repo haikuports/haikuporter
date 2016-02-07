@@ -10,6 +10,7 @@ from .Options import getOption
 from .Port import Port
 from .Utils import sysExit, touchFile, versionCompare, warn
 
+import codecs
 import glob
 import json
 import os
@@ -676,7 +677,7 @@ class Repository(object):
 					eval SOURCE_URI_$i="$SOURCE_URI"
 				done
 				'''[1:]) % sourcePackagePath
-			with open(recipeFilePath, 'a') as recipeFile:
+			with codecs.open(recipeFilePath, 'a', 'utf-8') as recipeFile:
 				recipeFile.write('\n' + textToAdd)
 
 		return recipeFilePath

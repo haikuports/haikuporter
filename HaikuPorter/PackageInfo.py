@@ -10,6 +10,7 @@ from .Utils import sysExit
 
 from copy import deepcopy
 from subprocess import check_output
+import codecs
 import json
 import os
 import re
@@ -122,7 +123,7 @@ class PackageInfo(object):
 			PackageInfo.hpkgCache[self.path] = deepcopy(self.__dict__)
 
 	def _parseFromDependencyInfoFile(self):
-		with open(self.path, 'r') as fh:
+		with codecs.open(self.path, 'r', 'utf-8') as fh:
 			dependencyInfo = json.load(fh)
 
 		# get various single-occurrence fields

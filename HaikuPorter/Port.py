@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 # -- Modules ------------------------------------------------------------------
 
+import codecs
 import json
 import os
 import re
@@ -227,8 +228,8 @@ class Port(object):
 		if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
 			os.makedirs(os.path.dirname(self.preparedRecipeFile))
 
-		with open(self.recipeFilePath, 'r') as fi:
-			with open(self.preparedRecipeFile, 'w') as fo:
+		with codecs.open(self.recipeFilePath, 'r', 'utf-8') as fi:
+			with codecs.open(self.preparedRecipeFile, 'w', 'utf-8') as fo:
 				p = re.compile('(REVISION="[^"]*")')
 				for line in fi:
 					newline = p.sub(r'\1; updateRevisionVariables ', line)

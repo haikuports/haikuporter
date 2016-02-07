@@ -21,6 +21,7 @@ from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import (escapeForPackageInfo, haikuporterRepoUrl, haikuportsRepoUrl,
 					naturalCompare, sysExit, warn)
 
+import codecs
 import json
 import os
 import shutil
@@ -310,7 +311,7 @@ class Package(object):
 		if os.path.exists(packageInfoPath):
 			os.remove(packageInfoPath)
 
-		with open(packageInfoPath, 'w') as infoFile:
+		with codecs.open(packageInfoPath, 'w', 'utf-8') as infoFile:
 			if fakeEmptyProvides:
 				infoFile.write('name\t\t\tfaked_' + self.name + '\n')
 			else:
@@ -318,8 +319,9 @@ class Package(object):
 			infoFile.write('version\t\t\t' + self.fullVersion + '\n')
 			infoFile.write('architecture\t\t' + architecture + '\n')
 			infoFile.write('summary\t\t\t"'
-						   + escapeForPackageInfo(self.recipeKeys['SUMMARY'])
-						   + '"\n')
+				+ escapeForPackageInfo(self.recipeKeys['SUMMARY'])
+				+ '"\n'
+			);
 
 			infoFile.write('description\t\t"')
 			infoFile.write(
@@ -431,7 +433,7 @@ class Package(object):
 			infoFile.write('}\n')
 
 		if not quiet:
-			with open(packageInfoPath, 'r') as infoFile:
+			with codecs.open(packageInfoPath, 'r', 'utf-8') as infoFile:
 				print infoFile.read()
 
 	def _writePackageInfoListByKey(self, infoFile, key, keyword):
@@ -472,7 +474,7 @@ class Package(object):
 		if os.path.exists(dependencyInfoPath):
 			os.remove(dependencyInfoPath)
 
-		with open(dependencyInfoPath, 'w') as infoFile:
+		with codecs.open(dependencyInfoPath, 'w', 'utf-8') as infoFile:
 			dependencyInfo = {
 				'name' : self.name,
 				'version' : self.version,

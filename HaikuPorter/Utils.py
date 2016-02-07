@@ -5,6 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import codecs
 import glob
 import os
 import re
@@ -193,13 +194,13 @@ def touchFile(theFile):  # @DontTrace
 def storeStringInFile(string, theFile):
 	"""Stores the given string in the file with the given name"""
 
-	with open(theFile, 'w') as fo:
+	with codecs.open(theFile, 'w', 'utf-8') as fo:
 		fo.write(string)
 
 def readStringFromFile(theFile):
 	"""Returns the contents of the file with the given name as a string"""
 
-	with open(theFile, 'r') as fo:
+	with codecs.open(theFile, 'r', 'utf-8') as fo:
 		return fo.read()
 
 availableCommands = {}
