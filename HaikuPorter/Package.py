@@ -325,7 +325,7 @@ class Package(object):
 
 			infoFile.write('description\t\t"')
 			infoFile.write(
-				escapeForPackageInfo('\n'.join(self.recipeKeys['DESCRIPTION'])))
+				escapeForPackageInfo(u'\n'.join(self.recipeKeys['DESCRIPTION'])))
 			infoFile.write('"\n')
 
 			infoFile.write('packager\t\t"' + Configuration.getPackager() + '"\n')
