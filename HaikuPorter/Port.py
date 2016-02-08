@@ -1028,7 +1028,7 @@ class Port(object):
 			'portRevision': revision,
 			'portFullVersion': fullVersion,
 			'portRevisionedName': revisionedName,
-			'packagerName': Configuration.getPackagerName(),
+			'packagerName': Configuration.getPackagerName().decode("utf-8"),
 			'packagerEmail': Configuration.getPackagerEmail(),
 		})
 
