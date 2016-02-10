@@ -119,7 +119,7 @@ class Port(object):
 		self.recipeFileCache = os.path.join(recipeCacheDir, self.name
 				+ '-' + self.version + '-' + self.effectiveTargetArchitecture)
 		if not os.path.exists(recipeCacheDir):
-			os.mkdir(recipeCacheDir)
+			os.makedirs(recipeCacheDir)
 
 		self.isMetaPort = self.category == 'meta-ports'
 

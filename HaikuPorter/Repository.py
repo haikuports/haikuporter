@@ -365,6 +365,8 @@ class Repository(object):
 		os.mkdir(newRepositoryPath)
 		skippedDir = newRepositoryPath + '/.skipped'
 		os.mkdir(skippedDir)
+		recipeCacheDir = newRepositoryPath + '/recipeCache'
+		os.mkdir(recipeCacheDir)
 		if not self.quiet:
 			print 'Populating repository ...'
 
@@ -378,7 +380,10 @@ class Repository(object):
 						sys.stdout.write(' ' * 60)
 						sys.stdout.write('\r\t%s' % port.versionedName)
 						sys.stdout.flush()
+					recipeFileCache = port.recipeFileCache
+					port.recipeFileCache = recipeCacheDir + '/' + port.versionedName
 					port.parseRecipeFile(False)
+					port.recipeFileCache = recipeFileCache
 					if port.isBuildableOnTargetArchitecture:
 						if (port.checkFlag('build')
 							and not preserveFlags):
