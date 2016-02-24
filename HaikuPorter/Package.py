@@ -341,7 +341,7 @@ class Package(object):
 			if self.recipeKeys['COPYRIGHT']:
 				infoFile.write('copyrights {\n')
 				for aCopyright in self.recipeKeys['COPYRIGHT']:
-					infoFile.write('\t"' + aCopyright + '"\n')
+					infoFile.write(u'\t"' + aCopyright.decode("utf-8") + u'"\n')
 				infoFile.write('}\n')
 
 			requires = []
