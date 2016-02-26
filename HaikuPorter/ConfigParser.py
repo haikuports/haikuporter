@@ -119,7 +119,7 @@ class ConfigParser(object):
 
 			entries = self.entriesByExtension[extension]
 
-			valueString = valueString.replace(r'\n', '\n')
+			valueString = valueString.replace(r'\n', '\n').decode('utf-8')
 			# replace quoted newlines by real newlines
 
 			if attributes[baseKey]['indexable']:

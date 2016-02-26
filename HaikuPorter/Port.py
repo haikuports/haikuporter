@@ -409,7 +409,7 @@ class Port(object):
 				% (key, self.recipeFilePath))
 		else:
 			lowerc = fullCopyright.lower()
-			if "copyright" in lowerc or "(c)" in lowerc or "©" in lowerc:
+			if u"copyright" in lowerc or u"(c)" in lowerc or u"©" in lowerc:
 				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
 					% (key, self.recipeFilePath))
 
@@ -891,7 +891,7 @@ class Port(object):
 			and os.path.exists(self.recipeFileCache)
 			and os.path.getmtime(self.recipeFileCache)
 				>= os.path.getmtime(self.recipeFilePath)):
-			with open(self.recipeFileCache, 'r') as cacheFile:
+			with codecs.open(self.recipeFileCache, 'r', 'utf-8') as cacheFile:
 				cached = json.loads(cacheFile.read())
 				if 'exception' in cached:
 					sysExit(cached['exception'])
@@ -901,11 +901,11 @@ class Port(object):
 			recipeKeysByExtension, definedPhases \
 				= self.validateRecipeFile(showWarnings)
 		except SystemExit as exception:
-			with open(self.recipeFileCache, 'w') as cacheFile:
+			with codecs.open(self.recipeFileCache, 'w', 'utf-8') as cacheFile:
 				cacheFile.write(json.dumps({'exception': str(exception)}))
 			raise
 
-		with open(self.recipeFileCache, 'w') as cacheFile:
+		with codecs.open(self.recipeFileCache, 'w', 'utf-8') as cacheFile:
 			cacheFile.write(json.dumps((recipeKeysByExtension, definedPhases)))
 
 		return recipeKeysByExtension, definedPhases

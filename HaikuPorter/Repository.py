@@ -427,7 +427,7 @@ class Repository(object):
 		if not self.quiet:
 			print 'Checking if package dependencies need to be updated ...'
 
-		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version
 				port = allPorts[portID]
@@ -499,7 +499,7 @@ class Repository(object):
 		if not self.quiet:
 			print 'Checking if any package-infos need to be updated ...'
 		skippedDir = self.path + '/.skipped'
-		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
 			higherVersionIsActive = False
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version

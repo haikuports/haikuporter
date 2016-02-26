@@ -328,8 +328,8 @@ class Package(object):
 				escapeForPackageInfo(u'\n'.join(self.recipeKeys['DESCRIPTION'])))
 			infoFile.write('"\n')
 
-			infoFile.write(u'packager\t\t"' + Configuration.getPackager().decode("utf-8") + u'"\n')
-			infoFile.write(u'vendor\t\t\t"' + Configuration.getVendor().decode("utf-8") + u'"\n')
+			infoFile.write(u'packager\t\t"' + Configuration.getPackager() + u'"\n')
+			infoFile.write(u'vendor\t\t\t"' + Configuration.getVendor() + u'"\n')
 
 			# These keys aren't mandatory so we need to check if they exist
 			if self.recipeKeys['LICENSE']:
@@ -341,7 +341,7 @@ class Package(object):
 			if self.recipeKeys['COPYRIGHT']:
 				infoFile.write('copyrights {\n')
 				for aCopyright in self.recipeKeys['COPYRIGHT']:
-					infoFile.write(u'\t"' + aCopyright.decode("utf-8") + u'"\n')
+					infoFile.write(u'\t"' + aCopyright + u'"\n')
 				infoFile.write('}\n')
 
 			requires = []
