@@ -371,7 +371,7 @@ class Repository(object):
 			print 'Populating repository ...'
 
 		allPorts = self.allPorts
-		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
+		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version
 				port = allPorts[portID]
