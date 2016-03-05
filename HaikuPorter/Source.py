@@ -100,9 +100,9 @@ class Source(object):
 
 		self.gitEnv = {
 			'GIT_COMMITTER_EMAIL': Configuration.getPackagerEmail(),
-			'GIT_COMMITTER_NAME': Configuration.getPackagerName(),
+			'GIT_COMMITTER_NAME': Configuration.getPackagerName().encode("utf-8"),
 			'GIT_AUTHOR_EMAIL': Configuration.getPackagerEmail(),
-			'GIT_AUTHOR_NAME': Configuration.getPackagerName(),
+			'GIT_AUTHOR_NAME': Configuration.getPackagerName().encode("utf-8"),
 		}
 
 	def fetch(self, port):
