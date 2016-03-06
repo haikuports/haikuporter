@@ -56,7 +56,7 @@ class RequiresUpdater(object):
 		return result
 
 	def getMatchingProvides(self, resolvableExpression):
-		self._providesManager.getMatchingProvides(resolvableExpression)
+		return self._providesManager.getMatchingProvides(resolvableExpression)
 
 	def _updateRequires(self, requires):
 		# split the requires string
