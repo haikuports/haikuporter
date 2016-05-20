@@ -44,7 +44,7 @@ A multi-node cluster is for mass building large numbers of packages.
  - `cd haikuporter`
  - `./buildmaster/createbuilder.sh`
    -  configure your first build slave with the prompts
- - `./haikuporter --build-master --command-package /usr/local/bin/package --licenses ../haiku/data/system/data/licenses/`
+ - `./haikuporter --build-master --licenses ../haiku/data/system/data/licenses/`
 
 ### Deploy buildslave (Haiku)
 
