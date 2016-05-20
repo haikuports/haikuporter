@@ -236,7 +236,7 @@ class BuildPlatformUnix(BuildPlatform):
 			= Configuration.getSecondaryTargetArchitectures()
 
 		if not shallowInitIsEnough:
-			if Configuration.getPackageCommand() == 'package':
+			if Configuration.getPackageCommand() == None:
 				sysExit('--command-package must be specified on this build '
 					'platform!')
 			if Configuration.getMimesetCommand() == 'mimeset':
@@ -600,7 +600,7 @@ class BuildPlatformBuildMaster(BuildPlatform):
 		if Configuration.getTargetArchitecture() == None:
 			sysExit('TARGET_ARCHITECTURE must be set in configuration for '
 				+ 'build master mode!')
-		if Configuration.getPackageCommand() == 'package':
+		if Configuration.getPackageCommand() == None:
 			sysExit('--command-package must be specified for build master '
 				+ 'mode!')
 

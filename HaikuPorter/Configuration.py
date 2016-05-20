@@ -15,6 +15,23 @@ import os
 import re
 import types
 
+def which(program):
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
 
 # -----------------------------------------------------------------------------
 
@@ -107,7 +124,7 @@ haikuportsAttributes = {
 	'PACKAGE_COMMAND': {
 		'type': types.StringType,
 		'required': False,
-		'default': 'package',
+		'default': None,
 		'extendable': Extendable.NO,
 		'indexable': False,
 		'optionAttribute': 'commandPackage',
@@ -262,6 +279,8 @@ class Configuration(object):
 
 	@staticmethod
 	def getPackageCommand():
+		if Configuration.configuration.packageCommand == None:
+			return which("package")
 		return Configuration.configuration.packageCommand
 
 	@staticmethod
