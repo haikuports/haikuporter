@@ -99,7 +99,7 @@ haikuportsAttributes = {
 	'MIMESET_COMMAND': {
 		'type': types.StringType,
 		'required': False,
-		'default': 'mimeset',
+		'default': None,
 		'extendable': Extendable.NO,
 		'indexable': False,
 		'optionAttribute': 'commandMimeset',
@@ -285,6 +285,8 @@ class Configuration(object):
 
 	@staticmethod
 	def getMimesetCommand():
+		if Configuration.configuration.minesetCommand == None:
+			return which("mimeset")
 		return Configuration.configuration.mimesetCommand
 
 	@staticmethod
