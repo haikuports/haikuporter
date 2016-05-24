@@ -285,7 +285,7 @@ class Configuration(object):
 
 	@staticmethod
 	def getMimesetCommand():
-		if Configuration.configuration.minesetCommand == None:
+		if Configuration.configuration.mimesetCommand == None:
 			return which("mimeset")
 		return Configuration.configuration.mimesetCommand
 
