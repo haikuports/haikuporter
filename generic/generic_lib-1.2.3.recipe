@@ -6,12 +6,16 @@ Spanning several paragraphs, maybe
 You can also have really long lines that do not fit in 80 characters and use \
 a forward-slash to wrap the line."
 HOMEPAGE="https://homepage/of/projectx.org"
-COPYRIGHT="2014 Developer Name"
-LICENSE="MIT"
+COPYRIGHT="2014 Developer name
+	2016 Another developer's name"
+LICENSE="MIT
+	GNU GPL v2"
 REVISION="1"
-SOURCE_URI="https://github.com/HaikuArchives/ProjectX/archive/000000000000000000000000000000000.tar.gz"
+SOURCE_URI="https://github.com/HaikuArchives/ProjectX/archive/projectx-$portVersion.tar.gz"
 CHECKSUM_SHA256="000000000000000000000000000000000"
 SOURCE_DIR="$portVersionedName"
+PATCHES="projectx-$portVersion.patchset"
+ADDITIONAL_FILES="projectx.rdef"
 
 ARCHITECTURES="x86_gcc2 ?x86 ?x86_64"
 SECONDARY_ARCHITECTURES="x86"
@@ -59,4 +63,9 @@ INSTALL()
 		libprojectx
 	packageEntries devel \
 		$developDir
+}
+
+TEST()
+{
+	make check
 }
