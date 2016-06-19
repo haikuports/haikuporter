@@ -407,10 +407,11 @@ class Package(object):
 						continue
 
 					if uricount < 2:
-						infoFile.write('\t"Download <' + uri + '>"\n')
+						infoFile.write('# Download\n')
+						infoFile.write('\t"' + uri + '"\n')
 					else:
-						infoFile.write('\t"Location ' + str(uricount) + ' <'
-									   + uri + '>"\n')
+						infoFile.write('# Location ' + str(uricount) + '\n')
+						infoFile.write('\t"' + uri + '"\n')
 					uricount += 1
 
 			# TODO: fix or drop the following URLs
