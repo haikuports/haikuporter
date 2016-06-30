@@ -56,10 +56,10 @@ def unpackCheckoutWithTar(checkoutDir, sourceBaseDir, sourceSubDir, foldSubDir):
 	sourceDir = sourceBaseDir + '/' + sourceSubDir \
 		if sourceSubDir else sourceBaseDir
 	if foldSubDir:
-		command = ('tar -c -C "%s" --exclude-vcs | tar -x -C "%s"'
+		command = ('tar -c -C "%s" --exclude-vcs | tar -x --hard-dereference -C "%s"'
 				   % (foldSubDir, sourceDir))
 	else:
-		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
+		command = 'tar -c --exclude-vcs . | tar -x --hard-dereference -C "%s"' % sourceDir
 	check_call(command, cwd=checkoutDir, shell=True)
 
 	if foldSubDir:
@@ -270,10 +270,10 @@ class SourceFetcherForGit(object):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
 			if sourceSubDir else sourceBaseDir
 		if foldSubDir:
-			command = ('git archive %s "%s" | tar -x -C "%s"'
+			command = ('git archive %s "%s" | tar -x --hard-dereference -C "%s"'
 					   % (self.rev, foldSubDir, sourceDir))
 		else:
-			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
+			command = 'git archive %s | tar -x --hard-dereference -C "%s"' % (self.rev, sourceDir)
 		check_call(command, shell=True, cwd=self.fetchTarget)
 
 		if foldSubDir:

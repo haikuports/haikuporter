@@ -86,7 +86,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		subdir += '/'
 	# unpack source archive
 	if tarfile.is_tarfile(archiveFile):
-		tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
+		tarFile = tarfile.open(archiveFile, 'r', dereference=True)
 		members = None
 		if subdir:
 			members = [
@@ -122,7 +122,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
-			tarFile = tarfile.open(tar, 'r', tarinfo=MyTarInfo)
+			tarFile = tarfile.open(tar, 'r', dereference=True)
 			members = None
 			if subdir:
 				if not subdir.endswith('/'):
@@ -142,7 +142,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
 		if tarfile.is_tarfile(tar):
-			tarFile = tarfile.open(tar, 'r', tarinfo=MyTarInfo)
+			tarFile = tarfile.open(tar, 'r', dereference=True)
 			members = None
 			if subdir:
 				if not subdir.endswith('/'):
