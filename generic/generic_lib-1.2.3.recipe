@@ -33,7 +33,6 @@ PROVIDES_devel="
 	devel:libprojectx$secondaryArchSuffix = $portVersion
 	"
 REQUIRES_devel="
-	haiku${secondaryArchSuffix}_devel
 	projectx$secondaryArchSuffix == $portVersion base
 	"
 
