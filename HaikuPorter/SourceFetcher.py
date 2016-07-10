@@ -426,6 +426,8 @@ def createSourceFetcher(uri, fetchTarget):
 		return SourceFetcherForSourcePackage(uri, fetchTarget)
 	elif lowerUri.startswith('svn'):
 		return SourceFetcherForSubversion(uri, fetchTarget)
+	elif lowerUri.startswith('file://'):
+		return SourceFetcherForLocalFile(uri[7:], fetchTarget)
 	elif ':' not in lowerUri:
 		return SourceFetcherForLocalFile(uri, fetchTarget)
 	else:
