@@ -183,8 +183,13 @@ class SourceFetcherForDownload(object):
 		downloadDir = os.path.dirname(self.fetchTarget)
 		os.chdir(downloadDir)
 		ensureCommandIsAvailable('wget')
+		mirror = ''
+		if 'sourceforge.net/' in self.uri or '.sf.net/' in self.uri:
+			if Configuration.getSourceforgeMirror():
+				mirror = '?use_mirror=' + Configuration.getSourceforgeMirror()
+
 		args = [ 'wget', '-c', '--timeout=10', '--tries=3',
-				 '-O', self.fetchTarget, self.uri ]
+				 '-O', self.fetchTarget, self.uri + mirror]
 		check_call(args)
 
 	def updateToRev(self, rev):

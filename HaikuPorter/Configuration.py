@@ -162,6 +162,15 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'secondaryArchitectures',
 	},
+	'SOURCEFORGE_MIRROR': {
+		'type': types.StringType,
+		'required': True,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'sourceforgeMirror',
+		'setAttribute': 'sourceforgeMirror',
+	},
 	'TARGET_ARCHITECTURE': {
 		'type': MachineArchitecture,
 		'required': False,
@@ -225,6 +234,7 @@ class Configuration(object):
 		self.outputDirectory = None
 		self.vendor = None
 		self.packagesPath = None
+		self.sourceforgeMirror = None
 
 		self._readConfigurationFile()
 
@@ -325,6 +335,10 @@ class Configuration(object):
 	@staticmethod
 	def getDownloadMirror():
 		return Configuration.configuration.downloadMirror
+
+	@staticmethod
+	def getSourceforgeMirror():
+		return Configuration.configuration.sourceforgeMirror
 
 	@staticmethod
 	def getVendor():
