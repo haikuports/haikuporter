@@ -164,7 +164,7 @@ haikuportsAttributes = {
 	},
 	'SOURCEFORGE_MIRROR': {
 		'type': types.StringType,
-		'required': True,
+		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
 		'indexable': False,
