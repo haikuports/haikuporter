@@ -44,8 +44,12 @@ A multi-node cluster is for mass building large numbers of packages.
  - `cd haikuporter`
  - `./buildmaster/createbuilder.sh`
    -  configure your first build slave with the prompts
- - `./haikuporter --build-master --licenses ../haiku/data/system/data/licenses/`
+ - `echo HAIKUPORTER=/home/pulkomandy/haiku/haikuporter/haikuporter > buildmaster/config`
+ - Copy the packages from a nightly to ports/packages
+ - `./buildmaster/buildmaster.sh everything`
 
 ### Deploy buildslave (Haiku)
 
- - TODO
+ - Checkout Haikuporter and Haikuports, matching the paths specified in createbuilder.sh on buildmaster side
+ - Add the public key from the buildmaster to authorized\_keys and configure ssh for it to work
+ - Copy /boot/system/packages/* to ports/packages (ideally, same nightly as used on buildmaster)
