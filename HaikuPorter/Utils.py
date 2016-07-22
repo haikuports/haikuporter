@@ -91,8 +91,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		if subdir:
 			members = [
 				member for member in tarFile.getmembers()
-				if os.path.normpath(member.name)
-					.startswith(subdir) and not os.path.normpath(member.name)
+				if os.path.normpath(member.name.decode("utf-8"))
+					.startswith(subdir) and not os.path.normpath(member.name.decode("utf-8"))
 					.endswith("/.git")
 			]
 			if not members:
@@ -103,6 +103,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 					member.uname = ""
 					member.gid = 0
 					member.uid = 0
+			for member in members:
+				member.name = member.name.decode("utf-8")
 		tarFile.extractall(targetBaseDir, members)
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
