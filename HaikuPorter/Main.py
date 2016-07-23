@@ -769,7 +769,7 @@ class Main(object):
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
 			somethingFailed = False
-			for portName in sorted(portVersionsByName.keys(), key=str.lower):
+			for portName in sorted(portVersionsByName.keys(), key=unicode.lower):
 				for version in portVersionsByName[portName]:
 					portID = portName + '-' + version
 					port = allPorts[portID]
