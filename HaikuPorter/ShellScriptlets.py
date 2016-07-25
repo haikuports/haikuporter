@@ -454,7 +454,7 @@ fixLibtoolArchives()
 	fi
 
 	for laFile in $installDestDir$developLibDir/*.la; do
-		for laPath in `sed 's/ /\n/g' < $laFile | sed '/\/packages.*\.la/p;/.*/d'`; do
+		for laPath in `sed "s/ /\n/g;s/'$//;" < $laFile | sed -n '/\/packages\/.*\.la/p;'`; do
 			lib="`echo "$laPath" | sed 's,.*/,,;s/\.la//'`"
 			for dep in "lib~$lib$secondaryArchSuffix" "lib~`echo "$lib" | tr '[A-Z]' '[a-z]'`$secondaryArchSuffix" "lib~${lib%%[0-9]*}$secondaryArchSuffix"; do
 				test -h "/packages/$portRevisionedName/$dep" && break
@@ -464,7 +464,7 @@ fixLibtoolArchives()
 				continue
 			fi
 			fixedLaPath="`echo "$laPath" | sed "s|/packages/[^/]*/[^/]*/|/packages/$portRevisionedName/$dep/|"`"
-			sed -i "s|$laPath|$fixedLaPath|g" "$laFile"
+			sed -i "s|${laPath%/*}\>|${fixedLaPath%/*}|g" "$laFile"
 		done
 	done
 }
