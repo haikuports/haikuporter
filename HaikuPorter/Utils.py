@@ -82,6 +82,24 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 
 	## REFACTOR into separate functions and dispatch
 
+	tar = None
+	# in python3 tarfile handles xz itself
+	# until then we have to handle xz, and lz anyway, directly
+	# TODO: we shouldn't need to uncompress to disk...
+	if not tarfile.is_tarfile(archiveFile):
+		ext = archiveFile.split('/')[-1].split('.')[-1]
+		if ext == 'xz':
+			ensureCommandIsAvailable('xz')
+			Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
+			tar = archiveFile[:-3]
+		elif ext == 'lz':
+			ensureCommandIsAvailable('lzip')
+			Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
+			tar = archiveFile[:-3]
+	if tar:
+		# work on the uncompressed archive
+		archiveFile = tar
+
 	if subdir and not subdir.endswith('/'):
 		subdir += '/'
 	# unpack source archive
@@ -107,6 +125,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				member.name = member.name.decode("utf-8")
 		tarFile.extractall(targetBaseDir, members)
 		tarFile.close()
+		if tar:
+			os.remove(tar)
 	elif zipfile.is_zipfile(archiveFile):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
 		names = None
@@ -119,46 +139,6 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				sysExit('sub-directory %s not found in archive' % subdir)
 		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
-	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
-		ensureCommandIsAvailable('xz')
-		Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
-		tar = archiveFile[:-3]
-		if tarfile.is_tarfile(tar):
-			tarFile = tarfile.open(tar, 'r', tarinfo=MyTarInfo)
-			members = None
-			if subdir:
-				if not subdir.endswith('/'):
-					subdir += '/'
-				members = [
-					member for member in tarFile.getmembers()
-					if os.path.normpath(member.name)
-						.startswith(subdir)
-				]
-				if not members:
-					sysExit('sub-directory %s not found in archive' % subdir)
-			tarFile.extractall(targetBaseDir)
-			tarFile.close()
-			os.remove(tar)
-	elif archiveFile.split('/')[-1].split('.')[-1] == 'lz':
-		ensureCommandIsAvailable('lzip')
-		Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
-		tar = archiveFile[:-3]
-		if tarfile.is_tarfile(tar):
-			tarFile = tarfile.open(tar, 'r', tarinfo=MyTarInfo)
-			members = None
-			if subdir:
-				if not subdir.endswith('/'):
-					subdir += '/'
-				members = [
-					member for member in tarFile.getmembers()
-					if os.path.normpath(member.name)
-						.startswith(subdir)
-				]
-				if not members:
-					sysExit('sub-directory %s not found in archive' % subdir)
-			tarFile.extractall(targetBaseDir)
-			tarFile.close()
-			os.remove(tar)
 	else:
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
