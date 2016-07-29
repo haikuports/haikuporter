@@ -14,6 +14,7 @@ from subprocess import PIPE, Popen, CalledProcessError
 import sys
 import tarfile
 import zipfile
+import py7zlib
 
 if sys.stdout.isatty():
 	colorWarning = '\033[1;36m'
@@ -84,6 +85,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 
 	if subdir and not subdir.endswith('/'):
 		subdir += '/'
+	extension = archiveFile.split('/')[-1].split('.')[-1]
 	# unpack source archive
 	if tarfile.is_tarfile(archiveFile):
 		tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
@@ -119,7 +121,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				sysExit('sub-directory %s not found in archive' % subdir)
 		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
-	elif archiveFile.split('/')[-1].split('.')[-1] == 'xz':
+	elif extension == 'xz':
 		ensureCommandIsAvailable('xz')
 		Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
@@ -139,7 +141,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			tarFile.extractall(targetBaseDir)
 			tarFile.close()
 			os.remove(tar)
-	elif archiveFile.split('/')[-1].split('.')[-1] == 'lz':
+	elif extension == 'lz':
 		ensureCommandIsAvailable('lzip')
 		Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
 		tar = archiveFile[:-3]
@@ -159,6 +161,30 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			tarFile.extractall(targetBaseDir)
 			tarFile.close()
 			os.remove(tar)
+	elif extension == '7z':
+		print("OPENING FILE")
+		fp = open(archiveFile)
+		print("FILE OPENED...CREATING ARCHIVE")
+		archive = py7zlib.Archive7z(fp)
+		print("ARCHIVE CREATED")
+
+		if subdir:
+			if not subdir.endswith('/'):
+				subdir += '/'
+			members = [
+				member for member in archive.getmembers()
+				if os.path.normpath(member.name)
+					.startswith(subdir)
+			]
+			if not members:
+				sysExit('sub-directory %s not found in archive' % subdir)
+
+		for item in archive.files:
+			out_filename = os.path.join(targetBaseDir, item.filename)
+			out_fp = open(out_filename, 'w')
+			out_fp.write(item.read())
+			out_fp.close()
+		fp.close()
 	else:
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
