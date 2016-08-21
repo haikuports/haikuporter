@@ -145,7 +145,7 @@ class Policy(object):
 
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
-		return name.replace('-', '_')
+		return name.replace('-', '_').lower()
 
 	def _checkLibraryDependencies(self):
 		# If there's no readelf (i.e. no binutils), there probably aren't any
