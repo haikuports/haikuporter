@@ -51,5 +51,7 @@ A multi-node cluster is for mass building large numbers of packages.
 ### Deploy buildslave (Haiku)
 
  - Checkout Haikuporter and Haikuports, matching the paths specified in createbuilder.sh on buildmaster side
- - Add the public key from the buildmaster to authorized\_keys and configure ssh for it to work
- - Copy /boot/system/packages/* to ports/packages (ideally, same nightly as used on buildmaster)
+ - Add the public key from the buildmaster to authorized\_keys
+ - useradd sshd ; ssh-keygen -A
+ - Enable PermitRootLogin in /system/settings/ssh/sshd\_config and make sure the path to the sftp server is correct
+ - install xz\_utils\_x86, lzip\_x86 (required for extracting packages), patch (required for PATCH() function in some packages)
