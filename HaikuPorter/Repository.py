@@ -681,6 +681,13 @@ class Repository(object):
 					fi
 					eval SOURCE_URI_$i="$SOURCE_URI"
 				done
+				for i in {001..999}; do
+					eval currentSrcUri=\$SOURCE_URI_$i
+					if [ -z "$currentSrcUri" ]; then
+						break
+					fi
+					eval SOURCE_URI_$i="$SOURCE_URI"
+				done
 				'''[1:]) % sourcePackagePath
 			with codecs.open(recipeFilePath, 'a', 'utf-8') as recipeFile:
 				recipeFile.write('\n' + textToAdd)
