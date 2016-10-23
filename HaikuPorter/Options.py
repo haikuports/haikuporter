@@ -253,6 +253,8 @@ def parseOptions():
 	parser.add_option('--build-master-output-dir', action='store',
 		type='string', dest='buildMasterOutputDir', default=None,
 		help='specifies where build master output shall be written')
+	parser.add_option('--local-builders', action='store', type='int', 
+		dest='localBuilders', default=0, help='number of local builders')
 
 	parser.add_option('--repository-update', action='store_true',
 		dest='repositoryUpdate', default=False,

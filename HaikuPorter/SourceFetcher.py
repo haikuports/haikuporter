@@ -13,12 +13,12 @@
 # -- Modules ------------------------------------------------------------------
 
 from .Configuration import Configuration
-from .Utils import ensureCommandIsAvailable, sysExit, unpackArchive, warn
+from .Utils import ensureCommandIsAvailable, info, sysExit, unpackArchive, warn
 
 import os
 import re
 import shutil
-from subprocess import check_call, check_output
+from subprocess import CalledProcessError, check_output, PIPE, Popen, STDOUT
 
 
 # -----------------------------------------------------------------------------
@@ -60,7 +60,8 @@ def unpackCheckoutWithTar(checkoutDir, sourceBaseDir, sourceSubDir, foldSubDir):
 				   % (foldSubDir, sourceDir))
 	else:
 		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
-	check_call(command, cwd=checkoutDir, shell=True)
+	output = check_output(command, cwd=checkoutDir, shell=True)
+	info(output)
 
 	if foldSubDir:
 		foldSubdirIntoSourceDir(foldSubDir, sourceDir)
@@ -121,7 +122,8 @@ class SourceFetcherForBazaar(object):
 		if self.rev:
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
-		check_call(command, shell=True)
+		output = check_output(command, shell=True, stderr=STDOUT)
+		info(output)
 
 	def updateToRev(self, rev):
 		warn(u"Updating of a Bazaar repository to a specific revision has "
@@ -161,7 +163,8 @@ class SourceFetcherForCvs(object):
 			else:
 				command += ' -r' + self.rev
 		command += ' "%s"' % self.module
-		check_call(command, shell=True, cwd=baseDir)
+		output = check_output(command, shell=True, cwd=baseDir, stderr=STDOUT)
+		info(output)
 
 	def updateToRev(self, rev):
 		warn(u"Updating of a CVS repository to a specific revision has "
@@ -181,7 +184,6 @@ class SourceFetcherForDownload(object):
 
 	def fetch(self):
 		downloadDir = os.path.dirname(self.fetchTarget)
-		os.chdir(downloadDir)
 		ensureCommandIsAvailable('wget')
 		mirror = ''
 		if 'sourceforge.net/' in self.uri or '.sf.net/' in self.uri:
@@ -190,7 +192,13 @@ class SourceFetcherForDownload(object):
 
 		args = [ 'wget', '-c', '--timeout=10', '--tries=3',
 				 '-O', self.fetchTarget, self.uri + mirror]
-		check_call(args)
+		process = Popen(args, cwd=downloadDir, stdout=PIPE, stderr=STDOUT)
+		for line in iter(process.stdout.readline, b''):
+			info(line[:-1])
+		process.stdout.close()
+		code = process.wait()
+		if code:
+			raise CalledProcessError(code, args)
 
 	def updateToRev(self, rev):
 		pass
@@ -221,7 +229,8 @@ class SourceFetcherForFossil(object):
 				   + ' && fossil open ' + fossilDir)
 		if self.rev:
 			command += ' ' + self.rev
-		check_call(command, shell=True)
+		output = check_output(command, shell=True, stderr=STDOUT)
+		info(output)
 
 	def updateToRev(self, rev):
 		warn(u"Updating of a Fossil repository to a specific revision has "
@@ -249,7 +258,8 @@ class SourceFetcherForGit(object):
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
-		check_call(command, shell=True)
+		check_output(command, shell=True, stderr=STDOUT)
+		info(output)
 
 	def updateToRev(self, rev):
 		ensureCommandIsAvailable('git')
@@ -257,19 +267,22 @@ class SourceFetcherForGit(object):
 		self.rev = rev
 		command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
 		try:
-			check_call(command, shell=True, cwd=self.fetchTarget)
+			output = check_output(command, shell=True, cwd=self.fetchTarget)
+			info(output)
 		except:
 			print 'trying to fetch revision %s from upstream' % self.rev
 			command = "git branch | cut -c3-"
 			branches = check_output(command, shell=True,
-									cwd=self.fetchTarget).splitlines()
+									cwd=self.fetchTarget, stderr=STDOUT).splitlines()
 			for branch in branches:
 				command = 'git fetch origin %s:%s' % (branch, branch)
 				print command
-				check_call(command, shell=True, cwd=self.fetchTarget)
+				output = check_output(command, shell=True, cwd=self.fetchTarget)
+				info(output)
 			# ensure that the revision really is available now
 			command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
-			check_call(command, shell=True, cwd=self.fetchTarget)
+			output = check_output(command, shell=True, cwd=self.fetchTarget)
+			info(output)
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
@@ -279,7 +292,8 @@ class SourceFetcherForGit(object):
 					   % (self.rev, foldSubDir, sourceDir))
 		else:
 			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
-		check_call(command, shell=True, cwd=self.fetchTarget)
+		output = check_output(command, shell=True, cwd=self.fetchTarget)
+		info(output)
 
 		if foldSubDir:
 			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
@@ -326,7 +340,8 @@ class SourceFetcherForMercurial(object):
 		if self.rev:
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
-		check_call(command, shell=True)
+		output = check_output(command, shell=True, stderr=STDOUT)
+		info(output)
 
 	def updateToRev(self, rev):
 		warn(u"Updating of a Mercurial repository to a specific revision has "
@@ -340,7 +355,8 @@ class SourceFetcherForMercurial(object):
 				% (foldSubDir, sourceDir)
 		else:
 			command = 'hg archive -t files "%s"' % sourceDir
-		check_call(command, shell=True, cwd=self.fetchTarget)
+		output = check_output(command, shell=True, cwd=self.fetchTarget)
+		info(output)
 
 		if foldSubDir:
 			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
@@ -375,9 +391,10 @@ class SourceFetcherForSourcePackage(object):
 							  % (name, version, revision,
 								 os.path.basename(sourceBaseDir)))
 
-		check_call([Configuration.getPackageCommand(), 'extract',
+		output = check_output([Configuration.getPackageCommand(), 'extract',
 					'-C', sourceDir, self.sourcePackagePath,
-					relativeSourcePath])
+					relativeSourcePath], stderr=STDOUT)
+		info(output)
 		foldSubdirIntoSourceDir(relativeSourcePath, sourceDir)
 
 # -- Fetches sources via svn --------------------------------------------------
@@ -399,7 +416,8 @@ class SourceFetcherForSubversion(object):
 		if self.rev:
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
-		check_call(command, shell=True)
+		output = check_output(command, shell=True, stderr=STDOUT)
+		info(output)
 
 	def updateToRev(self, rev):
 		warn(u"Updating of a Subversion repository to a specific revision has "

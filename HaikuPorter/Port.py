@@ -19,7 +19,7 @@ import os
 import re
 import shutil
 import signal
-from subprocess import check_call, CalledProcessError
+from subprocess import check_call, check_output, CalledProcessError, Popen, PIPE, STDOUT
 import traceback
 
 from .BuildPlatform import buildPlatform
@@ -47,6 +47,7 @@ from .ShellScriptlets import (
 from .Source import Source
 from .Utils import (
 	filteredEnvironment,
+	info,
 	naturalCompare,
 	storeStringInFile,
 	symlinkGlob,
@@ -71,20 +72,21 @@ class ChrootSetup(object):
 
 	def __enter__(self):
 		# execute the chroot setup scriptlet via the shell ...
-		os.chdir(self.path)
 		shellEnv = filteredEnvironment()
 		shellEnv.update(self.envVars)
-		check_call(['bash', '-c', setupChrootScript], env=shellEnv)
+		check_output(['bash', '-c', setupChrootScript], env=shellEnv,
+			cwd=self.path)
 		return self
 
 	def __exit__(self, ignoredType, value, traceback):
 		# execute the chroot cleanup scriptlet via the shell ...
-		os.chdir(self.path)
 		shellEnv = filteredEnvironment()
 		shellEnv.update(self.envVars)
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
-		check_call(['bash', '-c', cleanupChrootScript], env=shellEnv)
+		check_output(['bash', '-c', cleanupChrootScript], env=shellEnv,
+			cwd=self.path)
+
 
 
 # -- A single port with its recipe, allows to execute actions -----------------
@@ -106,6 +108,8 @@ class Port(object):
 		self.repositoryDir = repositoryDir
 		self.recipeIsBroken = False
 		self.recipeHasBeenParsed = False
+		self.logger = None
+		self.filter = None
 
 		if secondaryArchitecture:
 			self.workDir = (outputDir + '/work-' + secondaryArchitecture
@@ -194,6 +198,18 @@ class Port(object):
 
 	def __exit__(self, theType, value, traceback):
 		pass
+
+	def setLogger(self, logger):
+		self.logger = logger
+
+	def setFilter(self, filter):
+		self.filter = filter
+
+	def getLogger(self):
+		return self.logger
+
+	def unsetLogger(self):
+		self.logger = None
 
 	def parseRecipeFileIfNeeded(self):
 		"""Make sure that the recipe has been parsed and silently parse it if
@@ -637,7 +653,7 @@ class Port(object):
 		# Run PATCH() function in recipe, if defined.
 		if Phase.PATCH in self.definedPhases:
 			if getOption('patchFilesOnly'):
-				print 'Skipping patch function ...'
+				info('Skipping patch function ...')
 				return
 
 			# Check to see if the patching phase has already been executed.
@@ -645,7 +661,7 @@ class Port(object):
 				return
 
 			try:
-				print 'Running patch function ...'
+				info('Running patch function ...')
 				self._doRecipeAction(Phase.PATCH, self.sourceDir)
 				if not getOption('noGitRepo'):
 					for source in self.sources:
@@ -702,7 +718,7 @@ class Port(object):
 		if (not getOption('preserveFlags') and self.checkFlag('build')
 			and (os.path.getmtime(self.recipeFilePath)
 					 > os.path.getmtime(self.workDir + '/flag.build'))):
-			print 'unsetting build flag, as recipe is newer'
+			info('unsetting build flag, as recipe is newer')
 			self.unsetFlag('build')
 
 		self._recreatePackageDirectories()
@@ -751,9 +767,9 @@ class Port(object):
 			def makeChrootFunctions():
 				def taskFunction():
 					if not getOption('quiet'):
-						print 'chroot has these packages active:'
+						info('chroot has these packages active:')
 						for package in sorted(allPackages):
-							print '\t' + package
+							info('\t' + package)
 					self._executeBuild(makePackages)
 
 				def successFunction():
@@ -773,9 +789,9 @@ class Port(object):
 				self._executeInChroot(chrootSetup, makeChrootFunctions())
 		else:
 			if not getOption('quiet'):
-				print 'non-chroot has these packages active:'
+				info('non-chroot has these packages active:')
 				for package in sorted(allPackages):
-					print '\t' + package
+					info('\t' + package)
 
 			buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
 														 self.secondaryArchitecture, allPackages)
@@ -818,7 +834,7 @@ class Port(object):
 						continue
 					targetPackageFile \
 						= hpkgStoragePath + '/' + package.hpkgName
-					print('grabbing ' + package.hpkgName
+					info('grabbing ' + package.hpkgName
 						  + ' and moving it to ' + targetPackageFile)
 					os.rename(packageFile, targetPackageFile)
 
@@ -852,6 +868,10 @@ class Port(object):
 
 		def makeChrootFunctions():
 			def taskFunction():
+				if not getOption('quiet'):
+					info('chroot has these packages active:')
+					for package in sorted(allPackages):
+						info('\t' + package)
 				self._executeTest()
 
 			def failureFunction():
@@ -1183,7 +1203,7 @@ class Port(object):
 			if os.path.exists(directory)
 		]
 		if directoriesToRemove:
-			print 'Cleaning up temporary directories ...'
+			info('Cleaning up temporary directories ...')
 			for directory in directoriesToRemove:
 				shutil.rmtree(directory, True)
 		for directory in directoriesToCreate:
@@ -1192,6 +1212,9 @@ class Port(object):
 	def _executeInChroot(self, chrootSetup, chrootFunctions):
 		pid = os.fork()
 		if pid == 0:
+			if self.filter:
+				self.filter.reset()
+
 			# child, enter chroot and execute the given task
 			try:
 				os.chroot(self.workDir)
@@ -1202,7 +1225,7 @@ class Port(object):
 					if getOption('debug'):
 						traceback.print_exc()
 					else:
-						print exception
+						info(exception)
 					os._exit(1)
 			os._exit(0)
 
@@ -1353,10 +1376,10 @@ class Port(object):
 
 		# Check to see if a previous build was already done.
 		if self.checkFlag('build') and not getOption('force'):
-			print 'Skipping build ...'
+			info('Skipping build ...')
 			return
 
-		print 'Building ...'
+		info('Building ...')
 		self._doRecipeAction(Phase.BUILD, self.sourceDir)
 		if not getOption('enterChroot'):
 			self.setFlag('build')
@@ -1433,7 +1456,7 @@ class Port(object):
 				if package.type != PackageType.SOURCE:
 					package.activateBuildPackage()
 
-		print 'Collecting files to be packaged ...'
+		info('Collecting files to be packaged ...')
 		self._doRecipeAction(Phase.INSTALL, self.sourceDir)
 
 	def _doTestStage(self):
@@ -1500,7 +1523,16 @@ class Port(object):
 		# execute the requested action via a shell ...
 		args = ['bash']
 		args += params
-		check_call(args, cwd=targetDir, env=shellEnv)
+		if self.logger is None:
+			check_call(args, cwd=targetDir, env=shellEnv)
+		else:
+			process = Popen(args, cwd=targetDir, env=shellEnv, stdout=PIPE, stderr=STDOUT)
+			for line in iter(process.stdout.readline, b''):
+				self.logger.info(line[:-1])
+			process.stdout.close()
+			code = process.wait()
+			if code:
+				raise CalledProcessError(code, args)
 
 	def _resolveDependencies(self, dependencyInfoFiles, requiresTypes,
 							 repositories, description, **kwargs):

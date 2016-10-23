@@ -7,7 +7,7 @@
 
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
-from .Utils import isCommandAvailable, sysExit
+from .Utils import isCommandAvailable, sysExit, warn
 
 from subprocess import check_output
 import os
@@ -86,7 +86,7 @@ class Policy(object):
 			sysExit(u"packaging policy violation(s) in strict mode")
 
 	def _checkTopLevelEntries(self):
-		for entry in os.listdir('.'):
+		for entry in os.listdir(self.package.packagingDir):
 			if entry not in allowedTopLevelEntries:
 				self._violation('Invalid top-level package entry "%s"' % entry)
 
@@ -104,8 +104,9 @@ class Policy(object):
 
 	def _checkProvides(self):
 		# everything in bin/ must be declared as cmd:*
-		if os.path.exists('bin'):
-			for entry in os.listdir('bin'):
+		binDir = os.path.join(self.package.packagingDir, 'bin')
+		if os.path.exists(binDir):
+			for entry in os.listdir(binDir):
 				# ignore secondary architecture subdir
 				if entry == self.package.secondaryArchitecture:
 					continue
@@ -115,8 +116,10 @@ class Policy(object):
 						% (name, 'bin/' + entry))
 
 		# library entries in lib[/<arch>] must be declared as lib:*[_<arch>]
-		if os.path.exists('lib' + self.secondaryArchSubDir):
-			for entry in os.listdir('lib' + self.secondaryArchSubDir):
+		libDir = os.path.join(self.package.packagingDir,
+			'lib' + self.secondaryArchSubDir)
+		if os.path.exists(libDir):
+			for entry in os.listdir(libDir):
 				suffixIndex = entry.find('.so')
 				if suffixIndex < 0:
 					continue
@@ -129,8 +132,10 @@ class Policy(object):
 
 		# library entries in develop/lib[<arch>] must be declared as
 		# devel:*[_<arch>]
-		if os.path.exists('develop/lib' + self.secondaryArchSubDir):
-			for entry in os.listdir('develop/lib' + self.secondaryArchSubDir):
+		developLibDir = os.path.join(self.package.packagingDir,
+			'develop/lib' + self.secondaryArchSubDir)
+		if os.path.exists(developLibDir):
+			for entry in os.listdir(developLibDir):
 				suffixIndex = entry.find('.so')
 				if suffixIndex < 0:
 					suffixIndex = entry.find('.a')
@@ -155,11 +160,12 @@ class Policy(object):
 
 		# check all files in bin/ and lib[/<arch>]
 		for directory in ['bin', 'lib' + self.secondaryArchSubDir]:
-			if not os.path.exists(directory):
+			dir = os.path.join(self.package.packagingDir, directory)
+			if not os.path.exists(dir):
 				continue
 
-			for entry in os.listdir(directory):
-				path = directory + '/' + entry
+			for entry in os.listdir(dir):
+				path = os.path.join(dir, entry)
 				if os.path.isfile(path):
 					self._checkLibraryDependenciesOfFile(path)
 
@@ -193,7 +199,9 @@ class Policy(object):
 
 	def _isMissingLibraryDependency(self, library):
 		# the library might be provided by the package
-		if os.path.exists('lib' + self.secondaryArchSubDir + '/' + library):
+		libDir = os.path.join(self.package.packagingDir,
+			'lib' + self.secondaryArchSubDir + '/' + library)
+		if os.path.exists(libDir):
 			return False
 
 		# not provided by the package -- check whether it is required explicitly
@@ -290,7 +298,8 @@ class Policy(object):
 		return self._parseResolvableExpressionList(provides)
 
 	def _checkMisplacedDevelopLibraries(self):
-		libDir = 'lib' + self.secondaryArchSubDir
+		libDir = os.path.join(self.package.packagingDir,
+			'lib' + self.secondaryArchSubDir)
 		if not os.path.exists(libDir):
 			return
 
@@ -340,17 +349,19 @@ class Policy(object):
 				globalWritableFiles[components[0]] = updateType
 
 				if updateType:
-					if not os.path.exists(path):
+					absPath = os.path.join(self.package.packagingDir, path)
+					if not os.path.exists(absPath):
 						self._violation('Package declares non-existent global '
 							'writable %s "%s" as included' % (fileType, path))
-					elif os.path.isdir(path) != isDirectory:
+					elif os.path.isdir(absPath) != isDirectory:
 						self._violation('Package declares non-existent global '
 							'writable %s "%s", but it\'s a %s'
 							% (fileType, path, types[not isDirectory]))
 
 		# iterate through the writable directories in the package
 		for directory in allowedWritableTopLevelDirectories:
-			if os.path.exists(directory):
+			dir = os.path.join(self.package.packagingDir, directory)
+			if os.path.exists(dir):
 				self._checkGlobalWritableFilesRecursively(globalWritableFiles,
 					fileTypes, directory)
 
@@ -362,13 +373,14 @@ class Policy(object):
 					'writable %s' % (path, fileTypes[path]))
 			return
 
-		if not os.path.isdir(path):
+		absPath = os.path.join(self.package.packagingDir, path)
+		if not os.path.isdir(absPath):
 			self._violation('Included file "%s" not declared as global '
 				'writable file' % path)
 			return
 
 		# entry is a directory -- recurse
-		for entry in os.listdir(path):
+		for entry in os.listdir(absPath):
 			self._checkGlobalWritableFilesRecursively(globalWritableFiles,
 				fileTypes, path + '/' + entry)
 
@@ -388,7 +400,9 @@ class Policy(object):
 				continue
 
 			if len(components) > 2:
-				if not os.path.exists(components[2]):
+				template = os.path.join(self.package.packagingDir,
+					components[2])
+				if not os.path.exists(template):
 					self._violation('Package declares non-existent template '
 						'"%s" for user settings file "%s" as included'
 						% (components[2], components[0]))
@@ -406,14 +420,16 @@ class Policy(object):
 			script = components[0]
 			declaredFiles.add(script)
 
-			if not os.path.exists(script):
+			absScript = os.path.join(self.package.packagingDir, script)
+			if not os.path.exists(absScript):
 				self._violation('Package declares non-existent post-install '
 					'script "%s"' % script)
 
 		# check whether existing scripts are declared
 		postInstallDir='boot/post-install'
-		if os.path.exists(postInstallDir):
-			for script in os.listdir(postInstallDir):
+		dir = os.path.join(self.package.packagingDir, postInstallDir)
+		if os.path.exists(dir):
+			for script in os.listdir(dir):
 				path = postInstallDir + '/' + script
 				if not path in declaredFiles:
 					self._violation('script "%s" not declared as post-install '
@@ -425,7 +441,7 @@ class Policy(object):
 			violation = 'POLICY ERROR: ' + message
 		else:
 			violation = 'POLICY WARNING: ' + message
-		print violation
+		warn(violation)
 		if not self.port.versionedName in Policy.violationsByPort:
 			Policy.violationsByPort[self.port.versionedName] = [ violation ]
 		else:

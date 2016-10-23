@@ -10,7 +10,7 @@ from .DependencyResolver import DependencyResolver
 from .Options import getOption
 from .PackageInfo import PackageInfo
 from .RecipeTypes import Architectures, MachineArchitecture
-from .Utils import sysExit
+from .Utils import sysExit, info
 
 import os
 import platform
@@ -202,7 +202,7 @@ class BuildPlatformHaiku(BuildPlatform):
 			except OSError:
 				if not activated:
 					return
-			print ('waiting for build package %s to be %s'
+			info ('waiting for build package %s to be %s'
 				   % (revisionedName,
 					  'activated' if activated else 'deactivated'))
 			time.sleep(1)
@@ -569,7 +569,8 @@ class BuildPlatformUnix(BuildPlatform):
 			installPath = installRoot + '/' + installationLocation
 			args = [ Configuration.getPackageCommand(), 'extract', '-C',
 				installPath, package ]
-			check_call(args)
+			output = check_output(args)
+			info(output)
 		else:
 			installPath = packageInfo.installPath
 			if not installPath:
