@@ -16,13 +16,13 @@ from .Configuration import Configuration
 from .Options import getOption
 from .SourceFetcher import (createSourceFetcher, foldSubdirIntoSourceDir,
 							parseCheckoutUri)
-from .Utils import (ensureCommandIsAvailable, readStringFromFile,
+from .Utils import (ensureCommandIsAvailable, info, readStringFromFile,
 					storeStringInFile, sysExit, warn)
 
 import hashlib
 import os
 import shutil
-from subprocess import check_call, check_output
+from subprocess import check_call, check_output, CalledProcessError
 
 
 # -- A source archive (or checkout) -------------------------------------------
@@ -137,7 +137,7 @@ class Source(object):
 							port.unsetFlag('unpack', self.index)
 							port.unsetFlag('patchset', self.index)
 						else:
-							print ('Skipping download of source for '
+							info ('Skipping download of source for '
 								   + self.fetchTargetName)
 						break
 				else:
@@ -157,7 +157,7 @@ class Source(object):
 		# download the sources
 		for uri in self.uris:
 			try:
-				print '\nDownloading: ' + uri + ' ...'
+				info ('\nDownloading: ' + uri + ' ...')
 				sourceFetcher = createSourceFetcher(uri, self.fetchTarget)
 				sourceFetcher.fetch()
 
@@ -168,6 +168,8 @@ class Source(object):
 				storeStringInFile(uri, self.fetchTarget + '.uri')
 				return
 			except Exception as e:
+				if isinstance(e, CalledProcessError):
+					info(e.output)
 				if uri != self.uris[-1]:
 					warn((u'Unable to fetch source from %s (error: %s), '
 						  + u'trying next location.') % (uri, e))
@@ -183,16 +185,16 @@ class Source(object):
 
 		# Check to see if the source was already unpacked.
 		if port.checkFlag('unpack', self.index) and not getOption('force'):
-			print 'Skipping unpack of ' + self.fetchTargetName
+			info ('Skipping unpack of ' + self.fetchTargetName)
 			return
 
 		# re-create source directory
 		if os.path.exists(self.sourceBaseDir):
-			print 'Cleaning source dir for ' + self.fetchTargetName
+			info ('Cleaning source dir for ' + self.fetchTargetName)
 			shutil.rmtree(self.sourceBaseDir)
 		os.makedirs(self.sourceDir)
 
-		print 'Unpacking source of ' + self.fetchTargetName
+		info ('Unpacking source of ' + self.fetchTargetName)
 		self.sourceFetcher.unpack(self.sourceBaseDir, self.sourceSubDir,
 			self.sourceExportSubdir)
 
@@ -225,10 +227,10 @@ class Source(object):
 
 		# Check to see if the source was already unpacked.
 		if port.checkFlag('validate', self.index) and not getOption('force'):
-			print 'Skipping checksum validation of ' + self.fetchTargetName
+			info ('Skipping checksum validation of ' + self.fetchTargetName)
 			return
 
-		print 'Validating checksum of ' + self.fetchTargetName
+		info ('Validating checksum of ' + self.fetchTargetName)
 		sha256 = hashlib.sha256()
 
 		with open(self.fetchTarget, 'rb') as f:
@@ -296,7 +298,7 @@ class Source(object):
 
 		# Check to see if the source has already been patched.
 		if port.checkFlag('patchset', self.index) and not getOption('force'):
-			print 'Skipping patchset for ' + self.fetchTargetName
+			info('Skipping patchset for ' + self.fetchTargetName)
 			return True
 
 		if not getOption('noGitRepo'):
@@ -320,24 +322,28 @@ class Source(object):
 					sysExit(u'patch file "' + patch + u'" not found.')
 
 				if getOption('noGitRepo'):
-					print 'Applying patch(set) "%s" ...' % patch
-					check_call(['patch', '--ignore-whitespace', '-p1', '-i',
+					info('Applying patch(set) "%s" ...' % patch)
+					output = check_output(['patch', '--ignore-whitespace', '-p1', '-i',
 								patch], cwd=self.sourceDir)
+					info(output)
 				else:
 					if patch.endswith('.patchset'):
-						print 'Applying patchset "%s" ...' % patch
-						check_call(['git', 'am', '--ignore-whitespace', '-3',
+						info('Applying patchset "%s" ...' % patch)
+						output = check_output(['git', 'am', '--ignore-whitespace', '-3',
 									'--keep-cr', patch], cwd=self.sourceDir,
 								   env=self.gitEnv)
+						info(output)
 					else:
-						print 'Applying patch "%s" ...' % patch
-						check_call(['git', 'apply', '--ignore-whitespace',
+						info('Applying patch "%s" ...' % patch)
+						output = check_output(['git', 'apply', '--ignore-whitespace',
 									'-p1', '--index', patch],
 									cwd=self.sourceDir)
-						check_call(['git', 'commit', '-q', '-m',
+						info(output)
+						output = check_output(['git', 'commit', '-q', '-m',
 									'applying patch %s'
 									% os.path.basename(patch)],
 								   cwd=self.sourceDir, env=self.gitEnv)
+						info(output)
 				patched = True
 		except:
 			# Don't leave behind half-patched sources.
@@ -353,8 +359,10 @@ class Source(object):
 	def reset(self):
 		"""Reset source to original state"""
 
-		check_call(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir)
-		check_call(['git', 'clean', '-f', '-d'], cwd=self.sourceDir)
+		output = check_output(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir)
+		info(output)
+		output = check_output(['git', 'clean', '-f', '-d'], cwd=self.sourceDir)
+		info(output)
 
 	def commitPatchPhase(self):
 		"""Commit changes done in patch phase."""
@@ -363,16 +371,18 @@ class Source(object):
 		changes = check_output(['git', 'status', '--porcelain'],
 							   cwd=self.sourceDir)
 		if not changes:
-			print("Patch function hasn't changed anything for "
+			info("Patch function hasn't changed anything for "
 				  + self.fetchTargetName)
 			return
 
-		print('Committing changes done in patch function for '
+		info('Committing changes done in patch function for '
 			  + self.fetchTargetName)
-		check_call(['git', 'commit', '-a', '-q', '-m', 'patch function'],
+		output = check_output(['git', 'commit', '-a', '-q', '-m', 'patch function'],
 				   cwd=self.sourceDir, env=self.gitEnv)
-		check_call(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'],
+		info(output)
+		output = check_output(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'],
 				   cwd=self.sourceDir)
+		info(output)
 
 	def extractPatchset(self, patchSetFilePath, archPatchSetFilePath):
 		"""Extract the current set of patches applied to git repository,
@@ -470,16 +480,16 @@ class Source(object):
 		"""Import sources into git repository"""
 
 		ensureCommandIsAvailable('git')
-		check_call(['git', 'init'], cwd=self.sourceDir)
-		check_call(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir)
+		info(check_output(['git', 'init'], cwd=self.sourceDir))
+		info(check_output(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir))
 			# Disable automatic garbage collection. This works around an issue
 			# with git failing to do that with the haikuwebkit repository.
-		check_call(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'],
-				   cwd=self.sourceDir)
-		check_call(['git', 'add', '-f', '.'], cwd=self.sourceDir)
-		check_call(['git', 'commit', '-m', 'import', '-q'],
-				   cwd=self.sourceDir, env=self.gitEnv)
-		check_call(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir)
+		info(check_output(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'],
+				   cwd=self.sourceDir))
+		info(check_output(['git', 'add', '-f', '.'], cwd=self.sourceDir))
+		info(check_output(['git', 'commit', '-m', 'import', '-q'],
+				   cwd=self.sourceDir, env=self.gitEnv))
+		info(check_output(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir))
 
 	def _isInGitWorkingDirectory(self, path):
 		"""Returns whether the given source directory path is in a git working

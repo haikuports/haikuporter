@@ -19,7 +19,7 @@ from .Options import getOption
 from .RecipeTypes import Architectures, Status
 from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import (ensureCommandIsAvailable, escapeForPackageInfo,
-					haikuporterRepoUrl, haikuportsRepoUrl, naturalCompare,
+					haikuporterRepoUrl, haikuportsRepoUrl, info, naturalCompare,
 					sysExit, warn)
 
 import codecs
@@ -238,28 +238,28 @@ class Package(object):
 			os.remove(packageFile)
 
 		# mimeset the files that shall go into the package
-		print 'mimesetting files for package ' + self.hpkgName + ' ...'
-		mimeDBDir = 'data/mime_db'
-		os.chdir(self.packagingDir)
+		info('mimesetting files for package ' + self.hpkgName + ' ...')
+		dataDir = os.path.join(self.packagingDir, 'data')
+		mimeDBDir = os.path.join(dataDir, 'mime_db')
 		check_call([Configuration.getMimesetCommand(), '--all', '--mimedb',
-			mimeDBDir, '--mimedb', buildPlatform.getSystemMimeDbDirectory(),
-			'.'])
+			'data/mime_db', '--mimedb', buildPlatform.getSystemMimeDbDirectory(),
+			'.'], cwd=self.packagingDir)
 
 		# If data/mime_db is empty, remove it.
 		if not os.listdir(mimeDBDir):
 			os.rmdir(mimeDBDir)
-			if not os.listdir('data'):
-				os.rmdir('data')
+			if not os.listdir(dataDir):
+				os.rmdir(dataDir)
 
 		# Create the package
-		print 'creating package ' + self.hpkgName + ' ...'
-		check_call([Configuration.getPackageCommand(), 'create', packageFile])
-
+		info('creating package ' + self.hpkgName + ' ...')
+		output = check_output([Configuration.getPackageCommand(), 'create', packageFile],
+			cwd=self.packagingDir)
+		info(output)
 		# policy check
 		self.policy.checkPackage(self, packageFile)
 
 		# Clean up after ourselves
-		os.chdir(self.workDir)
 		shutil.rmtree(self.packagingDir)
 
 	def createBuildPackage(self):
@@ -279,7 +279,8 @@ class Package(object):
 			buildPackageInfo, '-I', self.packagingDir, buildPackage]
 		if getOption('quiet'):
 			cmdlineArgs.insert(2, '-q')
-		check_call(cmdlineArgs)
+		output = check_output(cmdlineArgs)
+		info(output)
 		self.buildPackage = buildPackage
 		os.remove(buildPackageInfo)
 
@@ -437,7 +438,7 @@ class Package(object):
 
 		if not quiet:
 			with codecs.open(packageInfoPath, 'r', 'utf-8') as infoFile:
-				print infoFile.read()
+				info(infoFile.read())
 
 	def _writePackageInfoListByKey(self, infoFile, key, keyword):
 		self._writePackageInfoList(infoFile, self.recipeKeys[key], keyword)
@@ -530,9 +531,9 @@ class SourcePackage(Package):
 		"""Prefill packaging directory with stuff from the outside"""
 
 		if self.isRiggedSourcePackage:
-			print "Populating rigged source package ..."
+			info("Populating rigged source package ...")
 		else:
-			print "Populating source package ..."
+			info("Populating source package ...")
 
 		super(SourcePackage, self).populatePackagingDir(port)
 

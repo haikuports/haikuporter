@@ -18,4 +18,9 @@ from HaikuPorter.Options import parseOptions
 
 # -- Start --------------------------------------------------------------------
 
+import logging
+logger = logging.getLogger("buildLogger")
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
 Main(*parseOptions())

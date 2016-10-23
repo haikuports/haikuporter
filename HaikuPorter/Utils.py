@@ -8,6 +8,7 @@
 import codecs
 import copy
 import glob
+import logging
 import os
 import re
 import shutil
@@ -62,16 +63,20 @@ def sysExit(message):
 
 	message = '\n'.join([colorError + u'Error: ' + line + colorReset
 		for line in message.split('\n') ])
-	sys.exit(message.encode('utf-8'))
-
+	raise Exception(message.encode('utf-8'))
 
 def warn(message):
 	"""print a warning"""
 
 	message = '\n'.join([colorWarning + u'Warning: ' + line + colorReset
 		for line in message.split('\n') ])
-	print(message.encode('utf-8'))
+	logging.getLogger("buildLogger").warn(message.encode('utf-8'))
 
+def info(message):
+	"""print an info"""
+	if message is not None and message != '':
+		logging.getLogger("buildLogger").info(message if message[-1] != '\n'
+			else message[:-1])
 
 def printError(*args):
 	"""print a to stderr"""
@@ -96,11 +101,11 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		ext = archiveFile.split('/')[-1].split('.')[-1]
 		if ext == 'xz':
 			ensureCommandIsAvailable('xz')
-			process = Popen(['xz', '-c', '-d', archiveFile], 
+			process = Popen(['xz', '-c', '-d', archiveFile],
 				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		elif ext == 'lz':
 			ensureCommandIsAvailable('lzip')
-			process = Popen(['lzip', '-c', '-d', archiveFile], 
+			process = Popen(['lzip', '-c', '-d', archiveFile],
 				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 	if subdir and not subdir.endswith('/'):

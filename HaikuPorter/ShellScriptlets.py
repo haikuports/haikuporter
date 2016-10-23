@@ -76,7 +76,7 @@ set -e
 getPackagePrefix()
 {
 	# Usage: getPackagePrefix <packageSuffix>|<packageFullVersionedName>
-	
+
 	local packageLinksDir="$(dirname $installDestDir$portPackageLinksDir)"
 	if [[ $1 == *-* ]]; then
 		local packageFullVersionedName="$1"
@@ -879,10 +879,10 @@ checkedUnmount boot/system
 # wipe files and directories if it is ok to do so
 if [[ $buildOk ]]; then
 	echo "cleaning chroot folder"
-	rmdir dev
 	rm -rf \
 		boot \
 		build-packages \
+		dev \
 		package-infos \
 		packages \
 		packaging \

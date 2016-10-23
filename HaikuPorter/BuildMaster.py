@@ -1,17 +1,27 @@
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
-from .Utils import sysExit
+from .Utils import info, sysExit
 
 import errno
 import json
 import logging
 import os
-import paramiko
 import socket
 import stat
 import threading
 import time
+
+
+class ThreadFilter:
+	def __init__(self):
+		self.ident = threading.current_thread().ident
+
+	def reset(self):
+		self.ident = threading.current_thread().ident
+
+	def filter(self, record):
+		return threading.current_thread().ident == self.ident
 
 
 class ScheduledBuild:
@@ -62,7 +72,7 @@ class _BuilderState:
 	RECONNECT = 'Reconnecting'
 
 
-class Builder:
+class RemoteBuilder:
 	def __init__(self, configFilePath, packagesPath, outputBaseDir,
 			portsTreeHead):
 		self._loadConfig(configFilePath)
@@ -402,7 +412,7 @@ class Builder:
 			+ '" --no-package-obsoletion --clean "'
 			+ scheduledBuild.port.versionedName + '"')
 
-		self.buildLogger.info('cleaning port with command: ' + command)
+		info('cleaning port with command: ' + command)
 		(output, channel) = self._remoteCommand(command)
 		self._appendOutputToLog(output)
 
@@ -413,7 +423,7 @@ class Builder:
 				if not line:
 					return
 
-				self.buildLogger.info(line[:-1])
+				info(line[:-1])
 
 	def _makePackageAvailable(self, packageName):
 		if packageName in self.availablePackages:
@@ -531,8 +541,100 @@ class MockBuilder:
 		}
 
 
+class LocalBuilder:
+	def __init__(self, name, packagesPath, outputBaseDir, options):
+		self.options = options
+		self.name = name
+		self.buildCount = 0
+		self.failedBuilds = 0
+		self.packagesPath = packagesPath
+		self.state = _BuilderState.AVAILABLE
+		self.currentBuild = None
+
+		self.buildOutputDir = os.path.join(os.path.realpath(outputBaseDir), 'builds')
+		if not os.path.isdir(self.buildOutputDir):
+			os.makedirs(self.buildOutputDir)
+
+		self.buildLogger = logging.getLogger('builders.' + self.name + '.build')
+		self.buildLogger.setLevel(logging.DEBUG)
+
+
+	def setBuild(self, scheduledBuild, buildNumber):
+		logHandler = logging.FileHandler(os.path.join(self.buildOutputDir,
+				str(buildNumber) + '.log'))
+		logHandler.setFormatter(logging.Formatter('%(message)s'))
+		self.buildLogger.addHandler(logHandler)
+		filter = ThreadFilter()
+		logHandler.addFilter(filter)
+		logging.getLogger("buildLogger").setLevel(logging.DEBUG)
+		logging.getLogger("buildLogger").addHandler(logHandler)
+
+		self.currentBuild = {
+			'build': scheduledBuild,
+			'status': scheduledBuild.status,
+			'number': buildNumber,
+			'logHandler': logHandler,
+			'logFilter': filter
+		}
+
+	def unsetBuild(self):
+		self.buildLogger.removeHandler(self.currentBuild['logHandler'])
+		logging.getLogger("buildLogger").removeHandler(self.currentBuild['logHandler'])
+		self.currentBuild = None
+
+	def runBuild(self):
+		scheduledBuild = self.currentBuild['build']
+		buildSuccess = False
+		reschedule = True
+		port = scheduledBuild.port
+
+		try:
+			self.buildCount += 1
+
+			self.buildLogger.info('building port ' + port.versionedName)
+
+			port.setLogger(self.buildLogger)
+			port.setFilter(self.currentBuild['logFilter'])
+
+			if not port.isMetaPort:
+				port.downloadSource()
+				port.unpackSource()
+				port.populateAdditionalFiles()
+				port.patchSource()
+
+				port.build(self.packagesPath, self.options.package, self.packagesPath)
+
+				buildSuccess = True
+
+
+		except Exception as exception:
+			self.buildLogger.error(exception, exc_info=True)
+			self.currentBuild['phase'] = 'failed'
+			reschedule = False
+		except SystemExit as exception:
+			self.buildLogger.error(exception, exc_info=True)
+			self.currentBuild['phase'] = 'failed'
+			reschedule = False
+
+
+		port.unsetLogger()
+
+		return (buildSuccess, reschedule)
+
+	@property
+	def status(self):
+		return {
+			'name': self.name,
+			'state': self.state,
+			'currentBuild': {
+				'build': self.currentBuild['status'],
+				'number': self.currentBuild['number']
+			} if self.currentBuild else None
+		}
+
+
 class BuildMaster:
-	def __init__(self, packagesPath, portsTreeHead):
+	def __init__(self, packagesPath, portsTreeHead, options):
 		self.activeBuilders = []
 		self.reconnectingBuilders = []
 		self.lostBuilders = []
@@ -548,13 +650,29 @@ class BuildMaster:
 		if not os.path.isdir(self.buildOutputBaseDir):
 			os.makedirs(self.buildOutputBaseDir)
 
-		self.buildNumberFile = os.path.join(self.masterBaseDir, 'buildnumber')
+		self.buildNumberFile = os.path.realpath(os.path.join(
+			self.masterBaseDir, 'buildnumber'))
 		self.buildNumber = 0
 		try:
 			with open(self.buildNumberFile, 'r') as buildNumberFile:
 				self.buildNumber = int(buildNumberFile.read())
 		except Exception as exception:
 			pass
+
+		self.localBuilders = getOption('localBuilders')
+		self.remoteAvailable = False
+		try:
+			import paramiko
+		except ImportError:
+			paramiko = None
+		if paramiko:
+			self.remoteAvailable = True
+		else:
+			print 'Remote mode unavailable'
+			if self.localBuilders == 0:
+				self.localBuilders = 1
+
+		print 'Local builders count: ' + str(self.localBuilders)
 
 		logHandler = logging.FileHandler(
 			os.path.join(self.buildOutputBaseDir, 'master.log'))
@@ -567,24 +685,42 @@ class BuildMaster:
 		self.portsTreeHead = portsTreeHead
 		self.logger.info('portstree head is at ' + self.portsTreeHead)
 
-		self.statusOutputPath = os.path.join(self.buildOutputBaseDir,
+		self.statusOutputPath = os.path.join(os.path.realpath(self.buildOutputBaseDir),
 			'status.json')
 
-		for fileName in os.listdir(self.builderBaseDir):
-			configFilePath = os.path.join(self.builderBaseDir, fileName)
-			if not os.path.isfile(configFilePath):
-				continue
+		if self.localBuilders == 0:
+			for fileName in os.listdir(self.builderBaseDir):
+				configFilePath = os.path.join(self.builderBaseDir, fileName)
+				if not os.path.isfile(configFilePath):
+					continue
 
-			builder = None
-			try:
-				builder = Builder(configFilePath, packagesPath,
-					self.buildOutputBaseDir, portsTreeHead)
-			except Exception as exception:
-				self.logger.error('failed to add builder from config '
-					+ configFilePath + ':' + str(exception))
-				continue
+				builder = None
+				try:
+					builder = RemoteBuilder(configFilePath, packagesPath,
+						self.buildOutputBaseDir, portsTreeHead)
+				except Exception as exception:
+					self.logger.error('failed to add builder from config '
+						+ configFilePath + ':' + str(exception))
+					continue
 
-			self.activeBuilders.append(builder)
+				self.activeBuilders.append(builder)
+		else:
+			logger = logging.getLogger("buildLogger")
+			for h in logger.handlers:
+				logger.removeHandler(h)
+			for i in range(0, self.localBuilders):
+				configFilePath = os.path.join(self.builderBaseDir, str(i))
+
+				builder = None
+				try:
+					builder = LocalBuilder(str(i), packagesPath,
+						self.buildOutputBaseDir, options)
+				except Exception as exception:
+					self.logger.error('failed to add builder from config '
+						+ configFilePath + ':' + str(exception))
+					continue
+
+				self.activeBuilders.append(builder)
 
 		if len(self.activeBuilders) == 0:
 			sysExit(u'no builders available')
@@ -633,7 +769,9 @@ class BuildMaster:
 		except KeyboardInterrupt:
 			self._setBuildStatus('aborted')
 		except Exception as exception:
+			self.logger.error(str(exception))
 			self._setBuildStatus('failed: ' + str(exception))
+		self.logger.info('finished with status: ' + self.buildStatus)
 
 	def _runBuilds(self):
 		while True:
@@ -643,7 +781,8 @@ class BuildMaster:
 					buildToRun = self.scheduledBuilds.pop(0)
 					self.activeBuilds.append(buildToRun)
 				elif len(self.blockedBuilds) > 0:
-					self.logger.info('nothing buildable, waiting for packages')
+					if self.buildStatus != 'waiting for packages':
+						self.logger.info('nothing buildable, waiting for packages')
 					self._setBuildStatus('waiting for packages')
 					self.buildableCondition.wait()
 					continue

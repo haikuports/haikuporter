@@ -22,6 +22,7 @@ from .RecipeTypes import MachineArchitecture
 from .Repository import Repository
 from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn
 
+import logging
 import os
 import re
 from subprocess import check_call, check_output, STDOUT
@@ -46,6 +47,7 @@ class Main(object):
 			exit(1)
 
 	def run(self, args):
+
 		self.policy = Policy(self.options.strictPolicy)
 
 		self.repository = None
@@ -99,7 +101,8 @@ class Main(object):
 				head = '<unknown> '
 
 			from .BuildMaster import BuildMaster
-			self.buildMaster = BuildMaster(self.packagesPath, head[:-1])
+			self.buildMaster = BuildMaster(self.packagesPath, head[:-1],
+				self.options)
 
 			self.options.noPackageObsoletion = True
 			self.options.ignoreMessages = True
@@ -526,6 +529,10 @@ class Main(object):
 			presentDependencyPackages = [ os.path.basename(path)
 				for path in presentDependencyPackages ]
 
+		print 'The following built dependencies were found:'
+		for dependency in buildDependencies:
+			print('\t' + dependency)
+
 		requiredPortsToBuild = []
 		requiredPortIDs = set()
 		requiredPackageIDs = set()
@@ -717,7 +724,6 @@ class Main(object):
 	def _getCategory(self, portName):
 		"""Find location of the specified port in the HaikuPorts tree"""
 		hierarchy = []
-		os.chdir(self.treePath)
 		dirList = os.listdir(self.treePath)
 		for item in dirList:
 			if os.path.isdir(item) and item[0] != '.' and '-' in item:
