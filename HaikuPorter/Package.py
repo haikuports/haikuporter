@@ -279,7 +279,7 @@ class Package(object):
 			buildPackageInfo, '-I', self.packagingDir, buildPackage]
 		if getOption('quiet'):
 			cmdlineArgs.insert(2, '-q')
-		output = check_output(cmdlineArgs)
+		output = check_output(cmdlineArgs, stderr=STDOUT)
 		info(output)
 		self.buildPackage = buildPackage
 		os.remove(buildPackageInfo)

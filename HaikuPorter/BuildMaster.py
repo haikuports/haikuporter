@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright 2015 Michael Lotz
+# Copyright 2016 Jerome Duval
+# Distributed under the terms of the MIT License.
+
+# -- Modules ------------------------------------------------------------------
+
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
@@ -16,12 +24,18 @@ import time
 class ThreadFilter:
 	def __init__(self):
 		self.ident = threading.current_thread().ident
+		self.build = None
 
 	def reset(self):
 		self.ident = threading.current_thread().ident
+	def setBuild(self, build):
+		self.build = build
 
 	def filter(self, record):
-		return threading.current_thread().ident == self.ident
+		ours = threading.current_thread().ident == self.ident
+		if ours and self.build:
+			self.build['lines'] += 1
+		return ours
 
 
 class ScheduledBuild:
@@ -574,8 +588,13 @@ class LocalBuilder:
 			'status': scheduledBuild.status,
 			'number': buildNumber,
 			'logHandler': logHandler,
-			'logFilter': filter
+			'logFilter': filter,
+			'startTime': None,
+			'phase': 'setup',
+			'lines' : 0
 		}
+		filter.setBuild(self.currentBuild)
+
 
 	def unsetBuild(self):
 		self.buildLogger.removeHandler(self.currentBuild['logHandler'])
@@ -587,6 +606,8 @@ class LocalBuilder:
 		buildSuccess = False
 		reschedule = True
 		port = scheduledBuild.port
+		self.currentBuild['startTime'] = time.time()
+		self.currentBuild['phase'] = 'start'
 
 		try:
 			self.buildCount += 1
@@ -597,13 +618,18 @@ class LocalBuilder:
 			port.setFilter(self.currentBuild['logFilter'])
 
 			if not port.isMetaPort:
+				self.currentBuild['phase'] = 'download'
 				port.downloadSource()
+				self.currentBuild['phase'] = 'unpack'
 				port.unpackSource()
 				port.populateAdditionalFiles()
+				self.currentBuild['phase'] = 'patch'
 				port.patchSource()
 
+				self.currentBuild['phase'] = 'build'
 				port.build(self.packagesPath, self.options.package, self.packagesPath)
 
+				self.currentBuild['phase'] = 'done'
 				buildSuccess = True
 
 
@@ -616,7 +642,6 @@ class LocalBuilder:
 			self.currentBuild['phase'] = 'failed'
 			reschedule = False
 
-
 		port.unsetLogger()
 
 		return (buildSuccess, reschedule)
@@ -628,7 +653,11 @@ class LocalBuilder:
 			'state': self.state,
 			'currentBuild': {
 				'build': self.currentBuild['status'],
-				'number': self.currentBuild['number']
+				'number': self.currentBuild['number'],
+				'phase': self.currentBuild['phase'],
+				'duration': ((time.time() - self.currentBuild['startTime'])
+					if self.currentBuild['startTime'] else None),
+				'lines': self.currentBuild['lines']
 			} if self.currentBuild else None
 		}
 
@@ -733,6 +762,11 @@ class BuildMaster:
 		self.completeBuilds = []
 		self.failedBuilds = []
 		self.lostBuilds = []
+		self.totalBuildCount = 0
+		self.startTime = None
+		self.impulseData = [None] * 500
+		self.impulseIndex = -1
+		self.display = None
 
 		self.buildableCondition = threading.Condition()
 			# protectes the scheduled builds lists
@@ -754,11 +788,18 @@ class BuildMaster:
 
 		self._setBuildStatus('scheduling')
 
-	def runBuilds(self):
+	def runBuilds(self, stdscr=None):
 		try:
-			self._ensureConsistentSchedule()
+			if stdscr:
+				from .Display import Display
+				self.display = Display(stdscr, len(self.activeBuilders))
 
+			self._ensureConsistentSchedule()
+			self.totalBuildCount = len(self.scheduledBuilds) + len(self.blockedBuilds)
+			self.startTime = time.time()
 			self._setBuildStatus('starting builds')
+			if self.display:
+				self.display.updateSummary(self.summary)
 			while True:
 				self._runBuilds()
 				self._waitForBuildsToComplete()
@@ -784,7 +825,10 @@ class BuildMaster:
 					if self.buildStatus != 'waiting for packages':
 						self.logger.info('nothing buildable, waiting for packages')
 					self._setBuildStatus('waiting for packages')
-					self.buildableCondition.wait()
+					if self.display:
+						self.display.updateSummary(self.summary)
+						self.display.updateBuilders(self.status)
+					self.buildableCondition.wait(1)
 					continue
 				else:
 					break
@@ -797,8 +841,12 @@ class BuildMaster:
 				if len(self.availableBuilders) == len(self.activeBuilders):
 					break
 
+				if self.display:
+					self.display.updateSummary(self.summary)
+					self.display.updateBuilders(self.status)
+
 				self._setBuildStatus('waiting for all builds to complete')
-				self.builderCondition.wait()
+				self.builderCondition.wait(1)
 
 	def _getBuildNumber(self):
 		buildNumber = self.buildNumber
@@ -817,7 +865,10 @@ class BuildMaster:
 
 				if len(self.availableBuilders) == 0:
 					self._setBuildStatus('waiting for available builders')
-					self.builderCondition.wait()
+					if self.display:
+						self.display.updateSummary(self.summary)
+						self.display.updateBuilders(self.status)
+					self.builderCondition.wait(1)
 					continue
 
 				builder = self.availableBuilders.pop(0)
@@ -962,6 +1013,43 @@ class BuildMaster:
 			'nextBuildNumber': self.buildNumber,
 			'portsTreeHead': self.portsTreeHead,
 			'buildStatus': self.buildStatus
+		}
+
+	@property
+	def summary(self):
+		self.impulseIndex += 1
+		if self.impulseIndex >= len(self.impulseData):
+			self.impulseIndex = 0
+		impulseTime = (self.impulseData[self.impulseIndex]['time']
+			) if self.impulseData[self.impulseIndex] else None
+		impulsePkgCount = (self.impulseData[self.impulseIndex]['pkgCount']
+			) if self.impulseData[self.impulseIndex] else None
+		now = time.time()
+		pkgCount = len(self.completeBuilds) + len(self.failedBuilds);
+		self.impulseData[self.impulseIndex] = {
+			'time': now,
+			'pkgCount': pkgCount
+		}
+		return {
+			'builds': {
+				'active': len(self.activeBuilds),
+				'scheduled': len(self.scheduledBuilds),
+				'blocked': len(self.blockedBuilds),
+				'complete': len(self.completeBuilds),
+				'failed': len(self.failedBuilds),
+				'lost': len(self.lostBuilds),
+				'total': self.totalBuildCount
+			},
+			'builders': {
+				'active': len(self.activeBuilders),
+				'lost': len(self.lostBuilders),
+				'total': len(self.activeBuilders) + len(self.lostBuilders)
+			},
+			'duration': (now - self.startTime) if self.startTime else None,
+			'pkg_hour': int(pkgCount * 3600
+				/ (now - self.startTime)) if self.startTime else None,
+			'impulse': int((pkgCount - impulsePkgCount) * 3600
+				/ (now - impulseTime)) if impulsePkgCount else None
 		}
 
 	def _setBuildStatus(self, buildStatus):
