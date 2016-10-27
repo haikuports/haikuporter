@@ -63,7 +63,7 @@ def sysExit(message):
 
 	message = '\n'.join([colorError + u'Error: ' + line + colorReset
 		for line in message.split('\n') ])
-	raise Exception(message.encode('utf-8'))
+	sys.exit(message.encode('utf-8'))
 
 def warn(message):
 	"""print a warning"""

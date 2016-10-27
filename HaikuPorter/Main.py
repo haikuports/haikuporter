@@ -15,6 +15,7 @@
 from .BuildPlatform import buildPlatform
 from .Configuration import Configuration
 from .DependencyAnalyzer import DependencyAnalyzer
+from .Display import DisplayContext
 from .Options import getOption
 from .Policy import Policy
 from .RecipeAttributes import getRecipeFormatVersion
@@ -411,7 +412,11 @@ class Main(object):
 					print '\t' + violation
 
 		if self.options.buildMaster:
-			self.buildMaster.runBuilds()
+			if self.options.display:
+				with DisplayContext() as ctxt:
+					self.buildMaster.runBuilds(ctxt.stdscr)
+			else:
+				self.buildMaster.runBuilds()
 
 	def _listBuildDependencies(self, port):
 		print '-' * 70
