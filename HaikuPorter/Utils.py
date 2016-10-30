@@ -6,6 +6,7 @@
 # -- Modules ------------------------------------------------------------------
 
 import codecs
+import copy
 import glob
 import os
 import re
@@ -82,51 +83,46 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 
 	## REFACTOR into separate functions and dispatch
 
-	tar = None
+	process = None
 	# in python3 tarfile handles xz itself
 	# until then we have to handle xz, and lz anyway, directly
-	# TODO: we shouldn't need to uncompress to disk...
 	if not tarfile.is_tarfile(archiveFile):
 		ext = archiveFile.split('/')[-1].split('.')[-1]
 		if ext == 'xz':
 			ensureCommandIsAvailable('xz')
-			Popen(['xz', '-f', '-d', '-k', archiveFile]).wait()
-			tar = archiveFile[:-3]
+			process = Popen(['xz', '-c', '-d', archiveFile], 
+				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		elif ext == 'lz':
 			ensureCommandIsAvailable('lzip')
-			Popen(['lzip', '-f', '-d', '-k', archiveFile]).wait()
-			tar = archiveFile[:-3]
-	if tar:
-		# work on the uncompressed archive
-		archiveFile = tar
+			process = Popen(['lzip', '-c', '-d', archiveFile], 
+				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 	if subdir and not subdir.endswith('/'):
 		subdir += '/'
-	# unpack source archive
-	if tarfile.is_tarfile(archiveFile):
-		tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
-		members = None
-		if subdir:
-			members = [
-				member for member in tarFile.getmembers()
-				if os.path.normpath(member.name.decode("utf-8"))
-					.startswith(subdir) and not os.path.normpath(member.name.decode("utf-8"))
-					.endswith("/.git")
-			]
-			if not members:
-				sysExit('sub-directory %s not found in archive' % subdir)
-			if hasattr(os, "geteuid") and os.geteuid() == 0:
-				for member in members:
+	# unpack source archive or the decompressed stream
+	if process or tarfile.is_tarfile(archiveFile):
+		tarFile = None
+		if process:
+			tarFile = tarfile.open(fileobj=process.stdout, mode='r|')
+		else:
+			tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
+		for member in tarFile:
+			if subdir is None:
+				tarFile.extract(member, targetBaseDir)
+				continue
+
+			member = copy.copy(member)
+			if (os.path.normpath(member.name.decode("utf-8"))
+				.startswith(subdir) and not os.path.normpath(
+					member.name.decode("utf-8")).endswith("/.git")):
+				if hasattr(os, "geteuid") and os.geteuid() == 0:
 					member.gname = ""
 					member.uname = ""
 					member.gid = 0
 					member.uid = 0
-			for member in members:
 				member.name = member.name.decode("utf-8")
-		tarFile.extractall(targetBaseDir, members)
+				tarFile.extract(member, targetBaseDir)
 		tarFile.close()
-		if tar:
-			os.remove(tar)
 	elif zipfile.is_zipfile(archiveFile):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
 		names = None
