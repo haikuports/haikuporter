@@ -36,6 +36,9 @@ class MyTarInfo(tarfile.TarInfo):
 		tarinfo = tarfile.TarInfo.frombuf(buf)
 		if tarinfo.type == tarfile.LNKTYPE:
 			tarinfo.type = tarfile.SYMTYPE
+			tarinfo.linkname = os.path.join(os.path.relpath(os.path.dirname(
+				tarinfo.linkname), os.path.dirname(tarinfo.name)),
+				os.path.basename(tarinfo.linkname))
 		return tarinfo
 
 	@classmethod
@@ -43,6 +46,9 @@ class MyTarInfo(tarfile.TarInfo):
 		tarinfo = tarfile.TarInfo.fromtarfile(theTarfile)
 		if tarinfo.type == tarfile.LNKTYPE:
 			tarinfo.type = tarfile.SYMTYPE
+			tarinfo.linkname = os.path.join(os.path.relpath(os.path.dirname(
+				tarinfo.linkname), os.path.dirname(tarinfo.name)),
+				os.path.basename(tarinfo.linkname))
 		return tarinfo
 
 # path to haikuports-tree --------------------------------------------------
@@ -103,7 +109,8 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 	if process or tarfile.is_tarfile(archiveFile):
 		tarFile = None
 		if process:
-			tarFile = tarfile.open(fileobj=process.stdout, mode='r|')
+			tarFile = tarfile.open(fileobj=process.stdout, mode='r|',
+				tarinfo=MyTarInfo)
 		else:
 			tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
 		for member in tarFile:
