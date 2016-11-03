@@ -177,7 +177,7 @@ class Builder:
 				self.lost = True
 
 			# avoid DoSing the remote host, increasing delay as retries increase.
-			time.sleep(5 * self.connectionErrors)
+			time.sleep(5 + (1.2 * self.connectionErrors))
 			raise
 
 	def _syncPortsTree(self, revision):
