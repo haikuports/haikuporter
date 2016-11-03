@@ -75,7 +75,7 @@ class Builder:
 		self.available = False
 		self.lost = False
 		self.connectionErrors = 0
-		self.maxConnectionErrors = 10
+		self.maxConnectionErrors = 100
 
 		self.currentBuild = None
 
@@ -176,8 +176,8 @@ class Builder:
 					+ ' consecutive connection errors')
 				self.lost = True
 
-			# avoid DoSing the remote host
-			time.sleep(5)
+			# avoid DoSing the remote host, increasing delay as retries increase.
+			time.sleep(5 + (1.2 * self.connectionErrors))
 			raise
 
 	def _syncPortsTree(self, revision):
