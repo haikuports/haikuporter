@@ -196,6 +196,8 @@ BuildMaster.prototype.showStatus = function()
 	var totalBuilders = 0;
 	totalBuilders += addBuilderList('#activeBuilders',
 		this.status.builders.active);
+	totalBuilders += addBuilderList('#reconnectingBuilders',
+		this.status.builders.reconnecting);
 	totalBuilders += addBuilderList('#lostBuilders',
 		this.status.builders.lost);
 

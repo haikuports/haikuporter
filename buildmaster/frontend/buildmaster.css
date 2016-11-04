@@ -89,6 +89,10 @@ a, a:visited {
 	background-color: #f0fff0;
 }
 
+#reconnectingBuilders {
+	background-color: #f0f0ff;
+}
+
 #failedBuilds, #lostBuilders {
 	background-color: #fff0f0;
 }
