@@ -341,7 +341,7 @@ class Source(object):
 				patched = True
 		except:
 			# Don't leave behind half-patched sources.
-			if patched:
+			if patched and not getOption('noGitRepo'):
 				self.reset()
 			raise
 
