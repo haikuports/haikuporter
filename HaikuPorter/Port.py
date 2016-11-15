@@ -648,12 +648,13 @@ class Port(object):
 			try:
 				print 'Running patch function ...'
 				self._doRecipeAction(Phase.PATCH, self.sourceDir)
-				for source in self.sources:
-					source.commitPatchPhase()
+				if not getOption('noGitRepo'):
+					for source in self.sources:
+						source.commitPatchPhase()
 				self.setFlag('patch')
 			except:
 				# Don't leave behind half-patched sources.
-				if patched:
+				if patched and not getOption('noGitRepo'):
 					for source in self.sources:
 						source.reset()
 				raise

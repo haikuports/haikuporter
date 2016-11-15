@@ -24,7 +24,7 @@ from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn
 
 import os
 import re
-from subprocess import check_call, check_output
+from subprocess import check_call, check_output, STDOUT
 import sys
 import traceback
 
@@ -90,9 +90,13 @@ class Main(object):
 		self._initGlobalShellVariables()
 
 		if self.options.buildMaster:
-			ensureCommandIsAvailable('git')
-			head = check_output(['git', 'rev-parse', 'HEAD'],
-				cwd = self.treePath)
+			try:
+				ensureCommandIsAvailable('git')
+				head = check_output(['git', 'rev-parse', 'HEAD'],
+					cwd = self.treePath, stderr=STDOUT)
+			except:
+				warn('unable to determine revision of haikuports tree')
+				head = '<unknown> '
 
 			from .BuildMaster import BuildMaster
 			self.buildMaster = BuildMaster(self.packagesPath, head[:-1])

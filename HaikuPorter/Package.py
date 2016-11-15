@@ -18,14 +18,15 @@ from .Configuration import Configuration
 from .Options import getOption
 from .RecipeTypes import Architectures, Status
 from .ShellScriptlets import getScriptletPrerequirements
-from .Utils import (escapeForPackageInfo, haikuporterRepoUrl, haikuportsRepoUrl,
-					naturalCompare, sysExit, warn)
+from .Utils import (ensureCommandIsAvailable, escapeForPackageInfo,
+					haikuporterRepoUrl, haikuportsRepoUrl, naturalCompare,
+					sysExit, warn)
 
 import codecs
 import json
 import os
 import shutil
-from subprocess import check_call, check_output
+from subprocess import check_call, check_output, STDOUT
 
 
 # -- The supported package types ----------------------------------------------
@@ -565,14 +566,15 @@ class SourcePackage(Package):
 				shutil.copy(licenseFilePath, licensesTargetDir)
 
 		# add ReadMe with references to the used repositories
+		haikuportsRev = '<unknown>'
 		if os.path.exists(Configuration.getTreePath() + '/.git'):
 			try:
+				ensureCommandIsAvailable('git')
 				haikuportsRev \
 					= check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
-								   cwd=Configuration.getTreePath())
+								   cwd=Configuration.getTreePath(), stderr=STDOUT)
 			except:
 				warn('unable to determine revision of haikuports tree')
-				haikuportsRev = '<unknown>'
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
 			readmeFile.write((
 				'These are the sources (and optionally patches) that were\n'
