@@ -94,25 +94,32 @@ class DependencyResolver(object):
 		return result
 
 	def _buildDependencyGraph(self):
+		updateDependencies = getOption('updateDependencies')
+		if len(self._repositories) <= 2:
+			updateDependencies = False
+
 		numberOfInitialPackages = len(self._pending)
 		numberOfHandledPackages = 0
 		while self._pending:
 			packageNode = self._pending.pop(0)
 
-			if 'REQUIRES' in self._requiresTypes:
-				self._addAllImmediateRequiresOf(packageNode)
-			if 'BUILD_REQUIRES' in self._requiresTypes:
-				self._addAllImmediateBuildRequiresOf(packageNode)
-			if 'BUILD_PREREQUIRES' in self._requiresTypes:
-				self._addAllImmediateBuildPrerequiresOf(packageNode)
-			if 'SCRIPTLET_PREREQUIRES' in self._requiresTypes:
-				self._addScriptletPrerequiresOf(packageNode)
+			# don't build dependencies of a hpkg with --update-dependencies
+			if not (updateDependencies and packageNode.path.endswith('.hpkg')):
+				if 'REQUIRES' in self._requiresTypes:
+					self._addAllImmediateRequiresOf(packageNode)
+				if 'BUILD_REQUIRES' in self._requiresTypes:
+					self._addAllImmediateBuildRequiresOf(packageNode)
+				if 'BUILD_PREREQUIRES' in self._requiresTypes:
+					self._addAllImmediateBuildPrerequiresOf(packageNode)
+				if 'SCRIPTLET_PREREQUIRES' in self._requiresTypes:
+					self._addScriptletPrerequiresOf(packageNode)
 
 			# when the batch of passed in packages has been handled, we need
 			# to activate the REQUIRES, too, since these are needed to run
 			# all the following packages
 			numberOfHandledPackages += 1
-			if (numberOfHandledPackages == numberOfInitialPackages):
+			if (numberOfHandledPackages == numberOfInitialPackages
+				and 'REQUIRES' not in self._requiresTypes):
 				self._requiresTypes.append('REQUIRES')
 
 	def _sortPackageNodesTopologically(self):
@@ -175,7 +182,12 @@ class DependencyResolver(object):
 		if isImplicit and not getOption('createSourcePackagesForBootstrap'):
 			return
 
-		provides = self._providesManager.getMatchingProvides(requires)
+		# if a prerequires type is requested, priorize any hpkg fitting the
+		# version requirements, and not the latest recipe.
+		isPrerequiresType = typeString.endswith('-prerequires')
+		provides = self._providesManager.getMatchingProvides(requires,
+			isPrerequiresType)
+
 		if not provides:
 			if isImplicit:
 				return
@@ -186,7 +198,8 @@ class DependencyResolver(object):
 					for pkg in re.findall(r'/[^/\n]+\.hpkg', output):
 						pkginfo = PackageInfo('/boot/system/packages' + pkg)
 						self._providesManager.addProvidesFromPackageInfo(pkginfo)
-						provides = self._providesManager.getMatchingProvides(requires)
+						provides = self._providesManager.getMatchingProvides(requires,
+							isPrerequiresType)
 				except CalledProcessError:
 					raise LookupError()
 			else:
