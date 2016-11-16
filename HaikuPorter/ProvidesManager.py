@@ -6,7 +6,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .PackageInfo import Resolvable
+from .Options import getOption
+from .PackageInfo import PackageInfo, Resolvable
 from .Utils import versionCompare
 
 # -- ProvidesInfo class -------------------------------------------------------
@@ -38,7 +39,7 @@ class ProvidesManager(object):
 		for provides in packageInfo.provides:
 			self._addPackageProvidesInfo(packageInfo, str(provides))
 
-	def getMatchingProvides(self, resolvableExpression):
+	def getMatchingProvides(self, resolvableExpression, anyHpkg=False):
 		name = resolvableExpression.name
 		operator = resolvableExpression.operator
 		version = resolvableExpression.version
@@ -46,10 +47,26 @@ class ProvidesManager(object):
 		if not name in self._providesMap:
 			return None
 
+		updateDependencies = getOption('updateDependencies')
+
 		providesList = self._providesMap[name]
+
+		found = None
+		foundIsHpkg = False
 		for provides in providesList:
+			provideIsHpkg = (provides.packageInfo.path.endswith('.hpkg')
+				if isinstance(provides.packageInfo, PackageInfo) else False)
 			if not operator:
-				return provides
+				if not updateDependencies:
+					return provides
+				if (found is None or
+					(anyHpkg and provideIsHpkg) or
+					(provideIsHpkg and not foundIsHpkg and
+						(found.version is None
+							or versionCompare(provides.version, found.version) >= 0))):
+					found = provides
+					foundIsHpkg = provideIsHpkg
+				continue
 			if not provides.version:
 				continue
 			matches = {
@@ -65,8 +82,16 @@ class ProvidesManager(object):
 			if (provides.compatibleVersion
 				and versionCompare(provides.compatibleVersion, version) > 0):
 				continue
-			return provides
-		return None
+			if not updateDependencies:
+				return provides
+			if (found is None or
+				(anyHpkg and provideIsHpkg) or
+				(provideIsHpkg and not foundIsHpkg and
+					(found.version is None
+						or versionCompare(provides.version, found.version) >= 0))):
+				found = provides
+				foundIsHpkg = provideIsHpkg
+		return found
 
 	def _addPackageProvidesInfo(self, packageInfo, providesString):
 		provides = ProvidesInfo(packageInfo, providesString.strip())

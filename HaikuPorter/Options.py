@@ -8,6 +8,7 @@
 # Copyright 2010-2011 Jack Laxson (Jrabbit)
 # Copyright 2011 Ingo Weinhold
 # Copyright 2013 Oliver Tappe
+# Copyright 2016 Jerome Duval
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
@@ -113,6 +114,10 @@ def parseOptions():
 	parser.add_option('--get-dependencies',
 					  action='store_true', dest='getDependencies', default=False,
 					  help="install all needed dependencies, then build the port")
+	parser.add_option('--update-dependencies',
+					  action='store_true', dest='updateDependencies', default=False,
+					  help="build or update required dependencies (stop on hpkg),"
+							" then build the port")
 	parser.add_option('--no-source-packages',
 					  action='store_true', dest='noSourcePackages',
 					  default=False,
