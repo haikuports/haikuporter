@@ -17,6 +17,7 @@ import logging
 import os
 import socket
 import stat
+from subprocess import CalledProcessError
 import threading
 import time
 
@@ -634,6 +635,8 @@ class LocalBuilder:
 
 
 		except Exception as exception:
+			if isinstance(exception, CalledProcessError):
+				self.buildLogger.info(exception.output)
 			self.buildLogger.error(exception, exc_info=True)
 			self.currentBuild['phase'] = 'failed'
 			reschedule = False
@@ -679,6 +682,7 @@ class BuildMaster:
 		if not os.path.isdir(self.buildOutputBaseDir):
 			os.makedirs(self.buildOutputBaseDir)
 
+		self.buildStatus = None
 		self.buildNumberFile = os.path.realpath(os.path.join(
 			self.masterBaseDir, 'buildnumber'))
 		self.buildNumber = 0
