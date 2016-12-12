@@ -125,8 +125,9 @@ class Package(object):
 
 		if architecture in self.recipeKeys['ARCHITECTURES']:
 			return self.recipeKeys['ARCHITECTURES'][architecture]
-		elif (Architectures.ANY in self.recipeKeys['ARCHITECTURES']
-			  or Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']):
+		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
+			return self.recipeKeys['ARCHITECTURES'][Architectures.ANY]
+		elif Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']:
 			return Status.STABLE
 		return Status.UNSUPPORTED
 
