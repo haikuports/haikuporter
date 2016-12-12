@@ -182,27 +182,42 @@ class Policy(object):
 		except:
 			return
 
+		libraries = set()
+		rpath = None
 		# extract the library names from the "(NEEDED)" lines of the output
 		for line in output.split('\n'):
 			if line.find('(NEEDED)') >= 0:
 				match = re.match('[^[]*\[(.*)].*', line)
 				if match:
-					library = os.path.basename(match.group(1))
-					if self._isMissingLibraryDependency(library):
-						if (library.startswith('libgcc') or
-							library.startswith('libstdc++') or
-							library.startswith('libsupc++')):
-							continue
-						self._violation('"%s" needs library "%s", but the '
-							'package doesn\'t seem to declare that as a '
-							'requirement' % (path, library))
+					libraries.add(os.path.basename(match.group(1)))
+			if line.find('(RPATH)') >= 0:
+				match = re.match('[^[]*\[(.*)].*', line)
+				if match:
+					rpath = match.group(1)
 
-	def _isMissingLibraryDependency(self, library):
+		for library in libraries:
+			if self._isMissingLibraryDependency(library, rpath):
+				if (library.startswith('libgcc') or
+					library.startswith('libstdc++') or
+					library.startswith('libsupc++')):
+					continue
+				self._violation('"%s" needs library "%s", but the '
+					'package doesn\'t seem to declare that as a '
+					'requirement' % (path, library))
+
+	def _isMissingLibraryDependency(self, library, rpath):
 		# the library might be provided by the package
 		libDir = os.path.join(self.package.packagingDir,
 			'lib' + self.secondaryArchSubDir + '/' + library)
 		if os.path.exists(libDir):
 			return False
+
+		# the library might be provided by the package in rpath
+		if rpath is not None and rpath.find('/.self/') != -1:
+			rpathDir = os.path.join(self.package.packagingDir,
+				rpath[rpath.find('/.self/') + len('/.self/'):] + '/' + library)
+			if os.path.exists(rpathDir):
+				return False
 
 		# not provided by the package -- check whether it is required explicitly
 		suffixIndex = library.find('.so')
