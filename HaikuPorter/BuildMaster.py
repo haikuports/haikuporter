@@ -55,6 +55,13 @@ class ScheduledBuild:
 		}
 
 
+class _BuilderState:
+	AVAILABLE = 'Available'
+	LOST = 'Lost'
+	NOT_AVAILABLE = 'Not Available'
+	RECONNECT = 'Reconnecting'
+
+
 class Builder:
 	def __init__(self, configFilePath, packagesPath, outputBaseDir,
 			portsTreeHead):
@@ -72,8 +79,7 @@ class Builder:
 		if not os.path.isdir(self.buildOutputDir):
 			os.makedirs(self.buildOutputDir)
 
-		self.available = False
-		self.lost = False
+		self.state = _BuilderState.NOT_AVAILABLE
 		self.connectionErrors = 0
 		self.maxConnectionErrors = 100
 
@@ -170,11 +176,13 @@ class Builder:
 				+ str(exception))
 
 			self.connectionErrors += 1
+			self.state = _BuilderState.RECONNECT
+
 			if self.connectionErrors >= self.maxConnectionErrors:
 				self.logger.error('giving up on builder after '
 					+ str(self.connectionErrors)
 					+ ' consecutive connection errors')
-				self.lost = True
+				self.state = _BuilderState.LOST
 
 			# avoid DoSing the remote host, increasing delay as retries increase.
 			time.sleep(5 + (1.2 * self.connectionErrors))
@@ -244,9 +252,9 @@ class Builder:
 			raise
 
 	def _setupForBuilding(self):
-		if self.available:
+		if self.state == _BuilderState.AVAILABLE:
 			return True
-		if self.lost:
+		if self.state  == _BuilderState.LOST:
 			return False
 
 		self._connect()
@@ -255,7 +263,7 @@ class Builder:
 		self._createNeededDirs()
 		self._getAvailablePackages()
 
-		self.available = True
+		self.state = _BuilderState.AVAILABLE
 		return True
 
 	def setBuild(self, scheduledBuild, buildNumber):
@@ -320,7 +328,7 @@ class Builder:
 			self.buildLogger.info('command exit status: ' + str(exitStatus))
 
 			if exitStatus < 0 and not channel.get_transport().is_active():
-				self.available = False
+				self.state = _BuilderState.NOT_AVAILABLE
 				raise Exception('builder disconnected')
 
 			if exitStatus != 0:
@@ -342,12 +350,11 @@ class Builder:
 
 		except socket.error as exception:
 			self.buildLogger.error('connection failed: ' + str(exception))
-			self.available = False
+			self.state = _BuilderState.NOT_AVAILABLE
 
 		except (IOError, paramiko.ssh_exception.SSHException) as exception:
 			self.buildLogger.error('builder failed: ' + str(exception))
-			self.available = False
-			self.lost = True
+			self.state = _BuilderState.LOST
 
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
@@ -460,8 +467,7 @@ class Builder:
 	def status(self):
 		return {
 			'name': self.name,
-			'lost': self.lost,
-			'available': self.available,
+			'state': self.state,
 			'availablePackages': self.availablePackages,
 			'connectionErrors': self.connectionErrors,
 			'maxConnectionErrors': self.maxConnectionErrors,
@@ -528,6 +534,7 @@ class MockBuilder:
 class BuildMaster:
 	def __init__(self, packagesPath, portsTreeHead):
 		self.activeBuilders = []
+		self.reconnectingBuilders = []
 		self.lostBuilders = []
 		self.availableBuilders = []
 		self.masterBaseDir = 'buildmaster'
@@ -756,10 +763,15 @@ class BuildMaster:
 				self.completeBuilds if buildSuccess else self.failedBuilds)
 
 		with self.builderCondition:
-			if builder.lost:
+			if builder.state == _BuilderState.LOST:
 				self.logger.error('builder ' + builder.name + ' lost')
 				self.activeBuilders.remove(builder)
 				self.lostBuilders.append(builder)
+			elif builder.state == _BuilderState.RECONNECT:
+				self.logger.error(
+					'builder ' + builder.name + ' is reconnecting')
+				self.activeBuilders.remove(builder)
+				self.reconnectingBuilders.append(builder)
 			else:
 				self.availableBuilders.append(builder)
 
@@ -804,6 +816,8 @@ class BuildMaster:
 			},
 			'builders': {
 				'active': [ builder.status for builder in self.activeBuilders ],
+				'reconnecting':
+					[builder.status for builder in self.reconnectingBuilders],
 				'lost': [ builder.status for builder in self.lostBuilders ]
 			},
 			'nextBuildNumber': self.buildNumber,
