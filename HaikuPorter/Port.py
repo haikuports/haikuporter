@@ -410,7 +410,7 @@ class Port(object):
 		else:
 			lowerc = fullCopyright.lower()
 			if u"copyright" in lowerc or u"(c)" in lowerc or u"©" in lowerc:
-				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
+				sysExit('%s must not contain "COPYRIGHT", "(C)", or a copyright symbol (in %s)'
 					% (key, self.recipeFilePath))
 
 
