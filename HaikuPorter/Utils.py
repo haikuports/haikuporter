@@ -17,13 +17,13 @@ import tarfile
 import zipfile
 
 if sys.stdout.isatty():
-	colorWarning = '\033[1;36m'
-	colorError = '\033[1;35m'
-	colorReset = '\033[1;m'
+	colorWarning = u'\033[1;36m'
+	colorError = u'\033[1;35m'
+	colorReset = u'\033[1;m'
 else:
-	colorWarning= ''
-	colorError = ''
-	colorReset = ''
+	colorWarning= u''
+	colorError = u''
+	colorReset = u''
 
 # -- MyTarInfo -------------------------------------------------------------
 
@@ -60,17 +60,17 @@ haikuporterRepoUrl = 'https://github.com/haikuports/haikuporter.git'
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
-	message = '\n'.join([colorError + 'Error: ' + line + colorReset
+	message = '\n'.join([colorError + u'Error: ' + line + colorReset
 		for line in message.split('\n') ])
-	sys.exit(message)
+	sys.exit(message.encode('utf-8'))
 
 
 def warn(message):
 	"""print a warning"""
 
-	message = '\n'.join([colorWarning + 'Warning: ' + line +colorReset
+	message = '\n'.join([colorWarning + u'Warning: ' + line + colorReset
 		for line in message.split('\n') ])
-	print(message)
+	print(message.encode('utf-8'))
 
 
 def printError(*args):
