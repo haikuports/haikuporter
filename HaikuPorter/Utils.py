@@ -139,11 +139,11 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				if os.path.normpath(name).startswith(subdir)
 			]
 			if not names:
-				sysExit('sub-directory %s not found in archive' % subdir)
+				sysExit(u'sub-directory %s not found in archive' % subdir)
 		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
 	else:
-		sysExit('Unrecognized archive type in file '
+		sysExit(u'Unrecognized archive type in file '
 				+ archiveFile)
 
 def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst = True):
@@ -207,7 +207,7 @@ def ensureCommandIsAvailable(command):
 	"""checks if the given command is available and bails if not"""
 
 	if not isCommandAvailable(command):
-		sysExit("'" + command + "' is not available, please install it")
+		sysExit(u"'" + command + u"' is not available, please install it")
 
 def naturalCompare(left, right):
 	"""performs a natural compare between the two given strings - returns:

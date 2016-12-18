@@ -141,8 +141,8 @@ class Source(object):
 								   + self.fetchTargetName)
 						break
 				else:
-					warn("Stored SOURCE_URI is no longer in recipe, automatic "
-						 "repository update won't work")
+					warn(u"Stored SOURCE_URI is no longer in recipe, automatic "
+						 u"repository update won't work")
 					self.sourceFetcher \
 						= createSourceFetcher(storedUri, self.fetchTarget)
 
@@ -169,14 +169,14 @@ class Source(object):
 				return
 			except Exception as e:
 				if uri != self.uris[-1]:
-					warn(('Unable to fetch source from %s (error: %s), '
-						  + 'trying next location.') % (uri, e))
+					warn((u'Unable to fetch source from %s (error: %s), '
+						  + u'trying next location.') % (uri, e))
 				else:
-					warn(('Unable to fetch source from %s (error: %s)')
+					warn((u'Unable to fetch source from %s (error: %s)')
 						 % (uri, e))
 
 		# failed to fetch source
-		sysExit('Failed to fetch source from all known locations.')
+		sysExit(u'Failed to fetch source from all known locations.')
 
 	def unpack(self, port):
 		"""Unpack the source into the source directory"""
@@ -240,7 +240,7 @@ class Source(object):
 
 		if self.checksum != None:
 			if sha256.hexdigest() != self.checksum:
-				sysExit('Expected SHA-256: ' + self.checksum + '\n'
+				sysExit(u'Expected SHA-256: ' + self.checksum + '\n'
 						+ 'Found SHA-256:	 ' + sha256.hexdigest())
 		else:
 			print '----- CHECKSUM TEMPLATE -----'
@@ -251,9 +251,9 @@ class Source(object):
 
 		if (self.checksum == None):
 			if not Configuration.shallAllowUnsafeSources():
-				sysExit('No checksum found in recipe!')
+				sysExit(u'No checksum found in recipe!')
 			else:
-				warn('No checksum found in recipe!')
+				warn(u'No checksum found in recipe!')
 
 		port.setFlag('validate', self.index)
 
@@ -317,7 +317,7 @@ class Source(object):
 			# Apply patches
 			for patch in self.patches:
 				if not os.path.exists(patch):
-					sysExit('patch file "' + patch + '" not found.')
+					sysExit(u'patch file "' + patch + u'" not found.')
 
 				if getOption('noGitRepo'):
 					print 'Applying patch(set) "%s" ...' % patch
@@ -380,8 +380,8 @@ class Source(object):
 		   during the patch phase"""
 
 		if not os.path.exists(self.sourceDir):
-			sysExit("Can't extract patchset for " + self.sourceDir
-					+ " as the source directory doesn't exist yet")
+			sysExit(u"Can't extract patchset for " + self.sourceDir
+					+ u" as the source directory doesn't exist yet")
 
 		print 'Extracting patchset for ' + self.fetchTargetName
 		needToRebase = True
@@ -415,21 +415,21 @@ class Source(object):
 
 		# warn if there's a correpsonding arch-specific patchset file
 		if os.path.exists(archPatchSetFilePath):
-			warn('arch-specific patchset file %s requires manual update'
+			warn(u'arch-specific patchset file %s requires manual update'
 				 % os.path.basename(archPatchSetFilePath))
 
 		# if there's a corresponding patch file, remove it, as we now have
 		# the patchset
 		patchFilePath = patchSetFilePath[:-3]
 		if os.path.exists(patchFilePath):
-			warn('removing obsolete patch file '
+			warn(u'removing obsolete patch file '
 				 + os.path.basename(patchFilePath))
 			os.remove(patchFilePath)
 		# if there's a corresponding diff file, remove it, as we now have
 		# the patchset
 		diffFilePath = patchFilePath[:-6] + '.diff'
 		if os.path.exists(diffFilePath):
-			warn('removing obsolete diff file '
+			warn(u'removing obsolete diff file '
 				 + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 

@@ -221,6 +221,6 @@ class DependencyResolver(object):
 			packageInfo = PackageInfo(packageInfoFile)
 			DependencyResolver.packageInfoCache[packageInfoFile] = packageInfo
 		except CalledProcessError:
-			sysExit('failed to parse "%s"' % packageInfoFile)
+			sysExit(u'failed to parse "%s"' % packageInfoFile)
 
 		return packageInfo

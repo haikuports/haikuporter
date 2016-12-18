@@ -167,7 +167,7 @@ class DependencyAnalyzer(object):
 					nodes.remove(node)
 					node.markAsBuilt(doneRepositoryPath)
 			if lastDoneCount == len(done):
-				sysExit("None of these cyclic dependencies can be built:\n\t"
+				sysExit(u"None of these cyclic dependencies can be built:\n\t"
 						+ "\n\t".join(sorted(map(lambda node: node.name,
 												 nodes))))
 
@@ -394,5 +394,5 @@ class DependencyAnalyzer(object):
 		self._getPortNode(portID)
 
 		if not packageID in self.packageNodes:
-			sysExit('package "%s" doesn\'t seem to exist' % packageID)
+			sysExit(u'package "%s" doesn\'t seem to exist' % packageID)
 		return self.packageNodes[packageID]

@@ -106,7 +106,7 @@ class Package(object):
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
 		else:
-			sysExit('package %s cannot be built for architecture %s'
+			sysExit(u'package %s cannot be built for architecture %s'
 					% (self.versionedName, port.targetArchitecture))
 
 		self.fullVersionedName = self.versionedName + '-' + self.architecture
@@ -575,7 +575,7 @@ class SourcePackage(Package):
 					= check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
 								   cwd=Configuration.getTreePath(), stderr=STDOUT)
 			except:
-				warn('unable to determine revision of haikuports tree')
+				warn(u'unable to determine revision of haikuports tree')
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
 			readmeFile.write((
 				'These are the sources (and optionally patches) that were\n'

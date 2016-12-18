@@ -587,7 +587,7 @@ class BuildMaster:
 			self.activeBuilders.append(builder)
 
 		if len(self.activeBuilders) == 0:
-			sysExit('no builders available')
+			sysExit(u'no builders available')
 
 		self.availableBuilders += self.activeBuilders
 
@@ -674,7 +674,7 @@ class BuildMaster:
 			with self.builderCondition:
 				if len(self.activeBuilders) == 0:
 					self._setBuildStatus('all builders lost')
-					sysExit('all builders lost')
+					sysExit(u'all builders lost')
 
 				if len(self.availableBuilders) == 0:
 					self._setBuildStatus('waiting for available builders')

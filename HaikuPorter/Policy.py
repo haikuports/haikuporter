@@ -83,7 +83,7 @@ class Policy(object):
 		self._checkPostInstallScripts()
 
 		if self.strict and self.violationEncountered:
-			sysExit("packaging policy violation(s) in strict mode")
+			sysExit(u"packaging policy violation(s) in strict mode")
 
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir('.'):

@@ -360,8 +360,8 @@ class Configuration(object):
 					haikuportsConf = '/system/settings/haikuports.conf'
 
 		if not os.path.exists(haikuportsConf):
-			sysExit("Unable to find haikuports.conf in known search paths.\n"
-				+ "See haikuports-sample.conf for more information");
+			sysExit(u"Unable to find haikuports.conf in known search paths.\n"
+				+ u"See haikuports-sample.conf for more information");
 
 		configParser = ConfigParser(haikuportsConf, haikuportsAttributes)
 		configurationValue = configParser.getEntriesForExtension('')
@@ -376,7 +376,7 @@ class Configuration(object):
 
 			if key not in configurationValue:
 				if haikuportsAttributes[key]['required']:
-					sysExit("Required value '" + key + "' not present in "
+					sysExit(u"Required value '" + key + u"' not present in "
 							+ haikuportsConf)
 
 				# set default value, as no other value has been provided
@@ -394,13 +394,13 @@ class Configuration(object):
 		# determine if we are using a cross-build repository
 		self.isCrossBuildRepository = os.path.exists(self.treePath + '/.cross')
 		if self.isCrossBuildRepository and not self.targetArchitecture:
-			sysExit('For a cross-build repository, TARGET_ARCHITECTURE '
-				'needs to be set in ' + haikuportsConf)
+			sysExit(u'For a cross-build repository, TARGET_ARCHITECTURE '
+				u'needs to be set in ' + haikuportsConf)
 
 		# split packager into name and email:
 		m = re.match('^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', self.packager)
 		if not m:
-			sysExit("Couldn't parse name/email from PACKAGER value "
+			sysExit(u"Couldn't parse name/email from PACKAGER value "
 					+ self.packager)
 		self.packagerName = m.group('name')
 		self.packagerEmail = m.group('email')
@@ -410,8 +410,8 @@ class Configuration(object):
 			crossTools = configurationValue.get('SECONDARY_CROSS_TOOLS')
 			if crossTools:
 				if len(crossTools) != len(self.secondaryArchitectures):
-					sysExit('A cross-tools directory must be specified for '
-						'each secondary architecture')
+					sysExit(u'A cross-tools directory must be specified for '
+						u'each secondary architecture')
 				for architecture, tools \
 						in zip(self.secondaryArchitectures, crossTools):
 					self.secondaryCrossTools[architecture] = tools
@@ -420,8 +420,8 @@ class Configuration(object):
 				crossDevelPackages = self.secondaryCrossDevelPackages
 				self.secondaryCrossDevelPackages = {}
 				if len(crossDevelPackages) != len(self.secondaryArchitectures):
-					sysExit('A cross-tools devel pacakge must be specified for '
-						'each secondary architecture')
+					sysExit(u'A cross-tools devel pacakge must be specified for '
+						u'each secondary architecture')
 				for architecture, package \
 						in zip(self.secondaryArchitectures, crossDevelPackages):
 					self.secondaryCrossDevelPackages[architecture] = package

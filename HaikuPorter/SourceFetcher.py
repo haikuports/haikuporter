@@ -31,7 +31,7 @@ def parseCheckoutUri(uri):
 	# If it doesn't find the 'type' it should extract 'real_uri' and 'rev'
 	m = re.match('^((?P<type>\w*)\+)?(?P<realUri>.+?)(#(?P<rev>.+))?$', uri)
 	if not m or not m.group('realUri'):
-		sysExit("Couldn't parse repository URI " + uri)
+		sysExit(u"Couldn't parse repository URI " + uri)
 
 	uriType = m.group('type')
 	realUri = m.group('realUri')
@@ -44,7 +44,7 @@ def parseCheckoutUri(uri):
 			uriType = m.group(1)
 
 	if not uriType:
-		sysExit("Couldn't parse repository type from URI " + realUri)
+		sysExit(u"Couldn't parse repository type from URI " + realUri)
 
 	return (uriType, realUri, rev)
 
@@ -113,8 +113,8 @@ class SourceFetcherForBazaar(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('bzr')
 		command = 'bzr checkout --lightweight'
@@ -124,8 +124,8 @@ class SourceFetcherForBazaar(object):
 		check_call(command, shell=True)
 
 	def updateToRev(self, rev):
-		warn("Updating of a Bazaar repository to a specific revision has "
-			 "not been implemented yet, sorry")
+		warn(u"Updating of a Bazaar repository to a specific revision has "
+			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
@@ -145,8 +145,8 @@ class SourceFetcherForCvs(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		baseDir = os.path.dirname(self.fetchTarget)
 
@@ -164,8 +164,8 @@ class SourceFetcherForCvs(object):
 		check_call(command, shell=True, cwd=baseDir)
 
 	def updateToRev(self, rev):
-		warn("Updating of a CVS repository to a specific revision has "
-			 "not been implemented yet, sorry")
+		warn(u"Updating of a CVS repository to a specific revision has "
+			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
@@ -210,8 +210,8 @@ class SourceFetcherForFossil(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('fossil')
 		fossilDir = self.fetchTarget + '.fossil'
@@ -224,8 +224,8 @@ class SourceFetcherForFossil(object):
 		check_call(command, shell=True)
 
 	def updateToRev(self, rev):
-		warn("Updating of a Fossil repository to a specific revision has "
-			 "not been implemented yet, sorry")
+		warn(u"Updating of a Fossil repository to a specific revision has "
+			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
@@ -244,8 +244,8 @@ class SourceFetcherForGit(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
@@ -318,8 +318,8 @@ class SourceFetcherForMercurial(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('hg')
 		command = 'hg clone'
@@ -329,8 +329,8 @@ class SourceFetcherForMercurial(object):
 		check_call(command, shell=True)
 
 	def updateToRev(self, rev):
-		warn("Updating of a Mercurial repository to a specific revision has "
-			 "not been implemented yet, sorry")
+		warn(u"Updating of a Mercurial repository to a specific revision has "
+			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
@@ -391,8 +391,8 @@ class SourceFetcherForSubversion(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'
@@ -402,8 +402,8 @@ class SourceFetcherForSubversion(object):
 		check_call(command, shell=True)
 
 	def updateToRev(self, rev):
-		warn("Updating of a Subversion repository to a specific revision has "
-			 "not been implemented yet, sorry")
+		warn(u"Updating of a Subversion repository to a specific revision has "
+			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
@@ -436,4 +436,4 @@ def createSourceFetcher(uri, fetchTarget):
 	elif ':' not in lowerUri:
 		return SourceFetcherForLocalFile(uri, fetchTarget)
 	else:
-		sysExit('The protocol of SOURCE_URI %s is unsupported, sorry.' % uri)
+		sysExit(u'The protocol of SOURCE_URI %s is unsupported, sorry.' % uri)

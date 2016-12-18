@@ -222,7 +222,7 @@ class Port(object):
 
 		## REFACTOR this into a separate method
 		if not os.path.exists(self.recipeFilePath):
-			sysExit(self.name + ' version ' + self.version + ' not found.')
+			sysExit(self.name + u' version ' + self.version + u' not found.')
 
 		# copy the recipe file and prepare it for use
 		if not os.path.exists(os.path.dirname(self.preparedRecipeFile)):
@@ -247,7 +247,7 @@ class Port(object):
 		extensions = recipeConfig.extensions
 
 		if '' not in extensions:
-			sysExit('No base package defined in (in %s)' % self.recipeFilePath)
+			sysExit(u'No base package defined in (in %s)' % self.recipeFilePath)
 
 		recipeKeysByExtension = {}
 
@@ -289,7 +289,7 @@ class Port(object):
 				if key not in entries:
 					# complain about missing required values
 					if recipeAttributes[baseKey]['required']:
-						sysExit("No %s found (in %s)"
+						sysExit(u"No %s found (in %s)"
 								% (key, self.recipeFilePath))
 
 					# set default value, as no other value has been provided
@@ -331,8 +331,8 @@ class Port(object):
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
 						and not patchFileName in allPatches):
 						if showWarnings:
-							warn('Patch file %s is not referenced in '
-								 'PATCHES, so it will not be used'
+							warn(u'Patch file %s is not referenced in '
+								 u'PATCHES, so it will not be used'
 								 % patchFileName)
 
 		return recipeKeysByExtension, recipeConfig.definedPhases
@@ -342,34 +342,34 @@ class Port(object):
 		# The summary must be a single line of text, preferably not
 		# exceeding 70 characters in length
 		if key not in entries or not entries[key]:
-			sysExit('No %s found (in %s)'
+			sysExit(u'No %s found (in %s)'
 				% (key, self.recipeFilePath))
 		if '\n' in entries[key]:
-			sysExit('%s must be a single line of text (%s).'
+			sysExit(u'%s must be a single line of text (%s).'
 					% (key, self.recipeFilePath))
 		if entries[key].lower().startswith(self.name):
-			sysExit('%s cannot start with the name of the port (%s).'
+			sysExit(u'%s cannot start with the name of the port (%s).'
 					% (key, self.recipeFilePath))
 		if entries[key][0].islower():
-			sysExit('%s must start with a capital letter (%s).'
+			sysExit(u'%s must start with a capital letter (%s).'
 					% (key, self.recipeFilePath))
 		if entries[key].endswith('.'):
-			sysExit('%s cannot end in "." (%s).'
+			sysExit(u'%s cannot end in "." (%s).'
 					% (key, self.recipeFilePath))
 		if entries[key].count(' ') < 2:
-			sysExit('%s must have at least 3 words (%s).'
+			sysExit(u'%s must have at least 3 words (%s).'
 					% (key, self.recipeFilePath))
 		if len(entries[key]) > 80:
-			sysExit('%s exceeds 80 chars (in %s)'
+			sysExit(u'%s exceeds 80 chars (in %s)'
 				 % (key, self.recipeFilePath))
 
 	def _validateDESCRIPTION(self, key, entries, showWarnings):
 		"""Validates the 'DESCRIPTION' of the port."""
 		if key not in entries or not entries[key]:
-			sysExit('No %s found (in %s)'
+			sysExit(u'No %s found (in %s)'
 				% (key, self.recipeFilePath))
 		if 'SUMMARY' in entries and ''.join(entries[key]) == entries['SUMMARY']:
-			sysExit('%s cannot be the same as SUMMARY (in %s)'
+			sysExit(u'%s cannot be the same as SUMMARY (in %s)'
 				% (key, self.recipeFilePath))
 
 	def _validateLICENSE(self, key, entries, showWarnings):
@@ -389,30 +389,29 @@ class Port(object):
 						fileList.append(filename)
 				if item not in fileList:
 					haikuLicenseList.sort()
-					sysExit('No match found for license ' + item
-							+ '\nValid license filenames included '
-							+ 'with Haiku are:\n'
-							+ ', '.join(haikuLicenseList)
-							+ '\n(in %s)' % (self.recipeFilePath))
+					sysExit(u'No match found for license ' + item
+							+ u'\nValid license filenames included '
+							+ u'with Haiku are:\n'
+							+ u', '.join(haikuLicenseList)
+							+ u'\n(in %s)' % (self.recipeFilePath))
 		else:
-			sysExit('No %s found (in %s)' % (key, self.recipeFilePath))
+			sysExit(u'No %s found (in %s)' % (key, self.recipeFilePath))
 
 	def _validateCOPYRIGHT(self, key, entries, showWarnings):
 		"""Validates the 'COPYRIGHT' of the port."""
 		# Collect all referenced patches into a single list
 		fullCopyright = '\n'.join(entries[key])
 		if key not in entries or not entries[key]:
-			sysExit('No %s found (in %s)'
+			sysExit(u'No %s found (in %s)'
 				% (key, self.recipeFilePath))
 		elif "@" in fullCopyright:
-			sysExit('%s must not contain e-mail addresses (in %s)'
+			sysExit(u'%s must not contain e-mail addresses (in %s)'
 				% (key, self.recipeFilePath))
 		else:
 			lowerc = fullCopyright.lower()
 			if u"copyright" in lowerc or u"(c)" in lowerc or u"©" in lowerc:
-				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
+				sysExit(u'%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
 					% (key, self.recipeFilePath))
-
 
 	def printDescription(self):
 		"""Show port description"""
@@ -560,7 +559,7 @@ class Port(object):
 		except SystemExit:
 			return
 
-		warn("port %s doesn't seem to be required by %s"
+		warn(u"port %s doesn't seem to be required by %s"
 			 % (requiredPort.versionedName, self.versionedName))
 
 	def getDependencyInfoFiles(self, repositoryPath):
@@ -762,7 +761,7 @@ class Port(object):
 					chrootSetup.buildOk = True
 
 				def failureFunction():
-					sysExit('Build has failed - stopping.')
+					sysExit(u'Build has failed - stopping.')
 
 				return {
 					'task': taskFunction,
@@ -814,8 +813,8 @@ class Port(object):
 							or Configuration.isCrossBuildRepository()
 							or getOption('createSourcePackagesForBootstrap')
 							or getOption('createSourcePackages')):
-						warn('not grabbing ' + package.hpkgName
-							 + ', as it has not been built in a chroot.')
+						warn(u'not grabbing ' + package.hpkgName
+							 + u', as it has not been built in a chroot.')
 						continue
 					targetPackageFile \
 						= hpkgStoragePath + '/' + package.hpkgName
@@ -831,7 +830,7 @@ class Port(object):
 		"""Test the port"""
 
 		if not buildPlatform.isHaiku:
-			sysExit("Sorry, can't execute a test unless running on Haiku")
+			sysExit(u"Sorry, can't execute a test unless running on Haiku")
 
 		self.parseRecipeFileIfNeeded()
 
@@ -856,7 +855,7 @@ class Port(object):
 				self._executeTest()
 
 			def failureFunction():
-				sysExit('Test has failed - stopping.')
+				sysExit(u'Test has failed - stopping.')
 
 			return {
 				'task': taskFunction,
@@ -1214,7 +1213,7 @@ class Port(object):
 				if childStatus != 0:
 					if 'failure' in chrootFunctions:
 						chrootFunctions['failure']()
-					sysExit('chroot-task failed')
+					sysExit(u'chroot-task failed')
 				if 'success' in chrootFunctions:
 					chrootFunctions['success']()
 		except KeyboardInterrupt:
@@ -1226,7 +1225,7 @@ class Port(object):
 				except:
 					pass
 				print '*** child stopped'
-				sysExit('Interrupted.')
+				sysExit(u'Interrupted.')
 
 	def _getPackagesNeededForScriptlets(self, packagesPath):
 		"""Determine the set of packages that must be linked into
@@ -1512,9 +1511,9 @@ class Port(object):
 													 requiresTypes,
 													 repositories, **kwargs)
 		except (CalledProcessError, LookupError):
-			sysExit(('unable to resolve %s for %s\n'
-					 + '\tdependency-infos:\n\t\t%s\n'
-					 + '\trepositories:\n\t\t%s\n')
+			sysExit((u'unable to resolve %s for %s\n'
+					 + u'\tdependency-infos:\n\t\t%s\n'
+					 + u'\trepositories:\n\t\t%s\n')
 					% (description, self.versionedName,
 					   '\n\t\t'.join(dependencyInfoFiles),
 					   repositories))

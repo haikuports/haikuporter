@@ -38,7 +38,7 @@ class RequiresUpdater(object):
 		try:
 			packageInfo = PackageInfo(package)
 		except CalledProcessError:
-			sysExit('failed to get provides for package "%s"' % package)
+			sysExit(u'failed to get provides for package "%s"' % package)
 
 		self._providesManager.addProvidesFromPackageInfo(packageInfo)
 
@@ -75,8 +75,8 @@ class RequiresUpdater(object):
 		matchingProvides = self.getMatchingProvides(resolvableExpression)
 		if not matchingProvides:
 			if self.getMatchingProvides(ResolvableExpression(name)):
-				sysExit('found provides for "%s", but none matching the '
-					'version requirement' % requires)
+				sysExit(u'found provides for "%s", but none matching the '
+					u'version requirement' % requires)
 			return requires
 
 		if not matchingProvides.version:

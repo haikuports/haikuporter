@@ -49,9 +49,9 @@ class Repository(object):
 		# check repository format
 		formatVersion = self._readFormatVersion()
 		if formatVersion > Repository.currentFormatVersion:
-			sysExit('The version of the repository format used in\n\t%s'
-					'\nis newer than the one supported by haikuporter.\n'
-					'Please upgrade haikuporter.' % self.path)
+			sysExit(u'The version of the repository format used in\n\t%s'
+					u'\nis newer than the one supported by haikuporter.\n'
+					u'Please upgrade haikuporter.' % self.path)
 
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
@@ -64,10 +64,10 @@ class Repository(object):
 				self._updateRepository()
 		else:
 			if getOption('noRepositoryUpdate'):
-				sysExit('no or outdated repository found but no update allowed')
+				sysExit(u'no or outdated repository found but no update allowed')
 			if formatVersion < Repository.currentFormatVersion:
-				warn('Found old repository format - repopulating the '
-					 'repository ...')
+				warn(u'Found old repository format - repopulating the '
+					 u'repository ...')
 			self._populateRepository(preserveFlags)
 			self._writeFormatVersion()
 		self._writePortForPackageMaps()
@@ -118,7 +118,7 @@ class Repository(object):
 			port = self._allPorts[portID]
 			if port.hasBrokenRecipe:
 				if warnAboutSkippedVersions:
-					warn('skipping %s, as the recipe is broken' % portID)
+					warn(u'skipping %s, as the recipe is broken' % portID)
 					try:
 						port.parseRecipeFileRaisingExceptions(True)
 					except SystemExit as e:
@@ -127,7 +127,7 @@ class Repository(object):
 			if not port.isBuildableOnTargetArchitecture:
 				if warnAboutSkippedVersions:
 					status = port.statusOnTargetArchitecture
-					warn(('skipping %s, as it is %s on the target '
+					warn((u'skipping %s, as it is %s on the target '
 						  + 'architecture.') % (portID, status))
 				continue
 			return version
@@ -247,11 +247,11 @@ class Repository(object):
 							if not self.quiet and not getOption('doBootstrap'):
 								otherPort = self._allPorts[versionedName]
 								if otherPort.category == '<source-package>':
-									warn('%s/%s	 is overruled by input source '
-										 'package' % (category, versionedName))
+									warn(u'%s/%s	 is overruled by input source '
+										 u'package' % (category, versionedName))
 								else:
-									warn('%s/%s	 is overruled by duplicate in '
-										  '%s - please remove one of them'
+									warn(u'%s/%s	 is overruled by duplicate in '
+										  u'%s - please remove one of them'
 										  % (category, versionedName,
 											 otherPort.category))
 							continue

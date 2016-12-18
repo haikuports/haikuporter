@@ -81,7 +81,7 @@ class PackageInfo(object):
 		elif path.endswith('.DependencyInfo'):
 			self._parseFromDependencyInfoFile()
 		else:
-			sysExit("don't know how to extract package-info from " + path)
+			sysExit(u"don't know how to extract package-info from " + path)
 
 	@property
 	def versionedName(self):
@@ -149,7 +149,7 @@ class PackageInfo(object):
 	def _extractField(self, output, fieldName):
 		result = self._extractOptionalField(output, fieldName)
 		if not result:
-			sysExit('Failed to get %s of package "%s"' % (fieldName, self.path))
+			sysExit(u'Failed to get %s of package "%s"' % (fieldName, self.path))
 		return result
 
 	def _extractOptionalField(self, output, fieldName):
