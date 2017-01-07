@@ -185,8 +185,12 @@ class Source(object):
 
 		# Check to see if the source was already unpacked.
 		if port.checkFlag('unpack', self.index) and not getOption('force'):
-			info ('Skipping unpack of ' + self.fetchTargetName)
-			return
+			if not os.path.exists(self.sourceBaseDir):
+				warn(u'Source dir has changed or been removed, unpacking in new dir')
+				port.unsetFlag('unpack', self.index)
+			else:
+				info ('Skipping unpack of ' + self.fetchTargetName)
+				return
 
 		# re-create source directory
 		if os.path.exists(self.sourceBaseDir):
