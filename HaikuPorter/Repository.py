@@ -5,6 +5,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from .BuildPlatform import buildPlatform
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
@@ -31,7 +32,7 @@ class Repository(object):
 			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
-		self.path = self.outputDirectory + '/repository'
+		self.path = self.outputDirectory + '/repository-' + buildPlatform.targetArchitecture
 		self.inputSourcePackagesPath \
 			= self.outputDirectory + '/input-source-packages'
 		self.packagesPath = packagesPath
