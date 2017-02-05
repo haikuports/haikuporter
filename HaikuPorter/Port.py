@@ -113,14 +113,14 @@ class Port(object):
 
 		if secondaryArchitecture:
 			self.workDir = (outputDir + '/work-'
-				+ self.version + '-'
+				+ self.version + '/'
 				+ buildPlatform.targetArchitecture + '-'
 				+ secondaryArchitecture
 			)
 			self.effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
 			self.workDir = (outputDir + '/work-'
-				+ self.version + '-'
+				+ self.version + '/'
 				+ buildPlatform.targetArchitecture
 			)
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
