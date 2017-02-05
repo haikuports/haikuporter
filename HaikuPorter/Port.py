@@ -112,11 +112,17 @@ class Port(object):
 		self.filter = None
 
 		if secondaryArchitecture:
-			self.workDir = (outputDir + '/work-' + secondaryArchitecture
-							+ '-' + self.version)
+			self.workDir = (outputDir + '/work-'
+				+ self.version + '-'
+				+ buildPlatform.targetArchitecture + '-'
+				+ secondaryArchitecture
+			)
 			self.effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
-			self.workDir = outputDir + '/work-' + self.version
+			self.workDir = (outputDir + '/work-'
+				+ self.version + '-'
+				+ buildPlatform.targetArchitecture
+			)
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
 
 		recipeCacheDir = os.path.join(self.repositoryDir, 'recipeCache')
