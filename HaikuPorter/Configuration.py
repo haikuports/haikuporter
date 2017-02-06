@@ -251,6 +251,8 @@ class Configuration(object):
 			self.outputDirectory = self.treePath
 		if not self.packagesPath:
 			self.packagesPath = os.path.join(self.outputDirectory, 'packages')
+		if not self.repositoryDirectory:
+			self.repositoryDirectory = os.path.join(self.outputDirectory, 'repository')
 
 	@staticmethod
 	def init():

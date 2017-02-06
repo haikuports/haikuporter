@@ -33,12 +33,7 @@ class Repository(object):
 			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
-		if repositoryDirectory:
-			self.path = repositoryDirectory
-		else:
-			self.path = os.path.join(self.outputDirectory,
-				'repository-'
-				+ buildPlatform.targetArchitecture)
+		self.path = repositoryDirectory
 		self.inputSourcePackagesPath \
 			= self.outputDirectory + '/input-source-packages'
 		self.packagesPath = packagesPath
