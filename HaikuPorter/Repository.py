@@ -28,11 +28,17 @@ class Repository(object):
 
 	currentFormatVersion = 1
 
-	def __init__(self, treePath, outputDirectory, packagesPath, shellVariables,
+	def __init__(self, treePath, outputDirectory, repositoryDirectory,
+			packagesPath, shellVariables,
 			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
-		self.path = self.outputDirectory + '/repository-' + buildPlatform.targetArchitecture
+		if repositoryDirectory:
+			self.path = repositoryDirectory
+		else:
+			self.path = os.path.join(self.outputDirectory,
+				'repository-'
+				+ buildPlatform.targetArchitecture)
 		self.inputSourcePackagesPath \
 			= self.outputDirectory + '/input-source-packages'
 		self.packagesPath = packagesPath

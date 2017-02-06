@@ -138,6 +138,14 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'packager',
 	},
+	'REPOSITORY_DIRECTORY': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'repositoryDirectory',
+	},
 	'SECONDARY_CROSS_DEVEL_PACKAGES': {
 		'type': types.ListType,
 		'required': False,
@@ -232,6 +240,7 @@ class Configuration(object):
 		self.crossDevelPackage = None
 		self.secondaryCrossDevelPackages = None
 		self.outputDirectory = None
+		self.repositoryDirectory = None
 		self.vendor = None
 		self.packagesPath = None
 		self.sourceforgeMirror = None
@@ -327,6 +336,10 @@ class Configuration(object):
 	@staticmethod
 	def getOutputDirectory():
 		return Configuration.configuration.outputDirectory
+
+	@staticmethod
+	def getRepositoryDirectory():
+		return Configuration.configuration.repositoryDirectory
 
 	@staticmethod
 	def getPackagesPath():
