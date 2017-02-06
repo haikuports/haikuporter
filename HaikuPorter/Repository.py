@@ -28,12 +28,12 @@ class Repository(object):
 
 	currentFormatVersion = 1
 
-	def __init__(self, treePath, outputDirectory, repositoryDirectory,
+	def __init__(self, treePath, outputDirectory, repositoryPath,
 			packagesPath, shellVariables,
 			policy, preserveFlags, quiet = False, verbose = False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
-		self.path = repositoryDirectory
+		self.path = repositoryPath
 		self.inputSourcePackagesPath \
 			= self.outputDirectory + '/input-source-packages'
 		self.packagesPath = packagesPath

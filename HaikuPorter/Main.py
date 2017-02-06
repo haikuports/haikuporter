@@ -59,7 +59,7 @@ class Main(object):
 		self.treePath = Configuration.getTreePath()
 		self.outputDirectory = Configuration.getOutputDirectory()
 		self.packagesPath = Configuration.getPackagesPath()
-		self.repositoryDirectory = Configuration.getRepositoryDirectory()
+		self.repositoryPath = Configuration.getRepositoryPath()
 
 		# create path where built packages will be collected
 		if not os.path.exists(self.packagesPath):
@@ -703,7 +703,7 @@ class Main(object):
 		if self.repository:
 			return
 		self.repository = Repository(self.treePath,
-			self.outputDirectory, self.repositoryDirectory,
+			self.outputDirectory, self.repositoryPath,
 			self.packagesPath, self.shellVariables, self.policy,
 			self.options.preserveFlags, quiet, verbose)
 

@@ -138,13 +138,13 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'packager',
 	},
-	'REPOSITORY_DIRECTORY': {
+	'REPOSITORY_PATH': {
 		'type': types.StringType,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
 		'indexable': False,
-		'setAttribute': 'repositoryDirectory',
+		'setAttribute': 'repositoryPath',
 	},
 	'SECONDARY_CROSS_DEVEL_PACKAGES': {
 		'type': types.ListType,
@@ -240,7 +240,7 @@ class Configuration(object):
 		self.crossDevelPackage = None
 		self.secondaryCrossDevelPackages = None
 		self.outputDirectory = None
-		self.repositoryDirectory = None
+		self.repositoryPath = None
 		self.vendor = None
 		self.packagesPath = None
 		self.sourceforgeMirror = None
@@ -251,8 +251,8 @@ class Configuration(object):
 			self.outputDirectory = self.treePath
 		if not self.packagesPath:
 			self.packagesPath = os.path.join(self.outputDirectory, 'packages')
-		if not self.repositoryDirectory:
-			self.repositoryDirectory = os.path.join(self.outputDirectory, 'repository')
+		if not self.repositoryPath:
+			self.repositoryPath = os.path.join(self.outputDirectory, 'repository')
 
 	@staticmethod
 	def init():
@@ -340,8 +340,8 @@ class Configuration(object):
 		return Configuration.configuration.outputDirectory
 
 	@staticmethod
-	def getRepositoryDirectory():
-		return Configuration.configuration.repositoryDirectory
+	def getRepositoryPath():
+		return Configuration.configuration.repositoryPath
 
 	@staticmethod
 	def getPackagesPath():
