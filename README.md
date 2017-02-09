@@ -14,7 +14,7 @@ A single machine installation is for building individual packages.
 
 HaikuPorts installation can be done via the following command sequence:
  - `git clone https://github.com/haikuports/haikuporter.git`
- - `git clone https://github.com/haikuports/haikuports.git`
+ - `git clone https://github.com/haikuports/haikuports.git --depth=10`
  - `cd haikuporter`
  - `cp haikuports-sample.conf /boot/home/config/settings/haikuports.conf # Copy the config file`
  - `lpe ~/config/settings/haikuports.conf # and edit it`
@@ -33,7 +33,7 @@ A multi-node cluster is for mass building large numbers of packages.
  - `git clone https://git.haiku-os.org/haiku`
  - `mkdir haiku/generated.tools`
  - `cd haiku/generated.tools`
- - `../configure --build-cross-tools x86 ../../buildtools -j4`
+ - `../configure --host-only`
  - `jam -q \<build\>package`
  - `sudo cp objects/linux/lib/* /usr/local/lib/`
  - `sudo cp objects/linux/x*/release/tools/package/package /usr/local/bin/`
