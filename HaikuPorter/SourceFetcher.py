@@ -114,7 +114,8 @@ class SourceFetcherForBazaar(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('bzr')
 		command = 'bzr checkout --lightweight'
@@ -146,7 +147,8 @@ class SourceFetcherForCvs(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		baseDir = os.path.dirname(self.fetchTarget)
 
@@ -216,7 +218,8 @@ class SourceFetcherForFossil(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('fossil')
 		fossilDir = self.fetchTarget + '.fossil'
@@ -250,7 +253,8 @@ class SourceFetcherForGit(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
@@ -328,7 +332,8 @@ class SourceFetcherForMercurial(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('hg')
 		command = 'hg clone'
@@ -403,7 +408,8 @@ class SourceFetcherForSubversion(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled!')
+			sysExit(u'Downloading from unsafe sources is disabled in ' +
+					u'haikuports.conf!')
 
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'
