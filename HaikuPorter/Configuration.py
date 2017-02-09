@@ -292,7 +292,7 @@ class Configuration(object):
 
 	@staticmethod
 	def shallAllowUnsafeSources():
-		return Configuration.configuration.allowUnsafeSources
+		return False
 
 	@staticmethod
 	def shallDownloadInPortDirectory():

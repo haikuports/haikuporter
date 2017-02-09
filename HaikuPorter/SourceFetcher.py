@@ -114,8 +114,7 @@ class SourceFetcherForBazaar(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled!')
 
 		ensureCommandIsAvailable('bzr')
 		command = 'bzr checkout --lightweight'
@@ -147,8 +146,7 @@ class SourceFetcherForCvs(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled!')
 
 		baseDir = os.path.dirname(self.fetchTarget)
 
@@ -218,8 +216,7 @@ class SourceFetcherForFossil(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled!')
 
 		ensureCommandIsAvailable('fossil')
 		fossilDir = self.fetchTarget + '.fossil'
@@ -253,8 +250,7 @@ class SourceFetcherForGit(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled!')
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
@@ -332,8 +328,7 @@ class SourceFetcherForMercurial(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled!')
 
 		ensureCommandIsAvailable('hg')
 		command = 'hg clone'
@@ -408,8 +403,7 @@ class SourceFetcherForSubversion(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit(u'Downloading from unsafe sources is disabled!')
 
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'
