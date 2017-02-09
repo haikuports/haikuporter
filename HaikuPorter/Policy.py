@@ -158,8 +158,8 @@ class Policy(object):
 		if not isCommandAvailable('readelf'):
 			return
 
-		# check all files in bin/ and lib[/<arch>]
-		for directory in ['bin', 'lib' + self.secondaryArchSubDir]:
+		# check all files in bin/, apps/ and lib[/<arch>]
+		for directory in ['bin', 'apps', 'lib' + self.secondaryArchSubDir]:
 			dir = os.path.join(self.package.packagingDir, directory)
 			if not os.path.exists(dir):
 				continue
@@ -168,6 +168,11 @@ class Policy(object):
 				path = os.path.join(dir, entry)
 				if os.path.isfile(path):
 					self._checkLibraryDependenciesOfFile(path)
+				elif directory != "bin" and os.path.isdir(path):
+					for entry2 in os.listdir(path):
+						path2 = os.path.join(path, entry2)
+						if os.path.isfile(path2) and os.access(path2, os.X_OK):
+							self._checkLibraryDependenciesOfFile(path2)
 
 	def _checkLibraryDependenciesOfFile(self, path):
 		# skip static libraries outright
