@@ -117,6 +117,9 @@ class SourceFetcherForBazaar(object):
 			sysExit(u'Downloading from unsafe sources is disabled in ' +
 					u'haikuports.conf!')
 
+		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
+		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
+
 		ensureCommandIsAvailable('bzr')
 		command = 'bzr checkout --lightweight'
 		if self.rev:
@@ -149,6 +152,9 @@ class SourceFetcherForCvs(object):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit(u'Downloading from unsafe sources is disabled in ' +
 					u'haikuports.conf!')
+
+		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
+		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
 
 		baseDir = os.path.dirname(self.fetchTarget)
 
@@ -221,6 +227,9 @@ class SourceFetcherForFossil(object):
 			sysExit(u'Downloading from unsafe sources is disabled in ' +
 					u'haikuports.conf!')
 
+		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
+		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
+
 		ensureCommandIsAvailable('fossil')
 		fossilDir = self.fetchTarget + '.fossil'
 		if os.path.exists(fossilDir):
@@ -255,6 +264,9 @@ class SourceFetcherForGit(object):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit(u'Downloading from unsafe sources is disabled in ' +
 					u'haikuports.conf!')
+
+		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
+		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
@@ -335,6 +347,8 @@ class SourceFetcherForMercurial(object):
 			sysExit(u'Downloading from unsafe sources is disabled in ' +
 					u'haikuports.conf!')
 
+		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
+		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
 		ensureCommandIsAvailable('hg')
 		command = 'hg clone'
 		if self.rev:
