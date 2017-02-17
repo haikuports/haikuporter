@@ -18,7 +18,7 @@ from subprocess import check_output
 my_location = os.path.dirname(os.path.realpath(__file__))
 
 parser = argparse.ArgumentParser(description='Define a new package buildslave')
-parser.add_argument('-n', '--name', help='Builer name', required=True)
+parser.add_argument('-n', '--name', help='Builder name', required=True)
 parser.add_argument('-H', '--host', help='Builder ssh host', required=True)
 parser.add_argument('-p', '--port', help='Builder ssh port', required=False, default="22")
 parser.add_argument('-u', '--user', help='Builder ssh user', required=False, default="user")
