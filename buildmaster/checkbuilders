@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser(description='List and test connections to build
 parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/builders")
 args = parser.parse_args()
 
-print color.HEADER + "Name                + Host                + Status" + color.ENDC
+print color.HEADER + "Name              + Host                        + Status" + color.ENDC
 for filename in os.listdir(args.confdir):
 	fullpath = os.path.join(args.confdir, filename)
 	basename = os.path.basename(fullpath)
@@ -39,9 +39,9 @@ for filename in os.listdir(args.confdir):
 		continue
 	with open(fullpath) as data_file:
 		data = json.load(data_file)
-	sys.stdout.write(extension[0].ljust(20))
+	sys.stdout.write(extension[0].ljust(18))
 	sys.stdout.write("| ")
-	sys.stdout.write(data["ssh"]["host"].ljust(20))
+	sys.stdout.write(data["ssh"]["host"].ljust(28))
 	sys.stdout.write("| ")
 
 	ssh = paramiko.SSHClient()
