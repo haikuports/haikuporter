@@ -22,19 +22,20 @@ parser.add_argument('-n', '--name', help='Builder name', required=True)
 parser.add_argument('-H', '--host', help='Builder ssh host', required=True)
 parser.add_argument('-p', '--port', help='Builder ssh port', required=False, default="22")
 parser.add_argument('-u', '--user', help='Builder ssh user', required=False, default="user")
-parser.add_argument('-C', '--conf', help='Builder inventory directory', required=False, default=my_location + "/builders")
+parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/builders")
 parser.add_argument('-f', '--force', help='Force overwrite of existing builder', required=False, action="store_true", default=False)
+parser.add_argument('-w', '--workdir', help='Haikuports path on remote builder', required=False, default="/boot/home/haikuports")
 args = parser.parse_args()
 
-if not os.path.isdir(args.prefix):
-	os.mkdir(args.prefix, 0755)
+if not os.path.isdir(args.confdir):
+	os.mkdir(args.confdir, 0755)
 
-if not os.path.isdir(args.prefix + "/keys"):
-	os.mkdir(args.prefix + "/keys", 0700)
+if not os.path.isdir(args.confdir + "/keys"):
+	os.mkdir(args.confdir + "/keys", 0700)
 
-builder_json_path = args.prefix + "/" + args.name + ".json"
-private_key_path = args.prefix + "/keys/" + args.name
-host_keys_path = args.prefix + "/keys/" + args.name + ".hostkey"
+builder_json_path = args.confdir + "/" + args.name + ".json"
+private_key_path = args.confdir + "/keys/" + args.name
+host_keys_path = args.confdir + "/keys/" + args.name + ".hostkey"
 
 if os.path.isfile(builder_json_path):
 	if not args.force:
@@ -62,9 +63,7 @@ config = {
       "hostKeyFile": "keys/" + args.name + ".hostkey"
     },
     "portstree": {
-      "path": "/boot/home/haikuports",
-      "packagesPath": "/boot/home/haikuports/packages",
-      "packagesCachePath": "/boot/home/haikuports/packages/.cache"
+      "path": args.workdir
     },
     "haikuporter": {
       "path": "haikuporter",
