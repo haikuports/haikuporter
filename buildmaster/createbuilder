@@ -29,12 +29,12 @@ args = parser.parse_args()
 if not os.path.isdir(args.prefix):
 	os.mkdir(args.prefix, 0755)
 
-if not os.path.isdir(args.prefix + "/keydir"):
-	os.mkdir(args.prefix + "/keydir", 0700)
+if not os.path.isdir(args.prefix + "/keys"):
+	os.mkdir(args.prefix + "/keys", 0700)
 
 builder_json_path = args.prefix + "/" + args.name + ".json"
-private_key_path = args.prefix + "/keydir/" + args.name
-host_keys_path = args.prefix + "/keydir/" + args.name + ".hostkey"
+private_key_path = args.prefix + "/keys/" + args.name
+host_keys_path = args.prefix + "/keys/" + args.name + ".hostkey"
 
 if os.path.isfile(builder_json_path):
 	if not args.force:
@@ -58,8 +58,8 @@ config = {
     "host": args.host,
       "port": args.port,
       "user": args.user,
-      "privateKeyFile": private_key_path,
-      "hostKeyFile": host_keys_path
+      "privateKeyFile": "keys/" + args.name,
+      "hostKeyFile": "keys/" + args.name + ".hostkey"
     },
     "portstree": {
       "path": "/boot/home/haikuports",
