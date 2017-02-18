@@ -28,22 +28,24 @@ A multi-node cluster is for mass building large numbers of packages.
 
 ### Deploy buildmaster (Linux)
 
- - `git clone https://git.haiku-os.org/buildtools`
- - `make -j2 -C buildtools/jam && sudo cp buildtools/jam/bin.*/jam /usr/local/bin/`
- - `git clone https://git.haiku-os.org/haiku`
- - `mkdir haiku/generated.tools`
- - `cd haiku/generated.tools`
- - `../configure --host-only`
- - `jam -q \<build\>package`
- - `sudo cp objects/linux/lib/* /usr/local/lib/`
- - `sudo cp objects/linux/x*/release/tools/package/package /usr/local/bin/`
- - `sudo ldconfig`
- - `cd ../..`
- - `git clone https://github.com/haikuports/haikuporter.git`
- - `git clone https://github.com/haikuports/haikuports.git`
- - `cd haikuporter`
- - `./buildmaster/createbuilder.sh`
-   -  configure your first build slave with the prompts
+ - Install repository management tools
+   - `git clone https://git.haiku-os.org/buildtools`
+   - `make -j2 -C buildtools/jam && sudo cp buildtools/jam/bin.*/jam /usr/local/bin/`
+   - `git clone https://git.haiku-os.org/haiku`
+   - `mkdir haiku/generated.tools`
+   - `cd haiku/generated.tools`
+   - `../configure --host-only`
+   - `jam -q \<build\>package`
+   - `sudo cp objects/linux/lib/* /usr/local/lib/`
+   - `sudo cp objects/linux/x*/release/tools/package/package /usr/local/bin/`
+   - `sudo ldconfig`
+   - `cd ../..`
+ - Clone haikuporter and haikuports locally
+   - `git clone https://github.com/haikuports/haikuporter.git`
+   - `git clone https://github.com/haikuports/haikuports.git`
+ - Configure your builders with createbuilder
+   - `cd haikuporter`
+   - example: `./buildmaster/createbuilder -n mybuilder01 -H 127.0.0.1`
  - `echo HAIKUPORTER=/home/pulkomandy/haiku/haikuporter/haikuporter > buildmaster/config`
  - Copy the packages from a nightly to ports/packages
  - `./buildmaster/buildmaster.sh everything`
