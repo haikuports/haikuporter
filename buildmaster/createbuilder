@@ -17,12 +17,12 @@ from subprocess import check_output
 
 my_location = os.path.dirname(os.path.realpath(__file__))
 
-parser = argparse.ArgumentParser(description='Provision a new package builer')
+parser = argparse.ArgumentParser(description='Configure a new remote package builder')
 parser.add_argument('-n', '--name', help='Builder name', required=True)
 parser.add_argument('-H', '--host', help='Builder ssh host', required=True)
 parser.add_argument('-p', '--port', help='Builder ssh port', required=False, default="22")
 parser.add_argument('-u', '--user', help='Builder ssh user', required=False, default="user")
-parser.add_argument('-P', '--prefix', help='Base buildmaster directory', required=False, default=my_location + "/builders")
+parser.add_argument('-C', '--conf', help='Builder inventory directory', required=False, default=my_location + "/builders")
 parser.add_argument('-f', '--force', help='Force overwrite of existing builder', required=False, action="store_true", default=False)
 args = parser.parse_args()
 
