@@ -60,7 +60,11 @@ for filename in os.listdir(args.confdir):
 		print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
 		continue
 
-	print "SSH session login successful"
+	# All highly prone to messing up. yay.
 	stdin, stdout, stderr = ssh.exec_command("uname -a")
-	print color.OKGREEN + "Connected: " + stdout.readlines() + color.ENDC
+	uname = stdout.readlines()[0].split()
+	stdin, stdout, stderr = ssh.exec_command("sysinfo -cpu | grep 'CPU #' | wc -l")
+	cpus = stdout.readlines()[0].split()[0]
+
+	print color.OKGREEN + "Connected: " + uname[0] + " " + uname[3] + ". " + cpus + " " + uname[8] + " cores." + color.ENDC
 	ssh.close()
