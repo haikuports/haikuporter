@@ -28,6 +28,8 @@ A multi-node cluster is for mass building large numbers of packages.
 
 ### Deploy buildmaster (Linux)
 
+ - Install requirements
+   - `pip install paramiko` or `dnf install python-paramiko`
  - Install repository management tools
    - `git clone https://git.haiku-os.org/buildtools`
    - `make -j2 -C buildtools/jam && sudo cp buildtools/jam/bin.*/jam /usr/local/bin/`
