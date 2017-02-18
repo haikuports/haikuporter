@@ -21,6 +21,10 @@ from subprocess import CalledProcessError
 import threading
 import time
 
+try:
+	import paramiko
+except ImportError:
+	paramiko = None
 
 class ThreadFilter:
 	def __init__(self):
@@ -694,10 +698,6 @@ class BuildMaster:
 
 		self.localBuilders = getOption('localBuilders')
 		self.remoteAvailable = False
-		try:
-			import paramiko
-		except ImportError:
-			paramiko = None
 		if paramiko:
 			self.remoteAvailable = True
 		else:
