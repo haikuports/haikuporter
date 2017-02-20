@@ -49,7 +49,10 @@ A multi-node cluster is for mass building large numbers of packages.
    - `cd haikuporter`
    - example: `./buildmaster/createbuilder -n mybuilder01 -H 127.0.0.1`
  - `echo HAIKUPORTER=/home/pulkomandy/haiku/haikuporter/haikuporter > buildmaster/config`
- - Copy the packages from a nightly to ports/packages
+ - Validate and provision your builders
+   - ./buildmaster/builderctl health
+   - ./buildmaster/builderctl provision
+ - Copy the packages from a nightly to ports/packages on the buildmaster
  - `./buildmaster/buildmaster.sh everything`
 
 ### Deploy buildslave (Haiku)
