@@ -3,7 +3,7 @@
 #
 # Try me!
 #  - docker build . -t haikuporter
-#  - docker run -it haikuporter:latest /bin/bash
+#  - docker run -it -e TARGET_ARCHITECTURE=x86 haikuporter:latest
 #
 # TODO: /data persistant volume
 
@@ -42,3 +42,5 @@ RUN echo 'PACKAGER="Haiku Buildmaster <buildmaster@haiku-os.org>"' >> /data/haik
 # Persistant data
 WORKDIR /data
 VOLUME ['/data']
+
+CMD /bin/bash
