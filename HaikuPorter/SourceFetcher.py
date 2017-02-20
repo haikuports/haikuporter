@@ -270,7 +270,7 @@ class SourceFetcherForGit(object):
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
-		check_output(command, shell=True, stderr=STDOUT)
+		output = check_output(command, shell=True, stderr=STDOUT)
 		info(output)
 
 	def updateToRev(self, rev):
