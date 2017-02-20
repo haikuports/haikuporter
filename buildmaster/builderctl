@@ -101,10 +101,17 @@ def cluster_provision(arguments):
 		stdin, stdout, stderr = ssh.exec_command("finddir B_USER_SETTINGS_DIRECTORY")
 		settings_dir = stdout.readlines()[-1].strip()
 
-		# Make sure debug_server doesn't halt crashes
+		### Make sure debug_server doesn't halt crashes
 		debug_server = os.path.join(settings_dir, "system", "debug_server")
 		stdin, stdout, stderr = ssh.exec_command("mkdir -p " + debug_server)
 		command = "echo 'executable_actions { DumpRenderTree log }' > " + os.path.join(debug_server, "config")
+		stdin, stdout, stderr = ssh.exec_command(command)
+
+		### Tune kernel settings
+		kernel_settings = os.path.join(settings_dir, "kernel", "drivers")
+
+		# Don't KDL. #13321 would be better.
+		command = "sed -i '/^#bluescreen false/s/^#//' " + os.path.join(kernel_settings, "kernel")
 		stdin, stdout, stderr = ssh.exec_command(command)
 
 		print color.OKBLUE + "Complete" + color.ENDC
