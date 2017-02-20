@@ -1,0 +1,122 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright 2016-2017 Haiku, Inc. All rights reserved.
+# Distributed under the terms of the MIT License.
+#
+# Authors:
+#   Alexander von Gluck IV <kallisti5@unixzen.com>
+#
+
+import os
+import sys
+import json
+import argparse
+import paramiko
+
+class color:
+	HEADER = '\033[95m'
+	OKBLUE = '\033[94m'
+	OKGREEN = '\033[92m'
+	WARNING = '\033[93m'
+	FAIL = '\033[91m'
+	ENDC = '\033[0m'
+	BOLD = '\033[1m'
+	UNDERLINE = '\033[4m'
+
+my_location = os.path.dirname(os.path.realpath(__file__))
+
+# Get state of cluster
+def cluster_health(arguments):
+	print color.HEADER + "Name              + Host                        + Status" + color.ENDC
+	for filename in os.listdir(args.confdir):
+		fullpath = os.path.join(args.confdir, filename)
+		basename = os.path.basename(fullpath)
+		extension = basename.split(".")
+		if extension[-1] != 'json':
+			continue
+		with open(fullpath) as data_file:
+			data = json.load(data_file)
+		sys.stdout.write(extension[0].ljust(18))
+		sys.stdout.write("| ")
+		sys.stdout.write(data["ssh"]["host"].ljust(28))
+		sys.stdout.write("| ")
+
+		ssh = paramiko.SSHClient()
+		try:
+			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
+		except:
+			print color.FAIL + "FAIL: Invalid host key" + color.ENDC
+			continue
+
+		try:
+			ssh.connect(data["ssh"]["host"],
+				port=int(data["ssh"]["port"]),
+				username=data["ssh"]["user"],
+				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
+		except:
+			print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
+			continue
+
+		# All highly prone to messing up. yay.
+		stdin, stdout, stderr = ssh.exec_command("uname -a")
+		uname = stdout.readlines()[0].split()
+		stdin, stdout, stderr = ssh.exec_command("sysinfo -cpu | grep 'CPU #' | wc -l")
+		cpus = stdout.readlines()[0].split()[0]
+
+		print color.OKGREEN + "Connected: " + uname[0] + " " + uname[3] + ". " + cpus + " " + uname[8] + " cores." + color.ENDC
+		ssh.close()
+
+# Get provision nodes
+def cluster_provision(arguments):
+	print color.HEADER + "Name              + Status" + color.ENDC
+	for filename in os.listdir(args.confdir):
+		fullpath = os.path.join(args.confdir, filename)
+		basename = os.path.basename(fullpath)
+		extension = basename.split(".")
+		if extension[-1] != 'json':
+			continue
+		with open(fullpath) as data_file:
+			data = json.load(data_file)
+		sys.stdout.write(extension[0].ljust(18))
+		sys.stdout.write("| ")
+
+		ssh = paramiko.SSHClient()
+		try:
+			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
+		except:
+			print color.FAIL + "FAIL: Invalid host key" + color.ENDC
+			continue
+
+		try:
+			ssh.connect(data["ssh"]["host"],
+				port=int(data["ssh"]["port"]),
+				username=data["ssh"]["user"],
+				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
+		except:
+			print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
+			continue
+
+		# All highly prone to messing up. yay.
+		stdin, stdout, stderr = ssh.exec_command("finddir B_USER_SETTINGS_DIRECTORY")
+		settings_dir = stdout.readlines()[-1].strip()
+
+		# Make sure debug_server doesn't halt crashes
+		debug_server = os.path.join(settings_dir, "system", "debug_server")
+		stdin, stdout, stderr = ssh.exec_command("mkdir -p " + debug_server)
+		command = "echo 'executable_actions { DumpRenderTree log }' > " + os.path.join(debug_server, "config")
+		stdin, stdout, stderr = ssh.exec_command(command)
+
+		print color.OKBLUE + "Complete" + color.ENDC
+
+parser = argparse.ArgumentParser(description='List and test connections to builders')
+parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/builders")
+parser.add_argument('action', help='[ health | provision ]')
+args = parser.parse_args()
+
+if args.action == "health":
+	cluster_health(args)
+elif args.action == "provision":
+	cluster_provision(args)
+else:
+	parser.print_help()
