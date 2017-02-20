@@ -10,7 +10,7 @@
 FROM fedora
 MAINTAINER Haiku, Inc.
 
-ENV TARGET_ARCH=x86_64
+ENV TARGET_ARCHITECTURE=x86_64
 
 # Install requirements
 RUN dnf update -y && dnf install -y git python2 python2-paramiko wget xz
@@ -24,15 +24,21 @@ RUN git clone https://github.com/haikuports/haikuports
 RUN wget http://download.haiku-os.org/host-tools/haiku_host_tools-02202017-linux-x86_64.tar.xz -O /tmp/host-tools.tar.xz
 WORKDIR /usr/local
 RUN tar xvf /tmp/host-tools.tar.xz
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/local-lib.conf
 RUN ldconfig
 
-RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/local-lib.conf
-RUN echo "alias haikuporter='/app/haikuporter/haikuporter'" > /etc/profile.d/haikuporter-shell.sh
-RUN echo "alias builderctl='/app/haikuporter/buildmaster/builderctl -C /data'" >> /etc/profile.d/haikuporter-shell.sh
-RUN echo "alias createbuilder='/app/haikuporter/buildmaster/createbuilder -C /data'" >> /etc/profile.d/haikuporter-shell.sh
+# Alias our tools with correct data locations (/data)
+RUN echo "alias haikuporter='/app/haikuporter/haikuporter '" > /etc/profile.d/haikuporter-shell.sh
+RUN echo "alias builderctl='/app/haikuporter/buildmaster/builderctl -C /data/builders '" >> /etc/profile.d/haikuporter-shell.sh
+RUN echo "alias createbuilder='/app/haikuporter/buildmaster/createbuilder -C /data/builders '" >> /etc/profile.d/haikuporter-shell.sh
+RUN echo 'export PS1="\e[1;33m[buildmaster@$TARGET_ARCHITECTURE \W]\$ \e[m "' > /etc/profile.d/haikuporter-prompt.sh
 
-WORKDIR /data
+RUN mkdir -p /data
+
+# Setup sane haikuports.conf
+RUN echo 'TREE_PATH="/app/haikuports"' > /data/haikuports.conf
+RUN echo 'PACKAGER="Haiku Buildmaster <buildmaster@haiku-os.org>"' >> /data/haikuports.conf
 
 # Persistant data
-RUN mkdir -p /data
+WORKDIR /data
 VOLUME ['/data']
