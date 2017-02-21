@@ -28,6 +28,8 @@ RUN dnf update -y && dnf install -y git python2 python2-paramiko wget xz
 RUN mkdir -p /app
 WORKDIR /app
 RUN git clone https://github.com/haikuports/haikuporter
+RUN git clone https://github.com/haiku/haiku --depth 1
+RUN git -C /app/haiku checkout HEAD data/system/data/licenses
 
 # Install host-tools
 RUN wget http://download.haiku-os.org/host-tools/haiku_host_tools-02202017-linux-x86_64.tar.xz -O /tmp/host-tools.tar.xz
