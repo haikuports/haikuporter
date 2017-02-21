@@ -1,19 +1,16 @@
 #!/bin/bash
 
-BASE_DIR="$(pwd)/buildmaster"
-CONFIG_FILE="$BASE_DIR/config"
-source "$CONFIG_FILE"
-
-if [ $? -ne 0 ]
-then
-	echo "configuration file $CONFIG_FILE couldn't be sourced"
-	exit 1
+if [ -z "$BASE_DIR" ]; then
+	BASE_DIR="$(pwd)/buildmaster"
 fi
 
 if [ -z "$HAIKUPORTER" ]
 then
-	echo "HAIKUPORTER environment variable not set"
-	exit 1
+	HAIKUPORTER=$(which haikuporter 2>/dev/null)
+	if [ $? -ne 0 ]; then
+		echo "HAIKUPORTER environment variable not set and haikuporter not in path"
+		exit 1
+	fi
 fi
 
 case "$1" in
