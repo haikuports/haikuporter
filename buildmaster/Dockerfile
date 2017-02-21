@@ -23,13 +23,17 @@ MAINTAINER Haiku, Inc.
 ENV ARCH=x86_64
 
 # Install requirements
-RUN dnf update -y && dnf install -y git python2 python2-paramiko wget xz vim gcc
+RUN dnf update -y && dnf install -y git python2 python2-paramiko wget xz vim gcc findutils
 
 RUN mkdir -p /app
 WORKDIR /app
 RUN git clone https://github.com/haikuports/haikuporter
 RUN git clone https://github.com/haiku/haiku --depth 1
 RUN git -C /app/haiku checkout HEAD data/system/data/licenses
+
+# Symlink binaries to /usr/local/bin/ for easy access
+RUN find /app/haikuporter/buildmaster/bin/ -exec ln -s {} /usr/local/bin/ \;
+RUN ln -s /app/haikuporter/haikuporter /usr/local/bin/haikuporter
 
 # Install host-tools
 RUN wget http://download.haiku-os.org/host-tools/haiku_host_tools-02202017-linux-x86_64.tar.xz -O /tmp/host-tools.tar.xz
