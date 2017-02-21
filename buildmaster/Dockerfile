@@ -23,7 +23,7 @@ MAINTAINER Haiku, Inc.
 ENV ARCH=x86_64
 
 # Install requirements
-RUN dnf update -y && dnf install -y git python2 python2-paramiko wget xz vim
+RUN dnf update -y && dnf install -y git python2 python2-paramiko wget xz vim gcc
 
 RUN mkdir -p /app
 WORKDIR /app
