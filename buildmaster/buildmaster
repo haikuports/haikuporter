@@ -13,11 +13,20 @@ then
 	fi
 fi
 
+HAIKUPORTS_TREE="$(${HAIKUPORTER} -t)"
+
 case "$1" in
 	update)
+		git -C "${HAIKUPORTS_TREE}" pull --ff-only
+		if [ $? -ne 0 ]
+		then
+			echo "git pull failed, manual fixing needed"
+			exit 2
+		fi
+
 		REVISIONS_FILE="$BASE_DIR/processed_rev"
 		PREVIOUS_REVISION=$(cat "$REVISIONS_FILE" 2>/dev/null)
-		HEAD_REVISION=$(git rev-parse HEAD)
+		HEAD_REVISION=$(git -C "${HAIKUPORTS_TREE}" rev-parse HEAD)
 
 		if [ "$PREVIOUS_REVISION" == "$HEAD_REVISION" ]
 		then
@@ -28,8 +37,8 @@ case "$1" in
 		echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
 		"$HAIKUPORTER" --no-package-obsoletion --repository-update
 
-		PORTS_TO_BUILD=$(git diff-tree -z -r --name-only --diff-filter ACMTR \
-				$PREVIOUS_REVISION..$HEAD_REVISION \
+		PORTS_TO_BUILD=$(git -C "${HAIKUPORTS_TREE}" diff-tree -z -r --name-only \
+				--diff-filter ACMTR $PREVIOUS_REVISION..$HEAD_REVISION \
 			| xargs --null "$HAIKUPORTER" --no-package-obsoletion \
 				--no-repository-update --ports-for-files \
 				--active-versions-only 2> /dev/null \
