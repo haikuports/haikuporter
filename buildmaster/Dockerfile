@@ -8,13 +8,13 @@
 #
 # Pushing new version to docker.io:
 #  - docker login
-#  - docker build . -t docker.io/haikuports/haikuporter
+#  - docker build . -t docker.io/haikuporter/buildmaster
 #  - docker push
 #
 # Running container on any workstation:
 #  - mkdir ~/x86-buildmaster
 #  - docker pull haikuporter/buildmaster
-#  - docker run -v ~/x86-buildmaster:/data -it -e ARCH=x86 haikuports/haikuporter
+#  - docker run -v ~/x86-buildmaster:/data -it -e ARCH=x86 haikuporter/buildmaster
 #
 
 FROM fedora
