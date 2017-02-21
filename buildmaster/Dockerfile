@@ -40,6 +40,7 @@ RUN mkdir -p /data
 
 # This does most of the environmental prep
 ADD .buildmaster.env /etc/profile.d/buildmaster.sh
+ADD .motd /etc/motd
 
 # Persistant data
 WORKDIR /data
