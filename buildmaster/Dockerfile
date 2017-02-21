@@ -1,11 +1,21 @@
 #
 # Haiku buildmaster within a docker container
 #
-# Try me!
-#  - docker build . -t haikuporter
-#  - docker run -it -e ARCH=x86 haikuporter:latest
+# Local development:
+#  - mkdir ~/x86-buildmaster
+#  - docker build . -t buildmaster:next
+#  - docker run -v ~/x86-buildmaster:/data -it -e ARCH=x86 buildmaster:next
 #
-# TODO: /data persistant volume
+# Pushing new version to docker.io:
+#  - docker login
+#  - docker build . -t docker.io/haikuports/haikuporter
+#  - docker push
+#
+# Running container on any workstation:
+#  - mkdir ~/x86-buildmaster
+#  - docker pull haikuporter/buildmaster
+#  - docker run -v ~/x86-buildmaster:/data -it -e ARCH=x86 haikuports/haikuporter
+#
 
 FROM fedora
 MAINTAINER Haiku, Inc.
@@ -28,22 +38,8 @@ RUN ldconfig
 
 RUN mkdir -p /data
 
-# Prepare paths in persistant storage (if provided empty volume)
-RUN echo "mkdir -p /data/buildmaster" > /etc/profile.d/haikuporter-prep.sh
-RUN echo "/app/haikuporter/buildmaster/gitget https://github.com/haikuports/haikuports /data/haikuports" >> /etc/profile.d/haikuporter-prep.sh
-
-# Alias our tools with correct data locations (/data)
-RUN echo "alias haikuporter='/app/haikuporter/haikuporter '" > /etc/profile.d/haikuporter-shell.sh
-RUN echo "alias builderctl='/app/haikuporter/buildmaster/builderctl -C /data/buildmaster/builders '" >> /etc/profile.d/haikuporter-shell.sh
-RUN echo "alias createbuilder='/app/haikuporter/buildmaster/createbuilder -C /data/buildmaster/builders '" >> /etc/profile.d/haikuporter-shell.sh
-
-# Fancy shell prompt
-RUN echo 'export PS1="\e[1;33m[buildmaster@$ARCH \W]\$ \e[m "' > /etc/profile.d/haikuporter-prompt.sh
-RUN echo 'grep -q -F "TARGET_ARCHITECTURE" /data/haikuports.conf || echo "TARGET_ARCHITECTURE=$ARCH" >> /data/haikuports.conf' >> /etc/profile.d/haikuporter-arch.sh
-
-# Setup sane haikuports.conf
-RUN echo 'TREE_PATH="/data/haikuports"' > /data/haikuports.conf
-RUN echo 'PACKAGER="Haiku Buildmaster <buildmaster@haiku-os.org>"' >> /data/haikuports.conf
+# This does most of the environmental prep
+ADD .buildmaster.env /etc/profile.d/buildmaster.sh
 
 # Persistant data
 WORKDIR /data
