@@ -15,15 +15,8 @@ fi
 
 case "$1" in
 	update)
-		git pull --ff-only
-		if [ $? -ne 0 ]
-		then
-			echo "git pull failed, manual fixing needed"
-			exit 2
-		fi
-
 		REVISIONS_FILE="$BASE_DIR/processed_rev"
-		PREVIOUS_REVISION=$(cat "$REVISIONS_FILE")
+		PREVIOUS_REVISION=$(cat "$REVISIONS_FILE" 2>/dev/null)
 		HEAD_REVISION=$(git rev-parse HEAD)
 
 		if [ "$PREVIOUS_REVISION" == "$HEAD_REVISION" ]
