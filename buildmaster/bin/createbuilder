@@ -80,8 +80,13 @@ call(["ssh-keygen", "-q", "-t", "rsa", "-b", "4096", "-f", private_key_path, "-P
 with open(os.devnull, 'w') as devnull:
 	hostkeys = check_output(["ssh-keyscan", "-t", "rsa", "-p", args.port, args.host], stderr=devnull)
 
-with open(host_keys_path, 'w') as outfile:
-	outfile.write(hostkeys)
+if not len(hostkeys):
+    print("* WARNING: Unable to obtain hostkey from " + args.host + ":" + args.port)
+    print("           You will need to obtain when the host is reachable with:")
+    print("           ssh-keyscan -t rsa -p " + args.port + " " + args.host + " > " + host_keys_path)
+else:
+    with open(host_keys_path, 'w') as outfile:
+        outfile.write(hostkeys)
 
 print("* Configuration complete.\n")
 print("Please authorize the following key on your builder:\n")
