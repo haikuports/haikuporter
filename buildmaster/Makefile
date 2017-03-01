@@ -1,5 +1,5 @@
 build:
-	docker build . -t docker.io/haikuporter/buildmaster
+	docker build . --no-cache -t docker.io/haikuporter/buildmaster
 test:
 	mkdir -p ~/x86-buildmaster
 	docker run -v ~/x86-buildmaster:/data -it -e ARCH=x86 docker.io/haikuporter/buildmaster
