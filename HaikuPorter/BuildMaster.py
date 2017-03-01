@@ -217,6 +217,20 @@ class RemoteBuilder:
 			time.sleep(5 + (1.2 * self.connectionErrors))
 			raise
 
+	def _validatePortsTree(self):
+		# TODO: Hardcoding the git repo here might not be ideal.
+		try:
+			command = ('if [ ! -d "' + self.config['portstree']['path'] + '" ]; '
+				+ 'then git clone https://github.com/haikuports/haikuports.git '
+				+ self.config['portstree']['path'] + '; fi')
+			self.logger.info('running command: ' + command)
+			(output, channel) = self._remoteCommand(command)
+			return channel.recv_exit_status() == 0
+		except Exception as exception:
+			self.logger.error('failed to validate ports tree: '
+				+ str(exception))
+			raise
+
 	def _syncPortsTree(self, revision):
 		try:
 			command = ('cd "' + self.config['portstree']['path']
@@ -287,6 +301,7 @@ class RemoteBuilder:
 			return False
 
 		self._connect()
+		self._validatePortsTree()
 		self._syncPortsTree(self.portsTreeHead)
 		self._writeBuilderConfig()
 		self._createNeededDirs()
