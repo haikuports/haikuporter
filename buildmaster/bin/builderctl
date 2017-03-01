@@ -114,7 +114,47 @@ def cluster_provision(arguments):
 		command = "sed -i '/^#bluescreen false/s/^#//' " + os.path.join(kernel_settings, "kernel")
 		stdin, stdout, stderr = ssh.exec_command(command)
 
+		# XXX: Fix SSHD tftp
+		command = "sed -i 's/^Subsystem\s*sftp.*/Subsystem sftp \/boot\/system\/lib\/openssh\/sftp-server/' /boot/system/settings/ssh/sshd_config"
+		stdin, stdout, stderr = ssh.exec_command(command)
+
 		print color.OKBLUE + "Complete" + color.ENDC
+		ssh.close()
+	print "It may be necessary to reboot the buildslaves to pick up the changes."
+	print "This can be done with 'builderctl reboot'"
+
+def cluster_reboot(arguments):
+	print color.HEADER + "Name              + Result" + color.ENDC
+	for filename in os.listdir(args.confdir):
+		fullpath = os.path.join(args.confdir, filename)
+		basename = os.path.basename(fullpath)
+		extension = basename.split(".")
+		if extension[-1] != 'json':
+			continue
+		with open(fullpath) as data_file:
+			data = json.load(data_file)
+		sys.stdout.write(extension[0].ljust(18))
+		sys.stdout.write("| ")
+
+		ssh = paramiko.SSHClient()
+		try:
+			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
+		except:
+			print color.FAIL + "FAIL: Invalid host key" + color.ENDC
+			continue
+
+		try:
+			ssh.connect(data["ssh"]["host"],
+				port=int(data["ssh"]["port"]),
+				username=data["ssh"]["user"],
+				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
+		except:
+			print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
+			continue
+
+		stdin, stdout, stderr = ssh.exec_command("shutdown -r && exit")
+		print color.FAIL + "Issued" + color.ENDC
+		ssh.close()
 
 parser = argparse.ArgumentParser(description='List and test connections to builders')
 parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/../builders")
@@ -125,5 +165,7 @@ if args.action == "health":
 	cluster_health(args)
 elif args.action == "provision":
 	cluster_provision(args)
+elif args.action == "reboot":
+	cluster_reboot(args)
 else:
 	parser.print_help()
