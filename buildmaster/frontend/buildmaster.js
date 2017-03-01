@@ -107,7 +107,7 @@ function BuildMaster()
 	this.fetch('buildruns.txt', this.populateBuildruns.bind(this));
 
 	setElementContent('#loadStatus', 'Loading buildrun status...');
-	this.fetch(this.baseDir + 'output/status.json', function(response) {
+	this.fetch(this.baseDir + 'current/output/status.json', function(response) {
 			this.status = JSON.parse(response);
 			setElementContent('#loadStatus', '');
 			this.showStatus();
