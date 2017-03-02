@@ -103,11 +103,13 @@ function BuildMaster()
 		= getSearchParameter('baseDir', '[a-zA-Z0-9][a-zA-Z0-9.-/]*', '');
 	if (this.baseDir.length > 0)
 		this.baseDir += '/';
+	else
+		this.baseDir += 'current/';
 
 	this.fetch('buildruns.txt', this.populateBuildruns.bind(this));
 
 	setElementContent('#loadStatus', 'Loading buildrun status...');
-	this.fetch(this.baseDir + 'current/output/status.json', function(response) {
+	this.fetch(this.baseDir + '/output/status.json', function(response) {
 			this.status = JSON.parse(response);
 			setElementContent('#loadStatus', '');
 			this.showStatus();

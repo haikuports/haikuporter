@@ -1,0 +1,75 @@
+#logo-container {
+    height: 57px;
+    margin-bottom: 32px;
+    pointer-events: none;
+}
+
+#front-page-logo {
+    display: inline-block;
+    height: 100%;
+    pointer-events: none;
+}
+
+ul.side-nav.fixed li.logo {
+    text-align: center;
+    margin-top: 32px;
+    margin-bottom: 80px;
+}
+
+ul.side-nav.fixed li {
+    line-height: 44px;
+}
+
+i.fa {
+    padding: 0px;
+    margin: 0px;
+}
+
+.side-nav li {
+    float: none;
+    line-height: 48px;
+}
+
+.side-nav a {
+    color: rgba(0,0,0,0.87);
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    height: 48px;
+    line-height: 48px;
+    padding: 0 32px;
+}
+
+.side-nav.fixed {
+    left: 0;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    position: fixed;
+    background-color: ghostwhite;
+}
+
+.side-nav {
+    position: fixed;
+    width: 300px;
+    left: 0;
+    top: 0;
+    margin: 0;
+    -webkit-transform: translateX(-100%);
+    transform: translateX(-100%);
+    height: 100%;
+    height: calc(100% + 60px);
+    height: -moz-calc(100%);
+    padding-bottom: 60px;
+    background-color: #fff;
+    z-index: 999;
+    overflow-y: auto;
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateX(-105%);
+    transform: translateX(-105%);
+}
+
+header, main, footer {
+    padding-left: 300px;
+}

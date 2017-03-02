@@ -1,21 +1,33 @@
+<!DOCTYPE html>
 <html>
-	<head>
-		<title>Haiku's package builder</title>
-		<link rel="stylesheet" href="style.css">
-	</head>
-	<body>
-		<h1>Haiku's package builder</h1>
+  <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.0/css/materialize.min.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <script src="https://use.fontawesome.com/af73461e22.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  </head>
 
-		<a href="output">Raw data</a>
-		<a href="buildmaster.html">Buildmaster status</a>
+  <body>
+    <!--Import jQuery before materialize.js-->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.0/js/materialize.min.js"></script>
+    <script>
+	function load_body(partial_name) {
+		document.getElementById("content").innerHTML="<iframe src=\"" + partial_name + ".html\" style='width: 100%; height: 99vh; border: none;'>";
+	}
+    </script>
 
-		<div id="status">
-			<div class="wrapper">
-			  <div class="ball ball-1"></div>
-			  <div class="ball ball-2"></div>
-			  <div class="ball ball-3"></div>
-			</div>
-		</div>
-		<script type="text/javascript" src="buildstatus.js"></script>
-	</body>
+    <header>
+      <ul id="nav-mobile" class="side-nav fixed">
+        <li class="logo"><a id="logo-container" class="brand-logo" style='line-height: 0.9em;'><img src="assets/img/packageinstaller-icon_64.png"><br/>Buildmaster</a></li>
+	<li class="bold"><a href="" onclick="load_body('overview'); return false;" class="waves-effect waves-teal"><i class="fa fa-tachometer" aria-hidden="true"></i>Current Run</a></li>
+	<li class="bold"><a href="" onclick="load_body('buildmaster'); return false;" class="waves-effect waves-teal"><i class="fa fa-history" aria-hidden="true"></i>Build Runs</a></li>
+      </ul>
+     </header>
+     <main>
+        <div id="content">
+        </div>
+     </main>
+     <script>load_body('overview');</script>
+  </body>
 </html>
