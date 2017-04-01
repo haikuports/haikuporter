@@ -158,7 +158,7 @@ def cluster_reboot(arguments):
 
 parser = argparse.ArgumentParser(description='List and test connections to builders')
 parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/../builders")
-parser.add_argument('action', help='[ health | provision ]')
+parser.add_argument('action', help='[ health | provision | reboot ]')
 args = parser.parse_args()
 
 if args.action == "health":
