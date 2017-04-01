@@ -20,7 +20,10 @@ HaikuPorts installation can be done via the following command sequence:
  - `lpe ~/config/settings/haikuports.conf # and edit it`
 
 ### Build port
- - `./haikuporter mesa --no-dependencies -j4`
+ - `./haikuporter mesa -j4`
+
+### Build port and all outdated dependency ports
+ - `./haikuporter mesa --all-dependencies -j4`
 
 ## Multi-node cluster (Linux + Haiku)
 

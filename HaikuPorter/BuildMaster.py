@@ -356,8 +356,7 @@ class RemoteBuilder:
 				+ ' && cd "' + self.config['portstree']['path']
 				+ '" && "' + self.config['haikuporter']['path']
 				+ '" --config="' + self.config['portstree']['builderConfig']
-				+ '" --no-system-packages --no-dependencies'
-				+ ' --no-package-obsoletion '
+				+ '" --no-system-packages --no-package-obsoletion '
 				+ self.config['haikuporter']['args'] + ' "'
 				+ scheduledBuild.port.versionedName + '"')
 

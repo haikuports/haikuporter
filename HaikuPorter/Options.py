@@ -108,9 +108,9 @@ def parseOptions():
 	parser.add_option('-p', '--nopackage',
 					  action='store_false', dest='package', default=True,
 					  help="don't create package, stop after build")
-	parser.add_option('--no-dependencies',
-					  action='store_true', dest='noDependencies', default=False,
-					  help="ignore any dependencies, just build the given port")
+	parser.add_option('--all-dependencies',
+					  action='store_true', dest='allDependencies', default=False,
+					  help="build all outdated dependencies for the given port.")
 	parser.add_option('--get-dependencies',
 					  action='store_true', dest='getDependencies', default=False,
 					  help="install all needed dependencies, then build the port")
@@ -306,7 +306,6 @@ def parseOptions():
 		setattr(__Options__, 'package', False)
 	if getOption('enterChroot'):
 		setattr(__Options__, 'noSourcePackages', True)
-		setattr(__Options__, 'noDependencies', True)
 	elif not isCommandAvailable('git'):
 		if not getOption('doBootstrap'):
 			warn(u"deactivating creation of source packages as 'git' is not "

@@ -375,9 +375,6 @@ class Main(object):
 								   requiredPort)
 			return
 
-		if self.options.getDependencies:
-			self.options.noDependencies = True
-
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:
 			if not 'id' in portSpec:
@@ -390,7 +387,7 @@ class Main(object):
 			elif self.options.test:
 				self._testPort(port)
 			elif (self.options.build and not portSpec['id'] in bootstrapPorts
-				and not self.options.noDependencies):
+				and self.options.allDependencies):
 				try:
 					self._buildMainPort(port)
 				except SystemExit as exception:
