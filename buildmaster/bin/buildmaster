@@ -100,7 +100,7 @@ rm "$BASE_DIR/output"
 ln -s "$BUILDRUN_OUTPUT_DIR/output" "$BASE_DIR"
 
 "$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
-	--build-master $PORTS_TO_BUILD
+	--all-dependencies --build-master $PORTS_TO_BUILD
 
 if [ $? -ne 0 ]
 then
