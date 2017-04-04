@@ -97,7 +97,7 @@ echo "$BUILDRUN" > "$BUILDRUN_FILE"
 
 # Remove and relink the current output dir.
 rm "$BASE_DIR/output"
-ln -s "$BUILDRUN_OUTPUT_DIR/output" "$BASE_DIR"
+ln -rs "$BUILDRUN_OUTPUT_DIR/output" "$BASE_DIR"
 
 "$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
 	--all-dependencies --build-master $PORTS_TO_BUILD
