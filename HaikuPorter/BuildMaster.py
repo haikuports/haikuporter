@@ -456,7 +456,7 @@ class RemoteBuilder:
 				if not line:
 					return
 
-				info(line[:-1])
+				self.buildLogger.info(line[:-1])
 
 	def _makePackageAvailable(self, packageName):
 		if packageName in self.availablePackages:
