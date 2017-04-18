@@ -889,7 +889,7 @@ checkedUnmount()
 trap '' SIGINT
 
 # try to make sure we really are in a work directory
-if ! echo $(basename $PWD) | grep -qE '^work-'; then
+if ! echo $(basename `dirname "$PWD"`) | grep -qE '^work-'; then
 	echo "cleanupChroot invoked in $PWD, which doesn't seem to be a work dir!"
 	exit 1
 fi
