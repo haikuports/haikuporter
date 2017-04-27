@@ -2,8 +2,9 @@ Welcome to your Haikuporter buildmaster!
 
 Useful commands:
 
-  * createbuilder  - Create a new builder
+  * createbuilder  - Create a new builder.
   * builderctl     - Test connections to builders and re-provision them.
-  * haikuporter    - Haikuporter tool
-  * buildmaster    - Begin clustered build across multiple Haiku nodes
+  * builderssh     - Connect to a remote builder for maintenance.
+  * haikuporter    - Haikuporter tool.
+  * buildmaster    - Begin clustered build across multiple Haiku nodes.
 
