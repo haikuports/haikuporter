@@ -2,13 +2,14 @@
 
 if [ -z "$BASE_DIR" ]; then
 	BASE_DIR="$(pwd)/buildmaster"
+	echo "WARNING: BASE_DIR is currently undefined. Assuming $BASE_DIR."
 fi
 
 if [ -z "$HAIKUPORTER" ]
 then
 	HAIKUPORTER=$(which haikuporter 2>/dev/null)
 	if [ $? -ne 0 ]; then
-		echo "HAIKUPORTER environment variable not set and haikuporter not in path"
+		echo "ERROR: HAIKUPORTER environment variable not set and haikuporter not in path"
 		exit 1
 	fi
 fi
