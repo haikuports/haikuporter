@@ -61,14 +61,14 @@ class Main(object):
 		self.packagesPath = Configuration.getPackagesPath()
 		self.repositoryPath = Configuration.getRepositoryPath()
 
-		# create path where built packages will be collected
-		if not os.path.exists(self.packagesPath):
-			os.mkdir(self.packagesPath)
-
 		# if requested, checkout or update ports tree
 		if self.options.get:
 			self._updatePortsTree()
 			return
+
+		# create path where built packages will be collected
+		if not os.path.exists(self.packagesPath):
+			os.mkdir(self.packagesPath)
 
 		self._checkFormatVersions()
 
