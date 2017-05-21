@@ -1225,7 +1225,7 @@ class Port(object):
 					if getOption('debug'):
 						traceback.print_exc()
 					else:
-						self.logger.info(exception)
+						warn(str(exception))
 					os._exit(1)
 			os._exit(0)
 
