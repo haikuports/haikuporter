@@ -26,7 +26,7 @@ import codecs
 import json
 import os
 import shutil
-from subprocess import check_call, check_output, STDOUT
+from subprocess import check_call, check_output, CalledProcessError, STDOUT
 
 
 # -- The supported package types ----------------------------------------------
@@ -279,7 +279,11 @@ class Package(object):
 			buildPackageInfo, '-I', self.packagingDir, buildPackage]
 		if getOption('quiet'):
 			cmdlineArgs.insert(2, '-q')
-		output = check_output(cmdlineArgs, stderr=STDOUT)
+		try:
+			output = check_output(cmdlineArgs, stderr=STDOUT)
+		except CalledProcessError as exception:
+			raise Exception('failure creating the build package: '
+				+ exception.output[:-1])
 		info(output)
 		self.buildPackage = buildPackage
 		os.remove(buildPackageInfo)
