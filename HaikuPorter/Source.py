@@ -249,11 +249,11 @@ class Source(object):
 				sysExit(u'Expected SHA-256: ' + self.checksum + '\n'
 						+ 'Found SHA-256:	 ' + sha256.hexdigest())
 		else:
-			print '----- CHECKSUM TEMPLATE -----'
-			print 'CHECKSUM_SHA256%(index)s="%(digest)s"' % {
+			warn(u'----- CHECKSUM TEMPLATE -----')
+			warn(u'CHECKSUM_SHA256%(index)s="%(digest)s"' % {
 				"digest": sha256.hexdigest(),
-				"index": ("_" + self.index) if self.index != "1" else "" }
-			print '-----------------------------'
+				"index": ("_" + self.index) if self.index != "1" else "" })
+			warn(u'-----------------------------')
 
 		if (self.checksum == None):
 			if not Configuration.shallAllowUnsafeSources():
