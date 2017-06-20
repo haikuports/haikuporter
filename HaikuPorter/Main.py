@@ -131,7 +131,8 @@ class Main(object):
 		if self.options.list or self.options.listPackages:
 			self._createRepositoryIfNeeded(True)
 			if self.options.list:
-				allNames = self.repository.searchPorts(None)
+				allNames = self.repository.searchPorts(None,
+					self.options.printFilenames)
 			else:
 				allNames = self.repository.searchPackages(None,
 					self.options.printFilenames)

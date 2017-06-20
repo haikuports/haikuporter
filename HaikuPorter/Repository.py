@@ -136,7 +136,13 @@ class Repository(object):
 
 		return None
 
-	def searchPorts(self, regExp):
+	def _portNameVersionForPortName(self, portName):
+		portVersion = self.getActiveVersionOf(portName)
+		if not portVersion:
+			return None
+		return portName + '-' + portVersion
+
+	def searchPorts(self, regExp, returnPortNameVersions = False):
 		"""Search for one or more ports in the HaikuPorts tree, returning
 		   a list of found matches"""
 		if regExp:
@@ -148,7 +154,12 @@ class Repository(object):
 		portNames = self.portVersionsByName.keys()
 		for portName in portNames:
 			if not regExp or reSearch.search(portName):
-				ports.append(portName)
+				if returnPortNameVersions:
+					portNameVersion = self._portNameVersionForPortName(portName)
+					if portNameVersion is not None:
+						ports.append(portNameVersion)
+				else:
+					ports.append(portName)
 
 		return sorted(ports)
 
