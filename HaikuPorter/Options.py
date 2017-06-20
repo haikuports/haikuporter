@@ -304,6 +304,8 @@ def parseOptions():
 		setattr(__Options__, 'build', False)
 	if not getOption('build'):
 		setattr(__Options__, 'package', False)
+	if getOption('updateDependencies'):
+		setattr(__Options__, 'allDependencies', True)
 	if getOption('enterChroot'):
 		setattr(__Options__, 'noSourcePackages', True)
 	elif not isCommandAvailable('git'):
