@@ -211,6 +211,9 @@ class Policy(object):
 					'requirement' % (path, library))
 
 	def _isMissingLibraryDependency(self, library, rpath):
+		if library.startswith('_APP_'):
+			return False
+
 		# the library might be provided by the package
 		libDir = os.path.join(self.package.packagingDir,
 			'lib' + self.secondaryArchSubDir + '/' + library)
