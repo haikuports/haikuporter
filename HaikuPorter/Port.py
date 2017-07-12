@@ -1158,10 +1158,7 @@ class Port(object):
 		# add one more variable containing all the dir args for CMake:
 		cmakeDirArgs = {}
 		for k, v in configureDirs.iteritems():
-			if k == 'prefix':
-				cmakeDirArgs[k.upper()] = v
-			else:
-				cmakeDirArgs['FULL_' + k.upper()] = v
+			cmakeDirArgs[k.upper()] = v
 		self.shellVariables['cmakeDirArgs'] \
 			= ' '.join('-DCMAKE_INSTALL_%s=%s' % (k, v)
 					   for k, v in cmakeDirArgs.iteritems())
