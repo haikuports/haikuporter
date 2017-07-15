@@ -167,14 +167,14 @@ class Policy(object):
 			for entry in os.listdir(dir):
 				path = os.path.join(dir, entry)
 				if os.path.isfile(path):
-					self._checkLibraryDependenciesOfFile(path)
+					self._checkLibraryDependenciesOfFile(dir, path)
 				elif directory != "bin" and os.path.isdir(path):
 					for entry2 in os.listdir(path):
 						path2 = os.path.join(path, entry2)
 						if os.path.isfile(path2) and os.access(path2, os.X_OK):
-							self._checkLibraryDependenciesOfFile(path2)
+							self._checkLibraryDependenciesOfFile(path, path2)
 
-	def _checkLibraryDependenciesOfFile(self, path):
+	def _checkLibraryDependenciesOfFile(self, dirPath, path):
 		# skip static libraries outright
 		if path.endswith('.a'):
 			return
@@ -201,7 +201,7 @@ class Policy(object):
 					rpath = match.group(1)
 
 		for library in libraries:
-			if self._isMissingLibraryDependency(library, rpath):
+			if self._isMissingLibraryDependency(library, dirPath, rpath):
 				if (library.startswith('libgcc') or
 					library.startswith('libstdc++') or
 					library.startswith('libsupc++')):
@@ -210,22 +210,39 @@ class Policy(object):
 					'package doesn\'t seem to declare that as a '
 					'requirement' % (path, library))
 
-	def _isMissingLibraryDependency(self, library, rpath):
+	def _isMissingLibraryDependency(self, library, dirPath, rpath):
 		if library.startswith('_APP_'):
 			return False
 
-		# the library might be provided by the package
+		# the library might be provided by the package ($libDir)
 		libDir = os.path.join(self.package.packagingDir,
 			'lib' + self.secondaryArchSubDir + '/' + library)
 		if os.path.exists(libDir):
 			return False
 
+		# the library might be provided by the package (%A/lib)
+		libDir = os.path.join(dirPath, 'lib/' + library)
+		if os.path.exists(libDir):
+			return False
+
+		# the library might be provided by the package, same dir (%A)
+		libDir = os.path.join(dirPath, library)
+		if os.path.exists(libDir):
+			return False
+
 		# the library might be provided by the package in rpath
-		if rpath is not None and rpath.find('/.self/') != -1:
-			rpathDir = os.path.join(self.package.packagingDir,
-				rpath[rpath.find('/.self/') + len('/.self/'):] + '/' + library)
-			if os.path.exists(rpathDir):
-				return False
+		if rpath is not None:
+			for rpath1 in rpath.split(':'):
+				if rpath1.find('/.self/') != -1:
+					rpathDir = os.path.join(self.package.packagingDir,
+						rpath1[rpath1.find('/.self/') + len('/.self/'):] + '/' + library)
+					if os.path.exists(rpathDir):
+						return False
+				elif rpath1.find('$ORIGIN') != -1:
+					rpathDir = os.path.join(dirPath,
+						rpath1[rpath1.find('$ORIGIN/') + len('$ORIGIN/'):] + '/' + library)
+					if os.path.exists(rpathDir):
+						return False
 
 		# not provided by the package -- check whether it is required explicitly
 		suffixIndex = library.find('.so')
