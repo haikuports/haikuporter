@@ -20,9 +20,10 @@ from .RecipeTypes import Architectures, Status
 from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import (ensureCommandIsAvailable, escapeForPackageInfo,
 					haikuporterRepoUrl, haikuportsRepoUrl, info, naturalCompare,
-					sysExit, warn)
+					sysExit, touchFile, warn)
 
 import codecs
+import datetime
 import json
 import os
 import shutil
@@ -250,6 +251,10 @@ class Package(object):
 			os.rmdir(mimeDBDir)
 			if not os.listdir(dataDir):
 				os.rmdir(dataDir)
+		else:
+			t = datetime.datetime(2001, 8, 18, 0, 0)
+			for superMimeType in os.listdir(mimeDBDir):
+				touchFile(mimeDBDir + "/" + superMimeType, t)
 
 		# Create the package
 		info('creating package ' + self.hpkgName + ' ...')

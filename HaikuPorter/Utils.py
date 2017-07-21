@@ -15,6 +15,7 @@ import shutil
 from subprocess import PIPE, Popen, CalledProcessError
 import sys
 import tarfile
+import time
 import zipfile
 
 if sys.stdout.isatty():
@@ -173,13 +174,17 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
 
-def touchFile(theFile):  # @DontTrace
+def touchFile(theFile, stamp = None):  # @DontTrace
 	"""Touches given file, making sure that its modification date is bumped"""
 
+	if stamp is not None:
+		t = time.mktime(stamp.timetuple())
 	if os.path.exists(theFile):
-		os.utime(theFile, None)
+		os.utime(theFile, None if stamp is None else (t, t))
 	else:
 		open(theFile, 'w').close()
+		if stamp is not None:
+			os.utime(theFile, (t,  t))
 
 def storeStringInFile(string, theFile):
 	"""Stores the given string in the file with the given name"""
