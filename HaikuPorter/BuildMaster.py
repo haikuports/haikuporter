@@ -84,6 +84,32 @@ class ScheduledBuild:
 		}
 
 
+class BuildRecord:
+	def __init__(self, scheduledBuild, startTime, buildSuccess, builderId):
+		self.port = scheduledBuild.port
+		self.buildNumbers = scheduledBuild.buildNumbers
+		self.startTime = time.localtime(startTime)
+		self.duration = time.time() - startTime
+		self.buildSuccess = buildSuccess
+		self.builderId = builderId
+
+	@property
+	def status(self):
+		return {
+			'port': {
+				'name': self.port.name,
+				'version': self.port.version,
+				'revision': self.port.revision,
+				'revisionedName': self.port.revisionedName
+			},
+			'buildNumbers': self.buildNumbers,
+			'startTime': self.startTime,
+			'duration': self.duration,
+			'buildSuccess': self.buildSuccess,
+			'builderId': self.builderId
+		}
+
+
 class _BuilderState:
 	AVAILABLE = 'Available'
 	LOST = 'Lost'
@@ -780,6 +806,7 @@ class BuildMaster:
 		self.completeBuilds = []
 		self.failedBuilds = []
 		self.lostBuilds = []
+		self.buildHistory = []
 		self.totalBuildCount = 0
 		self.startTime = None
 		self.impulseData = [None] * 500
@@ -951,6 +978,7 @@ class BuildMaster:
 
 		builder.setBuild(scheduledBuild, buildNumber)
 		self._dumpStatus()
+		startTime = time.time()
 
 		(buildSuccess, reschedule) = builder.runBuild()
 
@@ -967,6 +995,11 @@ class BuildMaster:
 				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
 		else:
+			self.buildHistory.append(BuildRecord(scheduledBuild,
+				startTime, buildSuccess, self.activeBuilders.index(builder)))
+			if self.display:
+				self.display.updateHistory(self.buildHistory)
+
 			self._buildComplete(scheduledBuild, buildSuccess,
 				self.completeBuilds if buildSuccess else self.failedBuilds)
 
