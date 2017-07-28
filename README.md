@@ -50,34 +50,20 @@ erase the container without losing your work.
 
  - Install requirements
    - `pip install paramiko` or `dnf install python-paramiko`
- - Install repository management tools
-   - `git clone https://git.haiku-os.org/buildtools`
-   - `make -j2 -C buildtools/jam && sudo cp buildtools/jam/bin.*/jam /usr/local/bin/`
-   - `git clone https://git.haiku-os.org/haiku`
-   - `mkdir haiku/generated.tools`
-   - `cd haiku/generated.tools`
-   - `../configure --host-only`
-   - `jam -q \<build\>package`
-   - `sudo cp objects/linux/lib/* /usr/local/lib/`
-   - `sudo cp objects/linux/x*/release/tools/package/package /usr/local/bin/`
-   - `sudo ldconfig`
-   - `cd ../..`
- - Clone haikuporter and haikuports locally
+ - Bootstrap the buildmaster instance
    - `git clone https://github.com/haikuports/haikuporter.git`
-   - `git clone https://github.com/haikuports/haikuports.git`
- - Configure your builders with createbuilder
-   - `cd haikuporter`
-   - example: `./buildmaster/bin/createbuilder -n mybuilder01 -H 127.0.0.1`
-   - export HAIKUPORTER=/home/pulkomandy/haiku/haikuporter/haikuporter
+   - `./haikuporter/buildmaster/bin/bootstrap_buildmaster.sh ...`
+ - Configure your builders within instance ports tree with createbuilder
+   - `cd buildmaster_<arch>/haikuports`
+   - example: `../haikuporter/buildmaster/bin/createbuilder -n mybuilder01 -H 127.0.0.1`
  - Validate and provision your builders
-   - ./buildmaster/bin/builderctl health
-   - ./buildmaster/bin/builderctl provision
- - Copy the packages from a nightly to ports/packages on the buildmaster
- - `./buildmaster/bin/buildmaster everything`
+   - `../haikuporter/buildmaster/bin/builderctl health`
+   - `../haikuporter/buildmaster/bin/builderctl provision`
+ - `../haikuporter/buildmaster/bin/buildmaster everything`
 
 ### Deploy buildslave (Haiku)
 
- - Checkout Haikuporter and Haikuports, matching the paths specified in createbuilder.sh on buildmaster side
+ - Checkout Haikuporter and Haikuports, matching the paths specified in createbuilder on buildmaster side
  - Add the public key from the buildmaster to authorized\_keys
  - useradd sshd ; ssh-keygen -A
  - Enable PermitRootLogin in /system/settings/ssh/sshd\_config and make sure the path to the sftp server is correct
