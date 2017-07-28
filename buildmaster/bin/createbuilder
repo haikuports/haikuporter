@@ -15,14 +15,12 @@ import json
 from subprocess import call
 from subprocess import check_output
 
-my_location = os.path.dirname(os.path.realpath(__file__))
-
 parser = argparse.ArgumentParser(description='Configure a new remote package builder')
 parser.add_argument('-n', '--name', help='Builder name', required=True)
 parser.add_argument('-H', '--host', help='Builder ssh host', required=True)
 parser.add_argument('-p', '--port', help='Builder ssh port', required=False, default="22")
 parser.add_argument('-u', '--user', help='Builder ssh user', required=False, default="user")
-parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/../builders")
+parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=os.path.join(os.getcwd(), 'buildmaster/builders'))
 parser.add_argument('-f', '--force', help='Force overwrite of existing builder', required=False, action="store_true", default=False)
 parser.add_argument('-w', '--workdir', help='Haikuports path on remote builder', required=False, default="/boot/home/haikuports")
 args = parser.parse_args()

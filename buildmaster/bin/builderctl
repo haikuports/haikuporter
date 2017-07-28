@@ -24,8 +24,6 @@ class color:
 	BOLD = '\033[1m'
 	UNDERLINE = '\033[4m'
 
-my_location = os.path.dirname(os.path.realpath(__file__))
-
 # Get state of cluster
 def cluster_health(arguments):
 	print color.HEADER + "Name              + Host                        + Status" + color.ENDC
@@ -157,7 +155,7 @@ def cluster_reboot(arguments):
 		ssh.close()
 
 parser = argparse.ArgumentParser(description='List and test connections to builders')
-parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=my_location + "/../builders")
+parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=os.path.join(os.getcwd(), "buildmaster/builders"))
 parser.add_argument('action', help='[ health | provision | reboot ]')
 args = parser.parse_args()
 
