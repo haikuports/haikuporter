@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ ! -d buildmaster -o ! -f haikuports.conf ]
+then
+	echo "buildmaster must be run from within a configured ports tree"
+	exit 1
+fi
+
 BASE_DIR="$(pwd)/buildmaster"
 CONFIG_FILE="$BASE_DIR/config"
 source "$CONFIG_FILE"
