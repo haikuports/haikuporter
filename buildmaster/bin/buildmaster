@@ -94,10 +94,16 @@ fi
 
 echo "ports to be built: $PORTS_TO_BUILD"
 
-BUILDRUN_FILE="$BASE_DIR/buildruns/last_buildrun"
+BUILDRUN_BASE="$BASE_DIR/buildruns"
+if [ ! -e "$BUILDRUN_BASE" ]
+then
+	mkdir -p "$BUILDRUN_BASE"
+fi
+
+BUILDRUN_FILE="$BUILDRUN_BASE/last_buildrun"
 BUILDRUN=$(expr $(cat "$BUILDRUN_FILE" 2> /dev/null) + 1)
-BUILDRUN_OUTPUT_DIR="$BASE_DIR/buildruns/$BUILDRUN"
-BUILDRUN_INDEX="$BASE_DIR/buildruns/buildruns.txt"
+BUILDRUN_OUTPUT_DIR="$BUILDRUN_BASE/$BUILDRUN"
+BUILDRUN_INDEX="$BUILDRUN_BASE/buildruns.txt"
 
 echo "$BUILDRUN" >> "$BUILDRUN_INDEX"
 echo "$BUILDRUN" > "$BUILDRUN_FILE"
