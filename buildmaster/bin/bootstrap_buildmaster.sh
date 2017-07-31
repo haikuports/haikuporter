@@ -185,7 +185,8 @@ echo "PACKAGER=\"buildmaster $ARCH$SECONDARY_ARCHS" \
 echo "TARGET_ARCHITECTURE=\"$ARCH\"" >> haikuports.conf
 if [ ! -z "$SECONDARY_ARCHS" ]
 then
-	echo "SECONDARY_ARCHITECTURES=\"$SECONDARY_ARCHS\"" >> haikuports.conf
+	echo "SECONDARY_TARGET_ARCHITECTURES=\"$SECONDARY_ARCHS\"" \
+		>> haikuports.conf
 fi
 
 
