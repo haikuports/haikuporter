@@ -50,6 +50,8 @@ erase the container without losing your work.
 
  - Install requirements
    - `pip install paramiko` or `dnf install python-paramiko`
+   - buildtools dependencies: autoconf, flex, bison, texinfo, zlib-devel
+   - Haiku host tools dependencies: libstdc++-static, libcurl-devel
  - Bootstrap the buildmaster instance
    - `git clone https://github.com/haikuports/haikuporter.git`
    - `./haikuporter/buildmaster/bin/bootstrap_buildmaster.sh ...`
