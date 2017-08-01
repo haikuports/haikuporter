@@ -143,7 +143,7 @@ BuildMaster.prototype.fetch = function(resource, successCallback, errorCallback)
 BuildMaster.prototype.populateBuildruns = function(response)
 {
 	var parentElement = findElement('#buildrunSelector');
-	response.split('\n').forEach(function(buildrunDir) {
+	response.split('\n').reverse().forEach(function(buildrunDir) {
 			if (buildrunDir.length == 0)
 				return;
 
