@@ -99,17 +99,19 @@ function getSearchParameter(parameterName, expression, defaultValue)
 
 function BuildMaster()
 {
-	this.baseDir
-		= getSearchParameter('baseDir', '[a-zA-Z0-9][a-zA-Z0-9.-/]*', '');
-	if (this.baseDir.length > 0)
-		this.baseDir += '/';
-	else
-		this.baseDir += 'current/';
+	this.baseDir = 'buildruns/';
+	var buildrunDir
+		= getSearchParameter('buildrunDir', '[a-zA-Z0-9][a-zA-Z0-9.-/]*', '');
+	if (buildrunDir.length > 0)
+		buildrunDir += '/';
 
-	this.fetch('buildruns.txt', this.populateBuildruns.bind(this));
+	this.buildrunDir = this.baseDir + buildrunDir;
+
+	this.fetch(this.baseDir + 'buildruns.txt',
+		this.populateBuildruns.bind(this));
 
 	setElementContent('#loadStatus', 'Loading buildrun status...');
-	this.fetch(this.baseDir + '/output/status.json', function(response) {
+	this.fetch(this.buildrunDir + 'output/status.json', function(response) {
 			this.status = JSON.parse(response);
 			setElementContent('#loadStatus', '');
 			this.showStatus();
@@ -141,21 +143,21 @@ BuildMaster.prototype.fetch = function(resource, successCallback, errorCallback)
 BuildMaster.prototype.populateBuildruns = function(response)
 {
 	var parentElement = findElement('#buildrunSelector');
-	response.split('\n').forEach(function(baseDir) {
-			if (baseDir.length == 0)
+	response.split('\n').forEach(function(buildrunDir) {
+			if (buildrunDir.length == 0)
 				return;
 
 			var element = document.createElement('option');
-			element.value = baseDir;
-			element.innerText = baseDir;
-			if (baseDir + '/' == this.baseDir)
+			element.value = buildrunDir;
+			element.innerText = buildrunDir;
+			if (this.baseDir + buildrunDir + '/' == this.buildrunDir)
 				element.setAttribute('selected', 'selected');
 
 			parentElement.appendChild(element);
 		}.bind(this));
 
 	parentElement.addEventListener('change', function(event) {
-			window.location.replace(window.location.pathname + '?baseDir='
+			window.location.replace(window.location.pathname + '?buildrunDir='
 				+ event.target.value);
 		});
 }
@@ -266,15 +268,15 @@ BuildMaster.prototype.showStatus = function()
 	setElementContent('.count', totalBuilds, findElement('#builds'));
 
 	wrapElements('#masterLog', 'a', {
-			'href': this.baseDir + 'output/master.log',
+			'href': this.buildrunDir + 'output/master.log',
 			'target': '_blank'
 		});
 	wrapElements('.buildNumber', 'a', {
-			'href': this.baseDir + 'output/builds/%s.log',
+			'href': this.buildrunDir + 'output/builds/%s.log',
 			'target': '_blank'
 		});
 	wrapElements('.builderName', 'a', {
-			'href': this.baseDir + 'output/builders/%s.log',
+			'href': this.buildrunDir + 'output/builders/%s.log',
 			'target': '_blank'
 		});
 	wrapElements('#portsTreeHead', 'a', {
