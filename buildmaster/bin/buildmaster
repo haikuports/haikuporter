@@ -89,7 +89,7 @@ esac
 if [ -z "$PORTS_TO_BUILD" ]
 then
 	echo "no ports to build specified"
-	exit 2
+	exit 1
 fi
 
 echo "ports to be built: $PORTS_TO_BUILD"
@@ -118,7 +118,7 @@ ln -rs "$BUILDRUN_OUTPUT_DIR/output" "$BASE_DIR"
 if [ $? -ne 0 ]
 then
 	echo "build master failed"
-	exit 3
+	exit 4
 fi
 
 case "$1" in
