@@ -1,7 +1,10 @@
+var sBuildrunsBase = 'buildruns';
+
+
 function loadJSON(callback) {   
 	var xobj = new XMLHttpRequest();
 	xobj.overrideMimeType("application/json");
-	xobj.open('GET', 'buildruns/output/status.json', true);
+	xobj.open('GET', sBuildrunsBase + '/output/status.json', true);
 	xobj.onreadystatechange = function () {
 		if (xobj.readyState == 4 && xobj.status == "200") {
 			// Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
@@ -35,7 +38,7 @@ loadJSON(function(response) {
 	{
 		builder = data.builders.lost[i];
 		builders.innerHTML += "<tr><td>" + builder.name + "</td><td>" +
-			!builder.lost + "(" + builder.connectionErrors + "/" + builder.maxConnectionErrors +  ")</td><td><a href=\"current/output/builders/" + builder.name + ".log\">log</a></td></tr>"
+			!builder.lost + "(" + builder.connectionErrors + "/" + builder.maxConnectionErrors +  ")</td><td><a href=\"" + sBuildrunsBase + "/output/builders/" + builder.name + ".log\">log</a></td></tr>"
 	}
 
 	var builds = document.createElement("table");
@@ -44,14 +47,14 @@ loadJSON(function(response) {
 	{
 		build = data.builds.failed[i]
 		builds.innerHTML += '<tr class="failed"><td>' + build.port.revisionedName + "</td><td>"
-			+ '<a href="current/output/builds/' + build.buildNumbers[0] + '.log">FAILED</a>' + "</td></tr>"
+			+ '<a href="' + sBuildrunsBase + '/output/builds/' + build.buildNumbers[0] + '.log">FAILED</a>' + "</td></tr>"
 	}
 
 	for (i = 0; i < data.builds.complete.length; i++)
 	{
 		build = data.builds.complete[i]
 		builds.innerHTML += '<tr class="complete"><td>' + build.port.revisionedName + "</td><td>"
-			+ '<a href="current/output/builds/' + build.buildNumbers[0] + '.log">complete!</a>' + "</td></tr>"
+			+ '<a href="' + sBuildrunsBase + '/output/builds/' + build.buildNumbers[0] + '.log">complete!</a>' + "</td></tr>"
 	}
 
 	for (i = 0; i < data.builds.active.length; i++)
