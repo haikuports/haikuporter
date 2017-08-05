@@ -529,10 +529,6 @@ class Main(object):
 			buildDependencies = port.resolveBuildDependencies(
 				self.repository.path, self.packagesPath)
 
-		if self.options.buildMaster:
-			presentDependencyPackages = [ os.path.basename(path)
-				for path in presentDependencyPackages ]
-
 		print 'The following built dependencies were found:'
 		for dependency in buildDependencies:
 			print('\t' + dependency)

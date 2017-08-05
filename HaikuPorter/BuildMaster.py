@@ -44,11 +44,15 @@ class ThreadFilter:
 
 
 class ScheduledBuild:
-	def __init__(self, port, requiredPackageIDs, presentDependencyPackages):
+	def __init__(self, port, requiredPackageIDs, packagesPath,
+		presentDependencyPackages):
 		self.port = port
 		self.resultingPackages \
 			= [ package.hpkgName for package in self.port.packages ]
+		self.packagesPath = packagesPath
 		self.requiredPackages = presentDependencyPackages
+		self.requiredPackageIDs = [
+			os.path.basename(path) for path in presentDependencyPackages]
 		self.missingPackageIDs = set(requiredPackageIDs)
 		self.buildNumbers = []
 		self.lost = False
@@ -62,7 +66,9 @@ class ScheduledBuild:
 		if packageID in self.missingPackageIDs:
 			if available:
 				self.missingPackageIDs.remove(packageID)
-				self.requiredPackages.append(package.hpkgName)
+				self.requiredPackageIDs.append(package.hpkgName)
+				self.requiredPackages.append(
+					os.path.join(self.packagesPath, package.hpkgName))
 			else:
 				self.lost = True
 
@@ -76,7 +82,7 @@ class ScheduledBuild:
 				'revisionedName': self.port.revisionedName
 			},
 			'resultingPackages': self.resultingPackages,
-			'requiredPackages': list(self.requiredPackages),
+			'requiredPackages': list(self.requiredPackageIDs),
 			'missingPackageIDs': list(self.missingPackageIDs),
 			'buildable': self.buildable,
 			'buildNumbers': self.buildNumbers,
@@ -481,12 +487,13 @@ class RemoteBuilder:
 
 				self.buildLogger.info(line[:-1])
 
-	def _makePackageAvailable(self, packageName):
+	def _makePackageAvailable(self, packagePath):
+		packageName = os.path.basename(packagePath)
 		if packageName in self.availablePackages:
 			return
 
 		self.logger.info('upload package ' + packageName + ' to builder')
-		self._putFile(os.path.join(self.packagesPath, packageName),
+		self._putFile(packagePath,
 			self.config['portstree']['packagesCachePath'] + '/' + packageName)
 
 		self.availablePackages.append(packageName)
@@ -518,7 +525,8 @@ class RemoteBuilder:
 
 		self.visiblePackages = []
 
-	def _makePackageVisible(self, packageName):
+	def _makePackageVisible(self, packagePath):
+		packageName = os.path.basename(packagePath)
 		if packageName in self.visiblePackages:
 			return
 
@@ -712,6 +720,7 @@ class BuildMaster:
 		self.reconnectingBuilders = []
 		self.lostBuilders = []
 		self.availableBuilders = []
+		self.packagesPath = packagesPath
 		self.masterBaseDir = 'buildmaster'
 		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
 		self.buildOutputBaseDir = getOption('buildMasterOutputDir')
@@ -821,7 +830,7 @@ class BuildMaster:
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.logger.info('scheduling build of ' + port.versionedName)
 		scheduledBuild = ScheduledBuild(port, requiredPackageIDs,
-			presentDependencyPackages)
+			self.packagesPath, presentDependencyPackages)
 
 		if scheduledBuild.buildable:
 			self.scheduledBuilds.append(scheduledBuild)
