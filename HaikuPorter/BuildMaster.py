@@ -82,8 +82,8 @@ class ScheduledBuild:
 				'revisionedName': self.port.revisionedName
 			},
 			'resultingPackages': self.resultingPackages,
-			'requiredPackages': list(self.requiredPackageIDs),
-			'missingPackageIDs': list(self.missingPackageIDs),
+			'requiredPackages': sorted(list(self.requiredPackageIDs)),
+			'missingPackageIDs': sorted(list(self.missingPackageIDs)),
 			'buildable': self.buildable,
 			'buildNumbers': self.buildNumbers,
 			'lost': self.lost
