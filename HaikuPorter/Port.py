@@ -520,7 +520,7 @@ class Port(object):
 		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
-	def resolveBuildDependencies(self, repositoryPath, packagesPath,
+	def resolveBuildDependencies(self, repositoryPath, repositories,
 		presentDependencyPackages = None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
@@ -535,7 +535,7 @@ class Port(object):
 						 'SCRIPTLET_PREREQUIRES']
 		requiredPackages = self._resolveDependencies(
 			dependencyInfoFiles, requiresTypes,
-			[packagesPath, repositoryPath], 'required or prerequired ports',
+			repositories + [repositoryPath], 'required or prerequired ports',
 			stopAtHpkgs = presentDependencyPackages == None,
 			presentDependencyPackages = presentDependencyPackages
 		)

@@ -61,6 +61,12 @@ class Main(object):
 		self.packagesPath = Configuration.getPackagesPath()
 		self.repositoryPath = Configuration.getRepositoryPath()
 
+		self.packageRepositories = [self.packagesPath]
+		if not self.options.noSystemPackages \
+			and self.options.systemPackagesDirectory != None:
+			self.packageRepositories.append(
+				self.options.systemPackagesDirectory)
+
 		# if requested, checkout or update ports tree
 		if self.options.get:
 			self._updatePortsTree()
@@ -423,7 +429,8 @@ class Main(object):
 
 		presentDependencyPackages = []
 		buildDependencies = port.resolveBuildDependencies(
-			self.repository.path, self.packagesPath, presentDependencyPackages)
+			self.repository.path, self.packageRepositories,
+			presentDependencyPackages)
 
 		print 'packages already present:'
 		for package in presentDependencyPackages:
@@ -519,7 +526,7 @@ class Main(object):
 			presentDependencyPackages = []
 			try:
 				buildDependencies = port.resolveBuildDependencies(
-					self.repository.path, self.packagesPath,
+					self.repository.path, self.packageRepositories,
 					presentDependencyPackages)
 			except SystemExit as exception:
 				print('resolving build dependencies failed for port '
@@ -527,7 +534,7 @@ class Main(object):
 				return
 		else:
 			buildDependencies = port.resolveBuildDependencies(
-				self.repository.path, self.packagesPath)
+				self.repository.path, self.packageRepositories)
 
 		print 'The following built dependencies were found:'
 		for dependency in buildDependencies:
