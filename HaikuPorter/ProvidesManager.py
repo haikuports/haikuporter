@@ -6,6 +6,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from .Configuration import Configuration
 from .Options import getOption
 from .PackageInfo import PackageInfo, Resolvable
 from .Utils import versionCompare
@@ -30,12 +31,17 @@ class ProvidesInfo(Resolvable):
 class ProvidesManager(object):
 	def __init__(self):
 		self._providesMap = {}
+		self.architectures = [Configuration.getTargetArchitecture(), 'any',
+			'source']
 
 	def addProvidesFromPackage(self, package):
 		for providesString in package.recipeKeys['PROVIDES']:
 			self._addPackageProvidesInfo(package.revisionedName, providesString)
 
 	def addProvidesFromPackageInfo(self, packageInfo):
+		if not packageInfo.architecture in self.architectures:
+			return
+
 		for provides in packageInfo.provides:
 			self._addPackageProvidesInfo(packageInfo, str(provides))
 
