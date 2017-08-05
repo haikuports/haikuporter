@@ -190,25 +190,6 @@ then
 fi
 
 
-# Bootstrap initial set of packages. They are placed separately and then
-# symlinked into the packages dir, so they will not get exported into the
-# built repository (as they weren't built here).
-
-INITIAL_PACKAGES_DIR="$(realpath "initial-packages")"
-echo "Populating initial packages to $INITIAL_PACKAGES_DIR"
-mkdir "$INITIAL_PACKAGES_DIR"
-cd "$INITIAL_PACKAGES_DIR"
-
-cp "$GENERATED_DIR"/objects/haiku/*/packaging/packages/*.hpkg .
-cp "$GENERATED_DIR"/download/*.hpkg .
-
-cd "$PORTS_DIR"
-echo "Symlinking initial packages"
-mkdir packages
-cd packages
-ls "$INITIAL_PACKAGES_DIR"/*.hpkg | xargs -l1 ln -sr
-
-
 # Configure the buildmaster instance.
 
 cd "$PORTS_DIR"
@@ -220,6 +201,20 @@ echo "export HAIKUPORTER=\"$HAIKUPORTER_DIR/haikuporter\"" > config
 echo "export PACKAGE_REPO=\"$TOOLS_DIR/package_repo\"" >> config
 echo "export LD_LIBRARY_PATH=\"$TOOLS_DIR\"" >> config
 echo "export REPO_DIR=\"buildmaster/package_repository\"" >> config
+
+
+# Populate initial set of packages.
+
+INITIAL_PACKAGES_DIR="$(realpath "initial-packages")"
+echo "Populating initial packages to $INITIAL_PACKAGES_DIR"
+mkdir "$INITIAL_PACKAGES_DIR"
+cd "$INITIAL_PACKAGES_DIR"
+
+cp "$GENERATED_DIR"/objects/haiku/*/packaging/packages/*.hpkg .
+cp "$GENERATED_DIR"/download/*.hpkg .
+
+
+# Done.
 
 echo ""
 echo "Buildmaster instance bootstrapped in $PORTS_DIR."

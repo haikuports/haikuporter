@@ -113,7 +113,9 @@ rm "$BUILDRUN_BASE/output"
 ln -rs "$BUILDRUN_OUTPUT_DIR/output" "$BUILDRUN_BASE"
 
 "$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
-	--all-dependencies --build-master $PORTS_TO_BUILD
+	--all-dependencies \
+	--system-packages-directory="$BASE_DIR/initial-packages" \
+	--build-master $PORTS_TO_BUILD
 
 if [ $? -ne 0 ]
 then
