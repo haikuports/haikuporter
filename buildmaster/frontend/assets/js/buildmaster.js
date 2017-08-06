@@ -135,6 +135,12 @@ function BuildMaster()
 	this.fetch(this.baseDir + 'buildruns.txt',
 		this.populateBuildruns.bind(this));
 
+	var viewToggle = document.querySelector('#viewToggle');
+	viewToggle.onclick = this.toggleViewMode.bind(this);
+	var viewMode = getSearchParameter('viewMode');
+	if (viewMode && viewMode != this.viewMode())
+		this.toggleViewMode({ target: viewToggle });
+
 	setElementContent('#loadStatus', 'Loading buildrun status...');
 	this.fetch(this.buildrunDir + 'output/status.json', function(response) {
 			this.status = JSON.parse(response);
@@ -144,6 +150,22 @@ function BuildMaster()
 			setElementContent('#loadStatus', 'Failed to load buildrun status: '
 				+ status);
 		});
+}
+
+
+BuildMaster.prototype.toggleViewMode = function(event)
+{
+	if (document.documentElement.classList.toggle('compact'))
+		event.target.textContent = 'Expanded';
+	else
+		event.target.textContent = 'Compact';
+}
+
+
+BuildMaster.prototype.viewMode = function()
+{
+	return document.documentElement.classList.contains('compact')
+		? 'compact' : 'expanded';
 }
 
 
@@ -183,8 +205,8 @@ BuildMaster.prototype.populateBuildruns = function(response)
 
 	parentElement.addEventListener('change', function(event) {
 			window.location.replace(window.location.pathname + '?buildrunDir='
-				+ event.target.value);
-		});
+				+ event.target.value + '&viewMode=' + this.viewMode());
+		}.bind(this));
 }
 
 
@@ -238,9 +260,9 @@ BuildMaster.prototype.showStatus = function()
 			var element = createFromTemplate('#builderTemplate');
 			mapContentFromObject(builder, {
 					'name': '.builderName',
-					'currentBuild.number': '.currentBuild .buildNumber',
+					'currentBuild.number': '.buildNumber',
 					'currentBuild.build.port.revisionedName':
-						'.currentBuild .revisionedName',
+						'.revisionedName',
 				}, element);
 
 			parentElement.appendChild(element);

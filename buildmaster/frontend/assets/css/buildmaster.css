@@ -41,16 +41,14 @@ a, a:visited {
 	display: inline-block;
 	vertical-align: top;
 	margin-top: 0.5em;
-	flex-grow: 1;
 }
 
 .labeled .labeled:first-child > * {
 	margin-top: 0;
 }
 
-.label {
+.label, .compact .revisionedName {
 	width: 15em;
-	flex-grow: 0;
 }
 
 .resultingPackages, .requiredPackages, .missingPackages {
@@ -95,7 +93,7 @@ a, a:visited {
 	background-color: #f0fff0;
 }
 
-#reconnectingBuilders {
+#activeBuilds, #reconnectingBuilders {
 	background-color: #f0f0ff;
 }
 
@@ -113,6 +111,7 @@ a, a:visited {
 
 .logContainer {
 	flex-direction: column;
+	flex-grow: 1;
 }
 
 .logs a {
@@ -129,4 +128,27 @@ a, a:visited {
 
 .inlineLogViewer.hidden {
 	display: none;
+}
+
+.compact .expanded, .compact .expanded-if-empty:empty,
+.compact .expanded-if-only:only-child, .compact .buildNumber {
+	display: none;
+}
+
+.compact .scheduledBuild, .compact .builder {
+	border-top: none;
+	margin-bottom: 0;
+	display: flex;
+}
+
+.compact .builder .labeled {
+	flex-grow: 1;
+}
+
+.compact .buildNumber:last-of-type {
+	display: flex;
+}
+
+.compact .buildNumbersContainer {
+	flex-grow: 1;
 }

@@ -6,7 +6,7 @@
 		<link rel="stylesheet" href="assets/css/buildmaster.css" />
 	</head>
 	<body>
-		<a id="topLink" href="#top">
+		<a id="topLink" class="expanded" href="#top">
 			<div>
 				Back to top
 			</div>
@@ -27,6 +27,12 @@
 						<option value="">current</option>
 					</select>
 					<div id="loadStatus">Initializing</div>
+				</div>
+				<div class="labeled">
+					<div class="label">
+						<label for="viewToggle">Set view mode</label>
+					</div>
+					<button id="viewToggle">Compact</button>
 				</div>
 				<h1>Buildrun Info</h1>
 				<div class="labeled">
@@ -61,36 +67,37 @@
 				<div id="builderTemplate" class="template">
 					<div class="builder">
 						<div class="labeled">
-							<div class="label">Name</div>
+							<div class="label expanded">Name</div>
 							<div class="logContainer">
 								<div class="builderName"></div>
 							</div>
 						</div>
-						<div class="labeled currentBuildContainer">
-							<div class="label">Current build</div>
-							<div class="currentBuild">
-								<div class="labeled">
-									<div class="label">Build number</div>
-									<div class="logContainer">
-										<div class="buildNumber"></div>
-									</div>
-								</div>
-								<div class="labeled">
-									<div class="label">Port</div>
-									<div class="revisionedName"></div>
-								</div>
+						<div class="labeled currentBuildContainer expanded">
+							<div class="label">Current port</div>
+							<div class="revisionedName"></div>
+						</div>
+						<div class="labeled currentBuildContainer expanded">
+							<div class="label">Current build number</div>
+							<div class="logContainer">
+								<div class="buildNumber"></div>
 							</div>
 						</div>
 					</div>
 				</div>
 				<div id="activeBuilders">
-					<h2>Active <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Active <span class="count"></span>
+					</h2>
 				</div>
 				<div id="reconnectingBuilders">
-					<h2>Reconnecting <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Reconnecting <span class="count"></span>
+					</h2>
 				</div>
 				<div id="lostBuilders">
-					<h2>Lost <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Lost <span class="count"></span>
+					</h2>
 				</div>
 			</div>
 			<div id="builds">
@@ -98,25 +105,25 @@
 				<div id="scheduledBuildTemplate" class="template">
 					<div class="scheduledBuild">
 						<div class="labeled">
-							<div class="label">Name</div>
+							<div class="label expanded">Name</div>
 							<div class="revisionedName"></div>
 						</div>
-						<div class="labeled">
-							<div class="label">Build numbers
+						<div class="labeled buildNumbersContainer">
+							<div class="label expanded">Build numbers
 								<span class="count"></span></div>
 							<div class="buildNumbers logContainer"></div>
 						</div>
-						<div class="labeled">
+						<div class="labeled expanded">
 							<div class="label">Resulting packages
 								<span class="count"></span></div>
 							<div class="resultingPackages"></div>
 						</div>
-						<div class="labeled">
+						<div class="labeled expanded">
 							<div class="label">Required packages
 								<span class="count"></span></div>
 							<div class="requiredPackages"></div>
 						</div>
-						<div class="labeled">
+						<div class="labeled expanded">
 							<div class="label">Missing packages
 								<span class="count"></span></div>
 							<div class="missingPackages"></div>
@@ -124,22 +131,34 @@
 					</div>
 				</div>
 				<div id="activeBuilds">
-					<h2>Active <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Active <span class="count"></span>
+					</h2>
 				</div>
 				<div id="scheduledBuilds">
-					<h2>Scheduled <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Scheduled <span class="count"></span>
+					</h2>
 				</div>
 				<div id="blockedBuilds">
-					<h2>Blocked <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Blocked <span class="count"></span>
+					</h2>
 				</div>
 				<div id="completeBuilds">
-					<h2>Complete <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Complete <span class="count"></span>
+					</h2>
 				</div>
 				<div id="failedBuilds">
-					<h2>Failed <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Failed <span class="count"></span>
+					</h2>
 				</div>
 				<div id="lostBuilds">
-					<h2>Lost <span class="count"></span></h2>
+					<h2 class="expanded-if-only">
+						Lost <span class="count"></span>
+					</h2>
 				</div>
 			</div>
 		</div>
