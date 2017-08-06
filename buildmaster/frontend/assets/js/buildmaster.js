@@ -29,7 +29,7 @@ function removeElements(selector, baseElement)
 
 function setElementContent(elementSelector, content, baseElement)
 {
-	findElement(elementSelector, baseElement).innerText = content;
+	findElement(elementSelector, baseElement).textContent = content;
 }
 
 
@@ -41,7 +41,7 @@ function wrapElements(selector, elementType, attributes, baseElement)
 	var nodeList = baseElement.querySelectorAll(selector);
 	for (var i = 0; i < nodeList.length; i++) {
 		var element = nodeList[i];
-		var content = element.innerText;
+		var content = element.textContent;
 		var wrapper = document.createElement(elementType);
 		for (var propertyName in attributes) {
 			if (!attributes.hasOwnProperty(propertyName))
@@ -149,7 +149,7 @@ BuildMaster.prototype.populateBuildruns = function(response)
 
 			var element = document.createElement('option');
 			element.value = buildrunDir;
-			element.innerText = buildrunDir;
+			element.textContent = buildrunDir;
 			if (this.baseDir + buildrunDir + '/' == this.buildrunDir)
 				element.setAttribute('selected', 'selected');
 
@@ -210,7 +210,7 @@ BuildMaster.prototype.showStatus = function()
 	var addString = function(parentElement, className, string) {
 			var element = document.createElement('div');
 			element.className = className;
-			element.innerText = string;
+			element.textContent = string;
 			parentElement.appendChild(element);
 		};
 
