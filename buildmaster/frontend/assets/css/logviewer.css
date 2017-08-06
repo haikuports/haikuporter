@@ -1,0 +1,95 @@
+body {
+	font-family: monospace;
+}
+
+.bright {
+	font-weight: bolder;
+}
+
+.dim {
+	font-weight: lighter;
+}
+
+.italic {
+	font-style: italic;
+}
+
+.underscore {
+	text-decoration: underline;
+}
+
+.blink, .blinkRapid {
+	text-decoration: blink;
+}
+
+.hidden {
+	color: transparent;
+}
+
+.crossed {
+	text-decoration: line-through;
+}
+
+.fg-black, .bg-black.reverse {
+	color: black;
+}
+
+.fg-red, .bg-red.reverse {
+	color: red;
+}
+
+.fg-green, .bg-green.reverse {
+	color: green;
+}
+
+.fg-yellow, .bg-yellow.reverse {
+	color: yellow;
+}
+
+.fg-blue, .bg-blue.reverse {
+	color: blue;
+}
+
+.fg-magenta, .bg-blue.reverse {
+	color: magenta;
+}
+
+.fg-cyan, .bg-cyan.reverse {
+	color: cyan;
+}
+
+.fg-white, .bg-white.reverse {
+	color: white;
+}
+
+.bg-black, .fg-black.reverse {
+	background-color: black;
+}
+
+.bg-red, .fg-red.reverse {
+	background-color: red;
+}
+
+.bg-green, .fg-green.reverse {
+	background-color: green;
+}
+
+.bg-yellow, .fg-yellow.reverse {
+	background-color: yellow;
+}
+
+.bg-blue, .fg-blue.reverse {
+	background-color: blue;
+}
+
+.bg-magenta, .fg-blue.reverse {
+	background-color: magenta;
+}
+
+.bg-cyan, .fg-cyan.reverse {
+	background-color: cyan;
+}
+
+.bg-white, .fg-white.reverse {
+	background-color: white;
+}
