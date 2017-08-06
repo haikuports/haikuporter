@@ -64,10 +64,10 @@ function replaceAttributes(match, inner)
 function parseLogfile(content)
 {
 	const replacements = [
-			{ what: '\n', with: '<br>' },
-			{ what: '\t', with: '        ' },
 			{ what: '<', with: '&lt;' },
 			{ what: '>', with: '&gt;' },
+			{ what: '\n', with: '<br>' },
+			{ what: '\t', with: '        ' },
 			{ what: '  ', with: ' &nbsp;' },
 			{ what: '\x1b((\\[K)|(\\(.))', with: '' },
 			{ what: '\x1b\\[(([0-9]*;?)*)m', with: replaceAttributes }
