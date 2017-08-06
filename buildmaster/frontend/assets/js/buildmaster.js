@@ -33,7 +33,8 @@ function setElementContent(elementSelector, content, baseElement)
 }
 
 
-function wrapElements(selector, elementType, attributes, baseElement)
+function wrapElements(selector, elementType, attributes, contentSource, onclick,
+	baseElement)
 {
 	if (baseElement === undefined)
 		baseElement = document;
@@ -41,7 +42,8 @@ function wrapElements(selector, elementType, attributes, baseElement)
 	var nodeList = baseElement.querySelectorAll(selector);
 	for (var i = 0; i < nodeList.length; i++) {
 		var element = nodeList[i];
-		var content = element.textContent;
+		var content = contentSource
+			? element.dataset[contentSource] : element.textContent;
 		var wrapper = document.createElement(elementType);
 		for (var propertyName in attributes) {
 			if (!attributes.hasOwnProperty(propertyName))
@@ -53,6 +55,7 @@ function wrapElements(selector, elementType, attributes, baseElement)
 
 		element.parentElement.replaceChild(wrapper, element);
 		wrapper.appendChild(element);
+		wrapper.onclick = onclick;
 	}
 }
 
@@ -94,6 +97,28 @@ function getSearchParameter(parameterName, expression, defaultValue)
 		return defaultValue;
 
 	return match[1];
+}
+
+
+function createInlineViewer(event)
+{
+	var target = event.currentTarget;
+	var viewer = document.createElement('iframe');
+	viewer.className = 'inlineLogViewer';
+	viewer.src = target.dataset.url;
+
+	target.onclick = () => {
+			if (viewer.classList.contains('hidden'))
+				viewer.classList.remove('hidden');
+			else
+				viewer.classList.add('hidden');
+		};
+
+	var container = target;
+	while (!container.parentElement.classList.contains('logContainer'))
+		container = container.parentElement;
+
+	container.parentElement.insertBefore(viewer, container.nextSibling);
 }
 
 
@@ -160,6 +185,37 @@ BuildMaster.prototype.populateBuildruns = function(response)
 			window.location.replace(window.location.pathname + '?buildrunDir='
 				+ event.target.value);
 		});
+}
+
+
+BuildMaster.prototype.rawLogURL = function(path)
+{
+	return this.buildrunDir + 'output/' + path;
+}
+
+
+BuildMaster.prototype.logViewerURL = function(path)
+{
+	return 'logviewer.html?' + this.rawLogURL(path);
+}
+
+
+BuildMaster.prototype.addLogs = function(selector, path)
+{
+	Array.from(document.querySelectorAll(selector)).forEach((element) => {
+			var logs = createFromTemplate('#logTemplate');
+			Array.from(logs.children).forEach(
+				(log) => log.setAttribute('data-source', element.textContent));
+			element.appendChild(logs);
+		});
+
+	wrapElements(selector + ' .raw', 'a', {
+			'href': this.rawLogURL(path),
+			'target': '_blank'
+		}, 'source');
+	wrapElements(selector + ' .viewer', 'a', {
+			'data-url': this.logViewerURL(path)
+		}, 'source', createInlineViewer);
 }
 
 
@@ -267,18 +323,10 @@ BuildMaster.prototype.showStatus = function()
 	addBuildCount('Total', totalBuilds, '#builds');
 	setElementContent('.count', totalBuilds, findElement('#builds'));
 
-	wrapElements('#masterLog', 'a', {
-			'href': this.buildrunDir + 'output/master.log',
-			'target': '_blank'
-		});
-	wrapElements('.buildNumber', 'a', {
-			'href': this.buildrunDir + 'output/builds/%s.log',
-			'target': '_blank'
-		});
-	wrapElements('.builderName', 'a', {
-			'href': this.buildrunDir + 'output/builders/%s.log',
-			'target': '_blank'
-		});
+	this.addLogs('#masterLog', 'master.log');
+	this.addLogs('.builderName', 'builders/%s.log');
+	this.addLogs('.buildNumber', 'builds/%s.log');
+
 	wrapElements('#portsTreeHead', 'a', {
 			'href': 'https://github.com/haikuports/haikuports/commit/%s',
 			'target': '_blank'

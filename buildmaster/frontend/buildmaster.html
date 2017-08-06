@@ -13,6 +13,14 @@
 		</a>
 		<div id="statusPage">
 			<div>
+				<div id="logTemplate" class="template logs">
+					<div class="raw">
+						Raw log
+					</div>
+					<div class="viewer">
+						View log
+					</div>
+				</div>
 				<div class="labeled">
 					<div class="label">Select buildrun</div>
 					<select id="buildrunSelector">
@@ -23,8 +31,10 @@
 				<h1>Buildrun Info</h1>
 				<div class="labeled">
 					<div class="label">Log</div>
-					<div id="masterLog">
-						Master log
+					<div class="logContainer">
+						<div id="masterLog">
+							Master log
+						</div>
 					</div>
 				</div>
 				<div class="labeled">
@@ -52,14 +62,18 @@
 					<div class="builder">
 						<div class="labeled">
 							<div class="label">Name</div>
-							<div class="builderName"></div>
+							<div class="logContainer">
+								<div class="builderName"></div>
+							</div>
 						</div>
 						<div class="labeled currentBuildContainer">
 							<div class="label">Current build</div>
 							<div class="currentBuild">
 								<div class="labeled">
 									<div class="label">Build number</div>
-									<div class="buildNumber"></div>
+									<div class="logContainer">
+										<div class="buildNumber"></div>
+									</div>
 								</div>
 								<div class="labeled">
 									<div class="label">Port</div>
@@ -90,7 +104,7 @@
 						<div class="labeled">
 							<div class="label">Build numbers
 								<span class="count"></span></div>
-							<div class="buildNumbers"></div>
+							<div class="buildNumbers logContainer"></div>
 						</div>
 						<div class="labeled">
 							<div class="label">Resulting packages

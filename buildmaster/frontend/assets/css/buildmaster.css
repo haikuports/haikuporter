@@ -33,10 +33,15 @@ a, a:visited {
 	margin-bottom: 1em;
 }
 
+.labeled {
+	display: flex;
+}
+
 .labeled > * {
 	display: inline-block;
 	vertical-align: top;
 	margin-top: 0.5em;
+	flex-grow: 1;
 }
 
 .labeled .labeled:first-child > * {
@@ -45,6 +50,7 @@ a, a:visited {
 
 .label {
 	width: 15em;
+	flex-grow: 0;
 }
 
 .resultingPackages, .requiredPackages, .missingPackages {
@@ -99,4 +105,28 @@ a, a:visited {
 
 #lostBuilds {
 	background-color: #fffdf0;
+}
+
+.logContainer, .logContainer .logs, #masterLog, .builderName, .buildNumber {
+	display: flex;
+}
+
+.logContainer {
+	flex-direction: column;
+}
+
+.logs a {
+	margin-left: 1em;
+	font-weight: normal;
+	text-decoration: underline;
+}
+
+.inlineLogViewer {
+	width: 100%;
+	height: 15em;
+	background-color: white;
+}
+
+.inlineLogViewer.hidden {
+	display: none;
 }
