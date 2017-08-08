@@ -240,6 +240,10 @@ BuildMaster.prototype.addLogs = function(selector, path)
 			'target': '_blank'
 		}, 'source');
 	wrapElements(selector + ' .viewer', 'a', {
+			'href': this.logViewerURL(path),
+			'target': '_blank'
+		}, 'source');
+	wrapElements(selector + ' .inline', 'a', {
 			'data-url': this.logViewerURL(path)
 		}, 'source', createInlineViewer);
 }
