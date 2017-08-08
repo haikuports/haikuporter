@@ -9,7 +9,7 @@
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
-from .Utils import info, sysExit
+from .Utils import ensureCommandIsAvailable, info, sysExit, warn
 
 import errno
 import json
@@ -17,7 +17,7 @@ import logging
 import os
 import socket
 import stat
-from subprocess import CalledProcessError
+import subprocess
 import threading
 import time
 
@@ -125,10 +125,11 @@ class _BuilderState:
 
 class RemoteBuilder:
 	def __init__(self, configFilePath, packagesPath, outputBaseDir,
-			portsTreeHead):
+			portsTreeOriginURL, portsTreeHead):
 		self._loadConfig(configFilePath)
 		self.availablePackages = []
 		self.visiblePackages = []
+		self.portsTreeOriginURL = portsTreeOriginURL
 		self.portsTreeHead = portsTreeHead
 		self.packagesPath = packagesPath
 
@@ -249,10 +250,9 @@ class RemoteBuilder:
 			raise
 
 	def _validatePortsTree(self):
-		# TODO: Hardcoding the git repo here might not be ideal.
 		try:
 			command = ('if [ ! -d "' + self.config['portstree']['path'] + '" ]; '
-				+ 'then git clone https://github.com/haikuports/haikuports.git '
+				+ 'then git clone "' + self.portsTreeOriginURL + '" '
 				+ self.config['portstree']['path'] + '; fi')
 			self.logger.info('running command: ' + command)
 			(output, channel) = self._remoteCommand(command)
@@ -262,10 +262,10 @@ class RemoteBuilder:
 				+ str(exception))
 			raise
 
-	def _syncPortsTree(self, revision):
+	def _syncPortsTree(self):
 		try:
 			command = ('cd "' + self.config['portstree']['path']
-				+ '" && git fetch && git checkout ' + revision)
+				+ '" && git fetch && git checkout ' + self.portsTreeHead)
 			self.logger.info('running command: ' + command)
 			(output, channel) = self._remoteCommand(command)
 			if channel.recv_exit_status() != 0:
@@ -331,7 +331,7 @@ class RemoteBuilder:
 
 		self._connect()
 		self._validatePortsTree()
-		self._syncPortsTree(self.portsTreeHead)
+		self._syncPortsTree()
 		self._writeBuilderConfig()
 		self._createNeededDirs()
 		self._getAvailablePackages()
@@ -684,7 +684,7 @@ class LocalBuilder:
 
 
 		except Exception as exception:
-			if isinstance(exception, CalledProcessError):
+			if isinstance(exception, subprocess.CalledProcessError):
 				self.buildLogger.info(exception.output)
 			self.buildLogger.error(exception, exc_info=True)
 			self.currentBuild['phase'] = 'failed'
@@ -715,7 +715,10 @@ class LocalBuilder:
 
 
 class BuildMaster:
-	def __init__(self, packagesPath, portsTreeHead, options):
+	def __init__(self, portsTreePath, packagesPath, options):
+		self.portsTreePath = portsTreePath
+		self._fillPortsTreeInfo()
+
 		self.activeBuilders = []
 		self.reconnectingBuilders = []
 		self.lostBuilders = []
@@ -761,7 +764,6 @@ class BuildMaster:
 		self.logger.setLevel(logging.DEBUG)
 		self.logger.addHandler(logHandler)
 
-		self.portsTreeHead = portsTreeHead
 		self.logger.info('portstree head is at ' + self.portsTreeHead)
 
 		self.statusOutputPath = os.path.join(os.path.realpath(self.buildOutputBaseDir),
@@ -776,7 +778,8 @@ class BuildMaster:
 				builder = None
 				try:
 					builder = RemoteBuilder(configFilePath, packagesPath,
-						self.buildOutputBaseDir, portsTreeHead)
+						self.buildOutputBaseDir, self.portsTreeOriginURL,
+						self.portsTreeHead)
 				except Exception as exception:
 					self.logger.error('failed to add builder from config '
 						+ configFilePath + ':' + str(exception))
@@ -864,6 +867,22 @@ class BuildMaster:
 			self.logger.error(str(exception))
 			self._setBuildStatus('failed: ' + str(exception))
 		self.logger.info('finished with status: ' + self.buildStatus)
+
+	def _fillPortsTreeInfo(self):
+		try:
+			ensureCommandIsAvailable('git')
+			origin = subprocess.check_output(['git', 'remote', 'get-url',
+					'origin'], cwd = self.portsTreePath,
+				stderr=subprocess.STDOUT)
+			head = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+				cwd = self.portsTreePath, stderr=subprocess.STDOUT)
+		except:
+			warn(u'unable to determine origin and revision of haikuports tree')
+			origin = '<unknown> '
+			head = '<unknown> '
+
+		self.portsTreeOriginURL = origin[:-1]
+		self.portsTreeHead = head[:-1]
 
 	def _runBuilds(self):
 		while True:

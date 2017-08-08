@@ -100,16 +100,8 @@ class Main(object):
 		self._initGlobalShellVariables()
 
 		if self.options.buildMaster:
-			try:
-				ensureCommandIsAvailable('git')
-				head = check_output(['git', 'rev-parse', 'HEAD'],
-					cwd = self.treePath, stderr=STDOUT)
-			except:
-				warn(u'unable to determine revision of haikuports tree')
-				head = '<unknown> '
-
 			from .BuildMaster import BuildMaster
-			self.buildMaster = BuildMaster(self.packagesPath, head[:-1],
+			self.buildMaster = BuildMaster(self.treePath, self.packagesPath,
 				self.options)
 
 			self.options.noPackageObsoletion = True
