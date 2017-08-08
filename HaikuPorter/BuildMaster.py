@@ -1105,7 +1105,7 @@ class BuildMaster:
 		impulsePkgCount = (self.impulseData[self.impulseIndex]['pkgCount']
 			) if self.impulseData[self.impulseIndex] else None
 		now = time.time()
-		pkgCount = len(self.completeBuilds) + len(self.failedBuilds);
+		pkgCount = len(self.completeBuilds) + len(self.failedBuilds)
 		self.impulseData[self.impulseIndex] = {
 			'time': now,
 			'pkgCount': pkgCount
