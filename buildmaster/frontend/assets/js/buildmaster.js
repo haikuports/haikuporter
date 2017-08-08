@@ -145,6 +145,8 @@ function BuildMaster()
 	this.fetch(this.buildrunDir + 'output/status.json', function(response) {
 			this.status = JSON.parse(response);
 			setElementContent('#loadStatus', '');
+			this.portsTreeOriginURL = this.status.portsTreeOriginURL;
+			this.portsTreeHead = this.status.portsTreeHead;
 			this.showStatus();
 		}.bind(this), function(status) {
 			setElementContent('#loadStatus', 'Failed to load buildrun status: '
@@ -207,6 +209,12 @@ BuildMaster.prototype.populateBuildruns = function(response)
 			window.location.replace(window.location.pathname + '?buildrunDir='
 				+ event.target.value + '&viewMode=' + this.viewMode());
 		}.bind(this));
+}
+
+
+BuildMaster.prototype.commitURL = function()
+{
+	return this.portsTreeOriginURL + '/commit/%s';
 }
 
 
@@ -360,7 +368,7 @@ BuildMaster.prototype.showStatus = function()
 	this.addLogs('.buildNumber', 'builds/%s.log');
 
 	wrapElements('#portsTreeHead', 'a', {
-			'href': 'https://github.com/haikuports/haikuports/commit/%s',
+			'href': this.commitURL(),
 			'target': '_blank',
 			'rel': 'noopener'
 		});

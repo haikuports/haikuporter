@@ -1087,6 +1087,7 @@ class BuildMaster:
 				'lost': [ builder.status for builder in self.lostBuilders ]
 			},
 			'nextBuildNumber': self.buildNumber,
+			'portsTreeOriginURL': self.portsTreeOriginURL,
 			'portsTreeHead': self.portsTreeHead,
 			'buildStatus': self.buildStatus
 		}
