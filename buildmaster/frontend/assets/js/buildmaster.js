@@ -237,11 +237,13 @@ BuildMaster.prototype.addLogs = function(selector, path)
 
 	wrapElements(selector + ' .raw', 'a', {
 			'href': this.rawLogURL(path),
-			'target': '_blank'
+			'target': '_blank',
+			'rel': 'noopener'
 		}, 'source');
 	wrapElements(selector + ' .viewer', 'a', {
 			'href': this.logViewerURL(path),
-			'target': '_blank'
+			'target': '_blank',
+			'rel': 'noopener'
 		}, 'source');
 	wrapElements(selector + ' .inline', 'a', {
 			'data-url': this.logViewerURL(path)
@@ -359,7 +361,8 @@ BuildMaster.prototype.showStatus = function()
 
 	wrapElements('#portsTreeHead', 'a', {
 			'href': 'https://github.com/haikuports/haikuports/commit/%s',
-			'target': '_blank'
+			'target': '_blank',
+			'rel': 'noopener'
 		});
 
 	removeElements('.template');
