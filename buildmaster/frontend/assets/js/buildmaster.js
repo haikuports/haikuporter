@@ -218,6 +218,12 @@ BuildMaster.prototype.commitURL = function()
 }
 
 
+BuildMaster.prototype.recipeFileURL = function()
+{
+	return this.portsTreeOriginURL + '/blob/' + this.portsTreeHead + '/%s';
+}
+
+
 BuildMaster.prototype.rawLogURL = function(path)
 {
 	return this.buildrunDir + 'output/' + path;
@@ -281,6 +287,8 @@ BuildMaster.prototype.showStatus = function()
 					'currentBuild.number': '.buildNumber',
 					'currentBuild.build.port.revisionedName':
 						'.revisionedName',
+					'currentBuild.build.port.recipeFilePath':
+						'.recipeFilePath'
 				}, element);
 
 			parentElement.appendChild(element);
@@ -323,7 +331,8 @@ BuildMaster.prototype.showStatus = function()
 	var addBuild = function(parentElement, build) {
 			var element = createFromTemplate('#scheduledBuildTemplate');
 			mapContentFromObject(build, {
-					'port.revisionedName': '.revisionedName'
+					'port.revisionedName': '.revisionedName',
+					'port.recipeFilePath': '.recipeFilePath'
 				}, element);
 
 			parentElement.appendChild(element);
@@ -369,6 +378,11 @@ BuildMaster.prototype.showStatus = function()
 
 	wrapElements('#portsTreeHead', 'a', {
 			'href': this.commitURL(),
+			'target': '_blank',
+			'rel': 'noopener'
+		});
+	wrapElements('.recipeFilePath', 'a', {
+			'href': this.recipeFileURL(),
 			'target': '_blank',
 			'rel': 'noopener'
 		});

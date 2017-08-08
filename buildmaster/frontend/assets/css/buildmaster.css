@@ -114,9 +114,12 @@ a, a:visited {
 	flex-grow: 1;
 }
 
-.logs a {
-	margin-left: 1em;
+.logs div, .recipeFilePath {
+	margin-left: 0.5em;
 	font-weight: normal;
+}
+
+.logs a {
 	text-decoration: underline;
 }
 

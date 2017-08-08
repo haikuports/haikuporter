@@ -44,9 +44,11 @@ class ThreadFilter:
 
 
 class ScheduledBuild:
-	def __init__(self, port, requiredPackageIDs, packagesPath,
+	def __init__(self, port, portsTreePath, requiredPackageIDs, packagesPath,
 		presentDependencyPackages):
 		self.port = port
+		self.recipeFilePath \
+			= os.path.relpath(port.recipeFilePath, portsTreePath)
 		self.resultingPackages \
 			= [ package.hpkgName for package in self.port.packages ]
 		self.packagesPath = packagesPath
@@ -79,7 +81,8 @@ class ScheduledBuild:
 				'name': self.port.name,
 				'version': self.port.version,
 				'revision': self.port.revision,
-				'revisionedName': self.port.revisionedName
+				'revisionedName': self.port.revisionedName,
+				'recipeFilePath': self.recipeFilePath
 			},
 			'resultingPackages': self.resultingPackages,
 			'requiredPackages': sorted(list(self.requiredPackageIDs)),
@@ -832,8 +835,8 @@ class BuildMaster:
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.logger.info('scheduling build of ' + port.versionedName)
-		scheduledBuild = ScheduledBuild(port, requiredPackageIDs,
-			self.packagesPath, presentDependencyPackages)
+		scheduledBuild = ScheduledBuild(port, self.portsTreePath,
+			requiredPackageIDs, self.packagesPath, presentDependencyPackages)
 
 		if scheduledBuild.buildable:
 			self.scheduledBuilds.append(scheduledBuild)
