@@ -225,9 +225,13 @@ BuildMaster.prototype.logViewerURL = function(path)
 BuildMaster.prototype.addLogs = function(selector, path)
 {
 	Array.from(document.querySelectorAll(selector)).forEach((element) => {
+			var source = element.textContent;
+			if (!source)
+				return;
+
 			var logs = createFromTemplate('#logTemplate');
-			Array.from(logs.children).forEach(
-				(log) => log.setAttribute('data-source', element.textContent));
+			Array.from(logs.querySelectorAll('.log')).forEach(
+				(log) => log.setAttribute('data-source', source));
 			element.appendChild(logs);
 		});
 
