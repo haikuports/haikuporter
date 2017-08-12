@@ -198,6 +198,13 @@ BuildMaster.prototype.fetch = function(resource, successCallback, errorCallback)
 }
 
 
+BuildMaster.prototype.navigateToBuildrun = function(which)
+{
+	window.location.replace(window.location.pathname + '?buildrunDir=' + which
+		+ '&viewMode=' + this.viewMode());
+}
+
+
 BuildMaster.prototype.populateBuildruns = function(response)
 {
 	var parentElement = findElement('#buildrunSelector');
@@ -215,8 +222,7 @@ BuildMaster.prototype.populateBuildruns = function(response)
 		}.bind(this));
 
 	parentElement.addEventListener('change', function(event) {
-			window.location.replace(window.location.pathname + '?buildrunDir='
-				+ event.target.value + '&viewMode=' + this.viewMode());
+			this.navigateToBuildrun(event.target.value);
 		}.bind(this));
 }
 
