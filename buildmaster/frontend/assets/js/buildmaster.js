@@ -128,18 +128,27 @@ function BuildMaster()
 	var buildrunDir
 		= getSearchParameter('buildrunDir', '[a-zA-Z0-9][a-zA-Z0-9.-/]*', '');
 	if (buildrunDir.length > 0)
-		buildrunDir += '/';
-
-	this.buildrunDir = this.baseDir + buildrunDir;
-
-	this.fetch(this.baseDir + 'buildruns.txt',
-		this.populateBuildruns.bind(this));
+		this.fetchStatus(buildrunDir);
+	else {
+		this.fetch(this.baseDir + 'last_buildrun', function(response) {
+				this.fetchStatus(response.replace('\n', ''));
+			}.bind(this));
+	}
 
 	var viewToggle = document.querySelector('#viewToggle');
 	viewToggle.onclick = this.toggleViewMode.bind(this);
 	var viewMode = getSearchParameter('viewMode');
 	if (viewMode && viewMode != this.viewMode())
 		this.toggleViewMode({ target: viewToggle });
+}
+
+
+BuildMaster.prototype.fetchStatus = function(buildrunDir)
+{
+	this.buildrunDir = this.baseDir + buildrunDir + '/';
+
+	this.fetch(this.baseDir + 'buildruns.txt',
+		this.populateBuildruns.bind(this));
 
 	setElementContent('#loadStatus', 'Loading buildrun status...');
 	this.fetch(this.buildrunDir + 'output/status.json', function(response) {
