@@ -130,7 +130,8 @@ a, a:visited {
 }
 
 .compact .expanded, .compact .expanded-if-empty:empty,
-.compact .expanded-if-only:only-child, .compact .buildNumber {
+.compact .expanded-if-only:only-child, .compact .buildNumber,
+.hidden-if-only:only-child {
 	display: none;
 }
 
