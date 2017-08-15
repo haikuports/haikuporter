@@ -318,6 +318,9 @@ BuildMaster.prototype.showStatus = function()
 		};
 
 	var addBuilderList = function(targetSelector, builderList, active) {
+			if (!builderList)
+				return 0;
+
 			var parentElement = findElement(targetSelector);
 			setElementContent('.count', builderList.length, parentElement);
 			builderList.forEach(
@@ -330,6 +333,8 @@ BuildMaster.prototype.showStatus = function()
 		this.status.builders.active, true);
 	totalBuilders += addBuilderList('#reconnectingBuilders',
 		this.status.builders.reconnecting);
+	totalBuilders += addBuilderList('#idleBuilders',
+		this.status.builders.idle);
 	totalBuilders += addBuilderList('#lostBuilders',
 		this.status.builders.lost);
 

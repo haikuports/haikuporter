@@ -724,6 +724,7 @@ class BuildMaster:
 
 		self.activeBuilders = []
 		self.reconnectingBuilders = []
+		self.idleBuilders = []
 		self.lostBuilders = []
 		self.availableBuilders = []
 		self.packagesPath = packagesPath
@@ -911,7 +912,13 @@ class BuildMaster:
 	def _waitForBuildsToComplete(self):
 		while True:
 			with self.builderCondition:
-				if len(self.availableBuilders) == len(self.activeBuilders):
+				for builder in self.availableBuilders:
+					self.activeBuilders.remove(builder)
+
+				self.idleBuilders += self.availableBuilders
+				self.availableBuilders = []
+
+				if len(self.activeBuilders) == 0:
 					break
 
 				if self.display:
@@ -1087,6 +1094,7 @@ class BuildMaster:
 				'active': [ builder.status for builder in self.activeBuilders ],
 				'reconnecting':
 					[builder.status for builder in self.reconnectingBuilders],
+				'idle': [ builder.status for builder in self.idleBuilders ],
 				'lost': [ builder.status for builder in self.lostBuilders ]
 			},
 			'nextBuildNumber': self.buildNumber,
