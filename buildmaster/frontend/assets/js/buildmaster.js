@@ -295,30 +295,39 @@ BuildMaster.prototype.showStatus = function()
 			findElement('#buildCounts').appendChild(element);
 		};
 
-	var addBuilder = function(parentElement, builder) {
+	var addBuilder = function(parentElement, active, builder) {
 			var element = createFromTemplate('#builderTemplate');
 			mapContentFromObject(builder, {
 					'name': '.builderName',
+				}, element);
+
+			parentElement.appendChild(element);
+			if (!active)
+				return;
+
+			var currentBuild = createFromTemplate('#currentBuildTemplate');
+			mapContentFromObject(builder, {
 					'currentBuild.number': '.buildNumber',
 					'currentBuild.build.port.revisionedName':
 						'.revisionedName',
 					'currentBuild.build.port.recipeFilePath':
 						'.recipeFilePath'
-				}, element);
+				}, currentBuild);
 
-			parentElement.appendChild(element);
+			element.querySelector('.builder').appendChild(currentBuild);
 		};
 
-	var addBuilderList = function(targetSelector, builderList) {
+	var addBuilderList = function(targetSelector, builderList, active) {
 			var parentElement = findElement(targetSelector);
 			setElementContent('.count', builderList.length, parentElement);
-			builderList.forEach(addBuilder.bind(undefined, parentElement));
+			builderList.forEach(
+				addBuilder.bind(undefined, parentElement, active));
 			return builderList.length;
 		};
 
 	var totalBuilders = 0;
 	totalBuilders += addBuilderList('#activeBuilders',
-		this.status.builders.active);
+		this.status.builders.active, true);
 	totalBuilders += addBuilderList('#reconnectingBuilders',
 		this.status.builders.reconnecting);
 	totalBuilders += addBuilderList('#lostBuilders',

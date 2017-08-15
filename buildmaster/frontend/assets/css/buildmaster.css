@@ -73,10 +73,6 @@ a, a:visited {
 	background-color: red;
 }
 
-#lostBuilders .currentBuildContainer {
-	display: none;
-}
-
 .revisionedName, .builderName {
 	font-weight: bold;
 }
