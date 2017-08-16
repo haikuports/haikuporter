@@ -183,7 +183,7 @@ class Display:
 			self.zone_history.addstr(row, 24, portName.ljust(38)[:38],
 				self.c_portname)
 			self.zone_history.addstr(row, 1, time.strftime('%X',
-				current['startTime']), self.c_standard)
+				time.localtime(current['startTime'])), self.c_standard)
 			row += 1
 			if row >= self.maxrows:
 				break

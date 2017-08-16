@@ -97,7 +97,7 @@ class BuildRecord:
 	def __init__(self, scheduledBuild, startTime, buildSuccess, builderId):
 		self.port = scheduledBuild.port
 		self.buildNumbers = scheduledBuild.buildNumbers
-		self.startTime = time.localtime(startTime)
+		self.startTime = startTime
 		self.duration = time.time() - startTime
 		self.buildSuccess = buildSuccess
 		self.builderId = builderId
@@ -739,6 +739,10 @@ class BuildMaster:
 		if not os.path.isdir(self.buildOutputBaseDir):
 			os.makedirs(self.buildOutputBaseDir)
 
+		self.buildRecordsDir = os.path.join(self.buildOutputBaseDir, 'records')
+		if not os.path.isdir(self.buildRecordsDir):
+			os.makedirs(self.buildRecordsDir)
+
 		self.buildStatus = None
 		self.buildNumberFile = os.path.join(self.masterBaseDir, 'buildnumber')
 		self.buildNumber = 0
@@ -1029,8 +1033,14 @@ class BuildMaster:
 				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
 		else:
-			self.buildHistory.append(BuildRecord(scheduledBuild,
-				startTime, buildSuccess, self.activeBuilders.index(builder)))
+			record = BuildRecord(scheduledBuild, startTime, buildSuccess,
+				builder.name)
+
+			with open(os.path.join(self.buildRecordsDir,
+					str(buildNumber) + '.json'), 'w') as outputFile:
+				outputFile.write(json.dumps(record.status))
+
+			self.buildHistory.append(record)
 			if self.display:
 				self.display.updateHistory(self.buildHistory)
 
