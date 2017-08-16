@@ -618,7 +618,7 @@ class LocalBuilder:
 		self.state = _BuilderState.AVAILABLE
 		self.currentBuild = None
 
-		self.buildOutputDir = os.path.join(os.path.realpath(outputBaseDir), 'builds')
+		self.buildOutputDir = os.path.join(outputBaseDir, 'builds')
 		if not os.path.isdir(self.buildOutputDir):
 			os.makedirs(self.buildOutputDir)
 
@@ -728,10 +728,12 @@ class BuildMaster:
 		self.lostBuilders = []
 		self.availableBuilders = []
 		self.packagesPath = packagesPath
-		self.masterBaseDir = 'buildmaster'
+		self.masterBaseDir = os.path.realpath('buildmaster')
 		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
 		self.buildOutputBaseDir = getOption('buildMasterOutputDir')
-		if not self.buildOutputBaseDir:
+		if self.buildOutputBaseDir:
+			self.buildOutputBaseDir = os.path.realpath(self.buildOutputBaseDir)
+		else:
 			self.buildOutputBaseDir = self.masterBaseDir
 
 		self.buildOutputBaseDir = os.path.join(self.buildOutputBaseDir,
@@ -740,8 +742,7 @@ class BuildMaster:
 			os.makedirs(self.buildOutputBaseDir)
 
 		self.buildStatus = None
-		self.buildNumberFile = os.path.realpath(os.path.join(
-			self.masterBaseDir, 'buildnumber'))
+		self.buildNumberFile = os.path.join(self.masterBaseDir, 'buildnumber')
 		self.buildNumber = 0
 		try:
 			with open(self.buildNumberFile, 'r') as buildNumberFile:
@@ -770,7 +771,7 @@ class BuildMaster:
 
 		self.logger.info('portstree head is at ' + self.portsTreeHead)
 
-		self.statusOutputPath = os.path.join(os.path.realpath(self.buildOutputBaseDir),
+		self.statusOutputPath = os.path.join(self.buildOutputBaseDir,
 			'status.json')
 
 		if self.localBuilders == 0:
