@@ -125,6 +125,23 @@ then
 	exit 4
 fi
 
+# Link build logs and records into global dirs.
+ALL_BUILDS_DIR="$OUTPUT_BASE_DIR/builds"
+if [ ! -e "$ALL_BUILDS_DIR" ]
+then
+	mkdir -p "$ALL_BUILDS_DIR"
+fi
+
+ln -rst "$ALL_BUILDS_DIR" "$BUILDRUN_OUTPUT_DIR"/builds/*
+
+ALL_RECORDS_DIR="$OUTPUT_BASE_DIR/records"
+if [ ! -e "$ALL_RECORDS_DIR" ]
+then
+	mkdir -p "$ALL_RECORDS_DIR"
+fi
+
+ln -rst "$ALL_RECORDS_DIR" "$BUILDRUN_OUTPUT_DIR"/records/*
+
 case "$1" in
 	update)
 		echo "$HEAD_REVISION" > "$REVISIONS_FILE"
