@@ -94,7 +94,9 @@ fi
 
 echo "ports to be built: $PORTS_TO_BUILD"
 
-BUILDRUN_BASE="$BASE_DIR/buildruns"
+OUTPUT_BASE_DIR="$BASE_DIR/output"
+
+BUILDRUN_BASE="$OUTPUT_BASE_DIR/buildruns"
 if [ ! -e "$BUILDRUN_BASE" ]
 then
 	mkdir -p "$BUILDRUN_BASE"
@@ -109,8 +111,8 @@ echo "$BUILDRUN" >> "$BUILDRUN_INDEX"
 echo "$BUILDRUN" > "$BUILDRUN_FILE"
 
 # Remove and relink the current output dir.
-rm "$BUILDRUN_BASE/output"
-ln -rs "$BUILDRUN_OUTPUT_DIR/output" "$BUILDRUN_BASE"
+rm "$BUILDRUN_BASE/current"
+ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 
 "$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
 	--all-dependencies \

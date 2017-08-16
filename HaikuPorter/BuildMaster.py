@@ -734,10 +734,8 @@ class BuildMaster:
 		if self.buildOutputBaseDir:
 			self.buildOutputBaseDir = os.path.realpath(self.buildOutputBaseDir)
 		else:
-			self.buildOutputBaseDir = self.masterBaseDir
+			self.buildOutputBaseDir = os.path.join(self.masterBaseDir, 'output')
 
-		self.buildOutputBaseDir = os.path.join(self.buildOutputBaseDir,
-			'output')
 		if not os.path.isdir(self.buildOutputBaseDir):
 			os.makedirs(self.buildOutputBaseDir)
 

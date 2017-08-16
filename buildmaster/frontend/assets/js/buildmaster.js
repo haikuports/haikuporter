@@ -151,7 +151,7 @@ BuildMaster.prototype.fetchStatus = function(buildrunDir)
 		this.populateBuildruns.bind(this));
 
 	setElementContent('#loadStatus', 'Loading buildrun status...');
-	this.fetch(this.buildrunDir + 'output/status.json', function(response) {
+	this.fetch(this.buildrunDir + 'status.json', function(response) {
 			this.status = JSON.parse(response);
 			setElementContent('#loadStatus', '');
 			this.portsTreeOriginURL = this.status.portsTreeOriginURL;
@@ -241,7 +241,7 @@ BuildMaster.prototype.recipeFileURL = function()
 
 BuildMaster.prototype.rawLogURL = function(path)
 {
-	return this.buildrunDir + 'output/' + path;
+	return this.buildrunDir + path;
 }
 
 
