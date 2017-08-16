@@ -282,9 +282,19 @@ BuildMaster.prototype.addLogs = function(selector, path)
 
 BuildMaster.prototype.showStatus = function()
 {
+	this.status.duration = this.status.startTime && this.status.endTime
+		? Math.round(this.status.endTime - this.status.startTime) + 's' : '';
+	this.status.startTime = this.status.startTime
+		? new Date(this.status.startTime * 1000).toString() : '';
+	this.status.endTime = this.status.endTime
+		? new Date(this.status.endTime * 1000).toString() : '';
+
 	mapContentFromObject(this.status, {
 			'portsTreeHead': '#portsTreeHead',
-			'buildStatus': '#buildStatus'
+			'buildStatus': '#buildStatus',
+			'startTime': '#startTime',
+			'endTime': '#endTime',
+			'duration': '#duration'
 		});
 
 	var addBuildCount = function(name, count, linkTarget) {

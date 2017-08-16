@@ -825,6 +825,7 @@ class BuildMaster:
 		self.buildHistory = []
 		self.totalBuildCount = 0
 		self.startTime = None
+		self.endTime = None
 		self.impulseData = [None] * 500
 		self.impulseIndex = -1
 		self.display = None
@@ -867,13 +868,16 @@ class BuildMaster:
 				if len(self.scheduledBuilds) == 0:
 					break
 
-			self._setBuildStatus('complete')
+			exitStatus = 'complete'
 		except KeyboardInterrupt:
-			self._setBuildStatus('aborted')
+			exitStatus = 'aborted'
 		except Exception as exception:
 			self.logger.error(str(exception))
-			self._setBuildStatus('failed: ' + str(exception))
-		self.logger.info('finished with status: ' + self.buildStatus)
+			exitStatus = 'failed: ' + str(exception)
+
+		self.logger.info('finished with status: ' + exitStatus)
+		self.endTime = time.time();
+		self._setBuildStatus(exitStatus)
 
 	def _fillPortsTreeInfo(self):
 		try:
@@ -1109,7 +1113,9 @@ class BuildMaster:
 			'nextBuildNumber': self.buildNumber,
 			'portsTreeOriginURL': self.portsTreeOriginURL,
 			'portsTreeHead': self.portsTreeHead,
-			'buildStatus': self.buildStatus
+			'buildStatus': self.buildStatus,
+			'startTime': self.startTime,
+			'endTime': self.endTime
 		}
 
 	@property
