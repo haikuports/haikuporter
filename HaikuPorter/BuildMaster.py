@@ -329,7 +329,7 @@ class RemoteBuilder:
 	def _setupForBuilding(self):
 		if self.state == _BuilderState.AVAILABLE:
 			return True
-		if self.state  == _BuilderState.LOST:
+		if self.state == _BuilderState.LOST:
 			return False
 
 		self._connect()
