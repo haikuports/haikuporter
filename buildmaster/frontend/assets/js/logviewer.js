@@ -66,7 +66,7 @@ function parseLogfile(content)
 	const replacements = [
 			{ what: '<', with: '&lt;' },
 			{ what: '>', with: '&gt;' },
-			{ what: '\n', with: '<br>' },
+			{ what: '(\r\n)|\n|\r', with: '<br>' },
 			{ what: '\t', with: '        ' },
 			{ what: '  ', with: ' &nbsp;' },
 			{ what: '\x1b((\\[K)|(\\(.))', with: '' },
