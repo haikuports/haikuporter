@@ -77,7 +77,7 @@ function parseLogfile(content)
 	document.body.innerHTML = replacements.reduce((value, replace) => {
 			return value.replace(new RegExp(replace.what, 'g'), replace.with);
 		}, content);
-	document.body.scrollTop = document.body.scrollHeight;
+	document.documentElement.scrollTop = document.documentElement.scrollHeight;
 }
 
 
