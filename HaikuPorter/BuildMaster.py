@@ -414,9 +414,11 @@ class RemoteBuilder:
 				self.buildLogger.info('download package ' + package.hpkgName
 					+ ' from builder')
 
+				packageFile = os.path.join(self.packagesPath, package.hpkgName)
+				downloadFile = packageFile + '.download'
 				self._getFile(self.config['portstree']['packagesPath'] + '/'
-						+ package.hpkgName,
-					os.path.join(self.packagesPath, package.hpkgName))
+						+ package.hpkgName, downloadFile)
+				os.rename(downloadFile, packageFile)
 
 			self._cleanPort(scheduledBuild)
 			self._clearVisiblePackages()
