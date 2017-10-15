@@ -522,7 +522,7 @@ class Main(object):
 					presentDependencyPackages)
 			except SystemExit as exception:
 				print('resolving build dependencies failed for port '
-					+ port.versionedName)
+					+ port.versionedName + ': ' + str(exception))
 				return
 		else:
 			buildDependencies = port.resolveBuildDependencies(
