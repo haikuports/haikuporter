@@ -13,7 +13,7 @@ from .Options import getOption
 from .PackageInfo import PackageInfo, ResolvableExpression
 from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
-from .Utils import printError, sysExit
+from .Utils import printError, sysExit, warn
 
 # -- PackageNode class --------------------------------------------------------
 
@@ -70,11 +70,14 @@ class DependencyResolver(object):
 						or entry.endswith('.hpkg')
 						or entry.endswith('.PackageInfo')):
 					continue
-				packageInfo = self._parsePackageInfo(repository + '/' + entry)
+				packageInfo = self._parsePackageInfo(repository + '/' + entry,
+					not entry.endswith('.hpkg'))
+				if packageInfo == None:
+					continue
 				self._providesManager.addProvidesFromPackageInfo(packageInfo)
 
 		packageInfos = [
-			self._parsePackageInfo(dif) for dif in dependencyInfoFiles
+			self._parsePackageInfo(dif, True) for dif in dependencyInfoFiles
 		]
 		self._pending = [
 			PackageNode(pi, False) for pi in packageInfos
@@ -226,7 +229,7 @@ class DependencyResolver(object):
 			if addToPending:
 				self._pending.append(requiredPackageInfo)
 
-	def _parsePackageInfo(self, packageInfoFile):
+	def _parsePackageInfo(self, packageInfoFile, fatal):
 		if packageInfoFile in DependencyResolver.packageInfoCache:
 			return DependencyResolver.packageInfoCache[packageInfoFile]
 
@@ -234,6 +237,8 @@ class DependencyResolver(object):
 			packageInfo = PackageInfo(packageInfoFile)
 			DependencyResolver.packageInfoCache[packageInfoFile] = packageInfo
 		except CalledProcessError:
-			sysExit(u'failed to parse "%s"' % packageInfoFile)
+			message = u'failed to parse "%s"' % packageInfoFile
+			sysExit(message) if fatal else warn(message)
+			return None
 
 		return packageInfo
