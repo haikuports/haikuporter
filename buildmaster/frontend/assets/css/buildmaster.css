@@ -20,6 +20,10 @@ a, a:visited {
 	color: black;
 }
 
+.template {
+	display: none;
+}
+
 #topLink {
 	position: fixed;
 	top: 0;
