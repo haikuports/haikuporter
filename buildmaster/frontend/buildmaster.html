@@ -32,9 +32,14 @@
 					<div class="label">
 						<label for="buildrunSelector">Select buildrun</label>
 					</div>
-					<select id="buildrunSelector">
-						<option value="">current</option>
-					</select>
+					<div id="buildrunNavigation">
+						<select id="buildrunSelector">
+							<option value="">current</option>
+						</select>
+						<button id="previousBuildrun">Previous</button>
+						<button id="nextBuildrun">Next</button>
+						<button id="currentBuildrun">Current</button>
+					</div>
 					<div id="loadStatus">Initializing</div>
 				</div>
 				<div class="labeled">

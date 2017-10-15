@@ -205,6 +205,19 @@ BuildMaster.prototype.navigateToBuildrun = function(which)
 }
 
 
+BuildMaster.prototype.populateNavigationButton = function(which, element, index)
+{
+	var button = document.querySelector(which);
+	var option = element.item(element.selectedIndex + index);
+	if (!option || !option.value) {
+		button.disabled = true;
+		return;
+	}
+
+	button.onclick = () => this.navigateToBuildrun(option.value);
+}
+
+
 BuildMaster.prototype.populateBuildruns = function(response)
 {
 	var parentElement = findElement('#buildrunSelector');
@@ -224,6 +237,12 @@ BuildMaster.prototype.populateBuildruns = function(response)
 	parentElement.addEventListener('change', function(event) {
 			this.navigateToBuildrun(event.target.value);
 		}.bind(this));
+
+	this.populateNavigationButton('#previousBuildrun', parentElement, 1, true);
+	this.populateNavigationButton('#nextBuildrun', parentElement, -1, true);
+
+	document.querySelector('#currentBuildrun').addEventListener('click',
+		() => this.navigateToBuildrun(''));
 }
 
 
