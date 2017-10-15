@@ -477,7 +477,7 @@ class RemoteBuilder:
 			+ '" --no-package-obsoletion --clean "'
 			+ scheduledBuild.port.versionedName + '"')
 
-		info('cleaning port with command: ' + command)
+		self.buildLogger.info('cleaning port with command: ' + command)
 		(output, channel) = self._remoteCommand(command)
 		self._appendOutputToLog(output)
 
