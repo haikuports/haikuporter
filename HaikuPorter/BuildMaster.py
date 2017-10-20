@@ -368,7 +368,7 @@ class RemoteBuilder:
 			if not self._setupForBuilding():
 				return (False, True)
 
-			self._cleanPort(scheduledBuild)
+			self._purgePort(scheduledBuild)
 			self._clearVisiblePackages()
 			for requiredPackage in scheduledBuild.requiredPackages:
 				self._makePackageAvailable(requiredPackage)
@@ -420,7 +420,7 @@ class RemoteBuilder:
 						+ package.hpkgName, downloadFile)
 				os.rename(downloadFile, packageFile)
 
-			self._cleanPort(scheduledBuild)
+			self._purgePort(scheduledBuild)
 			self._clearVisiblePackages()
 			self.buildLogger.info('build completed successfully')
 			buildSuccess = True
@@ -472,14 +472,14 @@ class RemoteBuilder:
 	def _listDir(self, remotePath):
 		return self.sftpClient.listdir(remotePath)
 
-	def _cleanPort(self, scheduledBuild):
+	def _purgePort(self, scheduledBuild):
 		command = ('cd "' + self.config['portstree']['path']
 			+ '" && "' + self.config['haikuporter']['path']
 			+ '" --config="' + self.config['portstree']['builderConfig']
-			+ '" --no-package-obsoletion --clean "'
+			+ '" --no-package-obsoletion --purge "'
 			+ scheduledBuild.port.versionedName + '"')
 
-		self.buildLogger.info('cleaning port with command: ' + command)
+		self.buildLogger.info('purging port with command: ' + command)
 		(output, channel) = self._remoteCommand(command)
 		self._appendOutputToLog(output)
 
