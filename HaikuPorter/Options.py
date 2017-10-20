@@ -295,6 +295,10 @@ def parseOptions():
 	parser.add_option('--ports-for-files', action='store_true',
 		dest='portsForFiles', default=False,
 		help='list all ports affected by the supplied list of files')
+	parser.add_option('--ports-for-packages', action='store_true',
+		dest='portsForPackages', default=False,
+		help='list ports producing the supplied list of packages')
+
 	parser.add_option('--active-versions-only', action='store_true',
 		dest='activeVersionsOnly', default=False,
 		help='only check in active versions of ports instead of all ports')

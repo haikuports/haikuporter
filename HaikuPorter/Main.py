@@ -83,6 +83,7 @@ class Main(object):
 		self.shallowInitIsEnough = (self.options.lint or self.options.tree
 									or self.options.get or self.options.list
 									or self.options.portsForFiles
+									or self.options.portsForPackages
 									or self.options.listPackages
 									or self.options.listBuildDependencies
 									or self.options.search
@@ -181,6 +182,24 @@ class Main(object):
 				if port.referencesFiles(files):
 					print port.versionedName
 
+			return
+
+		# if requested, print the ports producing the supplied packages
+		if self.options.portsForPackages:
+			self._createRepositoryIfNeeded(True)
+
+			ports = set()
+			for port in self.repository.allPorts.itervalues():
+				try:
+					port.parseRecipeFileIfNeeded()
+				except:
+					continue
+
+				for package in port.packages:
+					if package.hpkgName in args:
+						ports.add(port.versionedName)
+
+			print '\n'.join(sorted(ports))
 			return
 
 		if self.options.location:
