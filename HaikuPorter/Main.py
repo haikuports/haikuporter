@@ -383,6 +383,8 @@ class Main(object):
 
 			if self.options.clean:
 				port.cleanWorkDirectory()
+			elif self.options.purge:
+				port.purge()
 			elif self.options.test:
 				self._testPort(port)
 			elif (self.options.build and not portSpec['id'] in bootstrapPorts

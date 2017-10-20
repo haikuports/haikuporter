@@ -180,6 +180,18 @@ class Source(object):
 		# failed to fetch source
 		sysExit(u'Failed to fetch source from all known locations.')
 
+	def clean(self):
+		if os.path.exists(self.fetchTarget):
+			print 'Removing source %s ...' % self.fetchTarget
+			if os.path.isdir(self.fetchTarget):
+				shutil.rmtree(self.fetchTarget)
+			else:
+				os.remove(self.fetchTarget)
+
+		uriFile = self.fetchTarget + '.uri'
+		if os.path.exists(uriFile):
+			os.remove(uriFile)
+
 	def unpack(self, port):
 		"""Unpack the source into the source directory"""
 

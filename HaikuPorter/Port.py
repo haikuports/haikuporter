@@ -619,6 +619,17 @@ class Port(object):
 			print 'Cleaning work directory of %s ...' % self.versionedName
 			shutil.rmtree(self.workDir)
 
+	def purge(self):
+		"""Clean the working directory and remove downloads"""
+
+		print 'Removing sources of %s ...' % self.versionedName
+
+		self.parseRecipeFileIfNeeded()
+		for source in self.sources:
+			source.clean()
+
+		self.cleanWorkDirectory()
+
 	def downloadSource(self):
 		"""Fetch the source archives and validate their checksum"""
 

@@ -174,6 +174,11 @@ def parseOptions():
 					  action='store_true', dest='clean', default=False,
 					  help="clean the working directory of the specified port")
 
+	parser.add_option('--purge',
+					  action='store_true', dest='purge', default=False,
+					  help="clean the working directory and remove downloads "
+					  "of the specified port")
+
 	parser.add_option('-g', '--get',
 					  action='store_true', dest='get', default=False,
 					  help="get/update the ports tree")
