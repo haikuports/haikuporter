@@ -108,6 +108,10 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			ensureCommandIsAvailable('lzip')
 			process = Popen(['lzip', '-c', '-d', archiveFile],
 				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		elif ext == '7z':
+			ensureCommandIsAvailable('7za')
+			process = Popen(['7za', 'x', '-so', archiveFile],
+				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 	if subdir and not subdir.endswith('/'):
 		subdir += '/'
