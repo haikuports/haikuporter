@@ -477,7 +477,7 @@ class RemoteBuilder:
 		command = ('cd "' + self.config['portstree']['path']
 			+ '" && "' + self.config['haikuporter']['path']
 			+ '" --config="' + self.config['portstree']['builderConfig']
-			+ '" --no-package-obsoletion --purge "'
+			+ '" --no-package-obsoletion --ignore-messages --purge "'
 			+ scheduledBuild.port.versionedName + '"')
 
 		self.buildLogger.info('purging port with command: ' + command)
