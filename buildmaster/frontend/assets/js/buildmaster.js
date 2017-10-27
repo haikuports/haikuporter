@@ -108,10 +108,8 @@ function createInlineViewer(event)
 	viewer.src = target.dataset.url;
 
 	target.onclick = () => {
-			if (viewer.classList.contains('hidden'))
-				viewer.classList.remove('hidden');
-			else
-				viewer.classList.add('hidden');
+			viewer.parentElement.removeChild(viewer);
+			target.onclick = createInlineViewer;
 		};
 
 	var container = target;
