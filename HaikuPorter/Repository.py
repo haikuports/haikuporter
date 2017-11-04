@@ -136,6 +136,15 @@ class Repository(object):
 
 		return None
 
+	def getActivePort(self, portName):
+		"""return the highest buildable version of the port with the given
+		   name"""
+		version = self._portNameVersionForPortName(portName)
+		if version == None:
+			return None
+
+		return self._allPorts[version]
+
 	def _portNameVersionForPortName(self, portName):
 		portVersion = self.getActiveVersionOf(portName)
 		if not portVersion:
