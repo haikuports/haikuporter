@@ -18,6 +18,7 @@ from .DependencyAnalyzer import DependencyAnalyzer
 from .Display import DisplayContext
 from .Options import getOption
 from .Policy import Policy
+from .PackageRepository import PackageRepository
 from .RecipeAttributes import getRecipeFormatVersion
 from .RecipeTypes import MachineArchitecture
 from .Repository import Repository
@@ -91,7 +92,8 @@ class Main(object):
 									or self.options.about
 									or self.options.location
 									or self.options.buildMaster
-									or self.options.repositoryUpdate)
+									or self.options.repositoryUpdate
+									or self.options.prunePackageRepository)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
@@ -110,6 +112,15 @@ class Main(object):
 
 		if self.options.repositoryUpdate:
 			self._createRepositoryIfNeeded(False)
+			return
+
+		if self.options.prunePackageRepository:
+			self.options.noPackageObsoletion = True
+			self._createRepositoryIfNeeded(True)
+
+			packageRepository = PackageRepository(self.packagesPath,
+				self.repository, self.options.quiet)
+			packageRepository.prune()
 			return
 
 		# if requested, print the location of the haikuports source tree

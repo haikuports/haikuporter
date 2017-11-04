@@ -279,6 +279,9 @@ def parseOptions():
 	parser.add_option('--no-package-obsoletion', action='store_true',
 		dest='noPackageObsoletion', default=False,
 		help='do not move obsolete packages out of packages dir')
+	parser.add_option('--prune-package-repository', action='store_true',
+		dest='prunePackageRepository', default=False,
+		help='prune the package repository')
 
 	parser.add_option('--literal-search-strings', action='store_true',
 		dest='literalSearchStrings', default=False,
