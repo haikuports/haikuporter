@@ -247,6 +247,7 @@ class RemoteBuilder:
 					+ str(self.connectionErrors)
 					+ ' consecutive connection errors')
 				self.state = _BuilderState.LOST
+				raise
 
 			# avoid DoSing the remote host, increasing delay as retries increase.
 			time.sleep(5 + (1.2 * self.connectionErrors))
