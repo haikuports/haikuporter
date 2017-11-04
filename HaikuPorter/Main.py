@@ -108,6 +108,10 @@ class Main(object):
 			self.options.noPackageObsoletion = True
 			self.options.ignoreMessages = True
 
+		if self.options.repositoryUpdate:
+			self._createRepositoryIfNeeded(False)
+			return
+
 		# if requested, print the location of the haikuports source tree
 		if self.options.tree:
 			print self.treePath
