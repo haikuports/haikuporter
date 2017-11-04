@@ -119,12 +119,6 @@ ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 	--system-packages-directory="$BASE_DIR/initial-packages" \
 	--build-master $PORTS_TO_BUILD
 
-if [ $? -ne 0 ]
-then
-	echo "build master failed"
-	exit 4
-fi
-
 # Link build logs and records into global dirs.
 ALL_BUILDS_DIR="$OUTPUT_BASE_DIR/builds"
 if [ ! -e "$ALL_BUILDS_DIR" ]
@@ -141,6 +135,12 @@ then
 fi
 
 ln -rst "$ALL_RECORDS_DIR" "$BUILDRUN_OUTPUT_DIR"/records/*
+
+if [ $? -ne 0 ]
+then
+	echo "build master failed"
+	exit 4
+fi
 
 case "$1" in
 	update)
