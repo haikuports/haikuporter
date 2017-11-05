@@ -58,7 +58,7 @@ do
 	if [ -f "$PACKAGE" -a ! -L "$PACKAGE" ]
 	then
 		echo "linking package $PACKAGE into repo packages dir"
-		ln -s "$PACKAGE" "$REPO_PACKAGES_DIR"
+		ln "$PACKAGE" "$REPO_PACKAGES_DIR"
 	fi
 done
 
