@@ -63,8 +63,18 @@ do
 done
 
 echo "creating repository"
-"$PACKAGE_REPO" create -v "$REPO_DIR/repo.info" "$REPO_PACKAGES_DIR"/*.hpkg
 
+REPO_FILE="$REPO_DIR/repo"
+PACKAGE_LIST="$REPO_DIR/package.list"
+ls -1 "$REPO_PACKAGES_DIR" > "$PACKAGE_LIST"
+
+if [ ! -f "$REPO_FILE" ]
+then
+	"$PACKAGE_REPO" create -v "$REPO_DIR/repo.info" "$REPO_PACKAGES_DIR"/*.hpkg
+else
+	"$PACKAGE_REPO" update -C "$REPO_PACKAGES_DIR" -v \
+		"$REPO_FILE" "$REPO_FILE" "$PACKAGE_LIST"
+fi
 
 if [ $? -ne 0 ]
 then
