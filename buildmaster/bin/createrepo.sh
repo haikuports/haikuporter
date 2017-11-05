@@ -68,11 +68,12 @@ done
 echo "creating repository"
 "$PACKAGE_REPO" create -v "$REPO_DIR/repo.info" "$REPO_PACKAGES_DIR"/*.hpkg
 
-echo "hashing repository file"
-sha256sum "$REPO_DIR/repo" > "$REPO_DIR/repo.sha256"
 
 if [ $? -ne 0 ]
 then
 	echo "repo creation failed"
 	exit 3
 fi
+
+echo "hashing repository file"
+sha256sum "$REPO_DIR/repo" > "$REPO_DIR/repo.sha256"
