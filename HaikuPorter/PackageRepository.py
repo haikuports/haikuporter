@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2017 Michael Lotz 
+# Copyright 2017 Michael Lotz
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
 
 from .Configuration import Configuration
-from .Options import getOption
 from .PackageInfo import PackageInfo
 from .Utils import info, sysExit, versionCompare, warn
 
 import glob
 import hashlib
-import json
 import os
-import re
-import shutil
 import subprocess
 
 
