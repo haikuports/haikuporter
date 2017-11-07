@@ -233,6 +233,11 @@ def parseOptions():
 					  default=None,
 					  help='specifies the "package" command; '
 						   'the default is "package"')
+	parser.add_option('--command-package-repo',
+					  action='store', type='string', dest='commandPackageRepo',
+					  default=None,
+					  help='specifies the "package_repo" command; '
+						   'the default is "package_repo"')
 	parser.add_option('--cross-tools',
 					  action='store', type='string', dest='crossTools',
 					  default=None,
@@ -282,6 +287,9 @@ def parseOptions():
 	parser.add_option('--prune-package-repository', action='store_true',
 		dest='prunePackageRepository', default=False,
 		help='prune the package repository')
+	parser.add_option('--create-package-repository', action='store',
+		type='string', dest='createPackageRepository', default=None,
+		help='create a package repository at the given output path')
 
 	parser.add_option('--literal-search-strings', action='store_true',
 		dest='literalSearchStrings', default=False,

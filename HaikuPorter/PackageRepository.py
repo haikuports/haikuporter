@@ -8,13 +8,15 @@
 from .Configuration import Configuration
 from .Options import getOption
 from .PackageInfo import PackageInfo
-from .Utils import sysExit, touchFile, versionCompare, warn
+from .Utils import info, sysExit, versionCompare, warn
 
 import glob
+import hashlib
 import json
 import os
 import re
 import shutil
+import subprocess
 
 
 # -- PackageRepository class --------------------------------------------------
@@ -118,3 +120,57 @@ class PackageRepository(object):
 					reason.format(package.version))
 
 			newestPackages[package.name] = package
+
+	def createPackageRepository(self, outputPath):
+		packageRepoCommand = Configuration.getPackageRepoCommand()
+		if not packageRepoCommand:
+			sysExit('package repo command must be configured or specified')
+
+		repoFile = os.path.join(outputPath, 'repo')
+		repoInfoFile = repoFile + '.info'
+		if not os.path.exists(repoInfoFile):
+			sysExit('repository info file expected at {}'.format(repoInfoFile))
+
+		repoPackagesPath = os.path.join(outputPath, 'packages')
+		if not os.path.exists(repoPackagesPath):
+			os.mkdir(repoPackagesPath)
+		else:
+			for package in glob.glob(os.path.join(repoPackagesPath, '*.hpkg')):
+				os.unlink(package)
+
+		packageList = self.packageInfoList()
+		for package in packageList:
+			os.link(package.path,
+				os.path.join(repoPackagesPath, os.path.basename(package.path)))
+
+		packageListFile = os.path.join(outputPath, 'package.list')
+		with open(packageListFile, 'w') as outputFile:
+			fileList = '\n'.join(
+				[ os.path.basename(package.path) for package in packageList ])
+			outputFile.write(fileList)
+
+		if not os.path.exists(repoFile):
+			if not packageList:
+				sysExit('no repo file exists and no packages to create it')
+
+			output = subprocess.check_output([ packageRepoCommand, 'create',
+					'-v', repoInfoFile, packageList[0].path ],
+				stderr=subprocess.STDOUT)
+			info(output)
+
+		output = subprocess.check_output([ packageRepoCommand, 'update', '-C',
+				repoPackagesPath, '-v', repoFile, repoFile, packageListFile ],
+			stderr=subprocess.STDOUT)
+		info(output)
+
+		checksum = hashlib.sha256()
+		with open(repoFile, 'rb') as inputFile:
+			while True:
+				data = inputFile.read(1 * 1024 * 1024)
+				if not data:
+					break
+
+				checksum.update(data)
+
+		with open(os.path.join(outputPath, 'repo.sha256'), 'w') as outputFile:
+			outputFile.write(checksum.hexdigest())

@@ -130,6 +130,15 @@ haikuportsAttributes = {
 		'optionAttribute': 'commandPackage',
 		'setAttribute': 'packageCommand',
 	},
+	'PACKAGE_REPO_COMMAND': {
+		'type': types.StringType,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'commandPackageRepo',
+		'setAttribute': 'packageRepoCommand',
+	},
 	'PACKAGER': {
 		'type': types.StringType,
 		'required': True,
@@ -232,6 +241,7 @@ class Configuration(object):
 		self.allowUnsafeSources = False
 		self.downloadInPortDirectory = False
 		self.packageCommand = None
+		self.packageRepoCommand = None
 		self.mimesetCommand = None
 		self.systemMimeDB = None
 		self.licensesDirectory = None
@@ -303,6 +313,12 @@ class Configuration(object):
 		if Configuration.configuration.packageCommand == None:
 			return which("package")
 		return Configuration.configuration.packageCommand
+
+	@staticmethod
+	def getPackageRepoCommand():
+		if Configuration.configuration.packageRepoCommand == None:
+			return which("package_repo")
+		return Configuration.configuration.packageRepoCommand
 
 	@staticmethod
 	def getMimesetCommand():

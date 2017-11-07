@@ -114,13 +114,21 @@ class Main(object):
 			self._createRepositoryIfNeeded(False)
 			return
 
-		if self.options.prunePackageRepository:
+		if self.options.prunePackageRepository \
+			or self.options.createPackageRepository:
+
 			self.options.noPackageObsoletion = True
 			self._createRepositoryIfNeeded(True)
 
 			packageRepository = PackageRepository(self.packagesPath,
 				self.repository, self.options.quiet)
-			packageRepository.prune()
+
+			if self.options.prunePackageRepository:
+				packageRepository.prune()
+
+			if self.options.createPackageRepository:
+				packageRepository.createPackageRepository(
+					self.options.createPackageRepository)
 			return
 
 		# if requested, print the location of the haikuports source tree
