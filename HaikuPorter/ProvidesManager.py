@@ -49,6 +49,7 @@ class ProvidesManager(object):
 		name = resolvableExpression.name
 		operator = resolvableExpression.operator
 		version = resolvableExpression.version
+		base = resolvableExpression.base
 
 		if not name in self._providesMap:
 			return None
@@ -62,6 +63,8 @@ class ProvidesManager(object):
 		for provides in providesList:
 			provideIsHpkg = (provides.packageInfo.path.endswith('.hpkg')
 				if isinstance(provides.packageInfo, PackageInfo) else False)
+			if base and provideIsHpkg:
+				continue
 			if not operator:
 				if not updateDependencies:
 					return provides
