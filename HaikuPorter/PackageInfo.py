@@ -50,7 +50,7 @@ class Resolvable(object):
 # -- ResolvableExpression class -----------------------------------------------
 
 class ResolvableExpression(object):
-	def __init__(self, string):
+	def __init__(self, string, ignoreBase=False):
 		match = re.match('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)', string)
 		if match:
 			self.name = match.group(1)
@@ -61,10 +61,15 @@ class ResolvableExpression(object):
 			self.operator = None
 			self.version = None
 
+		self.base = not ignoreBase and string.endswith(' base')
+
 	def __str__(self):
+		result = self.name
 		if self.operator:
-			return self.name + ' ' + self.operator + ' ' + self.version
-		return self.name
+			result += ' ' + self.operator + ' ' + self.version
+		if self.base:
+			result += ' base'
+		return result
 
 
 # -- PackageInfo class --------------------------------------------------------
@@ -117,7 +122,8 @@ class PackageInfo(object):
 			if line.startswith('provides:'):
 				self.provides.append(Resolvable(line[9:].lstrip()))
 			elif line.startswith('requires:'):
-				self.requires.append(ResolvableExpression(line[9:].lstrip()))
+				self.requires.append(ResolvableExpression(line[9:].lstrip(),
+					True))
 
 		if self.path.endswith('.hpkg'):
 			PackageInfo.hpkgCache[self.path] = deepcopy(self.__dict__)
