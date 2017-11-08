@@ -469,8 +469,10 @@ class Main(object):
 			presentDependencyPackages)
 
 		print 'packages already present:'
-		for package in presentDependencyPackages:
-			print "\t" + os.path.basename(package)
+		presentDependencyPackageNames = [os.path.basename(package)
+			for package in presentDependencyPackages]
+		for name in sorted(presentDependencyPackageNames):
+			print "\t" + name
 		print ''
 
 		print 'packages that need to be built:'
