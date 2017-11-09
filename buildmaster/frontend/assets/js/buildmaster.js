@@ -412,6 +412,9 @@ BuildMaster.prototype.showStatus = function()
 		};
 
 	var addBuildList = function(name, targetSelector, buildList, template) {
+			if (!buildList)
+				return 0;
+
 			var parentElement = findElement(targetSelector);
 			addBuildCount(name, buildList.length, targetSelector);
 			setElementContent('.count', buildList.length, parentElement);
