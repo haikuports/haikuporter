@@ -9,6 +9,7 @@
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
+from .Port import Port
 from .Utils import ensureCommandIsAvailable, info, sysExit, warn
 
 import errno
@@ -90,6 +91,34 @@ class ScheduledBuild:
 			'buildable': self.buildable,
 			'buildNumbers': self.buildNumbers,
 			'lost': self.lost
+		}
+
+
+class SkippedBuild:
+	def __init__(self, portsTreePath, port, reason):
+		if isinstance(port, Port):
+			self.port = port
+			self.recipeFilePath \
+				= os.path.relpath(port.recipeFilePath, portsTreePath)
+		else:
+			self.port = None
+			self.name = port
+			self.recipeFilePath = ''
+
+		self.reason = reason
+
+	@property
+	def status(self):
+		return {
+			'port': {
+				'name': self.port.name if self.port else self.name,
+				'version': self.port.version if self.port else '',
+				'revision': self.port.revision if self.port else '',
+				'revisionedName': \
+					self.port.revisionedName if self.port else self.name,
+				'recipeFilePath': self.recipeFilePath
+			},
+			'reason': self.reason
 		}
 
 
@@ -825,6 +854,7 @@ class BuildMaster:
 		self.completeBuilds = []
 		self.failedBuilds = []
 		self.lostBuilds = []
+		self.skippedBuilds = []
 		self.buildHistory = []
 		self.totalBuildCount = 0
 		self.startTime = None
@@ -840,6 +870,14 @@ class BuildMaster:
 		self.statusLock = threading.Lock()
 
 		self._setBuildStatus('preparing')
+
+	def addSkipped(self, port, reason):
+		portName = port.revisionedName if isinstance(port, Port) else port
+		warn('skipped port {}: {}'.format(portName, reason))
+
+		skippedBuild = SkippedBuild(self.portsTreePath, port, reason)
+		self.skippedBuilds.append(skippedBuild)
+		self._dumpStatus()
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		self.logger.info('scheduling build of ' + port.versionedName)
@@ -1098,7 +1136,8 @@ class BuildMaster:
 				'blocked': [ build.status for build in self.blockedBuilds ],
 				'complete': [ build.status for build in self.completeBuilds ],
 				'failed': [ build.status for build in self.failedBuilds ],
-				'lost': [ build.status for build in self.lostBuilds ]
+				'lost': [ build.status for build in self.lostBuilds ],
+				'skipped': [ build.status for build in self.skippedBuilds ]
 			},
 			'builders': {
 				'active': [ builder.status for builder in self.activeBuilders

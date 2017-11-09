@@ -353,7 +353,13 @@ class Main(object):
 					portName = self.repository.getPortNameForPackageName(
 						portName)
 					if not portName:
+						if self.options.buildMaster:
+							self.buildMaster.addSkipped(portSpec['name'],
+								'not found in repository')
+							continue
+
 						sysExit(portSpec['name'] + u' not found in repository')
+
 				portSpec['name'] = portName
 
 			# use specific version if given, otherwise use the highest buildable
@@ -365,8 +371,9 @@ class Main(object):
 															 True)
 				if not version:
 					if self.options.buildMaster:
-						print('no version of ' + portSpec['name']
-							+ ' can be built, skipping')
+						self.buildMaster.addSkipped(portSpec['name'],
+							'no version of ' + portSpec['name']
+								+ ' can be built')
 						continue
 					else:
 						sysExit(u'No version of ' + portSpec['name']
@@ -374,7 +381,12 @@ class Main(object):
 				portID = portSpec['name'] + '-' + version
 
 			if portID not in allPorts:
+				if self.options.buildMaster:
+					self.buildMaster.addSkipped(portID, 'not found in tree')
+					continue
+
 				sysExit(portID + u' not found in tree.')
+
 			port = allPorts[portID]
 
 			# show port description, if requested
@@ -437,7 +449,7 @@ class Main(object):
 					if not self.options.buildMaster:
 						raise
 					else:
-						print(str(exception))
+						self.buildMaster.addSkipped(port, str(exception))
 
 			elif self.options.extractPatchset:
 				port.extractPatchset()
@@ -504,9 +516,11 @@ class Main(object):
 		# warn when the port is not buildable on this architecture
 		if not port.isBuildableOnTargetArchitecture:
 			status = port.statusOnTargetArchitecture
-			warn(u'Port %s is %s on this architecture.'
-				 % (port.versionedName, status))
+			message = u'Port {} is {} on this architecture.'.format(
+				port.versionedName, status)
+			warn(message)
 			if self.options.buildMaster:
+				self.buildMaster.addSkipped(port, message)
 				return False
 
 			if not self.options.yes:
@@ -567,8 +581,9 @@ class Main(object):
 					self.repository.path, self.packageRepositories,
 					presentDependencyPackages)
 			except SystemExit as exception:
-				print('resolving build dependencies failed for port '
-					+ port.versionedName + ': ' + str(exception))
+				self.buildMaster.addSkipped(port,
+					'resolving build dependencies failed for port '
+						+ port.versionedName + ': ' + str(exception))
 				return
 		else:
 			buildDependencies = port.resolveBuildDependencies(
@@ -618,10 +633,10 @@ class Main(object):
 					try:
 						self._buildMainPort(requiredPort)
 					except SystemExit as exception:
-						print('Skipping ' + port.versionedName
-							+ ', dependency '
-							+ requiredPort.versionedName + ' cannot be built: '
-							+ str(exception))
+						self.buildMaster.addSkipped(requiredPort,
+							'Skipping ' + port.versionedName + ', dependency '
+								+ requiredPort.versionedName
+								+ ' cannot be built: ' + str(exception))
 						sysExit(u'Dependency of ' + port.versionedName
 							+ u' cannot be built')
 				else:

@@ -375,6 +375,9 @@ BuildMaster.prototype.showStatus = function()
 		};
 
 	var addStringList = function(targetElement, className, stringList) {
+			if (!targetElement)
+				return;
+
 			setElementContent('.count', stringList.length,
 				targetElement.parentElement);
 			if (stringList.length > 0) {
@@ -384,8 +387,10 @@ BuildMaster.prototype.showStatus = function()
 				removeElement(targetElement.parentElement);
 		};
 
-	var addBuild = function(parentElement, build) {
-			var element = createFromTemplate('#scheduledBuildTemplate');
+	var addBuild = function(parentElement, template, build) {
+			var element
+				= createFromTemplate(template || '#scheduledBuildTemplate');
+
 			mapContentFromObject(build, {
 					'port.revisionedName': '.revisionedName',
 					'port.recipeFilePath': '.recipeFilePath'
@@ -401,13 +406,16 @@ BuildMaster.prototype.showStatus = function()
 				'packageName', build.requiredPackages);
 			addStringList(findElement('.missingPackages', element),
 				'packageID', build.missingPackageIDs);
+
+			if (build.reason)
+				setElementContent('.reason', build.reason, element)
 		};
 
-	var addBuildList = function(name, targetSelector, buildList) {
+	var addBuildList = function(name, targetSelector, buildList, template) {
 			var parentElement = findElement(targetSelector);
 			addBuildCount(name, buildList.length, targetSelector);
 			setElementContent('.count', buildList.length, parentElement);
-			buildList.forEach(addBuild.bind(undefined, parentElement));
+			buildList.forEach(addBuild.bind(null, parentElement, template));
 			return buildList.length;
 		};
 
@@ -424,6 +432,8 @@ BuildMaster.prototype.showStatus = function()
 		this.status.builds.failed);
 	totalBuilds += addBuildList('Lost', '#lostBuilds',
 		this.status.builds.lost);
+	totalBuilds += addBuildList('Skipped', '#skippedBuilds',
+		this.status.builds.skipped, '#skippedBuildTemplate');
 
 	addBuildCount('Total', totalBuilds, '#builds');
 	setElementContent('.count', totalBuilds, findElement('#builds'));

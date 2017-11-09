@@ -32,7 +32,7 @@ a, a:visited {
 	background-color: white;
 }
 
-.scheduledBuild, .builder {
+.scheduledBuild, .skippedBuild, .builder {
 	border-top: 3px solid lightgray;
 	margin-bottom: 1em;
 }
@@ -97,12 +97,18 @@ a, a:visited {
 	background-color: #f0f0ff;
 }
 
-#failedBuilds, #lostBuilders {
+#failedBuilds, #skippedBuilds, #lostBuilders {
 	background-color: #fff0f0;
 }
 
 #lostBuilds {
 	background-color: #fffdf0;
+}
+
+.reason {
+	flex-shrink: 1;
+	overflow: auto;
+	max-height: 3em;
 }
 
 .logContainer, .logContainer .logs, #masterLog, .builderName, .buildNumber {
@@ -129,17 +135,13 @@ a, a:visited {
 	background-color: white;
 }
 
-.inlineLogViewer.hidden {
-	display: none;
-}
-
 .compact .expanded, .compact .expanded-if-empty:empty,
 .compact .expanded-if-only:only-child, .compact .buildNumber,
 .hidden-if-only:only-child {
 	display: none;
 }
 
-.compact .scheduledBuild, .compact .builder {
+.compact .scheduledBuild, .compact .skippedBuild, .compact .builder {
 	border-top: none;
 	margin-bottom: 0;
 	display: flex;
