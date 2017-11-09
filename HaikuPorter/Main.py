@@ -580,10 +580,9 @@ class Main(object):
 				buildDependencies = port.resolveBuildDependencies(
 					self.repository.path, self.packageRepositories,
 					presentDependencyPackages)
-			except SystemExit as exception:
+			except Exception as exception:
 				self.buildMaster.addSkipped(port,
-					'resolving build dependencies failed for port '
-						+ port.versionedName + ': ' + str(exception))
+					'resolving build dependencies failed: {}'.format(exception))
 				return
 		else:
 			buildDependencies = port.resolveBuildDependencies(

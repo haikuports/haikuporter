@@ -204,11 +204,13 @@ class DependencyResolver(object):
 						provides = self._providesManager.getMatchingProvides(requires,
 							isPrerequiresType)
 				except CalledProcessError:
-					raise LookupError()
+					raise LookupError('failed to install package for {}'.format(
+							requires))
 			else:
-				printError('%s "%s" of package "%s" could not be resolved'
-						   % (typeString, str(requires), parent.versionedName))
-				raise LookupError()
+				message = '%s "%s" of package "%s" could not be resolved' \
+					% (typeString, str(requires), parent.versionedName)
+				printError(message)
+				raise LookupError(message)
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):

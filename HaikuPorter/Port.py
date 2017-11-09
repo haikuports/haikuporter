@@ -1551,6 +1551,9 @@ class Port(object):
 													 requiresTypes,
 													 repositories, **kwargs)
 		except (CalledProcessError, LookupError):
+			if getOption('buildMaster'):
+				raise
+
 			sysExit((u'unable to resolve %s for %s\n'
 					 + u'\tdependency-infos:\n\t\t%s\n'
 					 + u'\trepositories:\n\t\t%s\n')
