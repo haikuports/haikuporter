@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 from subprocess import CalledProcessError, check_output, PIPE, Popen, STDOUT
+import time
 
 
 # -----------------------------------------------------------------------------
@@ -196,13 +197,25 @@ class SourceFetcherForDownload(object):
 			if Configuration.getSourceforgeMirror():
 				mirror = '?use_mirror=' + Configuration.getSourceforgeMirror()
 
-		args = [ 'wget', '-c', '--timeout=10', '--tries=3',
-				 '-O', self.fetchTarget, self.uri + mirror]
-		process = Popen(args, cwd=downloadDir, stdout=PIPE, stderr=STDOUT)
-		for line in iter(process.stdout.readline, b''):
-			info(line[:-1])
-		process.stdout.close()
-		code = process.wait()
+		args = [ 'wget', '-c', '--timeout=10', '-O', self.fetchTarget,
+			self.uri + mirror]
+
+		code = 0
+		for tries in range(0, 3):
+			process = Popen(args, cwd=downloadDir, stdout=PIPE, stderr=STDOUT)
+			for line in iter(process.stdout.readline, b''):
+				info(line[:-1])
+			process.stdout.close()
+			code = process.wait()
+			if code in (0, 2, 6, 8):
+				# 0: success
+				# 2: parse error of command line
+				# 6: auth failure
+				# 8: error response from server
+				break
+
+			time.sleep(3)
+
 		if code:
 			raise CalledProcessError(code, args)
 
