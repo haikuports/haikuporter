@@ -30,7 +30,8 @@ allowedTopLevelEntries = [
 	'develop',
 	'documentation',
 	'lib',
-	'preferences'
+	'preferences',
+	'servers'
 ] + allowedWritableTopLevelDirectories
 
 # -- Policy checker class -----------------------------------------------------
