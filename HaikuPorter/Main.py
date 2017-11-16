@@ -93,7 +93,8 @@ class Main(object):
 									or self.options.location
 									or self.options.buildMaster
 									or self.options.repositoryUpdate
-									or self.options.prunePackageRepository)
+									or self.options.prunePackageRepository
+									or self.options.createPackageRepository)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
