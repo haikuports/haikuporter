@@ -637,7 +637,7 @@ class Main(object):
 					try:
 						self._buildMainPort(requiredPort)
 					except SystemExit as exception:
-						self.buildMaster.addSkipped(requiredPort,
+						self.buildMaster.addSkipped(port,
 							'Skipping ' + port.versionedName + ', dependency '
 								+ requiredPort.versionedName
 								+ ' cannot be built: ' + str(exception))
