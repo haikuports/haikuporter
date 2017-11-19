@@ -568,6 +568,10 @@ class Main(object):
 		targetPath = self.packagesPath
 		activeVersion = self.repository.getActiveVersionOf(port.name)
 		if port.version != activeVersion:
+			if self.options.buildMaster:
+				sysExit(u'building obsolete port {} not allowed'.format(
+						port.revisionedName));
+
 			warn(u'building obsolete package')
 			targetPath += '/.obsolete'
 			if not os.path.exists(targetPath):
