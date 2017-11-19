@@ -880,6 +880,16 @@ class BuildMaster:
 		self._dumpStatus()
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
+		# Skip builds that would overwrite existing packages.
+		for package in port.packages:
+			packagePath = os.path.join(self.packagesPath, package.hpkgName)
+			if not os.path.exists(packagePath):
+				continue
+
+			self.addSkipped(port,
+				'some packages already exist, revision bump required')
+			return
+
 		self.logger.info('scheduling build of ' + port.versionedName)
 		scheduledBuild = ScheduledBuild(port, self.portsTreePath,
 			requiredPackageIDs, self.packagesPath, presentDependencyPackages)
@@ -892,6 +902,10 @@ class BuildMaster:
 		self._setBuildStatus('scheduling')
 
 	def runBuilds(self, stdscr=None):
+		# Move anything to the lost state that depends on skipped builds.
+		for skippedBuild in self.skippedBuilds:
+			self._packagesCompleted(skippedBuild.port.packages, False)
+
 		try:
 			if stdscr:
 				from .Display import Display
