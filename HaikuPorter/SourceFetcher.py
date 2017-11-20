@@ -371,17 +371,20 @@ class SourceFetcherForMercurial(object):
 		info(output)
 
 	def updateToRev(self, rev):
-		warn(u"Updating of a Mercurial repository to a specific revision has "
-			 u"not been implemented yet, sorry")
+		ensureCommandIsAvailable('hg')
+		self.rev = rev
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
+		if not self.rev:
+			self.rev = 'tip'
+
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
 			if sourceSubDir else sourceBaseDir
 		if foldSubDir:
-			command = 'hg archive -I "%s" -t files "%s"' \
-				% (foldSubDir, sourceDir)
+			command = 'hg archive -r %s -I "%s" -t files "%s"' \
+				% (self.rev, foldSubDir, sourceDir)
 		else:
-			command = 'hg archive -t files "%s"' % sourceDir
+			command = 'hg archive -r %s -t files "%s"' % (self.rev, sourceDir)
 		output = check_output(command, shell=True, cwd=self.fetchTarget)
 		info(output)
 
