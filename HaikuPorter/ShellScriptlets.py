@@ -123,7 +123,7 @@ defineDebugInfoPackage()
 	shift 1
 
 	local packageName=${basePackageName}_debuginfo
-	local packageSuffix=$(echo $packageName | sed s,[^_]*_,,)
+	local packageSuffix=debuginfo
 
 	local provides=PROVIDES_$packageSuffix
 	local requires=REQUIRES_$packageSuffix
