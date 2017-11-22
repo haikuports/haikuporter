@@ -548,8 +548,13 @@ class RemoteBuilder:
 			return
 
 		self.logger.info('upload package ' + packageName + ' to builder')
-		self._putFile(packagePath,
-			self.config['portstree']['packagesCachePath'] + '/' + packageName)
+
+		entryPath \
+			= self.config['portstree']['packagesCachePath'] + '/' + packageName
+		uploadPath = entryPath + '.upload'
+
+		self._putFile(packagePath, uploadPath)
+		self._move(uploadPath, entryPath)
 
 		self.availablePackages.append(packageName)
 
