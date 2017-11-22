@@ -469,7 +469,8 @@ class RemoteBuilder:
 
 		except socket.error as exception:
 			self.buildLogger.error('connection failed: ' + str(exception))
-			self.state = _BuilderState.NOT_AVAILABLE
+			if self.state == _BuilderState.AVAILABLE:
+				self.state = _BuilderState.RECONNECT
 
 		except (IOError, paramiko.ssh_exception.SSHException) as exception:
 			self.buildLogger.error('builder failed: ' + str(exception))
