@@ -497,6 +497,14 @@ class RemoteBuilder:
 	def _symlink(self, sourcePath, destPath):
 		self.sftpClient.symlink(sourcePath, destPath)
 
+	def _move(self, sourcePath, destPath):
+		# Unfortunately we can't use SFTPClient.rename as that uses the rename
+		# command (vs. posix-rename) which uses hardlinks which fail on BFS
+		(output, channel) = self._remoteCommand('mv "' + sourcePath + '" "'
+			+ destPath + '"')
+		if channel.recv_exit_status() != 0:
+			raise IOError('failed moving {} to {}'.format(sourcePath, destPath))
+
 	def _openRemoteFile(self, path, mode):
 		return self.sftpClient.open(path, mode)
 
@@ -558,16 +566,9 @@ class RemoteBuilder:
 				self.logger.debug('removing symlink to package ' + entry)
 				self.sftpClient.remove(entryPath)
 			else:
-				# Unfortunately we can't use SFTPClient.rename as that uses the
-				# rename command (vs. posix-rename) which uses hardlinks which
-				# fail on BFS
 				self.logger.info('moving package ' + entry + ' to cache')
 				cacheEntryPath = cachePath + '/' + entry
-				(output, channel) = self._remoteCommand('mv "'
-					+ entryPath + '" "' + cacheEntryPath + '"')
-				if channel.recv_exit_status() != 0:
-					raise IOError('failed to move file to cache')
-
+				self._move(entryPath, cacheEntryPath)
 				self.availablePackages.append(entry)
 
 		self.visiblePackages = []
