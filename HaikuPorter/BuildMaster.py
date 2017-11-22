@@ -450,6 +450,8 @@ class RemoteBuilder:
 
 			if exitStatus != 0:
 				reschedule = False
+				self._purgePort(scheduledBuild)
+				self._clearVisiblePackages()
 				raise Exception('build failure')
 
 			for package in scheduledBuild.port.packages:
