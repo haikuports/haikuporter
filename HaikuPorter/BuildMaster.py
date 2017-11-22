@@ -356,6 +356,16 @@ class RemoteBuilder:
 				+ str(exception))
 			raise
 
+	def _removeObsoletePackages(self):
+		cachePath = self.config['portstree']['packagesCachePath']
+		for entry in list(self.availablePackages):
+			if not os.path.exists(os.path.join(self.packagesPath, entry)):
+				self.logger.info(
+					'removing obsolete package {} from cache'.format(entry))
+				entryPath = cachePath + '/' + entry
+				self.sftpClient.remove(entryPath)
+				self.availablePackages.remove(entry)
+
 	def _setupForBuilding(self):
 		if self.state == _BuilderState.AVAILABLE:
 			return True
@@ -368,6 +378,7 @@ class RemoteBuilder:
 		self._writeBuilderConfig()
 		self._createNeededDirs()
 		self._getAvailablePackages()
+		self._removeObsoletePackages()
 
 		self.state = _BuilderState.AVAILABLE
 		return True
