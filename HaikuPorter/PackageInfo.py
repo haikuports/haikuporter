@@ -20,6 +20,8 @@ import re
 # -- Resolvable class ---------------------------------------------------------
 
 class Resolvable(object):
+	versionPattern = re.compile('([^\s=]+)\s*=\s*([^\s]+)')
+
 	def __init__(self, string):
 		# split off the compat-version part
 		# <name> [ <op> <version> ] [ "compatible >= " <version> ")" ]
@@ -31,7 +33,7 @@ class Resolvable(object):
 				self.compatibleVersion = string[versionIndex + 2:-1].strip()
 				string = string[:index].rstrip()
 
-		match = re.match('([^\s=]+)\s*=\s*([^\s]+)', string)
+		match = Resolvable.versionPattern.match(string)
 		if match:
 			self.name = match.group(1)
 			self.version = match.group(2)
@@ -51,8 +53,10 @@ class Resolvable(object):
 # -- ResolvableExpression class -----------------------------------------------
 
 class ResolvableExpression(object):
+	expressionPattern = re.compile('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)')
+
 	def __init__(self, string, ignoreBase=False):
-		match = re.match('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)', string)
+		match = ResolvableExpression.expressionPattern.match(string)
 		if match:
 			self.name = match.group(1)
 			self.operator = match.group(2)
