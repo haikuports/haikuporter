@@ -15,6 +15,11 @@ from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import printError, sysExit, warn
 
+class RestartDependencyResolutionException(Exception):
+	def __init__(self, packageNode, message):
+		self.packageNode = packageNode
+		self.message = message
+
 # -- PackageNode class --------------------------------------------------------
 
 class PackageNode(object):
@@ -61,7 +66,6 @@ class DependencyResolver(object):
 		self._stopAtHpkgs = kwargs.get('stopAtHpkgs', False)
 		self._presentDependencyPackages = kwargs.get(
 			'presentDependencyPackages', None)
-		self._packageNodes = []
 
 	def determineRequiredPackagesFor(self, dependencyInfoFiles):
 		for repository in self._repositories:
@@ -79,14 +83,34 @@ class DependencyResolver(object):
 		packageInfos = [
 			self._parsePackageInfo(dif, True) for dif in dependencyInfoFiles
 		]
-		self._pending = [
-			PackageNode(pi, False) for pi in packageInfos
-		]
-		self._traversed = set([
-			str(PackageNode(pi, False)) for pi in packageInfos
-		])
 
-		self._buildDependencyGraph()
+		errorMessages = []
+		while True:
+			try:
+				self._packageNodes = []
+				if self._presentDependencyPackages:
+					del self._presentDependencyPackages[:]
+
+				self._pending = [
+					PackageNode(pi, False) for pi in packageInfos
+				]
+
+				self._traversed = set([
+					str(PackageNode(pi, False)) for pi in packageInfos
+				])
+
+				self._buildDependencyGraph()
+				break
+
+			except RestartDependencyResolutionException as exception:
+				errorMessages.append(exception.message)
+				if exception.packageNode.packageInfo in packageInfos:
+					# The resolution failure has bubbled to the top, we failed.
+					raise LookupError('\n'.join(errorMessages))
+
+				self._providesManager.removeProvidesOfPackageInfo(
+					exception.packageNode.packageInfo)
+				continue
 
 		self._sortPackageNodesTopologically()
 
@@ -204,13 +228,13 @@ class DependencyResolver(object):
 						provides = self._providesManager.getMatchingProvides(requires,
 							isPrerequiresType)
 				except CalledProcessError:
-					raise LookupError('failed to install package for {}'.format(
-							requires))
+					raise RestartDependencyResolutionException(parent,
+							'failed to install package for {}'.format(requires))
 			else:
 				message = '%s "%s" of package "%s" could not be resolved' \
 					% (typeString, str(requires), parent.versionedName)
 				printError(message)
-				raise LookupError(message)
+				raise RestartDependencyResolutionException(parent, message)
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):

@@ -31,6 +31,7 @@ class ProvidesInfo(Resolvable):
 class ProvidesManager(object):
 	def __init__(self):
 		self._providesMap = {}
+		self._providesSourceMap = {}
 		self.architectures = [BuildPlatform.buildPlatform.targetArchitecture,
 			'any', 'source']
 
@@ -104,7 +105,18 @@ class ProvidesManager(object):
 
 	def _addPackageProvidesInfo(self, packageInfo, providesString):
 		provides = ProvidesInfo(packageInfo, providesString.strip())
+
+		if packageInfo.path in self._providesSourceMap:
+			self._providesSourceMap[packageInfo.path].append(provides)
+		else:
+			self._providesSourceMap[packageInfo.path] = [ provides ]
+
 		if provides.name in self._providesMap:
 			self._providesMap[provides.name].append(provides)
 		else:
 			self._providesMap[provides.name] = [ provides ]
+
+	def removeProvidesOfPackageInfo(self, packageInfo):
+		providesList = self._providesSourceMap.pop(packageInfo.path)
+		for provides in providesList:
+			self._providesMap[provides.name].remove(provides)
