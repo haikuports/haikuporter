@@ -43,19 +43,13 @@ class Resolvable(object):
 # -- ResolvableExpression class -----------------------------------------------
 
 class ResolvableExpression(object):
-	expressionPattern = re.compile('([^\s=!<>]+)\s*([=!<>]+)\s*([^\s]+)')
+	expressionPattern = re.compile('([^\s=!<>]+)\s*([=!<>]+)?\s*([^\s]+)?')
 
 	def __init__(self, string, ignoreBase=False):
 		match = ResolvableExpression.expressionPattern.match(string)
-		if match:
-			self.name = match.group(1)
-			self.operator = match.group(2)
-			self.version = match.group(3)
-		else:
-			self.name = string
-			self.operator = None
-			self.version = None
-
+		self.name = match.group(1)
+		self.operator = match.group(2)
+		self.version = match.group(3)
 		self.base = not ignoreBase and string.endswith(' base')
 
 	def __str__(self):
