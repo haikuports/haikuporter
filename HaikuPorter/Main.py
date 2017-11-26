@@ -593,7 +593,7 @@ class Main(object):
 			buildDependencies = port.resolveBuildDependencies(
 				self.repository.path, self.packageRepositories)
 
-		print 'The following built dependencies were found:'
+		print 'The following build dependencies were found:'
 		for dependency in buildDependencies:
 			print('\t' + dependency)
 
