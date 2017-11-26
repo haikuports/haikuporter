@@ -20,26 +20,16 @@ import re
 # -- Resolvable class ---------------------------------------------------------
 
 class Resolvable(object):
-	versionPattern = re.compile('([^\s=]+)\s*=\s*([^\s]+)')
+	# HPKG:		<name> [ <op> <version> [ "(compatible >= " <version> ")" ]]
+	# Recipe: 	<name> [ <op> <version> [ "compat >= " <version> ]]
+	versionPattern = re.compile('([^\s=]+)\s*(=\s*([^\s]+)\s*'
+		+ '((\(compatible|compat)\s*>=\s*([^\s)]+))?)?')
 
 	def __init__(self, string):
-		# split off the compat-version part
-		# <name> [ <op> <version> ] [ "compatible >= " <version> ")" ]
-		self.compatibleVersion = None
-		if string.endswith(')'):
-			index = string.rfind('(')
-			versionIndex = string.rfind('>=')
-			if versionIndex > 0:
-				self.compatibleVersion = string[versionIndex + 2:-1].strip()
-				string = string[:index].rstrip()
-
 		match = Resolvable.versionPattern.match(string)
-		if match:
-			self.name = match.group(1)
-			self.version = match.group(2)
-		else:
-			self.name = string
-			self.version = None
+		self.name = match.group(1)
+		self.version = match.group(3)
+		self.compatibleVersion = match.group(6)
 
 	def __str__(self):
 		result = self.name
