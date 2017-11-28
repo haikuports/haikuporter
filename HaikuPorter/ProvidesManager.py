@@ -103,13 +103,18 @@ class ProvidesManager(object):
 				foundIsHpkg = provideIsHpkg
 		return found
 
+	def _providesSource(self, packageInfo):
+		return packageInfo.path if isinstance(packageInfo, PackageInfo)
+			else packageInfo
+
 	def _addPackageProvidesInfo(self, packageInfo, providesString):
 		provides = ProvidesInfo(packageInfo, providesString.strip())
 
-		if packageInfo.path in self._providesSourceMap:
-			self._providesSourceMap[packageInfo.path].append(provides)
+		source = self._providesSource(packageInfo)
+		if source in self._providesSourceMap:
+			self._providesSourceMap[source].append(provides)
 		else:
-			self._providesSourceMap[packageInfo.path] = [ provides ]
+			self._providesSourceMap[source] = [ provides ]
 
 		if provides.name in self._providesMap:
 			self._providesMap[provides.name].append(provides)
@@ -117,6 +122,7 @@ class ProvidesManager(object):
 			self._providesMap[provides.name] = [ provides ]
 
 	def removeProvidesOfPackageInfo(self, packageInfo):
-		providesList = self._providesSourceMap.pop(packageInfo.path)
+		source = self._providesSource(packageInfo)
+		providesList = self._providesSourceMap.pop(source)
 		for provides in providesList:
 			self._providesMap[provides.name].remove(provides)
