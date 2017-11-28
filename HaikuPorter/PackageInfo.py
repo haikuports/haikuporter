@@ -64,8 +64,8 @@ class ResolvableExpression(object):
 # -- PackageInfo class --------------------------------------------------------
 
 class PackageInfo(object):
-
 	hpkgCache = None
+	hpkgCacheDir = None
 	hpkgCachePath = None
 
 	def __init__(self, path):
@@ -85,8 +85,8 @@ class PackageInfo(object):
 	@classmethod
 	def _initializeCache(self):
 		self.hpkgCache = {}
-		self.hpkgCachePath = os.path.join(Configuration.getRepositoryPath(),
-			'hpkgInfoCache')
+		self.hpkgCacheDir = Configuration.getRepositoryPath()
+		self.hpkgCachePath = os.path.join(self.hpkgCacheDir, 'hpkgInfoCache')
 		if not os.path.exists(self.hpkgCachePath):
 			return
 
@@ -113,6 +113,9 @@ class PackageInfo(object):
 	@classmethod
 	def _writeToCache(self, packageInfo):
 		self.hpkgCache[packageInfo['path']] = deepcopy(packageInfo)
+		if not os.path.exists(self.hpkgCacheDir):
+			os.makedirs(self.hpkgCacheDir)
+
 		with open(self.hpkgCachePath, 'ab') as cacheFile:
 			pickle.dump(packageInfo, cacheFile, pickle.HIGHEST_PROTOCOL)
 
