@@ -104,8 +104,9 @@ class ProvidesManager(object):
 		return found
 
 	def _providesSource(self, packageInfo):
-		return packageInfo.path if isinstance(packageInfo, PackageInfo)
+		return packageInfo.path if isinstance(packageInfo, PackageInfo) \
 			else packageInfo
+
 
 	def _addPackageProvidesInfo(self, packageInfo, providesString):
 		provides = ProvidesInfo(packageInfo, providesString.strip())
