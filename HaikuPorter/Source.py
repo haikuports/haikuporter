@@ -409,7 +409,7 @@ class Source(object):
 			sysExit(u"Can't extract patchset for " + self.sourceDir
 					+ u" as the source directory doesn't exist yet")
 
-		print 'Extracting patchset for ' + self.fetchTargetName
+		print 'Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath
 		needToRebase = True
 		try:
 			# check if the tag 'PATCH_FUNCTION' exists
