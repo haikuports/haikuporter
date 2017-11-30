@@ -514,7 +514,7 @@ class Repository(object):
 
 		allPorts = self.allPorts
 
-		brokenPorts = []
+		activePorts = []
 		## REFACTOR into separate methods
 
 		# check for all known ports if their recipe has been changed
@@ -542,6 +542,7 @@ class Repository(object):
 					and not higherVersionIsActive
 					and (os.path.getmtime(port.recipeFilePath)
 						 <= os.path.getmtime(mainDependencyInfoFile))):
+					activePorts.append(portID)
 					higherVersionIsActive = True
 					break
 
@@ -582,21 +583,21 @@ class Repository(object):
 						self._portNameForPackageName[package.name] \
 							= port.name
 
+					activePorts.append(portID)
+
 				except SystemExit as e:
 					if not higherVersionIsActive:
 						# take notice of broken recipe file
 						touchFile(skippedDir + '/' + portID)
-						if os.path.exists(mainDependencyInfoFile):
-							brokenPorts.append(portID)
-						else:
+						if not os.path.exists(mainDependencyInfoFile):
 							if not self.quiet:
 								print '\trecipe for %s is still broken:' % portID
 								print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
-		self._removeStaleDependencyInfos(brokenPorts)
-		self._removeStalePortForPackageMappings(brokenPorts)
+		self._removeStaleDependencyInfos(activePorts)
+		self._removeStalePortForPackageMappings(activePorts)
 
-	def _removeStaleDependencyInfos(self, brokenPorts):
+	def _removeStaleDependencyInfos(self, activePorts):
 		"""check for any dependency-infos that no longer have a corresponding
 		   recipe file"""
 
@@ -611,7 +612,7 @@ class Repository(object):
 				= dependencyInfoFileName[:dependencyInfoFileName.rindex('.')]
 			portID = self.getPortIdForPackageId(packageID)
 
-			if not portID or portID not in allPorts or portID in brokenPorts:
+			if not portID or portID not in activePorts:
 				if not self.quiet:
 					print '\tremoving ' + dependencyInfoFileName
 				os.remove(dependencyInfo)
@@ -635,12 +636,12 @@ class Repository(object):
 				os.mkdir(obsoleteDir)
 			os.rename(package, obsoletePackage)
 
-	def _removeStalePortForPackageMappings(self, brokenPorts):
+	def _removeStalePortForPackageMappings(self, activePorts):
 		"""drops any port-for-package mappings that refer to non-existing or
 		   broken ports"""
 
 		for packageId, portId in self._portIdForPackageId.items():
-			if portId not in self._allPorts or portId in brokenPorts:
+			if portId not in activePorts:
 				del self._portIdForPackageId[packageId]
 
 		for packageName, portName in self._portNameForPackageName.items():
@@ -649,7 +650,7 @@ class Repository(object):
 			if portName in self._portVersionsByName:
 				for version in self._portVersionsByName[portName]:
 					portId = portName + '-' + version
-					if portId not in brokenPorts:
+					if portId in activePorts:
 						break
 				else:
 					# no version exists of this port that is not broken
