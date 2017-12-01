@@ -522,7 +522,6 @@ class Repository(object):
 			print 'Checking if any package-infos need to be updated ...'
 		skippedDir = self.path + '/.skipped'
 		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
-			higherVersionIsActive = False
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version
 				port = allPorts[portID]
@@ -539,28 +538,14 @@ class Repository(object):
 				mainDependencyInfoFile = (self.path + '/'
 										  + port.dependencyInfoName)
 				if (os.path.exists(mainDependencyInfoFile)
-					and not higherVersionIsActive
 					and (os.path.getmtime(port.recipeFilePath)
 						 <= os.path.getmtime(mainDependencyInfoFile))):
 					activePorts.append(portID)
-					higherVersionIsActive = True
 					break
 
 				# try to parse updated recipe
 				try:
 					port.parseRecipeFile(False)
-
-					if higherVersionIsActive:
-						# remove dependency infos from lower version, if it exists
-						if os.path.exists(mainDependencyInfoFile):
-							if not self.quiet:
-								print('\tremoving dependency-infos for '
-									  + portID + ', as newer version is active')
-							port.removeDependencyInfosFromRepository(self.path)
-							if not getOption('noPackageObsoletion'):
-								port.obsoletePackages(self.packagesPath)
-							break
-						continue
 
 					if not port.isBuildableOnTargetArchitecture:
 						touchFile(skippedDir + '/' + portID)
@@ -570,7 +555,6 @@ class Repository(object):
 								   + 'architecture') % (portID, status))
 						continue
 
-					higherVersionIsActive = True
 					if os.path.exists(skippedDir + '/' + portID):
 						os.remove(skippedDir + '/' + portID)
 
@@ -584,15 +568,15 @@ class Repository(object):
 							= port.name
 
 					activePorts.append(portID)
+					break
 
 				except SystemExit as e:
-					if not higherVersionIsActive:
-						# take notice of broken recipe file
-						touchFile(skippedDir + '/' + portID)
-						if not os.path.exists(mainDependencyInfoFile):
-							if not self.quiet:
-								print '\trecipe for %s is still broken:' % portID
-								print '\n'.join(['\t'+line for line in e.code.split('\n')])
+					# take notice of broken recipe file
+					touchFile(skippedDir + '/' + portID)
+					if not os.path.exists(mainDependencyInfoFile):
+						if not self.quiet:
+							print '\trecipe for %s is still broken:' % portID
+							print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
 		self._removeStaleDependencyInfos(activePorts)
 		self._removeStalePortForPackageMappings(activePorts)
