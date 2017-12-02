@@ -55,6 +55,8 @@ class Repository(object):
 					u'\nis newer than the one supported by haikuporter.\n'
 					u'Please upgrade haikuporter.' % self.path)
 
+		Port.setRepositoryDir(self.path)
+
 		# update repository if it exists and isn't empty, populate it otherwise
 		self._initAllPorts()
 		self._initPortForPackageMaps()
@@ -239,7 +241,7 @@ class Repository(object):
 									  + '/input-source-packages/' + name)
 				self._allPorts[name + '-' + version] \
 					= Port(name, version, '<source-package>', portPath,
-						   portOutputPath, self.path, self.shellVariables,
+						   portOutputPath, self.shellVariables,
 						   self.policy)
 
 		# collect ports from the recipe tree
@@ -283,7 +285,7 @@ class Repository(object):
 							self._portVersionsByName[name].append(version)
 						self._allPorts[name + '-' + version] = Port(name,
 							version, category, portPath, portOutputPath,
-							self.path, self.shellVariables, self.policy)
+							self.shellVariables, self.policy)
 					else:
 						# invalid argument
 						if not self.quiet:
@@ -297,8 +299,8 @@ class Repository(object):
 			for port in self._allPorts.values():
 				for architecture in secondaryArchitectures:
 					newPort = Port(port.baseName, port.version, port.category,
-						port.baseDir, port.outputDir, self.path,
-						self.shellVariables, port.policy, architecture)
+						port.baseDir, port.outputDir, self.shellVariables,
+						port.policy, architecture)
 					self._allPorts[newPort.versionedName] = newPort
 
 					name = newPort.name
@@ -384,11 +386,13 @@ class Repository(object):
 		newRepositoryPath = self.path + '.new'
 		if os.path.exists(newRepositoryPath):
 			shutil.rmtree(newRepositoryPath)
-		os.mkdir(newRepositoryPath)
-		skippedDir = newRepositoryPath + '/.skipped'
-		os.mkdir(skippedDir)
-		recipeCacheDir = newRepositoryPath + '/recipeCache'
-		os.mkdir(recipeCacheDir)
+		os.makedirs(newRepositoryPath)
+
+		skippedDir = os.path.join(newRepositoryPath, '.skipped')
+		os.makedirs(skippedDir)
+
+		Port.setRepositoryDir(newRepositoryPath)
+
 		if not self.quiet:
 			print 'Populating repository ...'
 
@@ -402,10 +406,8 @@ class Repository(object):
 						sys.stdout.write(' ' * 60)
 						sys.stdout.write('\r\t%s' % port.versionedName)
 						sys.stdout.flush()
-					recipeFileCache = port.recipeFileCache
-					port.recipeFileCache = recipeCacheDir + '/' + port.versionedName
+
 					port.parseRecipeFile(False)
-					port.recipeFileCache = recipeFileCache
 					if port.isBuildableOnTargetArchitecture:
 						if (port.checkFlag('build')
 							and not preserveFlags):
@@ -415,7 +417,7 @@ class Repository(object):
 						else:
 							if not self.quiet:
 								print
-						port.writeDependencyInfosIntoRepository(newRepositoryPath)
+						port.writeDependencyInfosIntoRepository()
 						for package in port.packages:
 							self._portIdForPackageId[package.versionedName] \
 								= port.versionedName
@@ -436,7 +438,9 @@ class Repository(object):
 						print ""
 					if self.verbose:
 						print e.code
+
 		os.rename(newRepositoryPath, self.path)
+		Port.setRepositoryDir(self.path)
 
 	def supportBackwardsCompatibility(self, buildName, buildVersion):
 		"""Update all DependencyInfo-files in the repository as needed for
@@ -473,7 +477,7 @@ class Repository(object):
 						if not self.quiet:
 							print('\tremoving dependency-infos for '
 								  + portID + ', as different version is active')
-						port.removeDependencyInfosFromRepository(self.path)
+						port.removeDependencyInfosFromRepository()
 						port.obsoletePackages(self.packagesPath)
 					continue
 
@@ -494,7 +498,7 @@ class Repository(object):
 
 					if not self.quiet:
 						print '\tupdating dependency infos of ' + portID
-					port.writeDependencyInfosIntoRepository(self.path)
+					port.writeDependencyInfosIntoRepository()
 					for package in port.packages:
 						self._portIdForPackageId[package.versionedName] \
 							= port.versionedName
@@ -561,7 +565,7 @@ class Repository(object):
 
 					if not self.quiet:
 						print '\tupdating dependency infos of ' + portID
-					port.writeDependencyInfosIntoRepository(self.path)
+					port.writeDependencyInfosIntoRepository()
 					updatedPorts[portID] = port
 					break
 

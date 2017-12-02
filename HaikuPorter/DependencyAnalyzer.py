@@ -71,7 +71,7 @@ class PortNode(object):
 
 	def isBuildable(self, repositoryPath, doneRepositoryPath):
 		# check prerequires
-		dependencyInfoFiles = self.port.getDependencyInfoFiles(repositoryPath)
+		dependencyInfoFiles = self.port.getDependencyInfoFiles()
 		requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 						  'SCRIPTLET_PREREQUIRES' ]
 		repositories = [ doneRepositoryPath ];
@@ -89,7 +89,8 @@ class PortNode(object):
 		return True
 
 	def markAsBuilt(self, doneRepositoryPath):
-		self.port.writeDependencyInfosIntoRepository(doneRepositoryPath)
+		with self.port.temporaryRepositoryDir(doneRepositoryPath):
+			self.port.writeDependencyInfosIntoRepository()
 
 # -- PackageNode class ---------------------------------------------------------
 

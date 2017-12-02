@@ -425,8 +425,7 @@ class Main(object):
 				sysExit(whyID + u' not found in tree.')
 			requiredPort = allPorts[whyID]
 			self._validateMainPort(requiredPort)
-			port.whyIsPortRequired(self.repository.path, self.packagesPath,
-								   requiredPort)
+			port.whyIsPortRequired(self.packagesPath, requiredPort)
 			return
 
 		# do whatever's needed to the list of ports
@@ -478,8 +477,7 @@ class Main(object):
 
 		presentDependencyPackages = []
 		buildDependencies = port.resolveBuildDependencies(
-			self.repository.path, self.packageRepositories,
-			presentDependencyPackages)
+			self.packageRepositories, presentDependencyPackages)
 
 		print 'packages already present:'
 		presentDependencyPackageNames = [os.path.basename(package)
@@ -583,15 +581,14 @@ class Main(object):
 			presentDependencyPackages = []
 			try:
 				buildDependencies = port.resolveBuildDependencies(
-					self.repository.path, self.packageRepositories,
-					presentDependencyPackages)
+					self.packageRepositories, presentDependencyPackages)
 			except Exception as exception:
 				self.buildMaster.addSkipped(port,
 					'resolving build dependencies failed: {}'.format(exception))
 				return
 		else:
 			buildDependencies = port.resolveBuildDependencies(
-				self.repository.path, self.packageRepositories)
+				self.packageRepositories)
 
 		print 'The following build dependencies were found:'
 		for dependency in buildDependencies:

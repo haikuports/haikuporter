@@ -91,10 +91,11 @@ class ChrootSetup(object):
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
+	_repositoryDir = None
+	_recipeCacheDirName = 'recipeCache'
 
 	def __init__(self, name, version, category, baseDir, outputDir,
-				 repositoryDir, globalShellVariables, policy,
-				 secondaryArchitecture=None):
+		globalShellVariables, policy, secondaryArchitecture=None):
 		self.baseName = name
 		self.secondaryArchitecture = secondaryArchitecture
 		self.name = name
@@ -105,7 +106,6 @@ class Port(object):
 		self.category = category
 		self.baseDir = baseDir
 		self.outputDir = outputDir
-		self.repositoryDir = repositoryDir
 		self.recipeIsBroken = False
 		self.recipeHasBeenParsed = False
 		self.logger = None
@@ -118,12 +118,6 @@ class Port(object):
 		else:
 			self.workDir = outputDir + '/work-' + self.version
 			self.effectiveTargetArchitecture = buildPlatform.targetArchitecture
-
-		recipeCacheDir = os.path.join(self.repositoryDir, 'recipeCache')
-		self.recipeFileCache = os.path.join(recipeCacheDir, self.name
-				+ '-' + self.version + '-' + self.effectiveTargetArchitecture)
-		if not os.path.exists(recipeCacheDir):
-			os.makedirs(recipeCacheDir)
 
 		self.isMetaPort = self.category == 'meta-ports'
 
@@ -192,6 +186,20 @@ class Port(object):
 
 		self.policy = policy
 		self.requiresUpdater = None
+
+	@classmethod
+	def setRepositoryDir(cls, repsitoryDir):
+		cls._repositoryDir = repsitoryDir
+
+	def temporaryRepositoryDir(self, repsitoryDir):
+		class TemporaryRepositorySetter:
+			def __enter__(_):
+				self._repositoryDir = repsitoryDir
+
+			def __exit__(*_):
+				del self._repositoryDir
+
+		return TemporaryRepositorySetter()
 
 	def __enter__(self):
 		return self
@@ -479,17 +487,17 @@ class Port(object):
 				pass
 		return self.recipeIsBroken
 
-	def writeDependencyInfosIntoRepository(self, repositoryPath):
+	def writeDependencyInfosIntoRepository(self):
 		"""Write one DependencyInfo-file per package into the repository"""
 		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
-			package.writeDependencyInfoIntoRepository(repositoryPath)
+			package.writeDependencyInfoIntoRepository(self._repositoryDir)
 
-	def removeDependencyInfosFromRepository(self, repositoryPath):
+	def removeDependencyInfosFromRepository(self):
 		"""Remove all DependencyInfo-files for this port from the repository"""
 		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
-			package.removeDependencyInfoFromRepository(repositoryPath)
+			package.removeDependencyInfoFromRepository(self._repositoryDir)
 
 	def obsoletePackages(self, packagesPath):
 		"""Moves all package-files into the 'obsolete' sub-directory"""
@@ -520,7 +528,7 @@ class Port(object):
 		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
-	def resolveBuildDependencies(self, repositoryPath, repositories,
+	def resolveBuildDependencies(self, repositories,
 		presentDependencyPackages = None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
@@ -530,12 +538,13 @@ class Port(object):
 		   out along the way.
 		"""
 
-		dependencyInfoFiles = self.getDependencyInfoFiles(repositoryPath)
+		dependencyInfoFiles = self.getDependencyInfoFiles()
 		requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 						 'SCRIPTLET_PREREQUIRES']
 		requiredPackages = self._resolveDependencies(
 			dependencyInfoFiles, requiresTypes,
-			repositories + [repositoryPath], 'required or prerequired ports',
+			repositories + [self._repositoryDir],
+			'required or prerequired ports',
 			stopAtHpkgs = presentDependencyPackages == None,
 			presentDependencyPackages = presentDependencyPackages
 		)
@@ -547,22 +556,26 @@ class Port(object):
 			if package in processedPackages:
 				continue
 			processedPackages.add(package)
-			if package.startswith(repositoryPath):
+			if package.startswith(self._repositoryDir):
 				result.append(package)
 		return result
 
-	def whyIsPortRequired(self, repositoryPath, packagesPath, requiredPort):
+	def whyIsPortRequired(self, packagesPath, requiredPort):
 		"""Find out which package is pulling the given port in as a dependency
 		   of this port."""
 
-		workRepositoryPath = self.workDir + '/repository'
-		symlinkGlob(repositoryPath + '/*.DependencyInfo', workRepositoryPath)
+		workRepositoryPath = os.path.join(self.workDir, 'repository')
+		symlinkGlob(os.path.join(self._repositoryDir, '*.DependencyInfo'),
+			workRepositoryPath)
 
-		# drop package-infos for the required port, such that pkgman will
-		# fail with an appropriate message
-		requiredPort.removeDependencyInfosFromRepository(workRepositoryPath)
+		with requiredPort.temporaryRepositoryDir(workRepositoryPath):
+			# drop package-infos for the required port, such that dependency
+			# resolution will fail with an appropriate message
+			requiredPort.removeDependencyInfosFromRepository()
 
-		dependencyInfoFiles = self.getDependencyInfoFiles(workRepositoryPath)
+		with self.temporaryRepositoryDir(workRepositoryPath):
+			dependencyInfoFiles = self.getDependencyInfoFiles()
+
 		requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 						 'SCRIPTLET_PREREQUIRES']
 		try:
@@ -578,12 +591,11 @@ class Port(object):
 		warn(u"port %s doesn't seem to be required by %s"
 			 % (requiredPort.versionedName, self.versionedName))
 
-	def getDependencyInfoFiles(self, repositoryPath):
-		"""Returns the list of dependency info files for this port that should
-		   be in the given repository repositoryPath."""
+	def getDependencyInfoFiles(self):
+		"""Returns the list of dependency info files for this port."""
 
 		return [
-			package.dependencyInfoFile(repositoryPath)
+			package.dependencyInfoFile(self._repositoryDir)
 			for package in self.packages
 		]
 
@@ -916,25 +928,33 @@ class Port(object):
 		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
 
 	def _validateOrLoadFromCache(self, showWarnings):
+		recipeCacheDir = os.path.join(self._repositoryDir,
+			Port._recipeCacheDirName)
+		recipeCacheFile = os.path.join(recipeCacheDir, self.name + '-'
+			+ self.version + '-' + self.effectiveTargetArchitecture)
+
 		if (os.path.exists(self.preparedRecipeFile)
-			and os.path.exists(self.recipeFileCache)
-			and os.path.getmtime(self.recipeFileCache)
+			and os.path.exists(recipeCacheFile)
+			and os.path.getmtime(recipeCacheFile)
 				>= os.path.getmtime(self.recipeFilePath)):
-			with codecs.open(self.recipeFileCache, 'r', 'utf-8') as cacheFile:
+			with codecs.open(recipeCacheFile, 'r', 'utf-8') as cacheFile:
 				cached = json.loads(cacheFile.read())
 				if 'exception' in cached:
 					sysExit(cached['exception'])
 				return cached
 
+		if not os.path.exists(recipeCacheDir):
+			os.makedirs(recipeCacheDir)
+
 		try:
 			recipeKeysByExtension, definedPhases \
 				= self.validateRecipeFile(showWarnings)
 		except SystemExit as exception:
-			with codecs.open(self.recipeFileCache, 'w', 'utf-8') as cacheFile:
+			with codecs.open(recipeCacheFile, 'w', 'utf-8') as cacheFile:
 				cacheFile.write(json.dumps({'exception': str(exception)}))
 			raise
 
-		with codecs.open(self.recipeFileCache, 'w', 'utf-8') as cacheFile:
+		with codecs.open(recipeCacheFile, 'w', 'utf-8') as cacheFile:
 			cacheFile.write(json.dumps((recipeKeysByExtension, definedPhases)))
 
 		return recipeKeysByExtension, definedPhases
@@ -1261,7 +1281,7 @@ class Port(object):
 		   the build environment (chroot) for the scriptlets"""
 
 		requiresTypes = ['SCRIPTLET_PREREQUIRES']
-		dependencyInfoFiles = self.getDependencyInfoFiles(self.repositoryDir)
+		dependencyInfoFiles = self.getDependencyInfoFiles()
 		neededPackages = self._resolveDependencies(
 			dependencyInfoFiles, requiresTypes, [packagesPath],
 			'needed packages for scriptlets')
@@ -1273,7 +1293,7 @@ class Port(object):
 		   the build environment (chroot) for the build stage"""
 
 		requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
-		dependencyInfoFiles = self.getDependencyInfoFiles(self.repositoryDir)
+		dependencyInfoFiles = self.getDependencyInfoFiles()
 		prereqPackages = self._resolveDependencies(
 			dependencyInfoFiles, requiresTypes, [packagesPath],
 			'prerequired packages for build')
@@ -1285,7 +1305,7 @@ class Port(object):
 		   build environment (chroot) for the build stage"""
 
 		requiresTypes = ['BUILD_REQUIRES']
-		dependencyInfoFiles = self.getDependencyInfoFiles(self.repositoryDir)
+		dependencyInfoFiles = self.getDependencyInfoFiles()
 		packages = self._resolveDependencies(dependencyInfoFiles,
 											 requiresTypes,
 											 [packagesPath],
