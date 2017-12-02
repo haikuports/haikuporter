@@ -383,64 +383,11 @@ class Repository(object):
 
 		if os.path.exists(self.path):
 			shutil.rmtree(self.path)
-		newRepositoryPath = self.path + '.new'
-		if os.path.exists(newRepositoryPath):
-			shutil.rmtree(newRepositoryPath)
-		os.makedirs(newRepositoryPath)
 
-		skippedDir = os.path.join(newRepositoryPath, '.skipped')
-		os.makedirs(skippedDir)
-
-		Port.setRepositoryDir(newRepositoryPath)
-
-		if not self.quiet:
-			print 'Populating repository ...'
-
-		allPorts = self.allPorts
-		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
-			for version in reversed(self._portVersionsByName[portName]):
-				portID = portName + '-' + version
-				port = allPorts[portID]
-				try:
-					if not self.quiet:
-						sys.stdout.write(' ' * 60)
-						sys.stdout.write('\r\t%s' % port.versionedName)
-						sys.stdout.flush()
-
-					port.parseRecipeFile(False)
-					if port.isBuildableOnTargetArchitecture:
-						if (port.checkFlag('build')
-							and not preserveFlags):
-							if not self.quiet:
-								print '	  [build-flag reset]'
-							port.unsetFlag('build')
-						else:
-							if not self.quiet:
-								print
-						port.writeDependencyInfosIntoRepository()
-						for package in port.packages:
-							self._portIdForPackageId[package.versionedName] \
-								= port.versionedName
-							self._portNameForPackageName[package.name] \
-								= port.name
-						break
-					else:
-						# take notice of skipped recipe file
-						touchFile(skippedDir + '/' + portID)
-						if not self.quiet:
-							status = port.statusOnTargetArchitecture
-							print((' is skipped, as it is %s on target '
-								  + 'architecture') % status)
-				except SystemExit as e:
-					# take notice of broken recipe file
-					touchFile(skippedDir + '/' + portID)
-					if not self.quiet:
-						print ""
-					if self.verbose:
-						print e.code
-
-		os.rename(newRepositoryPath, self.path)
-		Port.setRepositoryDir(self.path)
+		self._portNameForPackageName = {}
+		self._portIdForPackageId = {}
+		self._updateRepository(preserveFlags)
+		return
 
 	def supportBackwardsCompatibility(self, buildName, buildVersion):
 		"""Update all DependencyInfo-files in the repository as needed for
@@ -513,19 +460,26 @@ class Repository(object):
 						print '\trecipe for %s is still broken:' % portID
 						print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
-	def _updateRepository(self):
+	def _updateRepository(self, preserveFlags=True):
 		"""Update all DependencyInfo-files in the repository as needed"""
 
 		allPorts = self.allPorts
 
 		activePorts = []
 		updatedPorts = {}
-		## REFACTOR into separate methods
 
 		# check for all known ports if their recipe has been changed
-		if not self.quiet:
-			print 'Checking if any package-infos need to be updated ...'
+		if os.path.exists(self.path):
+			if not self.quiet:
+				print 'Checking if any package-infos need to be updated ...'
+		else:
+			os.makedirs(self.path)
+			if not self.quiet:
+				print 'Populating repository ...'
+
 		skippedDir = os.path.join(self.path, '.skipped')
+		if not os.path.exists(skippedDir):
+			os.mkdir(skippedDir)
 
 		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
 			for version in reversed(self._portVersionsByName[portName]):
@@ -564,6 +518,11 @@ class Repository(object):
 
 					if os.path.exists(skippedFlag):
 						os.remove(skippedFlag)
+
+					if not preserveFlags and port.checkFlag('build'):
+						if not self.quiet:
+							print('\t[build-flag reset]')
+						port.unsetFlag('build')
 
 					if not self.quiet:
 						print('\tupdating dependency infos of ' + portID)
