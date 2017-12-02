@@ -924,7 +924,8 @@ class BuildMaster:
 	def runBuilds(self, stdscr=None):
 		# Move anything to the lost state that depends on skipped builds.
 		for skippedBuild in self.skippedBuilds:
-			self._packagesCompleted(skippedBuild.port.packages, False)
+			if skippedBuild.port:
+				self._packagesCompleted(skippedBuild.port.packages, False)
 
 		try:
 			if stdscr:
