@@ -161,17 +161,20 @@ class Package(object):
 		return (status == Status.STABLE
 			or (status == Status.UNTESTED and allowUntested))
 
+	def dependencyInfoFile(self, repositoryPath):
+		return os.path.join(repositoryPath, self.dependencyInfoName)
+
 	def writeDependencyInfoIntoRepository(self, repositoryPath):
 		"""Write a DependencyInfo-file for this package into the repository"""
 
-		dependencyInfoFile = repositoryPath + '/' + self.dependencyInfoName
 		requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
-		self.generateDependencyInfo(dependencyInfoFile, requires)
+		self.generateDependencyInfo(self.dependencyInfoFile(repositoryPath),
+			requires)
 
 	def removeDependencyInfoFromRepository(self, repositoryPath):
 		"""Remove DependencyInfo-file from repository, if it's there"""
 
-		dependencyInfoFile = repositoryPath + '/' + self.dependencyInfoName
+		dependencyInfoFile = self.dependencyInfoFile(repositoryPath)
 		if os.path.exists(dependencyInfoFile):
 			os.remove(dependencyInfoFile)
 

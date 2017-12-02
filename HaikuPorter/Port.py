@@ -582,12 +582,10 @@ class Port(object):
 		"""Returns the list of dependency info files for this port that should
 		   be in the given repository repositoryPath."""
 
-		dependencyInfoFiles = [
-			repositoryPath + '/' + package.dependencyInfoName
+		return [
+			package.dependencyInfoFile(repositoryPath)
 			for package in self.packages
 		]
-
-		return dependencyInfoFiles
 
 	def referencesFiles(self, files):
 		if self.recipeFilePath in files:
