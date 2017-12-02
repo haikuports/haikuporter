@@ -456,7 +456,7 @@ class Main(object):
 			elif self.options.extractPatchset:
 				port.extractPatchset()
 			else:
-				self._buildPort(port, True, self.packagesPath)
+				self._buildPort(port, True)
 
 		# show summary of policy violations
 		if Policy.violationsByPort:
@@ -552,30 +552,13 @@ class Main(object):
 		if port.versionedName in self.builtPortIDs:
 			return
 
+		self._setupForPossiblyObsoletePort(port)
+
 		print '=' * 70
 		print port.category + '::' + port.versionedName
 		print '=' * 70
 
 		allPorts = self.repository.allPorts
-
-		# make sure the correct dependencyInfo-file has been created
-		self.repository.supportBackwardsCompatibility(port.name, port.version)
-
-		# HPKGs are usually written into the 'packages' directory, but when
-		# an obsolete port (one that's not in the repository) is being built,
-		# its packages are stored into the .obsolete subfolder of the packages
-		# directory.
-		targetPath = self.packagesPath
-		activeVersion = self.repository.getActiveVersionOf(port.name)
-		if port.version != activeVersion:
-			if self.options.buildMaster:
-				sysExit(u'building obsolete port {} not allowed'.format(
-						port.revisionedName));
-
-			warn(u'building obsolete package')
-			targetPath += '/.obsolete'
-			if not os.path.exists(targetPath):
-				os.makedirs(targetPath)
 
 		buildDependencies = None
 		presentDependencyPackages = None
@@ -612,7 +595,8 @@ class Main(object):
 					if ((getOption('createSourcePackagesForBootstrap')
 							or getOption('createSourcePackages'))
 						and (not requiredPort.sourcePackage
-							or requiredPort.sourcePackageExists(targetPath))):
+							or requiredPort.sourcePackageExists(
+								self.packagesPath))):
 						continue
 					requiredPortsToBuild.append(requiredPort)
 					requiredPortIDs.add(portID)
@@ -643,23 +627,22 @@ class Main(object):
 						sysExit(u'Dependency of ' + port.versionedName
 							+ u' cannot be built')
 				else:
-					self._buildPort(requiredPort, True, targetPath)
+					self._buildPort(requiredPort, True)
 
 		if self.options.buildMaster:
 			self.buildMaster.schedule(port, requiredPackageIDs,
 				presentDependencyPackages)
 			self.builtPortIDs.add(port.versionedName)
 		else:
-			self._buildPort(port, False, targetPath)
+			self._buildPort(port, False)
 
-	def _buildPort(self, port, parseRecipe, targetPath):
+	def _buildPort(self, port, parseRecipe):
 		"""Build a single port"""
 
 		if port.versionedName in self.builtPortIDs:
 			return
 
-		# make sure the correct dependencyInfo-file has been created
-		self.repository.supportBackwardsCompatibility(port.name, port.version)
+		targetPath = self._setupForPossiblyObsoletePort(port)
 
 		print '-' * 70
 		print port.category + '::' + port.versionedName
@@ -685,6 +668,27 @@ class Main(object):
 			port.build(self.packagesPath, self.options.package, targetPath)
 
 		self.builtPortIDs.add(port.versionedName)
+
+	def _setupForPossiblyObsoletePort(self, port):
+		# HPKGs are usually written into the 'packages' directory, but when
+		# an obsolete port (one that's not in the repository) is being built,
+		# its packages are stored into the .obsolete subfolder of the packages
+		# directory.
+		targetPath = self.packagesPath
+		activeVersion = self.repository.getActiveVersionOf(port.name)
+		if port.version != activeVersion:
+			targetPath += '/.obsolete'
+			if not os.path.exists(targetPath):
+				os.makedirs(targetPath)
+
+			warn(u'building obsolete port, packages will be put in {}'.format(
+					targetPath))
+
+			# make sure the correct dependencyInfo-file has been created
+			self.repository.supportBackwardsCompatibility(port.name,
+				port.version)
+
+		return targetPath
 
 	def _testPort(self, port):
 		"""Build a single port"""
