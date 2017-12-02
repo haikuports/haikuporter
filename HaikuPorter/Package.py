@@ -154,12 +154,13 @@ class Package(object):
 			return self.getStatusOnArchitecture(architecture)
 
 	def isBuildableOnSecondaryArchitecture(self, architecture,
-			secondaryArchitecture):
+			secondaryArchitecture, forceAllowUnstable=False):
 		status = self.getStatusOnSecondaryArchitecture(architecture,
 			secondaryArchitecture)
 		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
-			or (status == Status.UNTESTED and allowUntested))
+			or (status == Status.UNTESTED and allowUntested)
+			or forceAllowUnstable)
 
 	def dependencyInfoFile(self, repositoryPath):
 		return os.path.join(repositoryPath, self.dependencyInfoName)

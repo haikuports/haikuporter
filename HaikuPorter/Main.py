@@ -515,7 +515,7 @@ class Main(object):
 					% (port.versionedName, revision, port.revision))
 
 		# warn when the port is not buildable on this architecture
-		if not port.isBuildableOnTargetArchitecture:
+		if not port.isBuildableOnTargetArchitecture():
 			status = port.statusOnTargetArchitecture
 			message = u'Port {} is {} on this architecture.'.format(
 				port.versionedName, status)

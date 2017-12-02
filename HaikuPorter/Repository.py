@@ -128,7 +128,7 @@ class Repository(object):
 					except SystemExit as e:
 						print e.code
 				continue
-			if not port.isBuildableOnTargetArchitecture:
+			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
 					status = port.statusOnTargetArchitecture
 					warn((u'skipping %s, as it is %s on the target '
@@ -418,8 +418,10 @@ class Repository(object):
 
 			if explicitPortVersion and explicitPortVersion['name'] == portName:
 				versions = [explicitPortVersion['version']]
+				forceAllowUnstable = True
 			else:
 				versions = reversed(self._portVersionsByName[portName])
+				forceAllowUnstable = False
 
 			for version in versions:
 				portID = portName + '-' + version
@@ -445,9 +447,11 @@ class Repository(object):
 
 				# try to parse updated recipe
 				try:
-					port.parseRecipeFile(False)
+					port.parseRecipeFile(False, forceAllowUnstable,
+						forceAllowUnstable)
 
-					if not port.isBuildableOnTargetArchitecture:
+					if not port.isBuildableOnTargetArchitecture(
+							forceAllowUnstable):
 						touchFile(skippedFlag)
 						if not self.quiet:
 							status = port.statusOnTargetArchitecture

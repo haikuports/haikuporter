@@ -224,14 +224,15 @@ class Port(object):
 		   it hasn't"""
 		self.parseRecipeFile(False)
 
-	def parseRecipeFile(self, showWarnings):
+	def parseRecipeFile(self, showWarnings, force=False,
+		forceAllowUnstable=False):
 		"""Parse the recipe-file of the specified port, unless already done.
 		   Any exceptions that are triggered by the recipe are caught."""
 
-		if self.recipeHasBeenParsed:
+		if self.recipeHasBeenParsed and not force:
 			return
 		try:
-			self._parseRecipeFile(showWarnings)
+			self._parseRecipeFile(showWarnings, forceAllowUnstable)
 		finally:
 			self.recipeHasBeenParsed = True
 
@@ -467,14 +468,14 @@ class Port(object):
 		except:
 			return Status.UNSUPPORTED
 
-	@property
-	def isBuildableOnTargetArchitecture(self):
+	def isBuildableOnTargetArchitecture(self, forceAllowUnstable=False):
 		"""Returns whether or not this port is buildable on the target
 		   architecture"""
 		status = self.statusOnTargetArchitecture
 		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
-				or (status == Status.UNTESTED and allowUntested))
+				or (status == Status.UNTESTED and allowUntested)
+				or forceAllowUnstable)
 
 	@property
 	def hasBrokenRecipe(self):
@@ -959,7 +960,7 @@ class Port(object):
 
 		return recipeKeysByExtension, definedPhases
 
-	def _parseRecipeFile(self, showWarnings):
+	def _parseRecipeFile(self, showWarnings, forceAllowUnstable=False):
 		"""Parse the recipe-file of the specified port"""
 
 		# temporarily mark the recipe as broken, such that any exception
@@ -1018,8 +1019,9 @@ class Port(object):
 					continue
 				haveSourcePackage = True
 
-			if package.isBuildableOnSecondaryArchitecture(self.targetArchitecture,
-				self.secondaryArchitecture):
+			if package.isBuildableOnSecondaryArchitecture(
+				self.targetArchitecture, self.secondaryArchitecture,
+				forceAllowUnstable):
 				self.packages.append(package)
 
 		if not self.isMetaPort:
