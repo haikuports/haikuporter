@@ -525,26 +525,28 @@ class Repository(object):
 		# check for all known ports if their recipe has been changed
 		if not self.quiet:
 			print 'Checking if any package-infos need to be updated ...'
-		skippedDir = self.path + '/.skipped'
+		skippedDir = os.path.join(self.path, '.skipped')
+
 		for portName in sorted(self._portVersionsByName.keys(), key=unicode.lower):
 			for version in reversed(self._portVersionsByName[portName]):
 				portID = portName + '-' + version
 				port = allPorts[portID]
+				skippedFlag = os.path.join(skippedDir, portID)
 
 				# ignore recipes that were skipped last time unless they've
 				# been changed since then
-				if (os.path.exists(skippedDir + '/' + portID)
+				if (os.path.exists(skippedFlag)
 					and (os.path.getmtime(port.recipeFilePath)
-						 <= os.path.getmtime(skippedDir + '/' + portID))):
+						<= os.path.getmtime(skippedFlag))):
 					continue
 
 				# update all dependency-infos of port if the recipe is newer
 				# than the main package-info of that port
-				mainDependencyInfoFile = (self.path + '/'
-										  + port.dependencyInfoName)
+				mainDependencyInfoFile = os.path.join(self.path,
+					port.dependencyInfoName)
 				if (os.path.exists(mainDependencyInfoFile)
 					and (os.path.getmtime(port.recipeFilePath)
-						 <= os.path.getmtime(mainDependencyInfoFile))):
+						<= os.path.getmtime(mainDependencyInfoFile))):
 					activePorts.append(portID)
 					break
 
@@ -553,25 +555,26 @@ class Repository(object):
 					port.parseRecipeFile(False)
 
 					if not port.isBuildableOnTargetArchitecture:
-						touchFile(skippedDir + '/' + portID)
+						touchFile(skippedFlag)
 						if not self.quiet:
 							status = port.statusOnTargetArchitecture
 							print(('\t%s is still marked as %s on target '
-								   + 'architecture') % (portID, status))
+								+ 'architecture') % (portID, status))
 						continue
 
-					if os.path.exists(skippedDir + '/' + portID):
-						os.remove(skippedDir + '/' + portID)
+					if os.path.exists(skippedFlag):
+						os.remove(skippedFlag)
 
 					if not self.quiet:
-						print '\tupdating dependency infos of ' + portID
+						print('\tupdating dependency infos of ' + portID)
+
 					port.writeDependencyInfosIntoRepository()
 					updatedPorts[portID] = port
 					break
 
 				except SystemExit as e:
 					# take notice of broken recipe file
-					touchFile(skippedDir + '/' + portID)
+					touchFile(skippedFlag)
 					if not os.path.exists(mainDependencyInfoFile):
 						if not self.quiet:
 							print '\trecipe for %s is still broken:' % portID
