@@ -641,14 +641,15 @@ class Repository(object):
 		for packageName, portName in self._portNameForPackageName.items():
 			if portName not in self._portVersionsByName:
 				del self._portNameForPackageName[packageName]
-			if portName in self._portVersionsByName:
-				for version in self._portVersionsByName[portName]:
-					portId = portName + '-' + version
-					if portId in activePorts:
-						break
-				else:
-					# no version exists of this port that is not broken
-					del self._portNameForPackageName[packageName]
+				continue
+
+			for version in self._portVersionsByName[portName]:
+				portId = portName + '-' + version
+				if portId in activePorts:
+					break
+			else:
+				# no version exists of this port that is not broken
+				del self._portNameForPackageName[packageName]
 
 	def _partiallyExtractSourcePackageIfNeeded(self, sourcePackageName):
 		"""extract the recipe and potentially contained patches/licenses from
