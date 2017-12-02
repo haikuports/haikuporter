@@ -515,6 +515,7 @@ class Repository(object):
 		allPorts = self.allPorts
 
 		activePorts = []
+		updatedPorts = {}
 		## REFACTOR into separate methods
 
 		# check for all known ports if their recipe has been changed
@@ -561,13 +562,7 @@ class Repository(object):
 					if not self.quiet:
 						print '\tupdating dependency infos of ' + portID
 					port.writeDependencyInfosIntoRepository(self.path)
-					for package in port.packages:
-						self._portIdForPackageId[package.versionedName] \
-							= port.versionedName
-						self._portNameForPackageName[package.name] \
-							= port.name
-
-					activePorts.append(portID)
+					updatedPorts[portID] = port
 					break
 
 				except SystemExit as e:
@@ -578,8 +573,23 @@ class Repository(object):
 							print '\trecipe for %s is still broken:' % portID
 							print '\n'.join(['\t'+line for line in e.code.split('\n')])
 
-		self._removeStaleDependencyInfos(activePorts)
+		# This also drops mappings for updated ports to remove any possibly
+		# removed sub-packages.
 		self._removeStalePortForPackageMappings(activePorts)
+
+		# Add port for package mappings for updated ports.
+		for portID, port in updatedPorts.iteritems():
+			for package in port.packages:
+				self._portIdForPackageId[package.versionedName] \
+					= port.versionedName
+				self._portNameForPackageName[package.name] \
+					= port.name
+			activePorts.append(portID)
+
+		# Note that removing stale dependency infos uses the port for package
+		# mappings to determine what to keep. This step must therefore come
+		# after the stale port for package mapping removal.
+		self._removeStaleDependencyInfos(activePorts)
 
 	def _removeStaleDependencyInfos(self, activePorts):
 		"""check for any dependency-infos that no longer have a corresponding
