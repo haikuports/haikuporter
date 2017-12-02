@@ -95,7 +95,8 @@ class Main(object):
 									or self.options.repositoryUpdate
 									or self.options.prunePackageRepository
 									or self.options.createPackageRepository
-									or self.options.why)
+									or self.options.why
+									or self.options.analyzeDependencies)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,

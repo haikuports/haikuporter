@@ -370,12 +370,18 @@ class BuildPlatformUnix(BuildPlatform):
 		return False
 
 	def findDirectory(self, which):
+		if which == 'B_SYSTEM_PACKAGES_DIRECTORY':
+			systemPackagesDirectory = getOption('systemPackagesDirectory')
+			if systemPackagesDirectory:
+				return systemPackagesDirectory
+
 		if not which in self.findDirectoryMap:
 			sysExit(u'Unsupported findDirectory() constant "%s"' % which)
 		return self.findDirectoryMap[which]
 
 	def isSystemPackage(self, packagePath):
-		return False
+		return packagePath.startswith(
+			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		return self._activatePackage(packagePath,
