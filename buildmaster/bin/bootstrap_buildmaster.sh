@@ -219,6 +219,10 @@ done
 cp "$GENERATED_DIR"/download/*.hpkg .
 
 
+# Cleanup.
+rm "$GENERATED_DIR"/*.image
+
+
 # Done.
 
 echo ""
