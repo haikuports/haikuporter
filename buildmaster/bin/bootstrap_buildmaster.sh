@@ -180,6 +180,7 @@ echo "TREE_PATH=\"$PORTS_DIR\"" > haikuports.conf
 echo "LICENSES_DIRECTORY=\"$HAIKU_DIR/data/system/data/licenses\"" \
 	>> haikuports.conf
 echo "PACKAGE_COMMAND=\"$TOOLS_DIR/package\"" >> haikuports.conf
+echo "PACKAGE_REPO_COMMAND=\"$TOOLS_DIR/package_repo\"" >> haikuports.conf
 echo "PACKAGER=\"buildmaster $ARCH$SECONDARY_ARCHS" \
 		"<buildmaster@haiku-os.org>\"" >> haikuports.conf
 echo "TARGET_ARCHITECTURE=\"$ARCH\"" >> haikuports.conf
@@ -198,7 +199,6 @@ mkdir buildmaster
 cd buildmaster
 
 echo "export HAIKUPORTER=\"$HAIKUPORTER_DIR/haikuporter\"" > config
-echo "export PACKAGE_REPO=\"$TOOLS_DIR/package_repo\"" >> config
 echo "export LD_LIBRARY_PATH=\"$TOOLS_DIR\"" >> config
 echo "export REPO_DIR=\"buildmaster/package_repository\"" >> config
 
