@@ -97,7 +97,8 @@ cp "$GENERATED_DIR"/objects/*/lib/lib*_build.so .
 
 # Repopulate initial set of packages.
 
-INITIAL_PACKAGES_DIR="$(realpath "initial-packages")"
+cd "$BASE_DIR"
+INITIAL_PACKAGES_DIR="$(realpath "haikuports/buildmaster/initial-packages")"
 echo "Repopulating initial packages to $INITIAL_PACKAGES_DIR"
 
 if [ -e "$INITIAL_PACKAGES_DIR" ]
