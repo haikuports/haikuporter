@@ -210,7 +210,12 @@ echo "Populating initial packages to $INITIAL_PACKAGES_DIR"
 mkdir "$INITIAL_PACKAGES_DIR"
 cd "$INITIAL_PACKAGES_DIR"
 
-cp "$GENERATED_DIR"/objects/haiku/*/packaging/packages/*.hpkg .
+export LD_LIBRARY_PATH="$TOOLS_DIR"
+for PACKAGE in "$GENERATED_DIR"/objects/haiku/*/packaging/packages/*.hpkg
+do
+	cp "$PACKAGE" $("$TOOLS_DIR/package" info -f "%fileName%" "$PACKAGE")
+done
+
 cp "$GENERATED_DIR"/download/*.hpkg .
 
 
