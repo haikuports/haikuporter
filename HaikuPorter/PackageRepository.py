@@ -6,8 +6,10 @@
 # -- Modules ------------------------------------------------------------------
 
 from .Configuration import Configuration
+from .DependencyResolver import DependencyResolver
 from .PackageInfo import PackageInfo
-from .Utils import info, sysExit, versionCompare, warn
+from .Options import getOption
+from .Utils import info, prefixLines, sysExit, versionCompare, warn
 
 import glob
 import hashlib
@@ -19,7 +21,7 @@ import subprocess
 
 class PackageRepository(object):
 
-	def __init__(self, packagesPath, repository, quiet):
+	def __init__(self, packagesPath, repository, quiet, verbose):
 		self.packagesPath = packagesPath
 		if not os.path.exists(self.packagesPath):
 			os.mkdir(self.packagesPath)
@@ -33,6 +35,7 @@ class PackageRepository(object):
 
 		self.repository = repository
 		self.quiet = quiet
+		self.verbose = verbose
 
 	def prune(self):
 		self.obsoletePackagesWithoutPort()
@@ -170,3 +173,25 @@ class PackageRepository(object):
 
 		with open(os.path.join(outputPath, 'repo.sha256'), 'w') as outputFile:
 			outputFile.write(checksum.hexdigest())
+
+	def checkPackageRepositoryConsistency(self):
+		"""Check consistency of package repository by dependency solving all
+			all packages."""
+
+		repositories = [self.packagesPath]
+		systemPackagesDirectory = getOption('systemPackagesDirectory')
+		if systemPackagesDirectory:
+			repositories.append(systemPackagesDirectory)
+
+		resolver = DependencyResolver(None, ['REQUIRES'], repositories,
+			quiet=True)
+
+		for package in self.packageInfoList():
+			if self.verbose:
+				print('checking package {}'.format(package.path))
+
+			try:
+				resolver.determineRequiredPackagesFor([package.path])
+			except LookupError as error:
+				print('{}:\n{}\n'.format(os.path.relpath(package.path,
+						self.packagesPath), prefixLines('\t', str(error))))

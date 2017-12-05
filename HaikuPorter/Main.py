@@ -82,21 +82,22 @@ class Main(object):
 		# determine if haikuporter has just been invoked for a short-term
 		# command
 		self.shallowInitIsEnough = (self.options.lint or self.options.tree
-									or self.options.get or self.options.list
-									or self.options.portsForFiles
-									or self.options.portsForPackages
-									or self.options.listPackages
-									or self.options.listBuildDependencies
-									or self.options.search
-									or self.options.searchPackages
-									or self.options.about
-									or self.options.location
-									or self.options.buildMaster
-									or self.options.repositoryUpdate
-									or self.options.prunePackageRepository
-									or self.options.createPackageRepository
-									or self.options.why
-									or self.options.analyzeDependencies)
+			or self.options.get or self.options.list
+			or self.options.portsForFiles
+			or self.options.portsForPackages
+			or self.options.listPackages
+			or self.options.listBuildDependencies
+			or self.options.search
+			or self.options.searchPackages
+			or self.options.about
+			or self.options.location
+			or self.options.buildMaster
+			or self.options.repositoryUpdate
+			or self.options.prunePackageRepository
+			or self.options.createPackageRepository
+			or self.options.why
+			or self.options.analyzeDependencies
+			or self.options.checkPackageRepositoryConsistency)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
@@ -118,16 +119,20 @@ class Main(object):
 			return
 
 		if self.options.prunePackageRepository \
-			or self.options.createPackageRepository:
+			or self.options.createPackageRepository \
+			or self.options.checkPackageRepositoryConsistency:
 
 			self.options.noPackageObsoletion = True
 			self._createRepositoryIfNeeded(True)
 
 			packageRepository = PackageRepository(self.packagesPath,
-				self.repository, self.options.quiet)
+				self.repository, self.options.quiet, self.options.verbose)
 
 			if self.options.prunePackageRepository:
 				packageRepository.prune()
+
+			if self.options.checkPackageRepositoryConsistency:
+				packageRepository.checkPackageRepositoryConsistency()
 
 			if self.options.createPackageRepository:
 				packageRepository.createPackageRepository(

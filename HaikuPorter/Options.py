@@ -290,6 +290,10 @@ def parseOptions():
 	parser.add_option('--create-package-repository', action='store',
 		type='string', dest='createPackageRepository', default=None,
 		help='create a package repository at the given output path')
+	parser.add_option('--check-package-repository-consistency',
+		action='store_true', dest='checkPackageRepositoryConsistency',
+		default=False, help='check consistency of package repository by'
+			+ ' dependency solving all packages')
 
 	parser.add_option('--literal-search-strings', action='store_true',
 		dest='literalSearchStrings', default=False,

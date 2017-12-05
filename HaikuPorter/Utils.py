@@ -296,3 +296,7 @@ def filteredEnvironment():
 			env[key] = os.environ[key]
 
 	return env
+
+def prefixLines(prefix, string):
+	"""prefixes each line in the given string by prefix"""
+	return '\n'.join('{}{}'.format(prefix, line) for line in string.split('\n'))

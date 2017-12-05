@@ -9,7 +9,7 @@ from .BuildPlatform import buildPlatform
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
-from .Utils import sysExit, touchFile, versionCompare, warn
+from .Utils import prefixLines, sysExit, touchFile, versionCompare, warn
 
 import codecs
 import glob
@@ -480,7 +480,7 @@ class Repository(object):
 					if not os.path.exists(mainDependencyInfoFile):
 						if not self.quiet:
 							print '\trecipe for %s is still broken:' % portID
-							print '\n'.join(['\t'+line for line in e.code.split('\n')])
+							print prefixLines('\t', e.code)
 
 		# This also drops mappings for updated ports to remove any possibly
 		# removed sub-packages.
