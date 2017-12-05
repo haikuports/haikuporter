@@ -202,7 +202,10 @@ class DependencyResolver(object):
 				ResolvableExpression(requires), 'scriptlet-prerequires', True)
 
 	def _addImmediate(self, parent, requires, typeString, forBuildhost):
-		implicitProvides = self._platform.getImplicitProvides(forBuildhost)
+		implicitProvides = []
+		if self._platform:
+			implicitProvides = self._platform.getImplicitProvides(forBuildhost)
+
 		isImplicit = requires.name in implicitProvides
 		# Skip, if this is one of the implicit provides of the build platform,
 		# unless we are collecting the source packages for the bootstrap, in
