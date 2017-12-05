@@ -66,6 +66,7 @@ class DependencyResolver(object):
 		self._stopAtHpkgs = kwargs.get('stopAtHpkgs', False)
 		self._presentDependencyPackages = kwargs.get(
 			'presentDependencyPackages', None)
+		self._quiet = kwargs.get('quiet', False)
 
 		self._populateProvidesManager()
 
@@ -239,7 +240,8 @@ class DependencyResolver(object):
 			else:
 				message = '%s "%s" of package "%s" could not be resolved' \
 					% (typeString, str(requires), parent.versionedName)
-				printError(message)
+				if not self._quiet:
+					printError(message)
 				raise RestartDependencyResolutionException(parent, message)
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
