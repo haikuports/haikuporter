@@ -67,19 +67,9 @@ class DependencyResolver(object):
 		self._presentDependencyPackages = kwargs.get(
 			'presentDependencyPackages', None)
 
-	def determineRequiredPackagesFor(self, dependencyInfoFiles):
-		for repository in self._repositories:
-			for entry in os.listdir(repository):
-				if not (entry.endswith('.DependencyInfo')
-						or entry.endswith('.hpkg')
-						or entry.endswith('.PackageInfo')):
-					continue
-				packageInfo = self._parsePackageInfo(repository + '/' + entry,
-					not entry.endswith('.hpkg'))
-				if packageInfo == None:
-					continue
-				self._providesManager.addProvidesFromPackageInfo(packageInfo)
+		self._populateProvidesManager()
 
+	def determineRequiredPackagesFor(self, dependencyInfoFiles):
 		packageInfos = [
 			self._parsePackageInfo(dif, True) for dif in dependencyInfoFiles
 		]
@@ -119,6 +109,19 @@ class DependencyResolver(object):
 		]
 
 		return result
+
+	def _populateProvidesManager(self):
+		for repository in self._repositories:
+			for entry in os.listdir(repository):
+				if not (entry.endswith('.DependencyInfo')
+						or entry.endswith('.hpkg')
+						or entry.endswith('.PackageInfo')):
+					continue
+				packageInfo = self._parsePackageInfo(repository + '/' + entry,
+					not entry.endswith('.hpkg'))
+				if packageInfo == None:
+					continue
+				self._providesManager.addProvidesFromPackageInfo(packageInfo)
 
 	def _buildDependencyGraph(self):
 		updateDependencies = getOption('updateDependencies')
