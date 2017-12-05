@@ -436,7 +436,7 @@ class Repository(object):
 					continue
 
 				# update all dependency-infos of port if the recipe is newer
-				# than the main package-info of that port
+				# than the main dependency-info of that port
 				mainDependencyInfoFile = os.path.join(self.path,
 					port.dependencyInfoName)
 				if (os.path.exists(mainDependencyInfoFile)
