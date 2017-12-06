@@ -15,7 +15,6 @@
 from .BuildPlatform import buildPlatform
 from .Configuration import Configuration
 from .DependencyAnalyzer import DependencyAnalyzer
-from .Display import DisplayContext
 from .Options import getOption
 from .Policy import Policy
 from .PackageRepository import PackageRepository
@@ -473,6 +472,7 @@ class Main(object):
 
 		if self.options.buildMaster:
 			if self.options.display:
+				from .Display import DisplayContext
 				with DisplayContext() as ctxt:
 					self.buildMaster.runBuilds(ctxt.stdscr)
 			else:
