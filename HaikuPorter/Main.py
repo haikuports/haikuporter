@@ -110,6 +110,7 @@ class Main(object):
 			self.buildMaster = BuildMaster(self.treePath, self.packagesPath,
 				self.options)
 
+			self.options.allDependencies = True
 			self.options.noPackageObsoletion = True
 			self.options.ignoreMessages = True
 

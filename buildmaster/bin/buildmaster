@@ -115,7 +115,6 @@ rm "$BUILDRUN_BASE/current"
 ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 
 "$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
-	--all-dependencies \
 	--system-packages-directory="$BASE_DIR/initial-packages" \
 	--build-master $PORTS_TO_BUILD
 
