@@ -378,9 +378,10 @@ BuildMaster.prototype.showStatus = function()
 			if (!targetElement)
 				return;
 
-			setElementContent('.count', stringList.length,
-				targetElement.parentElement);
-			if (stringList.length > 0) {
+			var count = stringList ? stringList.length : 0;
+			if (count > 0) {
+				setElementContent('.count', count, targetElement.parentElement);
+
 				stringList.forEach(
 					addString.bind(undefined, targetElement, className));
 			} else

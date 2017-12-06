@@ -100,10 +100,13 @@ class SkippedBuild:
 			self.port = port
 			self.recipeFilePath \
 				= os.path.relpath(port.recipeFilePath, portsTreePath)
+			self.resultingPackages \
+				= [ package.hpkgName for package in port.packages ]
 		else:
 			self.port = None
 			self.name = port
 			self.recipeFilePath = ''
+			self.resultingPackages = []
 
 		self.reason = reason
 
@@ -118,6 +121,7 @@ class SkippedBuild:
 					self.port.revisionedName if self.port else self.name,
 				'recipeFilePath': self.recipeFilePath
 			},
+			'resultingPackages': self.resultingPackages,
 			'reason': self.reason
 		}
 

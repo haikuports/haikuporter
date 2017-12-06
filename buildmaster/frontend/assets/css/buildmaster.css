@@ -73,7 +73,8 @@ a, a:visited {
 	overflow-y: auto;
 }
 
-#failedBuilds .resultingPackages, #lostBuilds .resultingPackages {
+#failedBuilds .resultingPackages, #lostBuilds .resultingPackages,
+	#skippedBuilds .resultingPackages {
 	background-color: red;
 }
 
