@@ -850,15 +850,13 @@ class BuildMaster:
 			for h in logger.handlers:
 				logger.removeHandler(h)
 			for i in range(0, self.localBuilders):
-				configFilePath = os.path.join(self.builderBaseDir, str(i))
-
 				builder = None
 				try:
 					builder = LocalBuilder(str(i), packagesPath,
 						self.buildOutputBaseDir, options)
 				except Exception as exception:
-					self.logger.error('failed to add builder from config '
-						+ configFilePath + ':' + str(exception))
+					self.logger.error('failed to add local builder: '
+						+ str(exception))
 					continue
 
 				self.activeBuilders.append(builder)
