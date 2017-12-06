@@ -374,13 +374,16 @@ BuildMaster.prototype.showStatus = function()
 			parentElement.appendChild(element);
 		};
 
-	var addStringList = function(targetElement, className, stringList) {
+	var addStringList = function(targetElement, className, stringList, sort) {
 			if (!targetElement)
 				return;
 
 			var count = stringList ? stringList.length : 0;
 			if (count > 0) {
 				setElementContent('.count', count, targetElement.parentElement);
+
+				if (sort)
+					stringList = stringList.sort();
 
 				stringList.forEach(
 					addString.bind(undefined, targetElement, className));
@@ -402,11 +405,11 @@ BuildMaster.prototype.showStatus = function()
 			addStringList(findElement('.buildNumbers', element),
 				'buildNumber', build.buildNumbers);
 			addStringList(findElement('.resultingPackages', element),
-				'packageName', build.resultingPackages);
+				'packageName', build.resultingPackages, true);
 			addStringList(findElement('.requiredPackages', element),
-				'packageName', build.requiredPackages);
+				'packageName', build.requiredPackages, true);
 			addStringList(findElement('.missingPackages', element),
-				'packageID', build.missingPackageIDs);
+				'packageID', build.missingPackageIDs, true);
 
 			if (build.reason)
 				setElementContent('.reason', build.reason, element)
