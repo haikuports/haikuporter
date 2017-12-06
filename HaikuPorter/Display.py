@@ -170,8 +170,8 @@ class Display:
 				self.zone_builders.addstr(row, 5, ' ' * 75, self.c_standard)
 				continue
 			self.zone_history.addstr(row, 10,
-				'[' + str(current['builderId']+1).zfill(2)[:2] + ']',
-				self.c_slave[current['builderId']])
+				'[' + str(int(current['builderId'])+1).zfill(2)[:2] + ']',
+				self.c_slave[int(current['builderId'])])
 			portName = current['port']['revisionedName']
 			self.zone_history.addstr(row, 70, str(datetime.timedelta(
 				seconds=int(current['duration']))
