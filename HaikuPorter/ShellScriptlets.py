@@ -142,8 +142,8 @@ defineDebugInfoPackage()
 		local path=$1
 		shift
 
-		local entityName=$(basename $path | sed s,-,_,g)
-		local providesEntity="debuginfo:$entityName($basePackageName)"
+		local entityName=$(basename $path)
+		local providesEntity="debuginfo:${entityName//-/_}($basePackageName)"
 		printf -v $provides "%s\n%s" "${!provides}" \
 			"\"$providesEntity\" = $portVersion"
 
