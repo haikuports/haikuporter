@@ -103,7 +103,8 @@ class ProvidesManager(object):
 				foundIsHpkg = provideIsHpkg
 		return found
 
-	def _providesSource(self, packageInfo):
+	@staticmethod
+	def _providesSource(packageInfo):
 		return packageInfo.path if isinstance(packageInfo, PackageInfo) \
 			else packageInfo
 
