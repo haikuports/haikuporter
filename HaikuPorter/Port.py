@@ -1517,9 +1517,9 @@ class Port(object):
 								+ recipeActionScript)
 		wrapperScript = self.workDir + '/wrapper-script'
 		storeStringInFile(wrapperScriptContent, wrapperScript)
-		self._openShell(['-c', '. ' + wrapperScript], targetDir)
+		self._openShell(['-c', '. ' + wrapperScript], targetDir, {})
 
-	def _openShell(self, params=[], targetDir='/', env={}):
+	def _openShell(self, params, targetDir, env):
 		"""Sets up environment and runs a shell with the given parameters"""
 
 		# set up the shell environment -- we want it to inherit some of our

@@ -34,7 +34,7 @@ from .Utils import (
 # -- haikuports.conf and *.recipe parser --------------------------------
 
 class ConfigParser(object):
-	def __init__(self, filename, attributes, shellVariables={}):
+	def __init__(self, filename, attributes, shellVariables):
 
 		## REFACTOR environment setup and conf location into a single function
 		## that then calls the ConfigParser and either passes in the file path

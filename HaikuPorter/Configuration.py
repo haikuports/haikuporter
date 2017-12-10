@@ -393,7 +393,7 @@ class Configuration(object):
 			sysExit(u"Unable to find haikuports.conf in known search paths.\n"
 				+ u"See haikuports-sample.conf for more information")
 
-		configParser = ConfigParser(haikuportsConf, haikuportsAttributes)
+		configParser = ConfigParser(haikuportsConf, haikuportsAttributes, {})
 		configurationValue = configParser.getEntriesForExtension('')
 
 		# check whether all required values are present
