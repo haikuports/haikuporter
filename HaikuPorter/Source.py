@@ -257,7 +257,7 @@ class Source(object):
 					break
 				sha256.update(data)
 
-		if self.checksum != None:
+		if self.checksum is not None:
 			if sha256.hexdigest() != self.checksum:
 				sysExit(u'Expected SHA-256: ' + self.checksum + '\n'
 						+ 'Found SHA-256:	 ' + sha256.hexdigest())
@@ -268,7 +268,7 @@ class Source(object):
 				"index": ("_" + self.index) if self.index != "1" else ""})
 			warn(u'-----------------------------')
 
-		if (self.checksum == None):
+		if self.checksum is None:
 			if not Configuration.shallAllowUnsafeSources():
 				sysExit(u'No checksum found in recipe!')
 			else:

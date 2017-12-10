@@ -82,7 +82,7 @@ def info(message):
 def printError(*args):
 	"""print a to stderr"""
 
-	sys.stderr.write(' '.join(map(str, args)) + '\n')
+	sys.stderr.write(' '.join([str(arg) for arg in args]) + '\n')
 
 
 def escapeForPackageInfo(string):

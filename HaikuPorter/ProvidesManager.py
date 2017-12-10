@@ -40,7 +40,7 @@ class ProvidesManager(object):
 			self._addPackageProvidesInfo(package.revisionedName, providesString)
 
 	def addProvidesFromPackageInfo(self, packageInfo):
-		if not packageInfo.architecture in self.architectures:
+		if packageInfo.architecture not in self.architectures:
 			return
 
 		for provides in packageInfo.provides:
@@ -52,7 +52,7 @@ class ProvidesManager(object):
 		version = resolvableExpression.version
 		base = resolvableExpression.base
 
-		if not name in self._providesMap:
+		if name not in self._providesMap:
 			return None
 
 		updateDependencies = getOption('updateDependencies')

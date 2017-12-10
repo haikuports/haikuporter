@@ -63,7 +63,7 @@ class Main(object):
 
 		self.packageRepositories = [self.packagesPath]
 		if not self.options.noSystemPackages \
-			and self.options.systemPackagesDirectory != None:
+			and self.options.systemPackagesDirectory is not None:
 			self.packageRepositories.append(
 				self.options.systemPackagesDirectory)
 
@@ -147,7 +147,7 @@ class Main(object):
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
 			if (not buildPlatform.isHaiku
-				and Configuration.getLicensesDirectory() == None):
+				and Configuration.getLicensesDirectory() is None):
 				sysExit(u'LICENSES_DIRECTORY must be set in configuration on '
 					u'this build platform!')
 			self._createRepositoryIfNeeded(True)
@@ -283,7 +283,7 @@ class Main(object):
 			# pretend the meta port responsible for building a list of ports
 			# has been specified on the cmdline
 			metaPortSpec = 'meta_portsfile-1'
-			if not metaPortSpec in self.repository.allPorts:
+			if metaPortSpec not in self.repository.allPorts:
 				sysExit(u"no recipe found for '%s'" % metaPortSpec)
 			self.portSpecs.append(
 				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
@@ -308,7 +308,7 @@ class Main(object):
 				bootstrapPorts.add(portId)
 			# add all other ports, such that all available ports will be built
 			for portId in self.repository.allPorts.keys():
-				if not portId in bootstrapPorts:
+				if portId not in bootstrapPorts:
 					port = self.repository.allPorts[portId]
 					mainPackage = port.mainPackage
 					if (mainPackage
@@ -428,7 +428,7 @@ class Main(object):
 					= self.repository.getActiveVersionOf(whySpec['name'],
 														 False)
 			whyID = whySpec['name'] + '-' + whySpec['version']
-			if not whyID in allPorts:
+			if whyID not in allPorts:
 				sysExit(whyID + u' not found in tree.')
 			requiredPort = allPorts[whyID]
 			self._validateMainPort(requiredPort)
@@ -437,7 +437,7 @@ class Main(object):
 
 		# do whatever's needed to the list of ports
 		for portSpec in self.portSpecs:
-			if not 'id' in portSpec:
+			if 'id' not in portSpec:
 				continue
 
 			port = allPorts[portSpec['id']]
@@ -448,7 +448,7 @@ class Main(object):
 				port.purge()
 			elif self.options.test:
 				self._testPort(port)
-			elif (self.options.build and not portSpec['id'] in bootstrapPorts
+			elif (self.options.build and portSpec['id'] not in bootstrapPorts
 				and self.options.allDependencies):
 				try:
 					self._buildMainPort(port)
@@ -591,7 +591,7 @@ class Main(object):
 		for dependency in buildDependencies:
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
-			if self.options.buildMaster and not packageID in requiredPackageIDs:
+			if self.options.buildMaster and packageID not in requiredPackageIDs:
 				requiredPackageIDs.add(packageID)
 
 			try:

@@ -93,7 +93,7 @@ class Repository(object):
 
 	@property
 	def activePorts(self):
-		if self._activePorts != None:
+		if self._activePorts is not None:
 			return self._activePorts
 
 		self._activePorts = []
@@ -113,7 +113,7 @@ class Repository(object):
 	def getActiveVersionOf(self, portName, warnAboutSkippedVersions=False):
 		"""return the highest buildable version of the port with the given
 		   name"""
-		if not portName in self._portVersionsByName:
+		if portName not in self._portVersionsByName:
 			return None
 
 		versions = self._portVersionsByName[portName]
@@ -142,7 +142,7 @@ class Repository(object):
 		"""return the highest buildable version of the port with the given
 		   name"""
 		version = self._portNameVersionForPortName(portName)
-		if version == None:
+		if version is None:
 			return None
 
 		return self._allPorts[version]
@@ -527,7 +527,7 @@ class Repository(object):
 	def _removePackagesForDependencyInfo(self, dependencyInfo):
 		"""remove all packages for the given dependency-info"""
 
-		(packageSpec, unused) = os.path.basename(dependencyInfo).rsplit('.', 1)
+		(packageSpec, _) = os.path.basename(dependencyInfo).rsplit('.', 1)
 		packages = glob.glob(self.packagesPath + '/' + packageSpec + '-*.hpkg')
 		obsoleteDir = self.packagesPath + '/.obsolete'
 		for package in packages:
@@ -566,7 +566,7 @@ class Repository(object):
 
 		sourcePackagePath \
 			= self.inputSourcePackagesPath + '/' + sourcePackageName
-		(name, version, revision, unused) = sourcePackageName.split('-')
+		(name, version, revision, _) = sourcePackageName.split('-')
 		# determine port name by dropping '_source' or '_source_rigged'
 		if name.endswith('_source_rigged'):
 			name = name[:-14]

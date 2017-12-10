@@ -112,7 +112,7 @@ class Policy(object):
 				if entry == self.package.secondaryArchitecture:
 					continue
 				name = self._normalizeResolvableName('cmd:' + entry)
-				if not name.lower() in self.provides:
+				if name.lower() not in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'bin/' + entry))
 
@@ -127,7 +127,7 @@ class Policy(object):
 
 				name = self._normalizeResolvableName(
 					'lib:' + entry[:suffixIndex] + self.secondaryArchSuffix)
-				if not name.lower() in self.provides:
+				if name.lower() not in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'lib/' + entry))
 
@@ -145,7 +145,7 @@ class Policy(object):
 
 				name = self._normalizeResolvableName(
 					'devel:' + entry[:suffixIndex] + self.secondaryArchSuffix)
-				if not name.lower() in self.provides:
+				if name.lower() not in self.provides:
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'develop/lib/' + entry))
 
@@ -383,7 +383,7 @@ class Policy(object):
 				fileType = types[isDirectory]
 				fileTypes[components[0]] = fileType
 
-				if not directory in allowedWritableTopLevelDirectories:
+				if directory not in allowedWritableTopLevelDirectories:
 					self._violation('Package declares invalid global writable '
 						'%s "%s"' % (fileType, components[0]))
 
@@ -472,7 +472,7 @@ class Policy(object):
 		if os.path.exists(dir):
 			for script in os.listdir(dir):
 				path = postInstallDir + '/' + script
-				if not path in declaredFiles:
+				if path not in declaredFiles:
 					self._violation('script "%s" not declared as post-install '
 						'script' % path)
 
@@ -483,7 +483,7 @@ class Policy(object):
 		else:
 			violation = 'POLICY WARNING: ' + message
 		warn(violation)
-		if not self.port.versionedName in Policy.violationsByPort:
+		if self.port.versionedName not in Policy.violationsByPort:
 			Policy.violationsByPort[self.port.versionedName] = [violation]
 		else:
 			Policy.violationsByPort[self.port.versionedName].append(violation)

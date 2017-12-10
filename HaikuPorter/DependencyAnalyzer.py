@@ -169,8 +169,7 @@ class DependencyAnalyzer(object):
 					node.markAsBuilt(doneRepositoryPath)
 			if lastDoneCount == len(done):
 				sysExit(u"None of these cyclic dependencies can be built:\n\t"
-						+ "\n\t".join(sorted(map(lambda node: node.name,
-												 nodes))))
+						+ "\n\t".join(sorted([node.name for node in nodes])))
 
 		shutil.rmtree(doneRepositoryPath)
 
@@ -237,7 +236,7 @@ class DependencyAnalyzer(object):
 			packageNode = nodeStack.pop()
 			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
-					and not dependency in self.systemPackageNodes):
+					and dependency not in self.systemPackageNodes):
 					nodeStack.append(dependency)
 					self.systemPackageNodes.add(dependency)
 
@@ -258,7 +257,7 @@ class DependencyAnalyzer(object):
 			packageNode = nodeStack.pop()
 			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
-					and not dependency in self.haikuporterRequires):
+					and dependency not in self.haikuporterRequires):
 					nodeStack.append(dependency)
 					self.haikuporterRequires.add(dependency)
 
@@ -394,6 +393,6 @@ class DependencyAnalyzer(object):
 		portID = self.repository.getPortIdForPackageId(packageID)
 		self._getPortNode(portID)
 
-		if not packageID in self.packageNodes:
+		if packageID not in self.packageNodes:
 			sysExit(u'package "%s" doesn\'t seem to exist' % packageID)
 		return self.packageNodes[packageID]

@@ -310,19 +310,19 @@ class Configuration(object):
 
 	@staticmethod
 	def getPackageCommand():
-		if Configuration.configuration.packageCommand == None:
+		if Configuration.configuration.packageCommand is None:
 			return which("package")
 		return Configuration.configuration.packageCommand
 
 	@staticmethod
 	def getPackageRepoCommand():
-		if Configuration.configuration.packageRepoCommand == None:
+		if Configuration.configuration.packageRepoCommand is None:
 			return which("package_repo")
 		return Configuration.configuration.packageRepoCommand
 
 	@staticmethod
 	def getMimesetCommand():
-		if Configuration.configuration.mimesetCommand == None:
+		if Configuration.configuration.mimesetCommand is None:
 			return which("mimeset")
 		return Configuration.configuration.mimesetCommand
 
@@ -411,7 +411,7 @@ class Configuration(object):
 							+ haikuportsConf)
 
 				# set default value, as no other value has been provided
-				if haikuportsAttributes[key]['default'] != None:
+				if haikuportsAttributes[key]['default'] is not None:
 					configurationValue[key] \
 						= haikuportsAttributes[key]['default']
 

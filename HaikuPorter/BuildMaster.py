@@ -199,20 +199,20 @@ class RemoteBuilder(object):
 		with open(configFilePath, 'r') as configFile:
 			self.config = json.loads(configFile.read())
 
-		if not 'name' in self.config:
+		if 'name' not in self.config:
 			raise Exception('missing name in ' + configFilePath)
 
 		self.name = self.config['name']
 
-		if not 'ssh' in self.config:
+		if 'ssh' not in self.config:
 			raise Exception('missing ssh config for builder ' + self.name)
-		if not 'port' in self.config['ssh']:
+		if 'port' not in self.config['ssh']:
 			self.config['ssh']['port'] = 22
-		if not 'user' in self.config['ssh']:
+		if 'user' not in self.config['ssh']:
 			raise Exception('missing ssh user config for builder ' + self.name)
-		if not 'host' in self.config['ssh']:
+		if 'host' not in self.config['ssh']:
 			raise Exception('missing ssh host config for builder ' + self.name)
-		if not 'privateKeyFile' in self.config['ssh']:
+		if 'privateKeyFile' not in self.config['ssh']:
 			raise Exception('missing ssh privateKeyFile config for builder '
 				+ self.name)
 		if not os.path.isabs(self.config['ssh']['privateKeyFile']):
@@ -220,7 +220,7 @@ class RemoteBuilder(object):
 				os.path.dirname(configFilePath),
 				self.config['ssh']['privateKeyFile'])
 
-		if not 'hostKeyFile' in self.config['ssh']:
+		if 'hostKeyFile' not in self.config['ssh']:
 			raise Exception('missing ssh hostKeyFile config for builder '
 				+ self.name)
 		if not os.path.isabs(self.config['ssh']['hostKeyFile']):
@@ -228,26 +228,26 @@ class RemoteBuilder(object):
 				os.path.dirname(configFilePath),
 				self.config['ssh']['hostKeyFile'])
 
-		if not 'portstree' in self.config:
+		if 'portstree' not in self.config:
 			raise Exception('missing portstree config for builder ' + self.name)
-		if not 'path' in self.config['portstree']:
+		if 'path' not in self.config['portstree']:
 			raise Exception('missing portstree path config for builder '
 				+ self.name)
-		if not 'packagesPath' in self.config['portstree']:
+		if 'packagesPath' not in self.config['portstree']:
 			self.config['portstree']['packagesPath'] \
 				= self.config['portstree']['path'] + '/packages'
-		if not 'packagesCachePath' in self.config['portstree']:
+		if 'packagesCachePath' not in self.config['portstree']:
 			self.config['portstree']['packagesCachePath'] \
 				= self.config['portstree']['packagesPath'] + '/.cache'
-		if not 'builderConfig' in self.config['portstree']:
+		if 'builderConfig' not in self.config['portstree']:
 			self.config['portstree']['builderConfig'] \
 				= self.config['portstree']['path'] + '/builder.conf'
 
-		if not 'haikuporter' in self.config:
+		if 'haikuporter' not in self.config:
 			self.config['haikuporter'] = {}
-		if not 'path' in self.config['haikuporter']:
+		if 'path' not in self.config['haikuporter']:
 			self.config['haikuporter']['path'] = 'haikuporter'
-		if not 'args' in self.config['haikuporter']:
+		if 'args' not in self.config['haikuporter']:
 			self.config['haikuporter']['args'] = ''
 
 	def _connect(self):
@@ -353,7 +353,7 @@ class RemoteBuilder(object):
 				if not entry.endswith('.hpkg'):
 					continue
 
-				if not entry in self.availablePackages:
+				if entry not in self.availablePackages:
 					self.availablePackages.append(entry)
 		except Exception as exception:
 			self.logger.error('failed to get available packages: '
@@ -1144,13 +1144,13 @@ class BuildMaster(object):
 		buildingPackagesIDs = []
 		for scheduledBuild in self.scheduledBuilds + self.blockedBuilds:
 			for package in scheduledBuild.port.packages:
-				if not package.versionedName in buildingPackagesIDs:
+				if package.versionedName not in buildingPackagesIDs:
 					buildingPackagesIDs.append(package.versionedName)
 
 		brokenBuilds = []
 		for blockedBuild in self.blockedBuilds:
 			for missingPackageID in blockedBuild.missingPackageIDs:
-				if not missingPackageID in buildingPackagesIDs:
+				if missingPackageID not in buildingPackagesIDs:
 					brokenBuilds.append(blockedBuild)
 					break
 
@@ -1178,11 +1178,11 @@ class BuildMaster(object):
 			},
 			'builders': {
 				'active': [builder.status for builder in self.activeBuilders
-						if builder.currentBuild != None],
+						if builder.currentBuild is not None],
 				'reconnecting':
 					[builder.status for builder in self.reconnectingBuilders],
 				'idle': [builder.status for builder in self.activeBuilders
-						if builder.currentBuild == None],
+						if builder.currentBuild is None],
 				'lost': [builder.status for builder in self.lostBuilders]
 			},
 			'nextBuildNumber': self.buildNumber,

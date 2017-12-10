@@ -43,7 +43,7 @@ class PackageRepository(object):
 		self.obsoletePackagesWithNewerVersions()
 
 	def packageList(self, packageSpec=None):
-		if packageSpec == None:
+		if packageSpec is None:
 			packageSpec = ''
 		else:
 			packageSpec += '-'
@@ -60,7 +60,7 @@ class PackageRepository(object):
 				warn('failed to get info of {}: {}'.format(package, exception))
 				continue
 
-			if not packageInfo.architecture in self.architectures:
+			if packageInfo.architecture not in self.architectures:
 				continue
 
 			result.append(packageInfo)

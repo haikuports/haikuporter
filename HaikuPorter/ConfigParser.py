@@ -124,7 +124,7 @@ class ConfigParser(object):
 			# replace quoted newlines by real newlines
 
 			if attributes[baseKey]['indexable']:
-				if not baseKey in entries:
+				if baseKey not in entries:
 					entries[baseKey] = {}
 
 			## REFACTOR into one method per if/elif branch
@@ -287,11 +287,11 @@ class ConfigParser(object):
 		for key in config.keys():
 			configurationString += key + '="'
 
-			if type(config[key]) == types.ListType:
+			if isinstance(config[key], types.ListType):
 				configurationString += reduce(
 					lambda result, item: result + ' ' + item, config[key],
 					'').strip()
-			elif type(config[key]) == types.BooleanType:
+			elif isinstance(config[key], types.BooleanType):
 				configurationString += 'yes' if config[key] else 'no'
 			else:
 				configurationString += str(config[key])

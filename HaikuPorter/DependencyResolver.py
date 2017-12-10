@@ -120,7 +120,7 @@ class DependencyResolver(object):
 					continue
 				packageInfo = self._parsePackageInfo(repository + '/' + entry,
 					not entry.endswith('.hpkg'))
-				if packageInfo == None:
+				if packageInfo is None:
 					continue
 				self._providesManager.addProvidesFromPackageInfo(packageInfo)
 
@@ -246,9 +246,9 @@ class DependencyResolver(object):
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):
-			if (self._presentDependencyPackages != None
-				and not requiredPackageInfo.path
-					in self._presentDependencyPackages):
+			if (self._presentDependencyPackages is not None
+				and requiredPackageInfo.path
+					not in self._presentDependencyPackages):
 				self._presentDependencyPackages.append(requiredPackageInfo.path)
 
 			self._addPackageNode(requiredPackageInfo, not self._stopAtHpkgs)

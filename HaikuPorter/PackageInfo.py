@@ -83,15 +83,15 @@ class PackageInfo(object):
 		return self.name + '-' + self.version
 
 	@classmethod
-	def _initializeCache(self):
-		self.hpkgCache = {}
-		self.hpkgCacheDir = Configuration.getRepositoryPath()
-		self.hpkgCachePath = os.path.join(self.hpkgCacheDir, 'hpkgInfoCache')
-		if not os.path.exists(self.hpkgCachePath):
+	def _initializeCache(cls):
+		cls.hpkgCache = {}
+		cls.hpkgCacheDir = Configuration.getRepositoryPath()
+		cls.hpkgCachePath = os.path.join(cls.hpkgCacheDir, 'hpkgInfoCache')
+		if not os.path.exists(cls.hpkgCachePath):
 			return
 
 		prune = False
-		with open(self.hpkgCachePath, 'rb') as cacheFile:
+		with open(cls.hpkgCachePath, 'rb') as cacheFile:
 			while True:
 				try:
 					entry = pickle.load(cacheFile)
@@ -101,27 +101,27 @@ class PackageInfo(object):
 						prune = True
 						continue
 
-					self.hpkgCache[path] = entry
+					cls.hpkgCache[path] = entry
 				except EOFError:
 					break
 
 		if prune:
-			with open(self.hpkgCachePath, 'wb') as cacheFile:
-				for entry in self.hpkgCache.itervalues():
+			with open(cls.hpkgCachePath, 'wb') as cacheFile:
+				for entry in cls.hpkgCache.itervalues():
 					pickle.dump(entry, cacheFile, pickle.HIGHEST_PROTOCOL)
 
 	@classmethod
-	def _writeToCache(self, packageInfo):
-		self.hpkgCache[packageInfo['path']] = deepcopy(packageInfo)
-		if not os.path.exists(self.hpkgCacheDir):
-			os.makedirs(self.hpkgCacheDir)
+	def _writeToCache(cls, packageInfo):
+		cls.hpkgCache[packageInfo['path']] = deepcopy(packageInfo)
+		if not os.path.exists(cls.hpkgCacheDir):
+			os.makedirs(cls.hpkgCacheDir)
 
-		with open(self.hpkgCachePath, 'ab') as cacheFile:
+		with open(cls.hpkgCachePath, 'ab') as cacheFile:
 			pickle.dump(packageInfo, cacheFile, pickle.HIGHEST_PROTOCOL)
 
 	def _parseFromHpkgOrPackageInfoFile(self, silent=False):
 		if self.path.endswith('.hpkg'):
-			if PackageInfo.hpkgCache == None:
+			if PackageInfo.hpkgCache is None:
 				PackageInfo._initializeCache()
 
 			if self.path in PackageInfo.hpkgCache:

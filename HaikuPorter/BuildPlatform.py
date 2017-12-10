@@ -102,7 +102,7 @@ class BuildPlatformHaiku(BuildPlatform):
 				or (entry.startswith('haiku-') and entry.endswith('.hpkg'))):
 				systemPackageName = entry
 				break
-		if systemPackageName == None:
+		if systemPackageName is None:
 			sysExit(u'Failed to find Haiku system package')
 
 		haikuPackageInfo = PackageInfo(
@@ -125,7 +125,7 @@ class BuildPlatformHaiku(BuildPlatform):
 
 	def findDirectory(self, which):
 		"""wraps invocation of 'finddir', uses caching"""
-		if not which in self.findDirectoryCache:
+		if which not in self.findDirectoryCache:
 			self.findDirectoryCache[which] \
 				= check_output(['/bin/finddir', which]).rstrip()  # drop newline
 		return self.findDirectoryCache[which]
@@ -235,7 +235,7 @@ class BuildPlatformUnix(BuildPlatform):
 			= Configuration.getSecondaryTargetArchitectures()
 
 		if not shallowInitIsEnough:
-			if Configuration.getPackageCommand() == None:
+			if Configuration.getPackageCommand() is None:
 				sysExit(u'--command-package must be specified on this build '
 					u'platform!')
 			if Configuration.getMimesetCommand() == 'mimeset':
@@ -277,7 +277,7 @@ class BuildPlatformUnix(BuildPlatform):
 
 		self.crossDevelPackage = Configuration.getCrossDevelPackage()
 		targetArchitecture = Configuration.getTargetArchitecture()
-		if targetArchitecture == None:
+		if targetArchitecture is None:
 			sysExit(u'TARGET_ARCHITECTURE must be set in configuration on this '
 				u'build platform!')
 		self.targetMachineTriple \
@@ -374,7 +374,7 @@ class BuildPlatformUnix(BuildPlatform):
 			if systemPackagesDirectory:
 				return systemPackagesDirectory
 
-		if not which in self.findDirectoryMap:
+		if which not in self.findDirectoryMap:
 			sysExit(u'Unsupported findDirectory() constant "%s"' % which)
 		return self.findDirectoryMap[which]
 
@@ -603,10 +603,10 @@ class BuildPlatformBuildMaster(BuildPlatform):
 	def init(self, treePath, outputDirectory, packagesPath,
 			shallowInitIsEnough=False):
 
-		if Configuration.getTargetArchitecture() == None:
+		if Configuration.getTargetArchitecture() is None:
 			sysExit(u'TARGET_ARCHITECTURE must be set in configuration for '
 				+ u'build master mode!')
-		if Configuration.getPackageCommand() == None:
+		if Configuration.getPackageCommand() is None:
 			sysExit(u'--command-package must be specified for build master '
 				+ u'mode!')
 

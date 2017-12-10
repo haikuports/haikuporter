@@ -354,7 +354,7 @@ class Port(object):
 					patchFileName = '%s%s.%s' % (versionedBaseName, suffix,
 												 fileExtension)
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
-						and not patchFileName in allPatches):
+						and patchFileName not in allPatches):
 						if showWarnings:
 							warn(u'Patch file %s is not referenced in '
 								 u'PATCHES, so it will not be used'
@@ -546,7 +546,7 @@ class Port(object):
 			dependencyInfoFiles, requiresTypes,
 			repositories + [self._repositoryDir],
 			'required or prerequired ports',
-			stopAtHpkgs=presentDependencyPackages == None,
+			stopAtHpkgs=presentDependencyPackages is None,
 			presentDependencyPackages=presentDependencyPackages
 		)
 
