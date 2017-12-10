@@ -150,7 +150,7 @@ class YesNo(str):
 		return ['yes', 'no', 'true', 'false']
 
 	@staticmethod
-	def toBool(self, value):
+	def toBool(value):
 		return value.lower() == 'yes' or value.lower() == 'true'
 
 # -- Extendable ---------------------------------------------------------------

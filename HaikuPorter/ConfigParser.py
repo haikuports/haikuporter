@@ -219,7 +219,7 @@ class ConfigParser(object):
 				if valueString not in YesNo.getAllowedValues():
 					sysExit(u"Value for %s should be 'yes' or 'no' in %s"
 							% (key, filename))
-				entries[key] = YesNo.toBool(self, valueString)
+				entries[key] = YesNo.toBool(valueString)
 			else:
 				sysExit(u'type of key %s in file %s is unsupported'
 						% (key, filename))
