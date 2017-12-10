@@ -77,7 +77,7 @@ class PackageRepository(object):
 	def obsoletePackagesForSpec(self, packageSpec, reason=None):
 		"""remove all packages for the given packageSpec"""
 
-		for package in packageList(packageSpec):
+		for package in self.packageList(packageSpec):
 			self.obsoletePackage(package, reason)
 
 	def obsoletePackagesWithoutPort(self):
