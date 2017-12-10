@@ -17,6 +17,7 @@ from .Utils import printError, sysExit, warn
 
 class RestartDependencyResolutionException(Exception):
 	def __init__(self, packageNode, message):
+		Exception.__init__(self)
 		self.packageNode = packageNode
 		self.message = message
 
