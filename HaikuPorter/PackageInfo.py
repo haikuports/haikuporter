@@ -22,8 +22,8 @@ import re
 class Resolvable(object):
 	# HPKG:		<name> [ <op> <version> [ "(compatible >= " <version> ")" ]]
 	# Recipe: 	<name> [ <op> <version> [ "compat >= " <version> ]]
-	versionPattern = re.compile('([^\s=]+)\s*(=\s*([^\s]+)\s*'
-		+ '((\(compatible|compat)\s*>=\s*([^\s)]+))?)?')
+	versionPattern = re.compile(r'([^\s=]+)\s*(=\s*([^\s]+)\s*'
+		+ r'((\(compatible|compat)\s*>=\s*([^\s)]+))?)?')
 
 	def __init__(self, string):
 		match = Resolvable.versionPattern.match(string)
@@ -43,7 +43,7 @@ class Resolvable(object):
 # -- ResolvableExpression class -----------------------------------------------
 
 class ResolvableExpression(object):
-	expressionPattern = re.compile('([^\s=!<>]+)\s*([=!<>]+)?\s*([^\s]+)?')
+	expressionPattern = re.compile(r'([^\s=!<>]+)\s*([=!<>]+)?\s*([^\s]+)?')
 
 	def __init__(self, string, ignoreBase=False):
 		match = ResolvableExpression.expressionPattern.match(string)
@@ -189,7 +189,7 @@ class PackageInfo(object):
 		return result
 
 	def _extractOptionalField(self, output, fieldName):
-		regExp = re.compile('^\s*%s:\s*(\S+)' % fieldName, re.MULTILINE)
+		regExp = re.compile(r'^\s*%s:\s*(\S+)' % fieldName, re.MULTILINE)
 		match = regExp.search(output)
 		if match:
 			return match.group(1)

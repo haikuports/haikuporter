@@ -98,7 +98,7 @@ class Policy(object):
 	def _parseResolvableExpressionList(self, theList):
 		names = set()
 		for item in theList:
-			match = re.match('[^-/=!<>\s]+', item)
+			match = re.match(r'[^-/=!<>\s]+', item)
 			if match:
 				names.add(match.group(0))
 		return names
@@ -193,11 +193,11 @@ class Policy(object):
 		# extract the library names from the "(NEEDED)" lines of the output
 		for line in output.split('\n'):
 			if line.find('(NEEDED)') >= 0:
-				match = re.match('[^[]*\[(.*)].*', line)
+				match = re.match(r'[^[]*\[(.*)].*', line)
 				if match:
 					libraries.add(os.path.basename(match.group(1)))
 			if line.find('(RPATH)') >= 0:
-				match = re.match('[^[]*\[(.*)].*', line)
+				match = re.match(r'[^[]*\[(.*)].*', line)
 				if match:
 					rpath = match.group(1)
 

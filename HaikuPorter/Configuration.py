@@ -429,7 +429,7 @@ class Configuration(object):
 				u'needs to be set in ' + haikuportsConf)
 
 		# split packager into name and email:
-		m = re.match('^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', self.packager)
+		m = re.match(r'^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', self.packager)
 		if not m:
 			sysExit(u"Couldn't parse name/email from PACKAGER value "
 					+ self.packager)

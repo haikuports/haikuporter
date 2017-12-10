@@ -30,7 +30,7 @@ def parseCheckoutUri(uri):
 
 	# Attempt to parse a URI with a + in it. ex: hg+http://blah
 	# If it doesn't find the 'type' it should extract 'real_uri' and 'rev'
-	m = re.match('^((?P<type>\w*)\+)?(?P<realUri>.+?)(#(?P<rev>.+))?$', uri)
+	m = re.match(r'^((?P<type>\w*)\+)?(?P<realUri>.+?)(#(?P<rev>.+))?$', uri)
 	if not m or not m.group('realUri'):
 		sysExit(u"Couldn't parse repository URI " + uri)
 
@@ -40,7 +40,7 @@ def parseCheckoutUri(uri):
 
 	# Attempt to parse a URI without a + in it. ex: svn://blah
 	if not uriType:
-		m = re.match("^(\w*).*$", realUri)
+		m = re.match(r'^(\w*).*$', realUri)
 		if m:
 			uriType = m.group(1)
 
@@ -164,7 +164,7 @@ class SourceFetcherForCvs(object):
 		if self.rev:
 			# self.rev may specify a date or a revision/tag name. If it
 			# looks like a date, we assume it is one.
-			dateRegExp = re.compile('^\d{1,2}/\d{1,2}/\d{2,4}$|^\d{4}-\d{2}-\d{2}$')
+			dateRegExp = re.compile(r'^\d{1,2}/\d{1,2}/\d{2,4}$|^\d{4}-\d{2}-\d{2}$')
 			if dateRegExp.match(self.rev):
 				command += ' -D' + self.rev
 			else:
