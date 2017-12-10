@@ -5,7 +5,6 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .BuildPlatform import buildPlatform
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
@@ -18,7 +17,6 @@ import os
 import re
 import shutil
 from subprocess import check_call, check_output
-import sys
 from textwrap import dedent
 
 

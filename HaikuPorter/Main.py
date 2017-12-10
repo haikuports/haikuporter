@@ -23,10 +23,9 @@ from .RecipeTypes import MachineArchitecture
 from .Repository import Repository
 from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn
 
-import logging
 import os
 import re
-from subprocess import check_call, check_output, STDOUT
+from subprocess import check_call
 import sys
 import traceback
 

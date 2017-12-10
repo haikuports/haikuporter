@@ -17,7 +17,7 @@ import platform
 import shutil
 import sys
 import time
-from subprocess import check_call, check_output
+from subprocess import check_output
 
 
 buildPlatform = None

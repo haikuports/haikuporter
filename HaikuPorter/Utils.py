@@ -12,7 +12,7 @@ import logging
 import os
 import re
 import shutil
-from subprocess import PIPE, Popen, CalledProcessError
+from subprocess import PIPE, Popen
 import sys
 import tarfile
 import time

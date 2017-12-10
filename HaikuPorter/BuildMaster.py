@@ -10,7 +10,7 @@ from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
-from .Utils import ensureCommandIsAvailable, info, sysExit, warn
+from .Utils import ensureCommandIsAvailable, sysExit, warn
 
 import errno
 import json
