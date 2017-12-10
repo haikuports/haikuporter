@@ -181,7 +181,6 @@ class PackageInfo(object):
 		self.buildPrerequires = [
 			ResolvableExpression(r) for r in dependencyInfo['buildPrerequires']
 		]
-		pass
 
 	def _extractField(self, output, fieldName):
 		result = self._extractOptionalField(output, fieldName)

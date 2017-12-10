@@ -74,7 +74,7 @@ class PortNode(object):
 		dependencyInfoFiles = self.port.getDependencyInfoFiles()
 		requiresTypes = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 			'SCRIPTLET_PREREQUIRES']
-		repositories = [doneRepositoryPath];
+		repositories = [doneRepositoryPath]
 		if not getOption('noSystemPackages'):
 			repositories.append(
 				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))

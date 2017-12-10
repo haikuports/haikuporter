@@ -1539,7 +1539,7 @@ class Port(object):
 
 		# Request scripting language (perl, python) modules to be installed
 		# into vendor directories automatically.
-		shellEnv['HAIKU_USE_VENDOR_DIRECTORIES'] = '1';
+		shellEnv['HAIKU_USE_VENDOR_DIRECTORIES'] = '1'
 
 		# force POSIX locale, as otherwise strange things may happen for some
 		# build (e.g. gcc)

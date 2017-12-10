@@ -517,7 +517,7 @@ class Source(object):
 			if os.path.exists(path + '/.git'):
 				return True
 			if path == self.sourceBaseDir:
-				return False;
+				return False
 			path = path[0:path.rfind('/')]
 
 		return False

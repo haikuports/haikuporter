@@ -955,7 +955,7 @@ class BuildMaster(object):
 			exitStatus = 'failed: ' + str(exception)
 
 		self.logger.info('finished with status: ' + exitStatus)
-		self.endTime = time.time();
+		self.endTime = time.time()
 		self._setBuildStatus(exitStatus)
 
 	def _fillPortsTreeInfo(self):

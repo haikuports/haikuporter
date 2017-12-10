@@ -742,7 +742,7 @@ class Main(object):
 			self.shellVariables['quiet'] = '1'
 
 		if Configuration.isCrossBuildRepository():
-			self.shellVariables['isCrossRepository'] = 'true';
+			self.shellVariables['isCrossRepository'] = 'true'
 
 			buildMachineTriple = buildPlatform.machineTriple
 			targetMachineTriple \

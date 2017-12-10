@@ -336,7 +336,7 @@ class Package(object):
 			infoFile.write('summary\t\t\t"'
 				+ escapeForPackageInfo(self.recipeKeys['SUMMARY'])
 				+ '"\n'
-			);
+			)
 
 			infoFile.write('description\t\t"')
 			infoFile.write(
