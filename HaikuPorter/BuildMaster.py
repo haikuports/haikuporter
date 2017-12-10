@@ -519,7 +519,7 @@ class RemoteBuilder(object):
 		try:
 			attributes = self.sftpClient.stat(path)
 			if not stat.S_ISDIR(attributes.st_mode):
-				raise IOError(errno.EEXISTS, 'file exists')
+				raise IOError(errno.EEXIST, 'file exists')
 		except IOError as exception:
 			if exception.errno != errno.ENOENT:
 				raise
