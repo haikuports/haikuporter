@@ -16,20 +16,19 @@ import re
 import types
 
 def which(program):
-	import os
-	def is_exe(fpath):
-		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+	def isExecutable(path):
+		return os.path.isfile(path) and os.access(path, os.X_OK)
 
-	fpath, fname = os.path.split(program)
-	if fpath:
-		if is_exe(program):
+	path, _ = os.path.split(program)
+	if path:
+		if isExecutable(program):
 			return program
 	else:
 		for path in os.environ["PATH"].split(os.pathsep):
 			path = path.strip('"')
-			exe_file = os.path.join(path, program)
-			if is_exe(exe_file):
-				return exe_file
+			candidate = os.path.join(path, program)
+			if isExecutable(candidate):
+				return candidate
 
 	return None
 
