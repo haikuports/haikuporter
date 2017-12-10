@@ -1151,13 +1151,13 @@ class BuildMaster(object):
 		for blockedBuild in self.blockedBuilds:
 			for missingPackageID in blockedBuild.missingPackageIDs:
 				if missingPackageID not in buildingPackagesIDs:
+					self.logger.error('missing package ' + missingPackageID
+						+ ' of blocked build ' + blockedBuild.port.versionedName
+						+ ' is not scheduled')
 					brokenBuilds.append(blockedBuild)
 					break
 
 		for brokenBuild in brokenBuilds:
-			self.logger.error('missing package ' + missingPackageID
-				+ ' of blocked build ' + blockedBuild.port.versionedName
-				+ ' is not scheduled')
 			self._buildComplete(brokenBuild, False, self.lostBuilds)
 
 		for lostBuild in self.lostBuilds:
