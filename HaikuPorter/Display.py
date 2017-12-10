@@ -32,7 +32,7 @@ class DisplayContext(object):
 			curses.endwin()
 
 
-class Display:
+class Display(object):
 	def __init__(self, stdscr, builders_used):
 		self.builders_used = builders_used
 

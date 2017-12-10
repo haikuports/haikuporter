@@ -192,7 +192,7 @@ class Port(object):
 		cls._repositoryDir = repsitoryDir
 
 	def temporaryRepositoryDir(self, repsitoryDir):
-		class TemporaryRepositorySetter:
+		class TemporaryRepositorySetter(object):
 			def __enter__(_):
 				self._repositoryDir = repsitoryDir
 

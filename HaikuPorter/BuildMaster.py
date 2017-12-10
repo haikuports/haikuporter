@@ -27,7 +27,7 @@ try:
 except ImportError:
 	paramiko = None
 
-class ThreadFilter:
+class ThreadFilter(object):
 	def __init__(self):
 		self.ident = threading.current_thread().ident
 		self.build = None
@@ -44,7 +44,7 @@ class ThreadFilter:
 		return ours
 
 
-class ScheduledBuild:
+class ScheduledBuild(object):
 	def __init__(self, port, portsTreePath, requiredPackageIDs, packagesPath,
 		presentDependencyPackages):
 		self.port = port
@@ -94,7 +94,7 @@ class ScheduledBuild:
 		}
 
 
-class SkippedBuild:
+class SkippedBuild(object):
 	def __init__(self, portsTreePath, port, reason):
 		if isinstance(port, Port):
 			self.port = port
@@ -126,7 +126,7 @@ class SkippedBuild:
 		}
 
 
-class BuildRecord:
+class BuildRecord(object):
 	def __init__(self, scheduledBuild, startTime, buildSuccess, builderId):
 		self.port = scheduledBuild.port
 		self.buildNumbers = scheduledBuild.buildNumbers
@@ -152,14 +152,14 @@ class BuildRecord:
 		}
 
 
-class _BuilderState:
+class _BuilderState(object):
 	AVAILABLE = 'Available'
 	LOST = 'Lost'
 	NOT_AVAILABLE = 'Not Available'
 	RECONNECT = 'Reconnecting'
 
 
-class RemoteBuilder:
+class RemoteBuilder(object):
 	def __init__(self, configFilePath, packagesPath, outputBaseDir,
 			portsTreeOriginURL, portsTreeHead):
 		self._loadConfig(configFilePath)
@@ -612,7 +612,7 @@ class RemoteBuilder:
 		}
 
 
-class MockBuilder:
+class MockBuilder(object):
 	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
 		self.name = name
 		self.buildCount = 0
@@ -665,7 +665,7 @@ class MockBuilder:
 		}
 
 
-class LocalBuilder:
+class LocalBuilder(object):
 	def __init__(self, name, packagesPath, outputBaseDir, options):
 		self.options = options
 		self.name = name
@@ -775,7 +775,7 @@ class LocalBuilder:
 		}
 
 
-class BuildMaster:
+class BuildMaster(object):
 	def __init__(self, portsTreePath, packagesPath, options):
 		self.portsTreePath = portsTreePath
 		self._fillPortsTreeInfo()
