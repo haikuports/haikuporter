@@ -62,7 +62,7 @@ def parseOptions():
 	parser.add_option('--search-packages',
 					  action='store_true', dest='searchPackages', default=False,
 					  help='search for a package (regex)')
-	parser.add_option('-o','--location',
+	parser.add_option('-o', '--location',
 					  action='store_true', dest='location', default=False,
 					  help="print out the location of a recipe (via search, "
 						   "for scripted editing)")

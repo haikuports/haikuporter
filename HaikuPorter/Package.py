@@ -59,7 +59,7 @@ class PackageType(str):
 
 class Package(object):
 	def __init__(self, packageType, name, port, recipeKeys, policy,
-				 isRiggedSourcePackage = False):
+			isRiggedSourcePackage=False):
 		self.type = packageType
 		if 'PACKAGE_NAME' in recipeKeys:
 			self.name = recipeKeys['PACKAGE_NAME']
@@ -168,7 +168,7 @@ class Package(object):
 	def writeDependencyInfoIntoRepository(self, repositoryPath):
 		"""Write a DependencyInfo-file for this package into the repository"""
 
-		requires = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES' ]
+		requires = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES']
 		self.generateDependencyInfo(self.dependencyInfoFile(repositoryPath),
 			requires)
 
@@ -197,8 +197,7 @@ class Package(object):
 		   except for the one matching the package name"""
 
 		self._generateDependencyInfo(dependencyInfoPath, requiresToUse,
-									 fakeProvides = True,
-									 architectures = Architectures.ANY)
+			fakeProvides=True, architectures=Architectures.ANY)
 
 	def generateDependencyInfo(self, dependencyInfoPath, requiresToUse):
 		"""Create a .DependencyInfo file (used for dependency resolving)"""
@@ -235,8 +234,7 @@ class Package(object):
 			requiresName = 'REQUIRES'
 
 		self._generatePackageInfo(self.packagingDir + '/.PackageInfo',
-								  [ requiresName ], getOption('quiet'), False,
-								  True, self.architecture)
+			[requiresName], getOption('quiet'), False, True, self.architecture)
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
@@ -247,8 +245,9 @@ class Package(object):
 		dataDir = os.path.join(self.packagingDir, 'data')
 		mimeDBDir = os.path.join(dataDir, 'mime_db')
 		check_call([Configuration.getMimesetCommand(), '--all', '--mimedb',
-			'data/mime_db', '--mimedb', buildPlatform.getSystemMimeDbDirectory(),
-			'.'], cwd=self.packagingDir)
+			'data/mime_db', '--mimedb',
+			buildPlatform.getSystemMimeDbDirectory(), '.'],
+			cwd=self.packagingDir)
 
 		# If data/mime_db is empty, remove it.
 		if not os.listdir(mimeDBDir):
@@ -493,23 +492,23 @@ class Package(object):
 
 		with codecs.open(dependencyInfoPath, 'w', 'utf-8') as infoFile:
 			dependencyInfo = {
-				'name' : self.name,
-				'version' : self.version,
-				'architecture' : architecture,
-				'provides' : self.recipeKeys['PROVIDES'],
-				'requires' : [],
-				'buildRequires' : [],
-				'buildPrerequires' : [],
+				'name': self.name,
+				'version': self.version,
+				'architecture': architecture,
+				'provides': self.recipeKeys['PROVIDES'],
+				'requires': [],
+				'buildRequires': [],
+				'buildPrerequires': [],
 			}
 
 			if fakeProvides:
 				dependencyInfo['provides'] = []
 
 			requiresKeyMap = {
-				'BUILD_REQUIRES' : 'buildRequires',
-				'BUILD_PREREQUIRES' : 'buildPrerequires',
-				'REQUIRES' : 'requires',
-				'SCRIPTLET_PREREQUIRES' : 'buildPrerequires',
+				'BUILD_REQUIRES': 'buildRequires',
+				'BUILD_PREREQUIRES': 'buildPrerequires',
+				'REQUIRES': 'requires',
+				'SCRIPTLET_PREREQUIRES': 'buildPrerequires',
 			}
 			for requiresKey in requiresToUse:
 				if requiresKey == 'SCRIPTLET_PREREQUIRES':
@@ -533,8 +532,8 @@ class Package(object):
 					if require and require not in requiresList:
 						requiresList.append(require)
 
-			json.dump(dependencyInfo, infoFile, sort_keys = True,
-					  indent = 4, separators = (',', ' : '))
+			json.dump(dependencyInfo, infoFile, sort_keys=True,
+				indent=4, separators=(',', ' : '))
 			infoFile.write('\n')
 
 # -- A source package ---------------------------------------------------------
@@ -586,8 +585,8 @@ class SourcePackage(Package):
 			try:
 				ensureCommandIsAvailable('git')
 				haikuportsRev \
-					= check_output([ 'git', 'rev-parse', '--short', 'HEAD' ],
-								   cwd=Configuration.getTreePath(), stderr=STDOUT)
+					= check_output(['git', 'rev-parse', '--short', 'HEAD'],
+						cwd=Configuration.getTreePath(), stderr=STDOUT)
 			except:
 				warn(u'unable to determine revision of haikuports tree')
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:

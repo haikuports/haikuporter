@@ -145,20 +145,20 @@ class PackageRepository(object):
 		packageListFile = os.path.join(outputPath, 'package.list')
 		with open(packageListFile, 'w') as outputFile:
 			fileList = '\n'.join(
-				[ os.path.basename(package.path) for package in packageList ])
+				[os.path.basename(package.path) for package in packageList])
 			outputFile.write(fileList)
 
 		if not os.path.exists(repoFile):
 			if not packageList:
 				sysExit('no repo file exists and no packages to create it')
 
-			output = subprocess.check_output([ packageRepoCommand, 'create',
-					'-v', repoInfoFile, packageList[0].path ],
+			output = subprocess.check_output([packageRepoCommand, 'create',
+					'-v', repoInfoFile, packageList[0].path],
 				stderr=subprocess.STDOUT)
 			info(output)
 
-		output = subprocess.check_output([ packageRepoCommand, 'update', '-C',
-				repoPackagesPath, '-v', repoFile, repoFile, packageListFile ],
+		output = subprocess.check_output([packageRepoCommand, 'update', '-C',
+				repoPackagesPath, '-v', repoFile, repoFile, packageListFile],
 			stderr=subprocess.STDOUT)
 		info(output)
 

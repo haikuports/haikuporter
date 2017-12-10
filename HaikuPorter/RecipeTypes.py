@@ -30,7 +30,8 @@ class MachineArchitecture(str):
 			Architectures.X86_GCC2,
 		]
 
-	## REFACTOR make this a module constant as it will otherwise create an object on every call
+	## REFACTOR make this a module constant as it will otherwise create an
+	## object on every call
 	@staticmethod
 	def getTripleFor(architecture):
 		archMap = {
@@ -113,7 +114,7 @@ class Phase(str):
 
 	@staticmethod
 	def getAllowedValues():
-		return [ Phase.PATCH, Phase.BUILD, Phase.TEST, Phase.INSTALL ]
+		return [Phase.PATCH, Phase.BUILD, Phase.TEST, Phase.INSTALL]
 
 
 # -- LinesOfText --------------------------------------------------------------
@@ -146,7 +147,7 @@ class YesNo(str):
 
 	@staticmethod
 	def getAllowedValues():
-		return [ 'yes', 'no', 'true', 'false' ]
+		return ['yes', 'no', 'true', 'false']
 
 	@staticmethod
 	def toBool(self, value):
@@ -163,7 +164,7 @@ class YesNo(str):
 #	DEFAULT	   -> The attribute is extendable (i.e. per-package) and when not
 #				  specified for a package, the attribute get the default value.
 class Extendable(str):
-	NO			= 'no',
-	INHERITED	= 'inherited',
-	DEFAULT		= 'default'
+	NO = 'no',
+	INHERITED = 'inherited',
+	DEFAULT = 'default'
 

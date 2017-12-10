@@ -86,10 +86,10 @@ class Display:
 		for i in range(32):
 			self.c_slave.append(self.c_slave[i])
 
-		self.zone_summary  = curses.newwin(2, ncols, 0, 0)
+		self.zone_summary = curses.newwin(2, ncols, 0, 0)
 		self.zone_builders = curses.newwin(self.builders_used+4, ncols, 2, 0)
 		self.maxrows = y - (self.builders_used+4+2)
-		self.zone_history  = curses.newwin(self.maxrows, ncols,
+		self.zone_history = curses.newwin(self.maxrows, ncols,
 			self.builders_used+4+2, 0)
 
 		self.zone_summary.addstr(0, 0,
@@ -108,7 +108,7 @@ class Display:
 		self.zone_builders.addstr(1, 0,
 			" ID  Duration  Build Phase      Port Name                                Lines ",
 			self.c_tableheader)
-		for i in range(3,self.builders_used+4-1):
+		for i in range(3, self.builders_used + 4 - 1):
 			self.zone_builders.addstr(i, 0, " " * ncols, self.c_standard)
 
 		stdscr.refresh()

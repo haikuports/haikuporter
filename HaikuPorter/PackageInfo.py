@@ -119,7 +119,7 @@ class PackageInfo(object):
 		with open(self.hpkgCachePath, 'ab') as cacheFile:
 			pickle.dump(packageInfo, cacheFile, pickle.HIGHEST_PROTOCOL)
 
-	def _parseFromHpkgOrPackageInfoFile(self, silent = False):
+	def _parseFromHpkgOrPackageInfoFile(self, silent=False):
 		if self.path.endswith('.hpkg'):
 			if PackageInfo.hpkgCache == None:
 				PackageInfo._initializeCache()
@@ -129,7 +129,7 @@ class PackageInfo(object):
 				return
 
 		# get an attribute listing of the package/package info file
-		args = [ Configuration.getPackageCommand(), 'list', '-i', self.path ]
+		args = [Configuration.getPackageCommand(), 'list', '-i', self.path]
 		if silent:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(args, stderr=devnull)

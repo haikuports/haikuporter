@@ -197,7 +197,7 @@ class SourceFetcherForDownload(object):
 			if Configuration.getSourceforgeMirror():
 				mirror = '?use_mirror=' + Configuration.getSourceforgeMirror()
 
-		args = [ 'wget', '-c', '--timeout=10', '-O', self.fetchTarget,
+		args = ['wget', '-c', '--timeout=10', '-O', self.fetchTarget,
 			self.uri + mirror]
 
 		code = 0

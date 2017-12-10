@@ -530,7 +530,7 @@ class Port(object):
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
 	def resolveBuildDependencies(self, repositories,
-		presentDependencyPackages = None):
+		presentDependencyPackages=None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
 		   Any build requirements a port may have that can not be fulfilled from
@@ -546,8 +546,8 @@ class Port(object):
 			dependencyInfoFiles, requiresTypes,
 			repositories + [self._repositoryDir],
 			'required or prerequired ports',
-			stopAtHpkgs = presentDependencyPackages == None,
-			presentDependencyPackages = presentDependencyPackages
+			stopAtHpkgs=presentDependencyPackages == None,
+			presentDependencyPackages=presentDependencyPackages
 		)
 
 		# return list of unique ports which need to be built before this one
@@ -1554,7 +1554,8 @@ class Port(object):
 		if self.logger is None:
 			check_call(args, cwd=targetDir, env=shellEnv)
 		else:
-			process = Popen(args, cwd=targetDir, env=shellEnv, stdout=PIPE, stderr=STDOUT)
+			process = Popen(args, cwd=targetDir, env=shellEnv, stdout=PIPE,
+				stderr=STDOUT)
 			for line in iter(process.stdout.readline, b''):
 				self.logger.info(line[:-1])
 			process.stdout.close()

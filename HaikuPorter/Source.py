@@ -37,7 +37,8 @@ class Source(object):
 		self.patches = patches
 		self.additionalFiles = additionalFiles
 
-		## REFACTOR use property setters to handle branching based on instance variables
+		## REFACTOR use property setters to handle branching based on instance
+		## variables
 
 		if index == '1':
 			self.sourceBaseDir = port.sourceBaseDir
@@ -137,7 +138,7 @@ class Source(object):
 							port.unsetFlag('unpack', self.index)
 							port.unsetFlag('patchset', self.index)
 						else:
-							info ('Skipping download of source for '
+							info('Skipping download of source for '
 								   + self.fetchTargetName)
 						break
 				else:
@@ -157,7 +158,7 @@ class Source(object):
 		# download the sources
 		for uri in self.uris:
 			try:
-				info ('\nDownloading: ' + uri + ' ...')
+				info('\nDownloading: ' + uri + ' ...')
 				sourceFetcher = createSourceFetcher(uri, self.fetchTarget)
 				sourceFetcher.fetch()
 
@@ -201,16 +202,16 @@ class Source(object):
 				warn(u'Source dir has changed or been removed, unpacking in new dir')
 				port.unsetFlag('unpack', self.index)
 			else:
-				info ('Skipping unpack of ' + self.fetchTargetName)
+				info('Skipping unpack of ' + self.fetchTargetName)
 				return
 
 		# re-create source directory
 		if os.path.exists(self.sourceBaseDir):
-			info ('Cleaning source dir for ' + self.fetchTargetName)
+			info('Cleaning source dir for ' + self.fetchTargetName)
 			shutil.rmtree(self.sourceBaseDir)
 		os.makedirs(self.sourceDir)
 
-		info ('Unpacking source of ' + self.fetchTargetName)
+		info('Unpacking source of ' + self.fetchTargetName)
 		self.sourceFetcher.unpack(self.sourceBaseDir, self.sourceSubDir,
 			self.sourceExportSubdir)
 
@@ -243,10 +244,10 @@ class Source(object):
 
 		# Check to see if the source was already unpacked.
 		if port.checkFlag('validate', self.index) and not getOption('force'):
-			info ('Skipping checksum validation of ' + self.fetchTargetName)
+			info('Skipping checksum validation of ' + self.fetchTargetName)
 			return
 
-		info ('Validating checksum of ' + self.fetchTargetName)
+		info('Validating checksum of ' + self.fetchTargetName)
 		sha256 = hashlib.sha256()
 
 		with open(self.fetchTarget, 'rb') as f:
@@ -264,7 +265,7 @@ class Source(object):
 			warn(u'----- CHECKSUM TEMPLATE -----')
 			warn(u'CHECKSUM_SHA256%(index)s="%(digest)s"' % {
 				"digest": sha256.hexdigest(),
-				"index": ("_" + self.index) if self.index != "1" else "" })
+				"index": ("_" + self.index) if self.index != "1" else ""})
 			warn(u'-----------------------------')
 
 		if (self.checksum == None):

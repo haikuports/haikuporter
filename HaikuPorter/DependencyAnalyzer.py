@@ -72,9 +72,9 @@ class PortNode(object):
 	def isBuildable(self, repositoryPath, doneRepositoryPath):
 		# check prerequires
 		dependencyInfoFiles = self.port.getDependencyInfoFiles()
-		requiresTypes = [ 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
-						  'SCRIPTLET_PREREQUIRES' ]
-		repositories = [ doneRepositoryPath ];
+		requiresTypes = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES',
+			'SCRIPTLET_PREREQUIRES']
+		repositories = [doneRepositoryPath];
 		if not getOption('noSystemPackages'):
 			repositories.append(
 				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
@@ -242,8 +242,8 @@ class DependencyAnalyzer(object):
 					self.systemPackageNodes.add(dependency)
 
 		# resolve the haikuporter dependencies
-		scriptletPrerequirements = [ ResolvableExpression(requires)
-				for requires in getScriptletPrerequirements() ]
+		scriptletPrerequirements = [ResolvableExpression(requires)
+				for requires in getScriptletPrerequirements()]
 		haikuporterDependencies \
 			= self._resolveRequiresList(scriptletPrerequirements,
 				'haikuporter', 'scriptlet requires')
@@ -380,7 +380,7 @@ class DependencyAnalyzer(object):
 
 		return portNode
 
-	def _getPackageNode(self, packageID, isSystemPackage = False):
+	def _getPackageNode(self, packageID, isSystemPackage=False):
 		if packageID in self.packageNodes:
 			return self.packageNodes[packageID]
 

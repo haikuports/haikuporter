@@ -22,7 +22,7 @@ scriptletPrerequirements = r'''
 	cmd:xres
 '''
 
-def getScriptletPrerequirements(targetMachineTripleAsName = None):
+def getScriptletPrerequirements(targetMachineTripleAsName=None):
 	"""Returns the list of prerequirements for executing scriptlets.
 	   If targetMachineTriple is given, the prerequirements will be specialized
 	   for cross-building for the given target machine."""

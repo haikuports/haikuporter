@@ -51,7 +51,7 @@ class ScheduledBuild:
 		self.recipeFilePath \
 			= os.path.relpath(port.recipeFilePath, portsTreePath)
 		self.resultingPackages \
-			= [ package.hpkgName for package in self.port.packages ]
+			= [package.hpkgName for package in self.port.packages]
 		self.packagesPath = packagesPath
 		self.requiredPackages = presentDependencyPackages
 		self.requiredPackageIDs = [
@@ -101,7 +101,7 @@ class SkippedBuild:
 			self.recipeFilePath \
 				= os.path.relpath(port.recipeFilePath, portsTreePath)
 			self.resultingPackages \
-				= [ package.hpkgName for package in port.packages ]
+				= [package.hpkgName for package in port.packages]
 		else:
 			self.port = None
 			self.name = port
@@ -256,12 +256,12 @@ class RemoteBuilder:
 			self.sshClient.load_host_keys(self.config['ssh']['hostKeyFile'])
 
 			self.logger.info('trying to connect to builder ' + self.name)
-			self.sshClient.connect(hostname = self.config['ssh']['host'],
-				port = int(self.config['ssh']['port']),
-				username = self.config['ssh']['user'],
-				key_filename = self.config['ssh']['privateKeyFile'],
-				compress = True, allow_agent = False, look_for_keys = False,
-				timeout = 10)
+			self.sshClient.connect(hostname=self.config['ssh']['host'],
+				port=int(self.config['ssh']['port']),
+				username=self.config['ssh']['user'],
+				key_filename=self.config['ssh']['privateKeyFile'],
+				compress=True, allow_agent=False, look_for_keys=False,
+				timeout=10)
 
 			self.sshClient.get_transport().set_keepalive(15)
 			self.sftpClient = self.sshClient.open_sftp()
@@ -701,14 +701,15 @@ class LocalBuilder:
 			'logFilter': filter,
 			'startTime': None,
 			'phase': 'setup',
-			'lines' : 0
+			'lines': 0
 		}
 		filter.setBuild(self.currentBuild)
 
 
 	def unsetBuild(self):
 		self.buildLogger.removeHandler(self.currentBuild['logHandler'])
-		logging.getLogger("buildLogger").removeHandler(self.currentBuild['logHandler'])
+		logging.getLogger("buildLogger").removeHandler(
+			self.currentBuild['logHandler'])
 		self.currentBuild = None
 
 	def runBuild(self):
@@ -961,10 +962,9 @@ class BuildMaster:
 		try:
 			ensureCommandIsAvailable('git')
 			origin = subprocess.check_output(['git', 'remote', 'get-url',
-					'origin'], cwd = self.portsTreePath,
-				stderr=subprocess.STDOUT)
+					'origin'], cwd=self.portsTreePath, stderr=subprocess.STDOUT)
 			head = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
-				cwd = self.portsTreePath, stderr=subprocess.STDOUT)
+				cwd=self.portsTreePath, stderr=subprocess.STDOUT)
 		except:
 			warn(u'unable to determine origin and revision of haikuports tree')
 			origin = '<unknown> '
@@ -1168,22 +1168,22 @@ class BuildMaster:
 	def status(self):
 		return {
 			'builds': {
-				'active': [ build.status for build in self.activeBuilds ],
-				'scheduled': [ build.status for build in self.scheduledBuilds ],
-				'blocked': [ build.status for build in self.blockedBuilds ],
-				'complete': [ build.status for build in self.completeBuilds ],
-				'failed': [ build.status for build in self.failedBuilds ],
-				'lost': [ build.status for build in self.lostBuilds ],
-				'skipped': [ build.status for build in self.skippedBuilds ]
+				'active': [build.status for build in self.activeBuilds],
+				'scheduled': [build.status for build in self.scheduledBuilds],
+				'blocked': [build.status for build in self.blockedBuilds],
+				'complete': [build.status for build in self.completeBuilds],
+				'failed': [build.status for build in self.failedBuilds],
+				'lost': [build.status for build in self.lostBuilds],
+				'skipped': [build.status for build in self.skippedBuilds]
 			},
 			'builders': {
-				'active': [ builder.status for builder in self.activeBuilders
-						if builder.currentBuild != None ],
+				'active': [builder.status for builder in self.activeBuilders
+						if builder.currentBuild != None],
 				'reconnecting':
 					[builder.status for builder in self.reconnectingBuilders],
-				'idle': [ builder.status for builder in self.activeBuilders
-						if builder.currentBuild == None ],
-				'lost': [ builder.status for builder in self.lostBuilders ]
+				'idle': [builder.status for builder in self.activeBuilders
+						if builder.currentBuild == None],
+				'lost': [builder.status for builder in self.lostBuilders]
 			},
 			'nextBuildNumber': self.buildNumber,
 			'portsTreeOriginURL': self.portsTreeOriginURL,

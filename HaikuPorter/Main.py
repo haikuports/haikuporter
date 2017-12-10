@@ -206,8 +206,8 @@ class Main(object):
 			else:
 				allPorts = self.repository.allPorts.itervalues()
 
-			files = [ arg if os.path.isabs(arg) \
-				else os.path.join(self.treePath, arg) for arg in args ]
+			files = [arg if os.path.isabs(arg) \
+				else os.path.join(self.treePath, arg) for arg in args]
 
 			for port in allPorts:
 				if port.referencesFiles(files):
@@ -251,8 +251,8 @@ class Main(object):
 		if self.options.portsfile:
 			# read portslist from file and convert into list of requires
 			with open(self.options.portsfile, 'r') as portsFile:
-				ports = [ p.strip() for p in portsFile.readlines() ]
-			ports = [ p for p in ports if len(p) > 0 ]
+				ports = [p.strip() for p in portsFile.readlines()]
+			ports = [p for p in ports if len(p) > 0]
 			portsfileAsRequires = []
 			for port in ports:
 				portSpec = self._splitPortSpecIntoNameVersionAndRevision(port)
@@ -507,7 +507,7 @@ class Main(object):
 					+ u' requires ' + packageID
 					+ u' but no corresponding port was found!')
 
-	def _validateMainPort(self, port, revision = None):
+	def _validateMainPort(self, port, revision=None):
 		"""Parse the recipe file for the given port and get any required
 		   confirmations"""
 
@@ -765,7 +765,7 @@ class Main(object):
 		else:
 			self.shellVariables['isCrossRepository'] = 'false'
 
-	def _createRepositoryIfNeeded(self, quiet = False, verbose = False):
+	def _createRepositoryIfNeeded(self, quiet=False, verbose=False):
 		"""create/update repository"""
 		if self.repository:
 			return
@@ -779,7 +779,7 @@ class Main(object):
 		print 'Refreshing the port tree: %s' % self.treePath
 		ensureCommandIsAvailable('git')
 		if os.path.exists(self.treePath + '/.git'):
-			check_call(['git', 'pull'], cwd = self.treePath)
+			check_call(['git', 'pull'], cwd=self.treePath)
 		else:
 			check_call(['git', 'clone', haikuportsRepoUrl, self.treePath])
 

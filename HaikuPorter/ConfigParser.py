@@ -36,8 +36,9 @@ from .Utils import (
 class ConfigParser(object):
 	def __init__(self, filename, attributes, shellVariables={}):
 
-		## REFACTOR environment setup and conf location into a single function that then calls the ConfigParser
-		## and either passes in the file path or the contents of the file
+		## REFACTOR environment setup and conf location into a single function
+		## that then calls the ConfigParser and either passes in the file path
+		## or the contents of the file
 
 		# set up the shell environment -- we want it to inherit some of our
 		# variables
@@ -274,7 +275,8 @@ class ConfigParser(object):
 		components = ConfigParser.splitItem(string)
 		unquotedComponents = []
 		for component in components:
-			if component and component[0] == '"' and component[-1] == '"': # use a regex if this called a lot
+			if component and component[0] == '"' and component[-1] == '"':
+					# use a regex if this called a lot
 				component = component[1:-1]
 			unquotedComponents.append(component)
 		return unquotedComponents

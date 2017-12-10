@@ -23,7 +23,7 @@ if sys.stdout.isatty():
 	colorError = u'\033[1;35m'
 	colorReset = u'\033[1;m'
 else:
-	colorWarning= u''
+	colorWarning = u''
 	colorError = u''
 	colorReset = u''
 
@@ -63,14 +63,14 @@ def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
 	message = '\n'.join([colorError + u'Error: ' + line + colorReset
-		for line in message.split('\n') ])
+		for line in message.split('\n')])
 	sys.exit(message.encode('utf-8'))
 
 def warn(message):
 	"""print a warning"""
 
 	message = '\n'.join([colorWarning + u'Warning: ' + line + colorReset
-		for line in message.split('\n') ])
+		for line in message.split('\n')])
 	logging.getLogger("buildLogger").warn(message.encode('utf-8'))
 
 def info(message):
@@ -156,19 +156,19 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		sysExit(u'Unrecognized archive type in file '
 				+ archiveFile)
 
-def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst = True):
+def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst=True):
 	"""Populates targetDir with symlinks to all files from sourceDir"""
 
-	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir) ]
+	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir)]
 	symlinkFiles(files, targetDir)
 
-def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst = True):
+def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst=True):
 	"""Populates targetDir with symlinks to all files matching given globSpec"""
 
 	files = glob.glob(globSpec)
 	symlinkFiles(files, targetDir)
 
-def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
+def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst=True):
 	"""Populates targetDir with symlinks to all the given files"""
 
 	if os.path.exists(targetDir) and emptyTargetDirFirst:
@@ -178,7 +178,7 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst = True):
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
 
-def touchFile(theFile, stamp = None):  # @DontTrace
+def touchFile(theFile, stamp=None):  # @DontTrace
 	"""Touches given file, making sure that its modification date is bumped"""
 
 	if stamp is not None:
@@ -188,7 +188,7 @@ def touchFile(theFile, stamp = None):  # @DontTrace
 	else:
 		open(theFile, 'w').close()
 		if stamp is not None:
-			os.utime(theFile, (t,  t))
+			os.utime(theFile, (t, t))
 
 def storeStringInFile(string, theFile):
 	"""Stores the given string in the file with the given name"""
@@ -230,7 +230,7 @@ def naturalCompare(left, right):
 		 0 if both are equal"""
 
 	convert = lambda text: int(text) if text.isdigit() else text.lower()
-	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+	alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
 	return cmp(alphanum_key(left), alphanum_key(right))
 
 def bareVersionCompare(left, right):

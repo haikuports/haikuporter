@@ -30,7 +30,7 @@ class Repository(object):
 
 	def __init__(self, treePath, outputDirectory, repositoryPath,
 			packagesPath, shellVariables,
-			policy, preserveFlags, quiet = False, verbose = False):
+			policy, preserveFlags, quiet=False, verbose=False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 		self.path = repositoryPath
@@ -110,7 +110,7 @@ class Repository(object):
 	def portVersionsByName(self):
 		return self._portVersionsByName
 
-	def getActiveVersionOf(self, portName, warnAboutSkippedVersions = False):
+	def getActiveVersionOf(self, portName, warnAboutSkippedVersions=False):
 		"""return the highest buildable version of the port with the given
 		   name"""
 		if not portName in self._portVersionsByName:
@@ -153,7 +153,7 @@ class Repository(object):
 			return None
 		return portName + '-' + portVersion
 
-	def searchPorts(self, regExp, returnPortNameVersions = False):
+	def searchPorts(self, regExp, returnPortNameVersions=False):
 		"""Search for one or more ports in the HaikuPorts tree, returning
 		   a list of found matches"""
 		if regExp:
@@ -185,7 +185,7 @@ class Repository(object):
 			if package.name == packageName:
 				return package.hpkgName
 
-	def searchPackages(self, regExp, returnFileNames = True):
+	def searchPackages(self, regExp, returnFileNames=True):
 		"""Search for one or more packages in the HaikuPorts tree, returning
 		   a list of found matches"""
 		if regExp:
@@ -229,7 +229,7 @@ class Repository(object):
 				recipeName = os.path.basename(recipeFilePath)
 				name, version = recipeName[:-7].split('-')
 				if name not in self._portVersionsByName:
-					self._portVersionsByName[name] = [ version ]
+					self._portVersionsByName[name] = [version]
 				else:
 					self._portVersionsByName[name].append(version)
 
@@ -280,7 +280,7 @@ class Repository(object):
 											 otherPort.category))
 							continue
 						if name not in self._portVersionsByName:
-							self._portVersionsByName[name] = [ version ]
+							self._portVersionsByName[name] = [version]
 						else:
 							self._portVersionsByName[name].append(version)
 						self._allPorts[name + '-' + version] = Port(name,
@@ -306,7 +306,7 @@ class Repository(object):
 					name = newPort.name
 					version = newPort.version
 					if name not in self._portVersionsByName:
-						self._portVersionsByName[name] = [ version ]
+						self._portVersionsByName[name] = [version]
 					else:
 						self._portVersionsByName[name].append(version)
 
@@ -340,15 +340,15 @@ class Repository(object):
 
 		try:
 			with open(self._portIdForPackageIdFilePath, 'w') as fh:
-				json.dump(self._portIdForPackageId, fh, sort_keys = True,
-						  indent = 4, separators = (',', ' : '))
+				json.dump(self._portIdForPackageId, fh, sort_keys=True,
+						  indent=4, separators=(',', ' : '))
 		except BaseException as e:
 			print e
 
 		try:
 			with open(self._portNameForPackageNameFilePath, 'w') as fh:
-				json.dump(self._portNameForPackageName, fh, sort_keys = True,
-						  indent = 4, separators = (',', ' : '))
+				json.dump(self._portNameForPackageName, fh, sort_keys=True,
+						  indent=4, separators=(',', ' : '))
 		except BaseException as e:
 			print e
 
@@ -373,7 +373,7 @@ class Repository(object):
 				'formatVersion': Repository.currentFormatVersion
 			}
 			with open(self._formatVersionFilePath, 'w') as fh:
-				json.dump(data, fh, indent = 4, separators = (',', ' : '))
+				json.dump(data, fh, indent=4, separators=(',', ' : '))
 		except BaseException as e:
 			print e
 
@@ -390,7 +390,7 @@ class Repository(object):
 		return
 
 	def supportBackwardsCompatibility(self, name, version):
-		self._updateRepository({ 'name': name, 'version': version })
+		self._updateRepository({'name': name, 'version': version})
 
 	def _updateRepository(self, explicitPortVersion=None, preserveFlags=True):
 		"""Update all DependencyInfo-files in the repository as needed"""

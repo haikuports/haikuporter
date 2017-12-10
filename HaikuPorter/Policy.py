@@ -355,7 +355,7 @@ class Policy(object):
 	def _checkGlobalWritableFiles(self):
 		# Create a map for the declared global writable files and check them
 		# while at it.
-		types = { False: 'file', True: 'directory' }
+		types = {False: 'file', True: 'directory'}
 		globalWritableFiles = {}
 		fileTypes = {}
 		for item in self.package.recipeKeys['GLOBAL_WRITABLE_FILES']:
@@ -467,7 +467,7 @@ class Policy(object):
 					'script "%s"' % script)
 
 		# check whether existing scripts are declared
-		postInstallDir='boot/post-install'
+		postInstallDir = 'boot/post-install'
 		dir = os.path.join(self.package.packagingDir, postInstallDir)
 		if os.path.exists(dir):
 			for script in os.listdir(dir):
@@ -484,6 +484,6 @@ class Policy(object):
 			violation = 'POLICY WARNING: ' + message
 		warn(violation)
 		if not self.port.versionedName in Policy.violationsByPort:
-			Policy.violationsByPort[self.port.versionedName] = [ violation ]
+			Policy.violationsByPort[self.port.versionedName] = [violation]
 		else:
 			Policy.violationsByPort[self.port.versionedName].append(violation)

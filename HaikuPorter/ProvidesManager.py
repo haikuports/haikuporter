@@ -115,12 +115,12 @@ class ProvidesManager(object):
 		if source in self._providesSourceMap:
 			self._providesSourceMap[source].append(provides)
 		else:
-			self._providesSourceMap[source] = [ provides ]
+			self._providesSourceMap[source] = [provides]
 
 		if provides.name in self._providesMap:
 			self._providesMap[provides.name].append(provides)
 		else:
-			self._providesMap[provides.name] = [ provides ]
+			self._providesMap[provides.name] = [provides]
 
 	def removeProvidesOfPackageInfo(self, packageInfo):
 		source = self._providesSource(packageInfo)

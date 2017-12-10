@@ -82,7 +82,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		super(BuildPlatformHaiku, self).__init__()
 
 	def init(self, treePath, outputDirectory, packagesPath,
-			shallowInitIsEnough = False):
+			shallowInitIsEnough=False):
 		if not os.path.exists('/packages'):
 			sysExit(u'haikuporter needs a version of Haiku with package '
 					u'management support')
@@ -173,7 +173,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		return ''
 
 	def getCrossToolsBinPaths(self, workDir):
-		return [ '/boot/system/develop/tools/bin' ]
+		return ['/boot/system/develop/tools/bin']
 
 	def getInstallDestDir(self, workDir):
 		return None
@@ -202,9 +202,8 @@ class BuildPlatformHaiku(BuildPlatform):
 			except OSError:
 				if not activated:
 					return
-			info ('waiting for build package %s to be %s'
-				   % (revisionedName,
-					  'activated' if activated else 'deactivated'))
+			info('waiting for build package %s to be %s'
+				% (revisionedName, 'activated' if activated else 'deactivated'))
 			time.sleep(1)
 
 # -- BuildPlatformUnix class --------------------------------------------------
@@ -214,7 +213,7 @@ class BuildPlatformUnix(BuildPlatform):
 		super(BuildPlatformUnix, self).__init__()
 
 	def init(self, treePath, outputDirectory, packagesPath,
-			shallowInitIsEnough = False):
+			shallowInitIsEnough=False):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).strip()
 
@@ -566,15 +565,15 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.getCrossSysrootDirectory(workDir)
 
 	def _activatePackage(self, package, installRoot, installationLocation,
-			isBuildPackage = False):
+			isBuildPackage=False):
 		# get the package info
 		packageInfo = PackageInfo(package)
 
 		# extract the package, unless it is a build package
 		if not isBuildPackage:
 			installPath = installRoot + '/' + installationLocation
-			args = [ Configuration.getPackageCommand(), 'extract', '-C',
-				installPath, package ]
+			args = [Configuration.getPackageCommand(), 'extract', '-C',
+				installPath, package]
 			output = check_output(args)
 			info(output)
 		else:
@@ -602,7 +601,7 @@ class BuildPlatformBuildMaster(BuildPlatform):
 		super(BuildPlatformBuildMaster, self).__init__()
 
 	def init(self, treePath, outputDirectory, packagesPath,
-			shallowInitIsEnough = False):
+			shallowInitIsEnough=False):
 
 		if Configuration.getTargetArchitecture() == None:
 			sysExit(u'TARGET_ARCHITECTURE must be set in configuration for '
