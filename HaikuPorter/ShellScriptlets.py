@@ -679,7 +679,7 @@ packageEntries()
 	for file; do
 		# If absolute, resolve to relative file name.
 		if [[ "$file" = /* ]]; then
-			if [[ "$file" =~ $installDestDir$prefix/(.*) ]]; then
+			if [[ "$file" =~ "$installDestDir$prefix"/(.*) ]]; then
 				file=${BASH_REMATCH[1]}
 			else
 				echo >&2 "packageEntries: error: absolute entry \"$file\""
