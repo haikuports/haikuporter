@@ -68,6 +68,8 @@ class DependencyResolver(object):
 		self._presentDependencyPackages = kwargs.get(
 			'presentDependencyPackages', None)
 		self._quiet = kwargs.get('quiet', False)
+		self._updateDependencies = getOption('updateDependencies') \
+			and len(repositories) > 2
 
 		self._populateProvidesManager()
 
@@ -126,17 +128,14 @@ class DependencyResolver(object):
 				self._providesManager.addProvidesFromPackageInfo(packageInfo)
 
 	def _buildDependencyGraph(self):
-		updateDependencies = getOption('updateDependencies')
-		if len(self._repositories) <= 2:
-			updateDependencies = False
-
 		numberOfInitialPackages = len(self._pending)
 		numberOfHandledPackages = 0
 		while self._pending:
 			packageNode = self._pending.pop(0)
 
 			# don't build dependencies of a hpkg with --update-dependencies
-			if not (updateDependencies and packageNode.path.endswith('.hpkg')):
+			if not (self._updateDependencies
+					and packageNode.path.endswith('.hpkg')):
 				if 'REQUIRES' in self._requiresTypes:
 					self._addAllImmediateRequiresOf(packageNode)
 				if 'BUILD_REQUIRES' in self._requiresTypes:
