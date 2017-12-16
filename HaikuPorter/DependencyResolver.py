@@ -70,6 +70,7 @@ class DependencyResolver(object):
 		self._quiet = kwargs.get('quiet', False)
 		self._updateDependencies = getOption('updateDependencies') \
 			and len(repositories) > 2
+		self._satisfiedPackagesCache = []
 
 		self._populateProvidesManager()
 
@@ -112,6 +113,7 @@ class DependencyResolver(object):
 			node.path for node in self._packageNodes
 		]
 
+		self._satisfiedPackagesCache += result
 		return result
 
 	def _populateProvidesManager(self):
@@ -243,6 +245,9 @@ class DependencyResolver(object):
 				if not self._quiet:
 					printError(message)
 				raise RestartDependencyResolutionException(parent, message)
+
+		if provides.packageInfo.path in self._satisfiedPackagesCache:
+			return
 
 		requiredPackageInfo = PackageNode(provides.packageInfo, forBuildhost)
 		if requiredPackageInfo.path.endswith('.hpkg'):
