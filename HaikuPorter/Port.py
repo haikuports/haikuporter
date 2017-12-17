@@ -91,6 +91,9 @@ class ChrootSetup(object):
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
+	requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
+		'SCRIPTLET_PREREQUIRES']
+
 	_repositoryDir = None
 	_recipeCacheDirName = 'recipeCache'
 
@@ -540,10 +543,8 @@ class Port(object):
 		"""
 
 		dependencyInfoFiles = self.getDependencyInfoFiles()
-		requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
-						 'SCRIPTLET_PREREQUIRES']
 		requiredPackages = self._resolveDependencies(
-			dependencyInfoFiles, requiresTypes,
+			dependencyInfoFiles, Port.requiresTypes,
 			repositories + [self._repositoryDir],
 			'required or prerequired ports',
 			stopAtHpkgs=presentDependencyPackages is None,
@@ -577,11 +578,9 @@ class Port(object):
 		with self.temporaryRepositoryDir(workRepositoryPath):
 			dependencyInfoFiles = self.getDependencyInfoFiles()
 
-		requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
-						 'SCRIPTLET_PREREQUIRES']
 		try:
 			self._resolveDependencies(
-				dependencyInfoFiles, requiresTypes,
+				dependencyInfoFiles, Port.requiresTypes,
 				[packagesPath, workRepositoryPath],
 				'required or prerequired ports',
 				stopAtHpkgs=True
