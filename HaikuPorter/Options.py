@@ -277,6 +277,9 @@ def parseOptions():
 	parser.add_option('--repository-update', action='store_true',
 		dest='repositoryUpdate', default=False,
 		help='update dependency infos in the repository')
+	parser.add_option('--check-repository-consistency', action='store_true',
+		dest='checkRepositoryConsistency', default=False,
+		help='check the consistency of the repository')
 	parser.add_option('--no-repository-update', action='store_true',
 		dest='noRepositoryUpdate', default=False,
 		help='do not update dependency infos in the repository')

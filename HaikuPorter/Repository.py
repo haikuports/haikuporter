@@ -6,6 +6,7 @@
 # -- Modules ------------------------------------------------------------------
 
 from .Configuration import Configuration
+from .DependencyResolver import DependencyResolver
 from .Options import getOption
 from .Port import Port
 from .Utils import prefixLines, sysExit, touchFile, versionCompare, warn
@@ -618,3 +619,28 @@ class Repository(object):
 				recipeFile.write('\n' + textToAdd)
 
 		return recipeFilePath
+
+	def checkRepositoryConsistency(self, verbose):
+		"""Check consistency of the repository by dependency solving all
+			dependency infos."""
+
+		repositories = [self.path]
+		systemPackagesDirectory = getOption('systemPackagesDirectory')
+		if systemPackagesDirectory:
+			repositories.append(systemPackagesDirectory)
+
+		resolver = DependencyResolver(None, Port.requiresTypes, repositories,
+			quiet=True)
+
+		for port in sorted(self.activePorts, key=lambda port: port.name):
+			for package in port.packages:
+				if verbose:
+					print('checking package {} of {}'.format(
+							package.revisionedName, port.versionedName))
+
+				try:
+					resolver.determineRequiredPackagesFor(
+						[package.dependencyInfoFile(self.path)])
+				except LookupError as error:
+					print('{}:\n{}\n'.format(package.revisionedName,
+							prefixLines('\t', str(error))))

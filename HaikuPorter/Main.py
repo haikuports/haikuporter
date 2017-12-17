@@ -95,7 +95,8 @@ class Main(object):
 			or self.options.createPackageRepository
 			or self.options.why
 			or self.options.analyzeDependencies
-			or self.options.checkPackageRepositoryConsistency)
+			or self.options.checkPackageRepositoryConsistency
+			or self.options.checkRepositoryConsistency)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
@@ -113,8 +114,12 @@ class Main(object):
 			self.options.noPackageObsoletion = True
 			self.options.ignoreMessages = True
 
-		if self.options.repositoryUpdate:
+		if self.options.repositoryUpdate \
+			or self.options.checkRepositoryConsistency:
 			self._createRepositoryIfNeeded(False)
+
+			if self.options.checkRepositoryConsistency:
+				self.repository.checkRepositoryConsistency(self.options.verbose)
 			return
 
 		if self.options.prunePackageRepository \
