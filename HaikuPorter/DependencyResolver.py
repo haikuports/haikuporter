@@ -91,7 +91,7 @@ class DependencyResolver(object):
 				]
 
 				self._traversed = set([
-					str(PackageNode(pi, False)) for pi in packageInfos
+					str(packageNode) for packageNode in self._pending
 				])
 
 				self._buildDependencyGraph()
