@@ -17,6 +17,7 @@ from .__version__ import __version__
 from .Utils import isCommandAvailable, warn
 
 from optparse import OptionParser
+from multiprocessing import cpu_count
 
 
 # -- global options -----------------------------------------------------------
@@ -77,7 +78,7 @@ def parseOptions():
 					  action='store_true', dest='yes', default=False,
 					  help="answer yes to all questions")
 	parser.add_option('-j', '--jobs',
-					  action='store', type="int", dest='jobs', default=1,
+					  action='store', type="int", dest='jobs', default=cpu_count(),
 					  help="the number of concurrent jobs to build with")
 	parser.add_option('-S', '--strict-policy',
 					  action='store_true', dest='strictPolicy', default=False,
