@@ -491,7 +491,7 @@ class RemoteBuilder(object):
 		transport = self.sshClient.get_transport()
 		channel = transport.open_session()
 		channel.get_pty()
-		output = channel.makefile()
+		output = channel.makefile('rb')
 		channel.exec_command(command)
 		return (output, channel)
 
@@ -547,7 +547,8 @@ class RemoteBuilder(object):
 				if not line:
 					return
 
-				self.buildLogger.info(line[:-1])
+				self.buildLogger.info(
+					line[:-1].decode('utf-8', errors='replace'))
 
 	def _makePackageAvailable(self, packagePath):
 		packageName = os.path.basename(packagePath)
