@@ -714,13 +714,12 @@ extractDebugInfo()
 	$objcopy --only-keep-debug "$path" "$debugInfoPath"
 	xres -o $tmpfile "$path"
 	$strip --strip-debug "$path"
+	$objcopy --add-gnu-debuglink="$debugInfoPath" "$path"
 
 	if [ -e $tmpfile ]; then
 		xres -o "$path" $tmpfile
 		rm $tmpfile
 	fi
-
-	$objcopy --add-gnu-debuglink="$debugInfoPath" "$path"
 }
 
 packageDebugInfos()
