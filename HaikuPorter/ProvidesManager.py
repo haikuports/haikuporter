@@ -7,6 +7,7 @@
 # -- Modules ------------------------------------------------------------------
 
 import BuildPlatform
+from .Configuration import Configuration
 from .Options import getOption
 from .PackageInfo import PackageInfo, Resolvable
 from .Utils import versionCompare
@@ -40,7 +41,9 @@ class ProvidesManager(object):
 			self._addPackageProvidesInfo(package.revisionedName, providesString)
 
 	def addProvidesFromPackageInfo(self, packageInfo):
-		if packageInfo.architecture not in self.architectures:
+		if (packageInfo.architecture not in self.architectures
+			and not (Configuration.isCrossBuildRepository()
+				and '_cross_' in packageInfo.path)):
 			return
 
 		for provides in packageInfo.provides:
