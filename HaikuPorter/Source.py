@@ -209,11 +209,14 @@ class Source(object):
 		if os.path.exists(self.sourceBaseDir):
 			info('Cleaning source dir for ' + self.fetchTargetName)
 			shutil.rmtree(self.sourceBaseDir)
-		os.makedirs(self.sourceDir)
+		os.makedirs(self.sourceBaseDir)
 
 		info('Unpacking source of ' + self.fetchTargetName)
 		self.sourceFetcher.unpack(self.sourceBaseDir, self.sourceSubDir,
 			self.sourceExportSubdir)
+
+		if not os.path.exists(self.sourceDir):
+			sysExit(self.sourceSubDir + ' doesn\'t exist in sources! Define SOURCE_DIR in recipe?')
 
 		port.setFlag('unpack', self.index)
 
