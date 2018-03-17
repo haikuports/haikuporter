@@ -49,7 +49,8 @@ class ProvidesManager(object):
 		for provides in packageInfo.provides:
 			self._addPackageProvidesInfo(packageInfo, str(provides))
 
-	def getMatchingProvides(self, resolvableExpression, anyHpkg=False):
+	def getMatchingProvides(self, resolvableExpression, anyHpkg=False,
+		ignoreBase=False):
 		name = resolvableExpression.name
 		operator = resolvableExpression.operator
 		version = resolvableExpression.version
@@ -67,7 +68,7 @@ class ProvidesManager(object):
 		for provides in providesList:
 			provideIsHpkg = (provides.packageInfo.path.endswith('.hpkg')
 				if isinstance(provides.packageInfo, PackageInfo) else False)
-			if base and provideIsHpkg:
+			if not ignoreBase and base and provideIsHpkg:
 				continue
 			if not operator:
 				if not updateDependencies:

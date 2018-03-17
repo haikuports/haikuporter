@@ -147,6 +147,7 @@ class PackageInfo(object):
 		self.requires = []
 		self.buildRequires = []
 		self.buildPrerequires = []
+		self.testRequires = []
 		for line in output.splitlines():
 			line = line.strip()
 			if line.startswith('provides:'):
@@ -180,6 +181,9 @@ class PackageInfo(object):
 		]
 		self.buildPrerequires = [
 			ResolvableExpression(r) for r in dependencyInfo['buildPrerequires']
+		]
+		self.testRequires = [
+			ResolvableExpression(r) for r in dependencyInfo['testRequires']
 		]
 
 	def _extractField(self, output, fieldName):

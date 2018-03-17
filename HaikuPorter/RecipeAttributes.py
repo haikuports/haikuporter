@@ -129,6 +129,13 @@ recipeAttributes = {
 		'extendable': Extendable.INHERITED,
 		'indexable': False,
 	},
+	'TEST_REQUIRES': {
+		'type': RequiresList,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.INHERITED,
+		'indexable': False,
+	},
 	'CONFLICTS': {
 		'type': RequiresList,
 		'required': False,

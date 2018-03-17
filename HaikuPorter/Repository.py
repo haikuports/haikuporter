@@ -25,7 +25,7 @@ from textwrap import dedent
 
 class Repository(object):
 
-	currentFormatVersion = 1
+	currentFormatVersion = 2
 
 	def __init__(self, treePath, outputDirectory, repositoryPath,
 			packagesPath, shellVariables,

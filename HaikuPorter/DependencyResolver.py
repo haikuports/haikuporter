@@ -65,6 +65,7 @@ class DependencyResolver(object):
 		self._requiresTypes = requiresTypes
 		self._repositories = repositories
 		self._stopAtHpkgs = kwargs.get('stopAtHpkgs', False)
+		self._ignoreBase = kwargs.get('ignoreBase', False)
 		self._presentDependencyPackages = kwargs.get(
 			'presentDependencyPackages', None)
 		self._quiet = kwargs.get('quiet', False)
@@ -144,6 +145,8 @@ class DependencyResolver(object):
 					self._addAllImmediateBuildRequiresOf(packageNode)
 				if 'BUILD_PREREQUIRES' in self._requiresTypes:
 					self._addAllImmediateBuildPrerequiresOf(packageNode)
+				if 'TEST_REQUIRES' in self._requiresTypes:
+					self._addAllImmediateTestRequiresOf(packageNode)
 				if 'SCRIPTLET_PREREQUIRES' in self._requiresTypes:
 					self._addScriptletPrerequiresOf(packageNode)
 
@@ -198,6 +201,13 @@ class DependencyResolver(object):
 			self._addImmediate(requiredPackageInfo, requires,
 							   'build-prerequires', True)
 
+	def _addAllImmediateTestRequiresOf(self, requiredPackageInfo):
+		packageInfo = requiredPackageInfo.packageInfo
+
+		for requires in packageInfo.testRequires:
+			self._addImmediate(requiredPackageInfo, requires,
+				'test-requires', False)
+
 	def _addScriptletPrerequiresOf(self, requiredPackageInfo):
 		scriptletPrerequirements = getScriptletPrerequirements()
 		for requires in scriptletPrerequirements:
@@ -222,7 +232,7 @@ class DependencyResolver(object):
 		# version requirements, and not the latest recipe.
 		isPrerequiresType = typeString.endswith('-prerequires')
 		provides = self._providesManager.getMatchingProvides(requires,
-			isPrerequiresType)
+			isPrerequiresType, self._ignoreBase)
 
 		if not provides:
 			if isImplicit:
@@ -235,7 +245,7 @@ class DependencyResolver(object):
 						pkginfo = PackageInfo('/boot/system/packages/' + pkg)
 						self._providesManager.addProvidesFromPackageInfo(pkginfo)
 						provides = self._providesManager.getMatchingProvides(requires,
-							isPrerequiresType)
+							isPrerequiresType, self._ignoreBase)
 				except CalledProcessError:
 					raise RestartDependencyResolutionException(parent,
 							'failed to install package for {}'.format(requires))

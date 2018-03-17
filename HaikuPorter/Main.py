@@ -450,12 +450,10 @@ class Main(object):
 				port.cleanWorkDirectory()
 			elif self.options.purge:
 				port.purge()
-			elif self.options.test:
-				self._testPort(port)
-			elif (self.options.build and portSpec['id'] not in bootstrapPorts
-				and self.options.allDependencies):
+			elif ((self.options.build and portSpec['id'] not in bootstrapPorts)
+					or self.options.test) and self.options.allDependencies:
 				try:
-					self._buildMainPort(port)
+					self._buildMainPort(port, self.options.test)
 				except SystemExit as exception:
 					if not self.options.buildMaster:
 						raise
@@ -465,7 +463,7 @@ class Main(object):
 			elif self.options.extractPatchset:
 				port.extractPatchset()
 			else:
-				self._buildPort(port, True)
+				self._buildPort(port, True, self.options.test)
 
 		# show summary of policy violations
 		if Policy.violationsByPort:
@@ -488,8 +486,8 @@ class Main(object):
 		print 'dependencies of ' + port.versionedName
 
 		presentDependencyPackages = []
-		buildDependencies = port.resolveBuildDependencies(
-			self.packageRepositories, presentDependencyPackages)
+		buildDependencies = port.resolveDependencies(
+			self.packageRepositories, False, presentDependencyPackages)
 
 		print 'packages already present:'
 		presentDependencyPackageNames = [os.path.basename(package)
@@ -556,7 +554,7 @@ class Main(object):
 
 		return True
 
-	def _buildMainPort(self, port):
+	def _buildMainPort(self, port, testPort):
 		"""Build the given port with all its dependencies"""
 
 		if port.versionedName in self.builtPortIDs:
@@ -575,15 +573,15 @@ class Main(object):
 		if self.options.buildMaster:
 			presentDependencyPackages = []
 			try:
-				buildDependencies = port.resolveBuildDependencies(
-					self.packageRepositories, presentDependencyPackages)
+				buildDependencies = port.resolveDependencies(
+					self.packageRepositories, False, presentDependencyPackages)
 			except Exception as exception:
 				self.buildMaster.addSkipped(port,
 					'resolving build dependencies failed: {}'.format(exception))
 				return
 		else:
-			buildDependencies = port.resolveBuildDependencies(
-				self.packageRepositories)
+			buildDependencies = port.resolveDependencies(
+				self.packageRepositories, testPort)
 
 		print 'The following build dependencies were found:'
 		for dependency in buildDependencies:
@@ -626,9 +624,8 @@ class Main(object):
 			for requiredPort in requiredPortsToBuild:
 				if self.options.buildMaster:
 					requiredPort.parseRecipeFile(True)
-
 					try:
-						self._buildMainPort(requiredPort)
+						self._buildMainPort(requiredPort, False)
 					except SystemExit as exception:
 						self.buildMaster.addSkipped(port,
 							'Skipping ' + port.versionedName + ', dependency '
@@ -637,16 +634,16 @@ class Main(object):
 						sysExit(u'Dependency of ' + port.versionedName
 							+ u' cannot be built')
 				else:
-					self._buildPort(requiredPort, True)
+					self._buildPort(requiredPort, True, False)
 
 		if self.options.buildMaster:
 			self.buildMaster.schedule(port, requiredPackageIDs,
 				presentDependencyPackages)
 			self.builtPortIDs.add(port.versionedName)
 		else:
-			self._buildPort(port, False)
+			self._buildPort(port, False, testPort)
 
-	def _buildPort(self, port, parseRecipe):
+	def _buildPort(self, port, parseRecipe, testPort):
 		"""Build a single port"""
 
 		if port.versionedName in self.builtPortIDs:
@@ -666,6 +663,10 @@ class Main(object):
 
 		if parseRecipe:
 			port.parseRecipeFile(True)
+
+		if testPort:
+			self._testPort(port)
+			return
 
 		if not port.isMetaPort:
 			port.downloadSource()

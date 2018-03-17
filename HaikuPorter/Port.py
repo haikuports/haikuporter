@@ -93,6 +93,7 @@ class ChrootSetup(object):
 class Port(object):
 	requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
 		'SCRIPTLET_PREREQUIRES']
+	testRequiresTypes = requiresTypes + ['TEST_REQUIRES']
 
 	_repositoryDir = None
 	_recipeCacheDirName = 'recipeCache'
@@ -532,7 +533,7 @@ class Port(object):
 		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
-	def resolveBuildDependencies(self, repositories,
+	def resolveDependencies(self, repositories, forTestPhase,
 		presentDependencyPackages=None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
@@ -544,11 +545,14 @@ class Port(object):
 
 		dependencyInfoFiles = self.getDependencyInfoFiles()
 		requiredPackages = self._resolveDependencies(
-			dependencyInfoFiles, Port.requiresTypes,
+			dependencyInfoFiles,
+			Port.testRequiresTypes if forTestPhase else Port.requiresTypes,
 			repositories + [self._repositoryDir],
-			'required or prerequired ports',
+			'required or prerequired ports for {}'.format(
+				'test' if forTestPhase else 'build'),
 			stopAtHpkgs=presentDependencyPackages is None,
-			presentDependencyPackages=presentDependencyPackages
+			presentDependencyPackages=presentDependencyPackages,
+			ignoreBase=forTestPhase
 		)
 
 		# return list of unique ports which need to be built before this one
@@ -873,9 +877,8 @@ class Port(object):
 
 		self._recreatePackageDirectories()
 
-		requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
-		prerequiredPackages \
-			= self._getPackagesPrerequiredForBuild(packagesPath)
+		requiredPackages = self._getPackagesRequiredForTest(packagesPath)
+		prerequiredPackages = self._getPackagesPrerequiredForTest(packagesPath)
 		self.policy.setPort(self, requiredPackages)
 
 		allPackages = set(requiredPackages + prerequiredPackages)
@@ -1277,9 +1280,10 @@ class Port(object):
 				print '*** child stopped'
 				sysExit(u'Interrupted.')
 
-	def _getNeededPackages(self, packagesPath, requiresTypes, description):
+	def _getNeededPackages(self, packagesPath, requiresTypes, description,
+		forTestPhase=False):
 		return self._resolveDependencies(self.getDependencyInfoFiles(),
-			requiresTypes, [packagesPath], description)
+			requiresTypes, [packagesPath], description, ignoreBase=forTestPhase)
 
 	def _getPackagesNeededForScriptlets(self, packagesPath):
 		"""Determine the set of packages that must be linked into
@@ -1302,6 +1306,21 @@ class Port(object):
 
 		return self._getNeededPackages(packagesPath, ['BUILD_REQUIRES'],
 			'required packages for build')
+
+	def _getPackagesPrerequiredForTest(self, packagesPath):
+		"""Determine the set of prerequired packages that must be linked into
+		   the environment (chroot) for the test stage"""
+
+		return self._getNeededPackages(packagesPath, ['BUILD_PREREQUIRES',
+				'SCRIPTLET_PREREQUIRES'], 'prerequired packages for test', True)
+
+	def _getPackagesRequiredForTest(self, packagesPath):
+		"""Determine the set of packages that must be linked into the
+		   environment (chroot) for the test stage"""
+
+		return self._getNeededPackages(packagesPath,
+			['REQUIRES', 'BUILD_REQUIRES', 'TEST_REQUIRES'],
+			'required packages for test', True)
 
 	def _executeBuild(self, makePackages):
 		"""Executes the build stage and creates all declared packages"""

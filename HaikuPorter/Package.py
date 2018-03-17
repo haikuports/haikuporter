@@ -168,7 +168,8 @@ class Package(object):
 	def writeDependencyInfoIntoRepository(self, repositoryPath):
 		"""Write a DependencyInfo-file for this package into the repository"""
 
-		requires = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES']
+		requires = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES',
+			'TEST_REQUIRES']
 		self.generateDependencyInfo(self.dependencyInfoFile(repositoryPath),
 			requires)
 
@@ -499,6 +500,7 @@ class Package(object):
 				'requires': [],
 				'buildRequires': [],
 				'buildPrerequires': [],
+				'testRequires': []
 			}
 
 			if fakeProvides:
@@ -507,6 +509,7 @@ class Package(object):
 			requiresKeyMap = {
 				'BUILD_REQUIRES': 'buildRequires',
 				'BUILD_PREREQUIRES': 'buildPrerequires',
+				'TEST_REQUIRES': 'testRequires',
 				'REQUIRES': 'requires',
 				'SCRIPTLET_PREREQUIRES': 'buildPrerequires',
 			}
