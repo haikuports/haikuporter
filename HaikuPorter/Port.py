@@ -1277,42 +1277,31 @@ class Port(object):
 				print '*** child stopped'
 				sysExit(u'Interrupted.')
 
+	def _getNeededPackages(self, packagesPath, requiresTypes, description):
+		return self._resolveDependencies(self.getDependencyInfoFiles(),
+			requiresTypes, [packagesPath], description)
+
 	def _getPackagesNeededForScriptlets(self, packagesPath):
 		"""Determine the set of packages that must be linked into
 		   the build environment (chroot) for the scriptlets"""
 
-		requiresTypes = ['SCRIPTLET_PREREQUIRES']
-		dependencyInfoFiles = self.getDependencyInfoFiles()
-		neededPackages = self._resolveDependencies(
-			dependencyInfoFiles, requiresTypes, [packagesPath],
+		return self._getNeededPackages(packagesPath, ['SCRIPTLET_PREREQUIRES'],
 			'needed packages for scriptlets')
-
-		return neededPackages
 
 	def _getPackagesPrerequiredForBuild(self, packagesPath):
 		"""Determine the set of prerequired packages that must be linked into
 		   the build environment (chroot) for the build stage"""
 
-		requiresTypes = ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
-		dependencyInfoFiles = self.getDependencyInfoFiles()
-		prereqPackages = self._resolveDependencies(
-			dependencyInfoFiles, requiresTypes, [packagesPath],
+		return self._getNeededPackages(packagesPath,
+			['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES'],
 			'prerequired packages for build')
-
-		return prereqPackages
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the
 		   build environment (chroot) for the build stage"""
 
-		requiresTypes = ['BUILD_REQUIRES']
-		dependencyInfoFiles = self.getDependencyInfoFiles()
-		packages = self._resolveDependencies(dependencyInfoFiles,
-											 requiresTypes,
-											 [packagesPath],
-											 'required packages for build')
-
-		return packages
+		return self._getNeededPackages(packagesPath, ['BUILD_REQUIRES'],
+			'required packages for build')
 
 	def _executeBuild(self, makePackages):
 		"""Executes the build stage and creates all declared packages"""
