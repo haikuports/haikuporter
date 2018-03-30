@@ -801,6 +801,9 @@ class Port(object):
 					# tell the shell scriptlets that the task has succeeded
 					chrootSetup.buildOk = True
 
+					# after a successful build, the recipe has been cleaned up
+					self.recipeHasBeenParsed = False
+
 				def failureFunction():
 					sysExit(u'Build has failed - stopping.')
 
