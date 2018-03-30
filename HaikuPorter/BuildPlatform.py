@@ -663,7 +663,7 @@ class BuildPlatformBuildMaster(BuildPlatform):
 # init buildPlatform
 if platform.system() == 'Haiku':
 	buildPlatform = BuildPlatformHaiku()
-elif '--build-master' in sys.argv or '--list-build-dependencies' in sys.argv:
+elif '--build-master' in sys.argv or '--list-dependencies' in sys.argv:
 	# can't use parsed options here as we're imported from it
 	buildPlatform = BuildPlatformBuildMaster()
 else:

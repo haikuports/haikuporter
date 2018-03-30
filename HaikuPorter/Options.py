@@ -259,9 +259,9 @@ def parseOptions():
 		help='specifies the directory to be used to look up system packages '
 			+ '(only applies to build master mode)')
 
-	parser.add_option('--list-build-dependencies', action='store_true',
-		dest='listBuildDependencies', default=False,
-		help='list build dependencies of a port')
+	parser.add_option('--list-dependencies', action='store_true',
+		dest='listDependencies', default=False,
+		help='list dependencies of a port')
 
 	parser.add_option('--build-master', action='store_true', dest='buildMaster',
 		default=False,

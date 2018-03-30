@@ -84,7 +84,7 @@ class Main(object):
 			or self.options.portsForFiles
 			or self.options.portsForPackages
 			or self.options.listPackages
-			or self.options.listBuildDependencies
+			or self.options.listDependencies
 			or self.options.search
 			or self.options.searchPackages
 			or self.options.about
@@ -410,8 +410,8 @@ class Main(object):
 				port.printDescription()
 				continue
 
-			if self.options.listBuildDependencies:
-				self._listBuildDependencies(port)
+			if self.options.listDependencies:
+				self._listDependencies(port)
 				continue
 
 			if not self._validateMainPort(port, portSpec['revision']):
@@ -419,7 +419,7 @@ class Main(object):
 
 			portSpec['id'] = portID
 
-		if self.options.about or self.options.listBuildDependencies:
+		if self.options.about or self.options.listDependencies:
 			return
 
 		if self.options.why:
@@ -481,13 +481,14 @@ class Main(object):
 			else:
 				self.buildMaster.runBuilds()
 
-	def _listBuildDependencies(self, port):
+	def _listDependencies(self, port):
 		print '-' * 70
 		print 'dependencies of ' + port.versionedName
 
 		presentDependencyPackages = []
 		buildDependencies = port.resolveDependencies(
-			self.packageRepositories, False, presentDependencyPackages)
+			self.packageRepositories, self.options.test,
+			presentDependencyPackages)
 
 		print 'packages already present:'
 		presentDependencyPackageNames = [os.path.basename(package)
