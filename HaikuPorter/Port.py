@@ -19,7 +19,8 @@ import os
 import re
 import shutil
 import signal
-from subprocess import check_call, check_output, CalledProcessError, Popen, PIPE, STDOUT
+from subprocess import check_call, check_output, CalledProcessError, Popen, \
+	PIPE, STDOUT
 import traceback
 
 from .BuildPlatform import buildPlatform
@@ -125,8 +126,8 @@ class Port(object):
 
 		self.isMetaPort = self.category == 'meta-ports'
 
-		self.recipeFilePath = (self.baseDir + '/' + self.baseName + '-'
-							   + self.version + '.recipe')
+		self.recipeFilePath = self.baseDir + '/' + self.baseName + '-' \
+			+ self.version + '.recipe'
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
@@ -286,7 +287,8 @@ class Port(object):
 		allPatches = []
 
 		## REFACTOR this loop and its children look unrelated
-		## Looping over different loops in parallel is often best done using zip / itertools.izip
+		## Looping over different loops in parallel is often best done using
+		## zip / itertools.izip
 		## But I'm guessing!
 		for extension in sorted(extensions):
 			entries = recipeConfig.getEntriesForExtension(extension)
@@ -356,13 +358,13 @@ class Port(object):
 					suffixes.append('-gcc4')
 				for suffix in suffixes:
 					patchFileName = '%s%s.%s' % (versionedBaseName, suffix,
-												 fileExtension)
+						fileExtension)
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
 						and patchFileName not in allPatches):
 						if showWarnings:
 							warn(u'Patch file %s is not referenced in '
-								 u'PATCHES, so it will not be used'
-								 % patchFileName)
+								u'PATCHES, so it will not be used'
+								% patchFileName)
 
 		return recipeKeysByExtension, recipeConfig.definedPhases
 
@@ -390,7 +392,7 @@ class Port(object):
 					% (key, self.recipeFilePath))
 		if len(entries[key]) > 80:
 			sysExit(u'%s exceeds 80 chars (in %s)'
-				 % (key, self.recipeFilePath))
+				% (key, self.recipeFilePath))
 
 	def _validateDESCRIPTION(self, key, entries, showWarnings):
 		"""Validates the 'DESCRIPTION' of the port."""
@@ -455,7 +457,7 @@ class Port(object):
 			print 'PACKAGE: %s' % package.versionedName
 			print 'SUMMARY: %s' % package.recipeKeys['SUMMARY']
 			print('STATUS: %s'
-				  % package.getStatusOnArchitecture(self.targetArchitecture))
+				% package.getStatusOnArchitecture(self.targetArchitecture))
 			print 'ARCHITECTURE: %s' % package.architecture
 		print '*' * 80
 
@@ -575,7 +577,7 @@ class Port(object):
 			workRepositoryPath)
 
 		with requiredPort.temporaryRepositoryDir(workRepositoryPath):
-			# drop package-infos for the required port, such that dependency
+			# drop dependency-infos for the required port, such that dependency
 			# resolution will fail with an appropriate message
 			requiredPort.removeDependencyInfosFromRepository()
 
@@ -593,7 +595,7 @@ class Port(object):
 			return
 
 		warn(u"port %s doesn't seem to be required by %s"
-			 % (requiredPort.versionedName, self.versionedName))
+			% (requiredPort.versionedName, self.versionedName))
 
 	def getDependencyInfoFiles(self):
 		"""Returns the list of dependency info files for this port."""
@@ -742,7 +744,7 @@ class Port(object):
 		# reset build flag if recipe is newer (unless that's prohibited)
 		if (not getOption('preserveFlags') and self.checkFlag('build')
 			and (os.path.getmtime(self.recipeFilePath)
-					 > os.path.getmtime(self.workDir + '/flag.build'))):
+				> os.path.getmtime(self.workDir + '/flag.build'))):
 			info('unsetting build flag, as recipe is newer')
 			self.unsetFlag('build')
 
@@ -761,7 +763,8 @@ class Port(object):
 			or getOption('createSourcePackages')):
 			requiredPackages = []
 			if buildPlatform.usesChroot():
-				prerequiredPackages = self._getPackagesNeededForScriptlets(packagesPath)
+				prerequiredPackages \
+					= self._getPackagesNeededForScriptlets(packagesPath)
 			else:
 				prerequiredPackages = []
 		else:
@@ -822,15 +825,15 @@ class Port(object):
 					info('\t' + package)
 
 			buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
-														 self.secondaryArchitecture, allPackages)
+				self.secondaryArchitecture, allPackages)
 			try:
 				self._executeBuild(makePackages)
 			except:
 				buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-															 self.secondaryArchitecture, False)
+					self.secondaryArchitecture, False)
 				raise
 			buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-														 self.secondaryArchitecture, True)
+				self.secondaryArchitecture, True)
 
 		if makePackages and not getOption('enterChroot'):
 			# create source package
@@ -848,7 +851,7 @@ class Port(object):
 			# move all created packages into packages folder
 			for package in self.packages:
 				if ((getOption('createSourcePackagesForBootstrap')
-					 or getOption('createSourcePackages'))
+					or getOption('createSourcePackages'))
 					and package.type != PackageType.SOURCE):
 					continue
 				packageFile = self.hpkgDir + '/' + package.hpkgName
@@ -858,18 +861,19 @@ class Port(object):
 							or getOption('createSourcePackagesForBootstrap')
 							or getOption('createSourcePackages')):
 						warn(u'not grabbing ' + package.hpkgName
-							 + u', as it has not been built in a chroot.')
+							+ u', as it has not been built in a chroot.')
 						continue
 					targetPackageFile \
 						= hpkgStoragePath + '/' + package.hpkgName
 					info('grabbing ' + package.hpkgName
-						  + ' and moving it to ' + targetPackageFile)
+						+ ' and moving it to ' + targetPackageFile)
 					os.rename(packageFile, targetPackageFile)
 
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
 
-	## REFACTOR consider renaming so the method won't be picked up by test discovery at some point
+	## REFACTOR consider renaming so the method won't be picked up by test
+	## discovery at some point
 	def test(self, packagesPath):
 		"""Test the port"""
 
@@ -1161,15 +1165,15 @@ class Port(object):
 
 		# Note: Newer build systems also support the following options. Their
 		# default values are OK for us for now:
-		# --localedir=DIR		  locale-dependent data [DATAROOTDIR/locale]
-		# --htmldir=DIR			  html documentation [DOCDIR]
-		# --dvidir=DIR			  dvi documentation [DOCDIR]
-		# --pdfdir=DIR			  pdf documentation [DOCDIR]
-		# --psdir=DIR			  ps documentation [DOCDIR]
+		# --localedir=DIR		locale-dependent data [DATAROOTDIR/locale]
+		# --htmldir=DIR			html documentation [DOCDIR]
+		# --dvidir=DIR			dvi documentation [DOCDIR]
+		# --pdfdir=DIR			pdf documentation [DOCDIR]
+		# --psdir=DIR			ps documentation [DOCDIR]
 
-		portPackageLinksDir = (basePrefix
-							   + buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY')
-							   + '/' + revisionedName)
+		portPackageLinksDir = basePrefix \
+			+ buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY') \
+			+ '/' + revisionedName
 		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
 		prefix = portPackageLinksDir + '/.self'
@@ -1189,7 +1193,7 @@ class Port(object):
 		# add one more variable containing all the dir args for configure:
 		self.shellVariables['configureDirArgs'] \
 			= ' '.join('--%s=%s' % (k.lower(), v)
-					   for k, v in configureDirs.iteritems())
+				for k, v in configureDirs.iteritems())
 
 		# add one more variable containing all the dir args for CMake:
 		cmakeDirArgs = {}
@@ -1197,7 +1201,7 @@ class Port(object):
 			cmakeDirArgs[k.upper()] = v
 		self.shellVariables['cmakeDirArgs'] \
 			= ' '.join('-DCMAKE_INSTALL_%s=%s' % (k, v)
-					   for k, v in cmakeDirArgs.iteritems())
+				for k, v in cmakeDirArgs.iteritems())
 
 		# add another one with the list of possible variables
 		self.shellVariables['configureDirVariables'] \
@@ -1455,8 +1459,8 @@ class Port(object):
 					if os.path.exists(archBinDir):
 						for entry in os.listdir(archBinDir):
 							os.symlink(self.secondaryArchitecture + '/' + entry,
-									   binDir + '/' + entry + '-'
-									   + self.secondaryArchitecture)
+								binDir + '/' + entry + '-'
+									+ self.secondaryArchitecture)
 
 			# For the main package remove certain empty directories. Typically
 			# contents is moved from the main package installation directory
@@ -1489,7 +1493,7 @@ class Port(object):
 		# activate build package if required at this stage
 		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.INSTALL
 			and not (getOption('createSourcePackagesForBootstrap')
-					 or getOption('createSourcePackages'))):
+				or getOption('createSourcePackages'))):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.activateBuildPackage()
@@ -1503,7 +1507,7 @@ class Port(object):
 		# activate build package if required at this stage
 		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.TEST
 			and not (getOption('createSourcePackagesForBootstrap')
-					 or getOption('createSourcePackages'))):
+				or getOption('createSourcePackages'))):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.activateBuildPackage()
@@ -1574,23 +1578,21 @@ class Port(object):
 				raise CalledProcessError(code, args)
 
 	def _resolveDependencies(self, dependencyInfoFiles, requiresTypes,
-							 repositories, description, **kwargs):
-		"""Resolve dependencies of one or more package-infos"""
+		repositories, description, **kwargs):
+		"""Resolve dependencies of one or more dependency-infos"""
 
 		try:
 			return buildPlatform.resolveDependencies(dependencyInfoFiles,
-													 requiresTypes,
-													 repositories, **kwargs)
+				requiresTypes, repositories, **kwargs)
 		except (CalledProcessError, LookupError):
 			if getOption('buildMaster'):
 				raise
 
 			sysExit((u'unable to resolve %s for %s\n'
-					 + u'\tdependency-infos:\n\t\t%s\n'
-					 + u'\trepositories:\n\t\t%s\n')
-					% (description, self.versionedName,
-					   '\n\t\t'.join(dependencyInfoFiles),
-					   repositories))
+				+ u'\tdependency-infos:\n\t\t%s\n'
+				+ u'\trepositories:\n\t\t%s\n')
+				% (description, self.versionedName,
+					'\n\t\t'.join(dependencyInfoFiles), repositories))
 
 	def _createSourcePackage(self, name, rigged):
 		# copy all recipe attributes from base package, but set defaults

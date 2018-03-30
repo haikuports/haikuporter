@@ -67,10 +67,11 @@ class Repository(object):
 				self._updateRepository()
 		else:
 			if getOption('noRepositoryUpdate'):
-				sysExit(u'no or outdated repository found but no update allowed')
+				sysExit(u'no or outdated repository found but no update '
+					u'allowed')
 			if formatVersion < Repository.currentFormatVersion:
 				warn(u'Found old repository format - repopulating the '
-					 u'repository ...')
+					u'repository ...')
 			self._populateRepository(preserveFlags)
 			self._writeFormatVersion()
 		self._writePortForPackageMaps()
@@ -131,7 +132,7 @@ class Repository(object):
 				if warnAboutSkippedVersions:
 					status = port.statusOnTargetArchitecture
 					warn((u'skipping %s, as it is %s on the target '
-						  + 'architecture.') % (portID, status))
+						+ 'architecture.') % (portID, status))
 				continue
 			return version
 
@@ -236,12 +237,12 @@ class Repository(object):
 				if self.outputDirectory == self.treePath:
 					portOutputPath = portPath
 				else:
-					portOutputPath = (self.outputDirectory
-									  + '/input-source-packages/' + name)
+					portOutputPath = self.outputDirectory \
+						+ '/input-source-packages/' + name
 				self._allPorts[name + '-' + version] \
 					= Port(name, version, '<source-package>', portPath,
-						   portOutputPath, self.shellVariables,
-						   self.policy)
+						portOutputPath, self.shellVariables,
+						self.policy)
 
 		# collect ports from the recipe tree
 		for category in sorted(os.listdir(self.treePath)):
@@ -270,13 +271,14 @@ class Repository(object):
 							if not self.quiet and not getOption('doBootstrap'):
 								otherPort = self._allPorts[versionedName]
 								if otherPort.category == '<source-package>':
-									warn(u'%s/%s	 is overruled by input source '
-										 u'package' % (category, versionedName))
+									warn(u'%s/%s	 is overruled by input '
+										u'source package' % (category,
+											versionedName))
 								else:
-									warn(u'%s/%s	 is overruled by duplicate in '
-										  u'%s - please remove one of them'
-										  % (category, versionedName,
-											 otherPort.category))
+									warn(u'%s/%s	 is overruled by duplicate '
+										u'in %s - please remove one of them'
+										% (category, versionedName,
+											otherPort.category))
 							continue
 						if name not in self._portVersionsByName:
 							self._portVersionsByName[name] = [version]
@@ -289,7 +291,7 @@ class Repository(object):
 						# invalid argument
 						if not self.quiet:
 							print("Warning: Couldn't parse port/version info: "
-								  + recipe)
+								+ recipe)
 
 		# Create ports for the secondary architectures. Not all make sense or
 		# are supported, but we won't know until we have parsed the recipe file.
@@ -340,14 +342,14 @@ class Repository(object):
 		try:
 			with open(self._portIdForPackageIdFilePath, 'w') as fh:
 				json.dump(self._portIdForPackageId, fh, sort_keys=True,
-						  indent=4, separators=(',', ' : '))
+					indent=4, separators=(',', ' : '))
 		except BaseException as e:
 			print e
 
 		try:
 			with open(self._portNameForPackageNameFilePath, 'w') as fh:
 				json.dump(self._portNameForPackageName, fh, sort_keys=True,
-						  indent=4, separators=(',', ' : '))
+					indent=4, separators=(',', ' : '))
 		except BaseException as e:
 			print e
 
@@ -402,7 +404,7 @@ class Repository(object):
 		# check for all known ports if their recipe has been changed
 		if os.path.exists(self.path):
 			if not self.quiet:
-				print 'Checking if any package-infos need to be updated ...'
+				print 'Checking if any dependency-infos need to be updated ...'
 		else:
 			os.makedirs(self.path)
 			if not self.quiet:
@@ -575,7 +577,7 @@ class Repository(object):
 			= 'develop/sources/%s-%s-%s' % (name, version, revision)
 		recipeName = name + '-' + version + '.recipe'
 		recipeFilePath = (self.inputSourcePackagesPath + '/' + relativeBasePath
-						  + '/' + recipeName)
+			+ '/' + recipeName)
 
 		if (not os.path.exists(recipeFilePath)
 			or (os.path.getmtime(recipeFilePath)
@@ -588,13 +590,13 @@ class Repository(object):
 				relativeBasePath + '/patches',
 			]
 			entries = check_output([Configuration.getPackageCommand(), 'list',
-								  '-p', sourcePackagePath]).splitlines()
+				'-p', sourcePackagePath]).splitlines()
 			entries = [
 				entry for entry in entries if entry in allowedEntries
 			]
 			check_call([Configuration.getPackageCommand(), 'extract',
-						'-C', self.inputSourcePackagesPath, sourcePackagePath]
-					   + entries)
+					'-C', self.inputSourcePackagesPath, sourcePackagePath]
+				+ entries)
 
 			# override all SOURCE_URIs in recipe to point to the source package
 			textToAdd = dedent(r'''
