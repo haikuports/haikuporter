@@ -664,7 +664,7 @@ class Main(object):
 		if parseRecipe:
 			port.parseRecipeFile(True)
 
-		if testPort:
+		if testPort and port.checkFlag('build'):
 			self._testPort(port)
 			return
 
@@ -677,6 +677,9 @@ class Main(object):
 
 		if self.options.build:
 			port.build(self.packagesPath, self.options.package, targetPath)
+
+		if testPort:
+			self._testPort(port)
 
 		self.builtPortIDs.add(port.versionedName)
 
@@ -703,9 +706,6 @@ class Main(object):
 
 	def _testPort(self, port):
 		"""Build a single port"""
-
-		if not port.checkFlag('build'):
-			sysExit(u'Please build the port first.')
 
 		print '-' * 70
 		print 'TESTING ' + port.category + '::' + port.versionedName
