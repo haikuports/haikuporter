@@ -60,6 +60,7 @@ class ProvidesManager(object):
 			return None
 
 		updateDependencies = getOption('updateDependencies')
+		missingDependencies = getOption('missingDependencies')
 
 		providesList = self._providesMap[name]
 
@@ -71,12 +72,12 @@ class ProvidesManager(object):
 			if not ignoreBase and base and provideIsHpkg:
 				continue
 			if not operator:
-				if not updateDependencies:
+				if not updateDependencies and not missingDependencies:
 					return provides
 				if (found is None or
 					(anyHpkg and provideIsHpkg) or
 					(provideIsHpkg and not foundIsHpkg and
-						(found.version is None
+						(missingDependencies or found.version is None
 							or versionCompare(provides.version, found.version) >= 0))):
 					found = provides
 					foundIsHpkg = provideIsHpkg
@@ -96,12 +97,12 @@ class ProvidesManager(object):
 			if (provides.compatibleVersion
 				and versionCompare(provides.compatibleVersion, version) > 0):
 				continue
-			if not updateDependencies:
+			if not updateDependencies and not missingDependencies:
 				return provides
 			if (found is None or
 				(anyHpkg and provideIsHpkg) or
 				(provideIsHpkg and not foundIsHpkg and
-					(found.version is None
+					(missingDependencies or found.version is None
 						or versionCompare(provides.version, found.version) >= 0))):
 				found = provides
 				foundIsHpkg = provideIsHpkg

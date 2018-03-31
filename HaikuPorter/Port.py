@@ -553,7 +553,8 @@ class Port(object):
 			'required or prerequired ports for {}'.format(
 				'test' if forTestPhase else 'build'),
 			stopAtHpkgs=getOption('updateDependencies') \
-				or presentDependencyPackages is None,
+				or presentDependencyPackages is None \
+					and not getOption('missingDependencies'),
 			presentDependencyPackages=presentDependencyPackages,
 			ignoreBase=forTestPhase
 		)

@@ -119,6 +119,10 @@ def parseOptions():
 					  action='store_true', dest='updateDependencies', default=False,
 					  help="build or update required dependencies (stop on hpkg),"
 							" then build the port")
+	parser.add_option('--missing-dependencies', action='store_true',
+		dest='missingDependencies', default=False, help='build missing direct'
+			' and indirect dependencies, then build the port')
+
 	parser.add_option('--no-source-packages',
 					  action='store_true', dest='noSourcePackages',
 					  default=False,
@@ -332,7 +336,7 @@ def parseOptions():
 		setattr(__Options__, 'build', False)
 	if not getOption('build'):
 		setattr(__Options__, 'package', False)
-	if getOption('updateDependencies'):
+	if getOption('updateDependencies') or getOption('missingDependencies'):
 		setattr(__Options__, 'allDependencies', True)
 	if getOption('enterChroot'):
 		setattr(__Options__, 'noSourcePackages', True)
