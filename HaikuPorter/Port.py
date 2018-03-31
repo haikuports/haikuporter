@@ -869,7 +869,7 @@ class Port(object):
 						= hpkgStoragePath + '/' + package.hpkgName
 					info('grabbing ' + package.hpkgName
 						+ ' and moving it to ' + targetPackageFile)
-					os.rename(packageFile, targetPackageFile)
+					shutil.move(packageFile, targetPackageFile)
 
 		if os.path.exists(self.hpkgDir):
 			os.rmdir(self.hpkgDir)
