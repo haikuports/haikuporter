@@ -136,19 +136,16 @@ class DependencyResolver(object):
 		while self._pending:
 			packageNode = self._pending.pop(0)
 
-			# don't build dependencies of a hpkg with --update-dependencies
-			if not (self._updateDependencies
-					and packageNode.path.endswith('.hpkg')):
-				if 'REQUIRES' in self._requiresTypes:
-					self._addAllImmediateRequiresOf(packageNode)
-				if 'BUILD_REQUIRES' in self._requiresTypes:
-					self._addAllImmediateBuildRequiresOf(packageNode)
-				if 'BUILD_PREREQUIRES' in self._requiresTypes:
-					self._addAllImmediateBuildPrerequiresOf(packageNode)
-				if 'TEST_REQUIRES' in self._requiresTypes:
-					self._addAllImmediateTestRequiresOf(packageNode)
-				if 'SCRIPTLET_PREREQUIRES' in self._requiresTypes:
-					self._addScriptletPrerequiresOf(packageNode)
+			if 'REQUIRES' in self._requiresTypes:
+				self._addAllImmediateRequiresOf(packageNode)
+			if 'BUILD_REQUIRES' in self._requiresTypes:
+				self._addAllImmediateBuildRequiresOf(packageNode)
+			if 'BUILD_PREREQUIRES' in self._requiresTypes:
+				self._addAllImmediateBuildPrerequiresOf(packageNode)
+			if 'TEST_REQUIRES' in self._requiresTypes:
+				self._addAllImmediateTestRequiresOf(packageNode)
+			if 'SCRIPTLET_PREREQUIRES' in self._requiresTypes:
+				self._addScriptletPrerequiresOf(packageNode)
 
 			# when the batch of passed in packages has been handled, we need
 			# to activate the REQUIRES, too, since these are needed to run

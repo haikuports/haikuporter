@@ -552,7 +552,8 @@ class Port(object):
 			repositories + [self._repositoryDir],
 			'required or prerequired ports for {}'.format(
 				'test' if forTestPhase else 'build'),
-			stopAtHpkgs=presentDependencyPackages is None,
+			stopAtHpkgs=getOption('updateDependencies') \
+				or presentDependencyPackages is None,
 			presentDependencyPackages=presentDependencyPackages,
 			ignoreBase=forTestPhase
 		)
