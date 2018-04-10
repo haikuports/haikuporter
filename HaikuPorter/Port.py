@@ -1328,7 +1328,7 @@ class Port(object):
 		   environment (chroot) for the test stage"""
 
 		return self._getNeededPackages(packagesPath,
-			['REQUIRES', 'BUILD_REQUIRES', 'TEST_REQUIRES'],
+			['BUILD_REQUIRES', 'TEST_REQUIRES'],
 			'required packages for test', True)
 
 	def _executeBuild(self, makePackages):
