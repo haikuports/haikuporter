@@ -36,6 +36,13 @@ BUILD_PREREQUIRES="
 	cmd:gcc
 	"
 
+defineDebugInfoPackage projectx$secondaryArchSuffix \
+	"$appsDir"/ProjectX
+
+GLOBAL_WRITABLE_FILES="
+	settings/projectx.rc keep-old # If there is any
+	"
+
 BUILD()
 {
 	make $jobArgs OBJ_DIR=objects
@@ -43,9 +50,34 @@ BUILD()
 
 INSTALL()
 {
-	mkdir -p $appsDir
-	cp -a objects/ProjectX $appsDir
-	addAppDeskbarSymlink $appsDir/ProjectX
+	mkdir -p "$appsDir"
+	cp -a objects/ProjectX "$appsDir"
+
+	# Create the extra attributes
+	local APP_SIGNATURE="application/x-vnd.ProjectX"
+	local MAJOR="`echo "$portVersion" | cut -d. -f1`"
+	local MIDDLE="`echo "$portVersion" | cut -d. -f2`"
+#	local MINOR="`echo "$portVersion" | cut -d. -f3`"
+	local MINOR="0"
+	local LONG_INFO="$SUMMARY"
+
+	# Add them to the rdef file
+	sed \
+		-e "s|@APP_SIGNATURE@|$APP_SIGNATURE|" \
+		-e "s|@MAJOR@|$MAJOR|" \
+		-e "s|@MIDDLE@|$MIDDLE|" \
+		-e "s|@MINOR@|$MINOR|" \
+		-e "s|@LONG_INFO@|$LONG_INFO|" \
+		$portDir/additional-files/projectx.rdef.in > projectx.rdef
+
+	# Add the resources to the application
+	addResourcesToBinaries projectx.rdef "$appsDir"/ProjectX
+
+	# Set the acceptable mimetypes
+	mimeset -f "$appsDir"/ProjectX
+
+	# Create a Deskbar icon
+	addAppDeskbarSymlink "$appsDir"/ProjectX
 }
 
 TEST()
