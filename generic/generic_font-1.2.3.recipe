@@ -19,14 +19,20 @@ DISABLE_SOURCE_PACKAGE=yes
 PROVIDES="
 	generic_font = $portVersion
 	"
-REQUIRES=""
+REQUIRES="
+	:
+	"
 
-BUILD_REQUIRES=""
-BUILD_PREREQUIRES=""
+BUILD_REQUIRES="
+	:
+	"
+BUILD_PREREQUIRES="
+	:
+	"
 
 BUILD()
 {
-	true
+	: # means nothing.
 }
 
 INSTALL()
