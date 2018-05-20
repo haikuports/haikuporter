@@ -20,9 +20,12 @@ ADDITIONAL_FILES="projectx.rdef"
 ARCHITECTURES="x86_gcc2 ?x86 ?x86_64"
 SECONDARY_ARCHITECTURES="x86"
 
+libVersion="$portVersion"
+libVersionCompat="$libVersion compat >= ${libVersion%%.*}"
+
 PROVIDES="
 	projectx$secondaryArchSuffix = $portVersion
-	lib:libprojectx$secondaryArchSuffix = $portVersion
+	lib:libprojectx$secondaryArchSuffix = $libVersionCompat
 	"
 REQUIRES="
 	haiku$secondaryArchSuffix
@@ -30,7 +33,7 @@ REQUIRES="
 
 PROVIDES_devel="
 	projectx${secondaryArchSuffix}_devel = $portVersion
-	devel:libprojectx$secondaryArchSuffix = $portVersion
+	devel:libprojectx$secondaryArchSuffix = $libVersionCompat
 	"
 REQUIRES_devel="
 	projectx$secondaryArchSuffix == $portVersion base
@@ -40,28 +43,27 @@ BUILD_REQUIRES="
 	haiku${secondaryArchSuffix}_devel
 	"
 BUILD_PREREQUIRES="
-	makefile_engine
 	cmd:make
 	cmd:gcc$secondaryArchSuffix
 	"
 
+defineDebugInfoPackage projectx$secondaryArchSuffix \
+	"$libDir"/libprojectx.so.$libVersion
+
 BUILD()
 {
-	make $jobArgs OBJ_DIR=objects
+	runConfigure ./configure
+	make $jobArgs
 }
 
 INSTALL()
 {
-	mkdir -p $libDir
-	mkdir -p $includeDir
-
-	cp -a objects/libprojectx.so $libDir
-	cp -R include/. $includeDir
+	make install
 
 	prepareInstalledDevelLibs \
 		libprojectx
 	packageEntries devel \
-		$developDir
+		"$developDir"
 }
 
 TEST()
