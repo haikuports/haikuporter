@@ -38,8 +38,8 @@ BUILD()
 INSTALL()
 {
 	FONTDIR=$fontsDir/ttfonts
-	mkdir -p ${FONTDIR}
-	cp generic-font1.ttf ${FONTDIR}
-	cp generic-font2.ttf ${FONTDIR}
-	cp generic-font-bold.ttf ${FONTDIR}
+	install -d ${FONTDIR}
+	install -t generic-font1.ttf ${FONTDIR}
+	install -t generic-font2.ttf ${FONTDIR}
+	install -t generic-font-bold.ttf ${FONTDIR}
 }

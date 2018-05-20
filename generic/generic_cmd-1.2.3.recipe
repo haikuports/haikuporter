@@ -61,8 +61,8 @@ BUILD()
 
 INSTALL()
 {
-	mkdir -p $commandBinDir
-	cp -a objects/projectx $commandBinDir
+	install -d $commandBinDir
+	install -t objects/projectx $commandBinDir
 }
 
 TEST()

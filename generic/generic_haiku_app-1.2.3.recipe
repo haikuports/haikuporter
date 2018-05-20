@@ -50,8 +50,8 @@ BUILD()
 
 INSTALL()
 {
-	mkdir -p "$appsDir"
-	cp -a objects/ProjectX "$appsDir"
+	install -d "$appsDir"
+	install -t objects/ProjectX "$appsDir"
 
 	# Create the extra attributes
 	local APP_SIGNATURE="application/x-vnd.ProjectX"
