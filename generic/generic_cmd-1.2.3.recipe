@@ -18,10 +18,19 @@ PATCHES="projectx-$portVersion.patchset"
 ADDITIONAL_FILES="projectx.rdef"
 
 ARCHITECTURES="x86_gcc2 ?x86 ?x86_64"
+SECONDARY_ARCHITECTURES="x86"
+
+# On x86_gcc2 we don't want to install the commands in bin/<arch>/, but in bin/.
+commandSuffix=$secondaryArchSuffix
+commandBinDir=$binDir
+if [ "$targetArchitecture" = x86_gcc2 ]; then
+	commandSuffix=
+	commandBinDir=$prefix/bin
+fi
 
 PROVIDES="
 	projectx = $portVersion
-	cmd:projectx = $portVersion
+	cmd:projectx$commandSuffix = $portVersion
 	"
 REQUIRES="
 	haiku
@@ -35,15 +44,25 @@ BUILD_PREREQUIRES="
 	cmd:gcc
 	"
 
+GLOBAL_WRITABLE_FILES="
+	settings/projectx.conf keep-old
+	"
+
+defineDebugInfoPackage projectx \
+	"$commandBinDir"/projectx
+
 BUILD()
 {
+	runConfigure --omit-dirs "binDir sbinDir" ./configure \
+		--bindir="$commandBinDir" \
+		--sbindir="$commandBinDir"
 	make $jobArgs
 }
 
 INSTALL()
 {
-	mkdir -p $binDir
-	cp -a objects/projectx $binDir
+	mkdir -p $commandBinDir
+	cp -a objects/projectx $commandBinDir
 }
 
 TEST()
