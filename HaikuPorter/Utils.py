@@ -127,22 +127,24 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				tarinfo=MyTarInfo)
 		else:
 			tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
-		for member in tarFile:
-			if subdir is None:
-				tarFile.extract(member, targetBaseDir)
-				continue
 
-			member = copy.copy(member)
-			if (os.path.normpath(member.name.decode("utf-8"))
-				.startswith(subdir) and not os.path.normpath(
-					member.name.decode("utf-8")).endswith("/.git")):
-				if hasattr(os, "geteuid") and os.geteuid() == 0:
-					member.gname = ""
-					member.uname = ""
-					member.gid = 0
-					member.uid = 0
-				member.name = member.name.decode("utf-8")
-				tarFile.extract(member, targetBaseDir)
+		if subdir is None:
+			tarFile.extractall(path=targetBaseDir)
+		else:
+			def filterByDir(members):
+				for member in members:
+					member = copy.copy(member)
+					member.name = member.name.decode("utf-8")
+					if (os.path.normpath(member.name).startswith(subdir)
+							and not os.path.normpath(member.name).endswith("/.git")):
+						if hasattr(os, "geteuid") and os.geteuid() == 0:
+							member.gname = ""
+							member.uname = ""
+							member.gid = 0
+							member.uid = 0
+						yield member
+			tarFile.extractall(members=filterByDir(tarFile), path=targetBaseDir)
+			
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
