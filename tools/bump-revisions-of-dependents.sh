@@ -64,6 +64,8 @@ for file in $FILES; do
 		echo "bumping $file"
 		REVISION=$((REVISION+1))
 		sed -i "s/.*REVISION=.*/REVISION=\"$REVISION\"/" $file
+		# trim trailing space while we're at it
+		sed -i 's/[ \t]*$//' $file
 		BUMPED=$((BUMPED+1))
 	fi
 done
