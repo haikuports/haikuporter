@@ -82,9 +82,9 @@ else
 	echo "Using base directory $BASE_DIR"
 fi
 
-if [ -e "$BASE_DIR" ]
+if [ -e "$BASE_DIR" -a ! -z $(ls -A "$BASE_DIR") ]
 then
-	echo "Base directory \"$BASE_DIR\" already exists"
+	echo "Base directory \"$BASE_DIR\" already exists and is not empty"
 	exit 1
 fi
 
