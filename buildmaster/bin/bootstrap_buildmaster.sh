@@ -198,6 +198,9 @@ echo "Configuring buildmaster environment"
 mkdir buildmaster
 cd buildmaster
 
+mkdir builders
+mkdir package_repository
+
 echo "export HAIKUPORTER=\"$HAIKUPORTER_DIR/haikuporter\"" > config
 echo "export LD_LIBRARY_PATH=\"$TOOLS_DIR\"" >> config
 echo "export REPO_DIR=\"buildmaster/package_repository\"" >> config
