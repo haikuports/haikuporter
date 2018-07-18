@@ -1,0 +1,91 @@
+#!/bin/sh
+
+WORKDIR="haikuports"
+
+if [ ! -d "$WORKDIR" ]
+then
+	echo "buildmaster instance $WORKDIR not found, need to bootstrap?"
+	exit 1
+fi
+
+cd "$WORKDIR"
+
+. buildmaster/config
+
+if [ -z "$HAIKUPORTER" ]
+then
+	echo "buildmaster instance configuration invalid"
+	exit 1
+fi
+
+SUCCESS_WAIT=60
+ERROR_WAIT=60
+COMMANDS_DIR="$(realpath "$(dirname "$HAIKUPORTER")/buildmaster/bin")"
+BUILDMASTER="$COMMANDS_DIR/buildmaster"
+
+export PYTHONUNBUFFERED=1
+
+exec 2>&1
+
+while true
+do
+	echo "$(date) updating tree and pruning packages of removed ports"
+	HEAD_REVISION=$(git rev-parse HEAD)
+	git pull --ff-only
+	if [ $(git rev-parse HEAD) = $HEAD_REVISION ]
+	then
+		echo "$(date) no new revision"
+		sleep $SUCCESS_WAIT
+		continue
+	fi
+
+	CONSISTENCY_REPORT_FILE="$REPO_DIR/repo_consistency.txt"
+	echo "repo consistency report at $(git rev-parse HEAD)" \
+		> "$CONSISTENCY_REPORT_FILE"
+	$HAIKUPORTER --debug --check-repository-consistency \
+		--no-package-obsoletion \
+		--system-packages-directory buildmaster/initial-packages \
+		>> "$CONSISTENCY_REPORT_FILE"
+
+	$HAIKUPORTER --debug --prune-package-repository
+
+	echo "$(date) starting buildmaster update"
+	echo ""
+
+	$BUILDMASTER update
+	RESULT=$?
+
+	echo ""
+	if [ $RESULT -ne 0 -a $RESULT -ne 3 ]
+	then
+		echo "$(date) buildmaster update failed, waiting $ERROR_WAIT"
+		sleep $ERROR_WAIT
+		continue
+	fi
+
+	echo ""
+	echo "$(date) pruning packages and creating repository"
+	$HAIKUPORTER --debug --prune-package-repository \
+		--system-packages-directory buildmaster/initial-packages \
+		--check-package-repository-consistency \
+		--create-package-repository "$REPO_DIR" \
+		> "$REPO_DIR/report.txt" 2>&1
+
+	echo ""
+	if [ $? -ne 0 ]
+	then
+		echo "$(date) create repo failed, waiting $ERROR_WAIT"
+		sleep $ERROR_WAIT
+		continue
+	fi
+
+	if [ ! -z "$REPOSITORY_TRIGGER_URL" ]
+	then
+		echo "$(date) requesting $REPOSITORY_TRIGGER_URL"
+		curl "$REPOSITORY_TRIGGER_URL"
+		echo
+	fi
+
+	echo "$(date) repo created, waiting $SUCCESS_WAIT"
+	sleep $SUCCESS_WAIT
+done

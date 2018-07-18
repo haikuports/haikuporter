@@ -1,0 +1,18 @@
+#!/bin/sh
+
+cd /var/sources
+
+git clone --depth=1 https://github.com/haiku/haiku \
+	&& git -C haiku remote set-url origin https://git.haiku-os.org/haiku \
+	&& git -C haiku fetch --tags
+
+git clone --depth=1 https://github.com/haiku/buildtools \
+	&& git -C buildtools remote set-url origin \
+		https://git.haiku-os.org/buildtools \
+	&& git -C buildtools fetch --tags
+
+git clone --depth=1 https://github.com/haikuports/haikuporter
+
+haikuporter/buildmaster/bin/bootstrap_buildmaster.sh \
+	--buildtools-dir buildtools --haiku-dir haiku \
+	--haikuporter-dir haikuporter --base-dir /var/buildmaster $@
