@@ -78,7 +78,8 @@ def unpackFile(uri, fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir):
 		if os.path.isdir(fetchTarget):
 			shutil.copytree(fetchTarget, sourceDir, symlinks=True)
 		else:
-			os.makedirs(sourceDir)
+			if not os.path.isdir(sourceDir):
+				os.makedirs(sourceDir)
 			shutil.copy(fetchTarget, sourceDir)
 	else:
 		actualSubDir = sourceSubDir
