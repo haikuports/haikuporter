@@ -6,26 +6,33 @@ die() {
 }
 
 usage() {
-		cat <<- EOF
-	Usage: ./generate-crates.io-dependencies.sh [OPTIONS]... [PORT]...
-	
+	cat <<- EOF
+	Usage: ./generate-crates.io-dependencies.sh [options] portname
+
 	Outputs the SOURCE_URI's and CHECKSUM_SHA256's of a Rust package's
 	dependencies from crates.io.
-	
-	Options
-	  -h, --help	show this help message and exit
-	  -d DIR, --directory=DIR
-  			specify the port directory"
-	EOF
-}  
 
+	Options:
+	  -h, --help	show this help message and exit
+	  -psd, --print-source-directories
+	 		Also print SOURCE_DIR's
+	  -d DIR, --directory=DIR
+	 		specify the port directory
+	EOF
+}
+
+psd=2
 args=1
 while (( args > 0 )); do
 	case "$1" in
 		""|-h|--help )
 			usage
 			exit 0
-			;; 
+			;;
+		-psd|--print-source-directories)
+			psd=3
+			shift
+			;;
 		-d)
 			(( $# < 2 )) &&
 				echo "'-d': No directory specified" &&
@@ -50,19 +57,18 @@ while (( args > 0 )); do
 			)
 			portName="$1"
 			#directory=$(haikuporter -o "$1")
-			#portName=${directory##*/}
 			shift
 			;;
 	esac
 	args=$#
 done
 
-
 cd "$directory" || die "Invalid recipe location."
-set "$portName"-*.recipe
+set -- "$portName"*-*.recipe
 eval "recipe=\${$#}"
 
 port=${recipe%.*}
+portName=${port%-*}
 portVersion=${port##*-}
 
 defineDebugInfoPackage() { :; }
@@ -94,12 +100,8 @@ done || die "Checksum verification failed."
 
 tar xf download/"$SOURCE_FILENAME" -C /tmp
 [ -n "$PATCHES" ] && patch -d /tmp/"$SOURCE_DIR" < patches/"$PATCHES"
+[ -f /tmp/"$SOURCE_DIR"/Cargo.lock ] || (cd /tmp/"$SOURCE_DIR" && cargo update)
 cd "$OLDPWD"
-if [ ! -f /tmp/"$SOURCE_DIR"/Cargo.lock ]; then
-	cd /tmp/"$SOURCE_DIR"
-	cargo update
-	cd "$OLDPWD"
-fi
 
 info=$(
 	sed -e '0,/\[metadata\]/d
@@ -130,5 +132,22 @@ checksums_sha256=$(
 		echo CHECKSUM_SHA256_$i=\""$(sed "${j}q;d" <<< "$checksums")"\"
 	done
 )
+source_dirs=$(
+	for i in $numbers; do
+		eval "$source_uris"
+		eval source_uri=\$SOURCE_URI_$i
+		source_filename=$(basename "$source_uri")
+		echo SOURCE_DIR_$i=\""${source_filename%.*}"\"
+	done
+)
 
-paste -d \\n <(echo "$source_uris") <(echo "$checksums_sha256") | sed '0~2 a\\'
+
+merged=$(paste -d \\n <(echo "$source_uris") <(echo "$checksums_sha256"))
+if [ "$psd" = 3 ]; then
+	for i in $numbers; do
+		j=$((i - 1))
+		merged=$(sed "/CHECKSUM_SHA256_$i=\".*\"/a \
+			$(sed "${j}q;d" <<< "$source_dirs")" <<< "$merged")
+	done
+fi
+echo "$merged" | sed '0~'"$psd"' a\\'
