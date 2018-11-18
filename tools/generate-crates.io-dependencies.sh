@@ -1,5 +1,4 @@
 #!/bin/bash
-
 die() {
 	printf %s "${@+$@$'\n'}"
 	exit 1
@@ -14,6 +13,7 @@ usage() {
 
 	Options:
 	  -h, --help	show this help message and exit
+	  -k, --keep	keep the generated temporary directory
 	  -psd, --print-source-directories
 	 		Also print SOURCE_DIR's
 	  -d DIR, --directory=DIR
@@ -28,6 +28,10 @@ while (( args > 0 )); do
 		""|-h|--help )
 			usage
 			exit 0
+			;;
+		-k|--keep)
+			keep=1
+			shift
 			;;
 		-psd|--print-source-directories)
 			psd=3
@@ -98,9 +102,23 @@ for ((i=0; i<3; i++)); do
 			"$( ((i<1)) && echo '-c' )"
 done || die "Checksum verification failed."
 
-tar xf download/"$SOURCE_FILENAME" -C /tmp
-[ -n "$PATCHES" ] && patch -d /tmp/"$SOURCE_DIR" < patches/"$PATCHES"
-[ -f /tmp/"$SOURCE_DIR"/Cargo.lock ] || (cd /tmp/"$SOURCE_DIR" && cargo update)
+tempdir=$(mktemp -d "$port".XXXXXX --tmpdir=/tmp)
+if [ -z "$keep" ]; then
+	trap 'rm -rf $tempdir' 0
+else
+	trap 'echo Kept $tempdir' 0
+fi
+
+for ((i=0; i<3; i++)); do
+	tar --transform "s/$SOURCE_DIR/${tempdir##*/}/" -C /tmp \
+		-xf download/"$SOURCE_FILENAME" \
+		"$SOURCE_DIR"/$( ((i<2)) && echo "Cargo.lock" ) &&
+		((i<2)) && break
+	((i>1)) && {
+		[ -n "$PATCHES" ] && patch -d "$tempdir" -i patches/"$PATCHES"
+		(cd "$tempdir" && cargo update)
+	}
+done
 cd "$OLDPWD"
 
 info=$(
@@ -109,7 +127,7 @@ info=$(
 		s/(.*)//
 		s/ /-/
 		s/ = //
-		s/"//g' /tmp/"$SOURCE_DIR"/Cargo.lock
+		s/"//g' "$tempdir"/Cargo.lock
 )
 crates=$(awk '{ print $1".crate" }' <<< "$info")
 checksums=$(awk '{ print $2 }' <<< "$info")
@@ -117,13 +135,12 @@ numbers=$(seq 2 $(($(wc -l <<< "$info") + 1)))
 
 uris=$(
 	for crate in $crates; do
-		echo "https://static.crates.io/crates/${crate%-*}/${crate}"
+		echo "https://static.crates.io/crates/${crate%-*}/$crate"
 	done
 )
 source_uris=$(
 	for i in $numbers; do
-		j=$((i - 1))
-		echo SOURCE_URI_$i=\""$(sed "${j}q;d" <<< "$uris")"\"
+		echo SOURCE_URI_$i=\""$(sed "$((i-1))q;d" <<< "$uris")"\"
 	done
 )
 checksums_sha256=$(
@@ -133,21 +150,19 @@ checksums_sha256=$(
 	done
 )
 source_dirs=$(
+	eval "$source_uris"
 	for i in $numbers; do
-		eval "$source_uris"
 		eval source_uri=\$SOURCE_URI_$i
-		source_filename=$(basename "$source_uri")
-		echo SOURCE_DIR_$i=\""${source_filename%.*}"\"
+		source_filename=$(basename --suffix=.crate "$source_uri")
+		echo SOURCE_DIR_$i=\""$source_filename"\"
 	done
 )
-
 
 merged=$(paste -d \\n <(echo "$source_uris") <(echo "$checksums_sha256"))
 if [ "$psd" = 3 ]; then
 	for i in $numbers; do
-		j=$((i - 1))
 		merged=$(sed "/CHECKSUM_SHA256_$i=\".*\"/a \
-			$(sed "${j}q;d" <<< "$source_dirs")" <<< "$merged")
+			$(sed "$((i-1))q;d" <<< "$source_dirs")" <<< "$merged")
 	done
 fi
 echo "$merged" | sed '0~'"$psd"' a\\'
