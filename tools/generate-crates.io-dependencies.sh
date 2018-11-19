@@ -104,9 +104,9 @@ done || die "Checksum verification failed."
 
 tempdir=$(mktemp -d "$port".XXXXXX --tmpdir=/tmp)
 if [ -z "$keep" ]; then
-	trap 'rm -rf $tempdir' 0
+	trap 'rm -rf $tempdir' EXIT RETURN
 else
-	trap 'echo Kept $tempdir' 0
+	trap 'echo Kept $tempdir' EXIT RETURN
 fi
 
 for ((i=0; i<3; i++)); do
