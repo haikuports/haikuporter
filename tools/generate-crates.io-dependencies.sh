@@ -69,14 +69,13 @@ while (( args > 0 )); do
 done
 
 cd "$directory" || die "Invalid recipe location."
-tempdir=$(mktemp -d "$port".XXXXXX --tmpdir=/tmp)
-trap 'cd $OLDPWD; keep; trap - EXIT RETURN' EXIT RETURN
+trap 'cd $OLDPWD' EXIT RETURN
 set -- "$portName"*-*.recipe
 eval "recipe=\${$#}"
 
-port=${recipe%.*}
-portName=${port%-*}
-portVersion=${port##*-}
+portVersionedName=${recipe%.*}
+portName=${portVersionedName%-*}
+portVersion=${portVersionedName##*-}
 
 defineDebugInfoPackage() { :; }
 
@@ -93,10 +92,12 @@ case "" in
 		SOURCE_FILENAME=$(basename "$SOURCE_URI")
 		;;
 	$SOURCE_DIR)
-		SOURCE_DIR="$port"
+		SOURCE_DIR="$portVersionedName"
 		;;
 esac
 
+tempdir=$(mktemp -d "$SOURCE_DIR".XXXXXX --tmpdir=/tmp)
+trap 'cd $OLDPWD; keep; trap - EXIT RETURN' EXIT RETURN
 mkdir -p download
 for ((i=0; i<3; i++)); do
 	echo "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" | sha256sum -c \
