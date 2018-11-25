@@ -56,7 +56,8 @@ while (( args > 0 )); do
 		*)
 			. ~/config/settings/haikuports.conf
 			directory=$(
-				find "$TREE_PATH" -iname "$1-*.*.recipe" |
+				find "$TREE_PATH" -mindepth 3 -maxdepth 3 \
+					-iname "$1-*.*.recipe" |
 					awk 'FNR == 1 { gsub("/[^/]*$", "")
 							print }'
 			)
