@@ -1,12 +1,12 @@
 #!/bin/bash
-die() {
-	printf '\e[31m%s\e[0m' "${@+$'Error: '$@$'\n'}"
-	[ "$usage" = 1 ] && usage
-	exit 1
-} 1>&2
 
-usage() {
-	cat <<- EOF
+die() {
+	if [ "$rc" != 0 ]; then
+		printf '%s' "${@+$'\e[31mError: \e[0m'$@$'\n'}" 1>&2
+	else
+		printf '%s' "${@+$@$'\n'}"
+	fi
+	[ "$usage" = 1 ] && eval "cat <<- EOF $([ "$rc" != 0 ] && echo "1>&2")
 	Usage: ./cargo-recipe.sh [options] URI category/port
 
 	Creates a recipe template for a crates.io package, filled with
@@ -21,7 +21,9 @@ usage() {
 	 		specify the command runtime
 	  -b portname, --bump portname
 	 		bump the crates.io dependencies of the specified port
-	EOF
+	EOF"
+	false
+	exit $rc
 }
 
 keep() { rm -rf "$tempdir"; }
@@ -32,8 +34,8 @@ args=1
 while (( args > 0 )); do
 	case "$1" in
 		""|-h|--help)
-			usage
-			exit 0
+			[ -n "$1" ] && rc=0
+			usage=1 die
 			;;
 		-k|--keep)
 			keep() { echo "Kept $tempdir"; }
@@ -119,7 +121,7 @@ while true; do
 	esac
 done
 
-[ "$CHECKSUM_SHA256" = 1 ] ||
+[ "$CHECKSUM_SHA256" != 1 ] &&
 for ((i=0; i<3; i++)); do
 	echo "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" | sha256sum -c \
 		&& break ||
