@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 die() {
 	if [ "$rc" != 0 ]; then
@@ -46,7 +46,7 @@ while (( args > 0 )); do
 			shift
 			;;
 		-c|--cmd=*)
-			[ "$1" = -b ] && shift
+			[ "$1" = -c ] && shift
 			cmd="${1#*=}"
 			shift
 			;;
@@ -113,7 +113,8 @@ while true; do
 			portVersionedName="$portName"
 			;;
 		$SOURCE_DIR)
-			SOURCE_DIR="$portVersionedName"
+			SOURCE_DIR=${portVersionedName//$portName/$(basename \
+				"$directory")}
 			;;
 		*)
 			break
@@ -121,7 +122,7 @@ while true; do
 	esac
 done
 
-[ "$CHECKSUM_SHA256" != 1 ] &&
+[ "$CHECKSUM_SHA256" = 1 ] ||
 for ((i=0; i<3; i++)); do
 	echo "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" | sha256sum -c \
 		&& break ||
