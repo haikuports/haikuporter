@@ -28,7 +28,7 @@ die() {
 
 keep() { rm -rf "$tempdir"; }
 
-. ~/config/settings/haikuports.conf
+. "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 psd=2
 args=1
 while (( args > 0 )); do
