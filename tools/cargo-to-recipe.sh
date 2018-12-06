@@ -17,9 +17,9 @@ die() {
 	  -k, --keep	keep the generated temporary directory
 	  -psd, --print-source-directories
 	 		also print SOURCE_DIR's
-	  -c, --cmd=[CMD]
+	  -c CMD, --cmd=CMD
 	 		specify the command runtime
-	  -b portname, --bump portname
+	  -b port, --bump port
 	 		bump the crates.io dependencies of the specified port
 	EOF"
 	false
@@ -88,6 +88,7 @@ if [ "$bump" = 1 ]; then
 	portVersionedName=${recipe%.*}
 	portVersion=${portVersionedName##*-}
 
+	getPackagePrefix() { :; }
 	defineDebugInfoPackage() { :; }
 
 	eval "$(cat "$recipe")" || die "Sourcing the recipe file failed."
@@ -109,13 +110,6 @@ while true; do
 		$cmd)
 			cmd="$portName"
 			;;
-		$portVersionedName)
-			portVersionedName="$portName"
-			;;
-		$SOURCE_DIR)
-			SOURCE_DIR=${portVersionedName//$portName/$(basename \
-				"$directory")}
-			;;
 		*)
 			break
 			;;
@@ -130,17 +124,12 @@ for ((i=0; i<3; i++)); do
 		"$( ((i<1)) && echo '-c' )"
 done || die "Checksum verification failed."
 
+SOURCE_DIR=$(basename "$(tar --exclude="*/*" -tf download/"$SOURCE_FILENAME")")
 tempdir=$(mktemp -d "$SOURCE_DIR".XXXXXX --tmpdir=/tmp)
 trap 'cd $OLDPWD; keep; trap - RETURN' EXIT RETURN
-for ((i=0; i<3; i++)); do
-	tar --transform "s|$SOURCE_DIR[^/]*|${tempdir##*/}|" -C /tmp \
-		-xf download/"$SOURCE_FILENAME" --wildcards "$( ((i<2)) &&
-			echo "$SOURCE_DIR*/Cargo.*" )" && ((i<2)) && break
-	((i>1)) && {
-		[ -n "$PATCHES" ] && patch -d "$tempdir" -i patches/"$PATCHES"
-		(cd "$tempdir" && cargo update)
-	}
-done || die "Invalid tar archive."
+tar --transform "s|$SOURCE_DIR[^/]*|${tempdir##*/}|" -C /tmp \
+	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR*/Cargo.*" ||
+	die "Invalid tar archive."
 
 info=$(
 	sed -e '0,/\[metadata\]/d
@@ -194,7 +183,7 @@ DESCRIPTION="$(
 )"
 HOMEPAGE="$homepage"
 COPYRIGHT=""
-LICENSE="$(sed 's,/\| OR ,\n\t,; s,-2.0, v2,' <<< "$license")"
+LICENSE="$(sed 's,/\| OR ,\n\t,; s,-\([0-9]\)\.0, v\1,' <<< "$license")"
 REVISION="1"
 SOURCE_URI="$(
 	sed -e "s|$homepage|\$HOMEPAGE|
