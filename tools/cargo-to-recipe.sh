@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 term() (
-	[ -z "$rc" ] && return $?
-	if [ "$rc" != 0 ]; then
-		printf '%s' "${@+$'\e[31mError: \e[0m'$@$'\n'}" 1>&2
+	rc=$?
+	[ -v code ] || return $rc
+	if (( code )); then
+		printf '%s' "${*+$'\e[31mError: \e[0m'$*$'\n'}" 1>&2
 	else
-		printf '%s' "${@+$@$'\n'}"
+		printf '%s' "${*+$*$'\n'}"
 	fi
-	[ "$usage" = 1 ] && eval "cat <<- EOF $([ "$rc" != 0 ] && echo "1>&2")
-	Usage: ./cargo-recipe.sh [options] URI category/port
+	(( usage )) && eval "cat <<- EOF $( (( code )) && printf "1>&2")
+	Usage: "${BASH_SOURCE[0]}" [options] URI category/port
 
 	Creates a recipe template for a crates.io package, filled with
 	information at hand.
@@ -20,18 +21,20 @@ term() (
 	 		also print SOURCE_DIR's
 	  -c CMD, --cmd=CMD
 	 		specify the command runtime
-	  -b port, --bump port
+	  -b PORTNAME, --bump PORTNAME
 	 		bump the crates.io dependencies of the specified port
 	EOF"
 	kill -s TERM $$
 )
 
-unset rc
-trap 'return $rc 2> /dev/null; exit $rc' TERM
+(return 2> /dev/null) && unset usage code bump directory portName \
+	SOURCE_URI SOURCE_FILENAME CHECKSUM_SHA256 cmd \
+	source_uris checksums_sha256 source_dirs merged
+trap 'trap - 15; return $code 2> /dev/null || exit $code' TERM
 shopt -s expand_aliases
-alias die='rc=$?; term'
+alias die='code=$?; term'
 
-keep() { rm -rf "$tempdir"; }
+temp() { rm -rf "$tempdir"; }
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 psd=2
@@ -43,7 +46,7 @@ while (( args > 0 )); do
 			usage=1 die
 			;;
 		-k|--keep)
-			keep() { echo "Kept $tempdir"; }
+			temp() { printf '%s\n' "Kept $tempdir"; }
 			shift
 			;;
 		-psd|--print-source-directories)
@@ -52,12 +55,12 @@ while (( args > 0 )); do
 			;;
 		-c|--cmd=*)
 			[ "$1" = -c ] && shift
-			cmd="${1#*=}"
+			cmd=${1#*=}
 			shift
 			;;
 		-b|--bump)
 			[ "$1" = -b ] && shift
-			portName="${1#*=}"
+			portName=${1#*=}
 			directory=$(
 				find "$TREE_PATH" -mindepth 3 -maxdepth 3 \
 					-iname "$portName-*.*.recipe" |
@@ -68,7 +71,7 @@ while (( args > 0 )); do
 			shift
 			;;
 		*://*)
-			SOURCE_URI="$1"
+			SOURCE_URI=$1
 			shift
 			;;
 		*-*/*)
@@ -78,16 +81,16 @@ while (( args > 0 )); do
 			;;
 		*)
 			false
-			usage=1 die "Invalid category/portname"
+			usage=1 die "Invalid category and/or port"
 	esac
 	args=$#
 done
 
 mkdir -p "$directory"/download
 cd "$directory" || die "Invalid port directory."
-trap 'cd $OLDPWD; trap - RETURN' EXIT RETURN
+trap 'cd $OLDPWD; trap - 0 RETURN' EXIT RETURN
 
-if [ "$bump" = 1 ]; then
+if (( bump )); then
 	set -- "$portName"*-*.recipe
 	eval "recipe=\${$#}"
 
@@ -102,6 +105,10 @@ fi
 
 while true; do
 	case "" in
+		$directory)
+			false
+			usage=1 die "No category and/or port specified"
+			;;
 		$SOURCE_URI)
 			false
 			usage=1 die "SOURCE_URI is not set."
@@ -115,7 +122,7 @@ while true; do
 			CHECKSUM_SHA256=1
 			;;
 		$cmd)
-			cmd="$portName"
+			cmd=$portName
 			;;
 		*)
 			break
@@ -123,19 +130,21 @@ while true; do
 	esac
 done
 
-[ "$CHECKSUM_SHA256" = 1 ] ||
-for ((i=0; i<3; i++)); do
-	echo "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" | sha256sum -c \
-		&& break ||
-	((i<2)) && wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" \
-		"$( ((i<1)) && echo '-c' )"
-done || die "Checksum verification failed."
+if [ "$CHECKSUM_SHA256" != 1 ]; then
+       	for (( i = 0; i < 3; i++ )); do
+		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
+			sha256sum -c && break
+		(( i > 1 )) && continue 0 2> /dev/null
+		wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" \
+			"$( (( i < 1 )) && printf '%s' "-c")"
+	done || die "Checksum verification failed."
+fi
 
 SOURCE_DIR=$(basename "$(tar --exclude="*/*" -tf download/"$SOURCE_FILENAME")")
 tempdir=$(mktemp -d "$SOURCE_DIR".XXXXXX --tmpdir=/tmp)
-trap 'cd $OLDPWD; keep; trap - RETURN' EXIT RETURN
-tar --transform "s|$SOURCE_DIR[^/]*|${tempdir##*/}|" -C /tmp \
-	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR*/Cargo.*" ||
+trap 'cd $OLDPWD; temp; trap - 0 RETURN' EXIT RETURN
+tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
+	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR/Cargo.*" ||
 	die "Invalid tar archive."
 
 info=$(
@@ -150,50 +159,57 @@ mapfile -t crates < <(awk '{ print $1".crate" }' <<< "$info")
 mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
 mapfile -t uris < <(
 	for crate in "${crates[@]}"; do
-		echo "https://static.crates.io/crates/${crate%-*}/$crate"
+		printf '%s\n' \
+			"https://static.crates.io/crates/${crate%-*}/$crate"
 	done
 )
 
-unset source_uris checksums_sha256 source_dirs merged
-for i in $(seq 0 $(($(wc -l <<< "$info") - 1))); do
+for i in $(seq 0 $(( "${#crates[@]}" - 1 ))); do
 	j=$((i + 2))
 	source_uris+=( "SOURCE_URI_$j=\"${uris[i]}\"" )
 	checksums_sha256+=( "CHECKSUM_SHA256_$j=\"${checksums[i]}\"" )
-	[ "$psd" = 3 ] && source_dirs+=("$(
-		source_filename=$(basename --suffix=.crate "${source_uris[i]}")
-		echo SOURCE_DIR_$j=\""$source_filename"\"
+	[ "$psd" -eq 3 ] && source_dirs+=("$(
+		source_dir=$(basename --suffix=.crate\" "${source_uris[i]}")
+		printf '%s\n' "SOURCE_DIR_$j=\"$source_dir\""
 	)")
 	merged+=( ${source_uris[i]} ${checksums_sha256[i]} ${source_dirs[i]} )
 done
 
-if [ "$bump" = 1 ]; then
+if (( bump )); then
 	sed -i \
 		-e '/SOURCE_URI_2/,/ARCHITECTURES/ {/^A/!d}' \
 		-e "/^ARCHITECTURES/i $(printf '%s\n' "${merged[@]}" |
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
-		-e "s/{2\.\.[0-9][0-9]}/{2..$(( $(wc -l <<< "$info") + 1 ))}/" \
+		-e "s/{2\.\.[0-9][0-9]}/{2..$(( "${#crates[@]}" + 1 ))}/" \
 		"$directory"/"$recipe"
 	die
 fi
 
-toml="$tempdir"/Cargo.toml
-eval "$(sed -n '/\[package\]/,/^$/ {/"""\|\[/d; s/ = /=/p}' "$toml")"
+eval "$(
+	sed -n '/\[package\]/,/^$/ {
+		/"""\|\[/d
+		s/ = /=/p
+		s/-\(.*=\)/_\1/
+	}' "$tempdir"/Cargo.toml
+)"
 cat << end-of-file > "$tempdir"/"$portName"-"$version".recipe
 SUMMARY="$(sed 's/\.$//' <<< "$description")"
 DESCRIPTION="$(
-	sed -n "/$(grep -o extended- "$toml")description"' = """/,/"""/ {
-		s/.* """//
+	extended=$(grep -q extended-description "$tempdir"/Cargo.toml &&
+			printf "extended-")
+	sed -n "/${extended}description"' = """/,/"""/ {
+		s/.*"""//
 		/"""/d
 		p
-	}' "$toml"
+	}' "$tempdir"/Cargo.toml
 )"
 HOMEPAGE="$homepage"
 COPYRIGHT=""
-LICENSE="$(sed 's,/\| OR ,\n\t,; s,-\([0-9]\)\.0, v\1,' <<< "$license")"
+LICENSE="$(sed 's,/\| AND \| OR ,\n\t,; s,-\([0-9]\)\.0, v\1,' <<< "$license")"
 REVISION="1"
 SOURCE_URI="$(
-	sed -e "s|$homepage|\$HOMEPAGE|
+	sed -e "$([ -v homepage ] && printf 's|$homepage|\$HOMEPAGE|')
 		s|$version|\$portVersion|" <<< "$SOURCE_URI"
 )"
 CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | cut -d\  -f1)"
@@ -232,7 +248,7 @@ BUILD()
 	export CARGO_HOME=\$sourceDir/../cargo
 	CARGO_VENDOR=\$CARGO_HOME/haiku
 	mkdir -p \$CARGO_VENDOR
-	for i in {2..$(( $(wc -l <<< "$info") + 1 ))}; do
+	for i in {2..$(( "${#crates[@]}" + 1 ))}; do
 		eval temp=\\\$sourceDir\$i
 		eval shasum=\\\$CHECKSUM_SHA256_\$i
 		pkg=\$(basename \$temp/*)
