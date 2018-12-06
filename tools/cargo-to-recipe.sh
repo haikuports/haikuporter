@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-die() {
+term() (
+	[ -z "$rc" ] && return $?
 	if [ "$rc" != 0 ]; then
 		printf '%s' "${@+$'\e[31mError: \e[0m'$@$'\n'}" 1>&2
 	else
@@ -22,9 +23,13 @@ die() {
 	  -b port, --bump port
 	 		bump the crates.io dependencies of the specified port
 	EOF"
-	false
-	exit $rc
-}
+	kill -s TERM $$
+)
+
+unset rc
+trap 'return $rc 2> /dev/null; exit $rc' TERM
+shopt -s expand_aliases
+alias die='rc=$?; term'
 
 keep() { rm -rf "$tempdir"; }
 
@@ -34,7 +39,7 @@ args=1
 while (( args > 0 )); do
 	case "$1" in
 		""|-h|--help)
-			[ -n "$1" ] && rc=0
+			test -n "$1"
 			usage=1 die
 			;;
 		-k|--keep)
@@ -72,6 +77,7 @@ while (( args > 0 )); do
 			shift
 			;;
 		*)
+			false
 			usage=1 die "Invalid category/portname"
 	esac
 	args=$#
@@ -97,6 +103,7 @@ fi
 while true; do
 	case "" in
 		$SOURCE_URI)
+			false
 			usage=1 die "SOURCE_URI is not set."
 			;;
 		$SOURCE_FILENAME)
@@ -166,8 +173,8 @@ if [ "$bump" = 1 ]; then
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
 		-e "s/{2\.\.[0-9][0-9]}/{2..$(( $(wc -l <<< "$info") + 1 ))}/" \
-		"$tempdir"/"$recipe"
-	exit
+		"$directory"/"$recipe"
+	die
 fi
 
 toml="$tempdir"/Cargo.toml
