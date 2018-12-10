@@ -32,7 +32,8 @@ term() (
 	source_uris checksums_sha256 source_dirs merged
 trap 'trap - 15; return $code 2> /dev/null || exit $code' TERM
 shopt -s expand_aliases
-alias die='code=$?; term'
+alias die='code=1; term'
+alias end='code=$?; term'
 
 temp() { rm -rf "$tempdir"; }
 
@@ -43,7 +44,7 @@ while (( args > 0 )); do
 	case "$1" in
 		""|-h|--help)
 			test -n "$1"
-			usage=1 die
+			usage=1 end
 			;;
 		-k|--keep)
 			temp() { printf '%s\n' "Kept $tempdir"; }
@@ -80,7 +81,6 @@ while (( args > 0 )); do
 			shift
 			;;
 		*)
-			false
 			usage=1 die "Invalid category and/or port"
 	esac
 	args=$#
@@ -106,11 +106,9 @@ fi
 while true; do
 	case "" in
 		$directory)
-			false
 			usage=1 die "No category and/or port specified"
 			;;
 		$SOURCE_URI)
-			false
 			usage=1 die "SOURCE_URI is not set."
 			;;
 		$SOURCE_FILENAME)
@@ -134,9 +132,8 @@ if [ "$CHECKSUM_SHA256" != 1 ]; then
        	for (( i = 0; i < 3; i++ )); do
 		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
 			sha256sum -c && break
-		(( i > 1 )) && continue 0 2> /dev/null
-		wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" \
-			"$( (( i < 1 )) && printf '%s' "-c")"
+		(( i < 2 )) && wget -O download/"$SOURCE_FILENAME" \
+			"$( (( i < 1 )) && printf '%s' "-c")" "$SOURCE_URI"
 	done || die "Checksum verification failed."
 fi
 
@@ -159,8 +156,8 @@ mapfile -t crates < <(awk '{ print $1".crate" }' <<< "$info")
 mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
 mapfile -t uris < <(
 	for crate in "${crates[@]}"; do
-		printf '%s\n' \
-			"https://static.crates.io/crates/${crate%-*}/$crate"
+		name=${crate%-*}
+		printf '%s\n' "https://static.crates.io/crates/$namee/$crate"
 	done
 )
 
@@ -183,18 +180,18 @@ if (( bump )); then
 			sed -z 's/\n/\\n/g')" \
 		-e "s/{2\.\.[0-9][0-9]}/{2..$(( "${#crates[@]}" + 1 ))}/" \
 		"$directory"/"$recipe"
-	die
+	end
 fi
 
 eval "$(
 	sed -n '/\[package\]/,/^$/ {
 		/"""\|\[/d
-		s/ = /=/p
 		s/-\(.*=\)/_\1/
+		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
 cat << end-of-file > "$tempdir"/"$portName"-"$version".recipe
-SUMMARY="$(sed 's/\.$//' <<< "$description")"
+SUMMARY="${description%.}"
 DESCRIPTION="$(
 	extended=$(grep -q extended-description "$tempdir"/Cargo.toml &&
 			printf "extended-")
@@ -285,3 +282,14 @@ TEST()
 }
 end-of-file
 mv -i "$tempdir"/"$portName"-"$version".recipe "$directory"
+if [ -v license_file ]; then
+	cat <<- EOF
+	-----------------------------------------------------------------------
+	This port uses a custom license file.
+	It will be installed to the port's license directory; please rename it
+	as appropriate and add it to the recipe.
+	EOF
+	tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
+		-xf download/"$SOURCE_FILENAME" "${license_file/#./$SOURCE_DIR}"
+	install -D -m644 -t licenses "$tempdir"/"$license_file"
+fi
