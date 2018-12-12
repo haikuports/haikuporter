@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-term() (
-	rc=$?
-	[ -v code ] || return $rc
-	if (( code )); then
-		printf '%s' "${*+$'\e[31mError: \e[0m'$*$'\n'}" 1>&2
-	else
-		printf '%s' "${*+$*$'\n'}"
-	fi
-	(( usage )) && eval "cat <<- EOF $( (( code )) && printf "1>&2")
-	Usage: "${BASH_SOURCE[0]}" [options] URI category/port
+die() {
+	printf '%s' "${*+$'\e[31mError: \e[0m'$*$'\n'}"
+	(( usage )) && usage
+	exit 1
+} 1>&2
+
+usage() {
+	cat <<- EOF
+	Usage: $0 [options] URI category/port
 
 	Creates a recipe template for a crates.io package, filled with
 	information at hand.
@@ -23,17 +22,8 @@ term() (
 	 		specify the command runtime
 	  -b PORTNAME, --bump PORTNAME
 	 		bump the crates.io dependencies of the specified port
-	EOF"
-	kill -s TERM $$
-)
-
-(return 2> /dev/null) && unset usage code bump directory portName \
-	SOURCE_URI SOURCE_FILENAME CHECKSUM_SHA256 cmd \
-	source_uris checksums_sha256 source_dirs merged
-trap 'trap - 15; return $code 2> /dev/null || exit $code' TERM
-shopt -s expand_aliases
-alias die='code=1; term'
-alias end='code=$?; term'
+	EOF
+}
 
 temp() { rm -rf "$tempdir"; }
 
@@ -43,8 +33,7 @@ args=1
 while (( args > 0 )); do
 	case "$1" in
 		""|-h|--help)
-			test -n "$1"
-			usage=1 end
+			[ -n "$1" ] && { usage; exit 0; } || usage=1 die
 			;;
 		-k|--keep)
 			temp() { printf '%s\n' "Kept $tempdir"; }
@@ -133,7 +122,7 @@ if [ "$CHECKSUM_SHA256" != 1 ]; then
 		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
 			sha256sum -c && break
 		(( i < 2 )) && wget -O download/"$SOURCE_FILENAME" \
-			"$( (( i < 1 )) && printf '%s' "-c")" "$SOURCE_URI"
+			"$( (( i < 1 )) && printf -- "-c")" "$SOURCE_URI"
 	done || die "Checksum verification failed."
 fi
 
@@ -180,7 +169,7 @@ if (( bump )); then
 			sed -z 's/\n/\\n/g')" \
 		-e "s/{2\.\.[0-9][0-9]}/{2..$(( "${#crates[@]}" + 1 ))}/" \
 		"$directory"/"$recipe"
-	end
+	exit
 fi
 
 eval "$(
