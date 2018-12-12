@@ -17,7 +17,7 @@ usage() {
 	  -h, --help	show this help message and exit
 	  -k, --keep	keep the generated temporary directory
 	  -psd, --print-source-directories
-	 		also print SOURCE_DIR's
+	 		also print SOURCE_DIRs
 	  -c CMD, --cmd=CMD
 	 		specify the command runtime
 	  -b PORTNAME, --bump PORTNAME
@@ -28,29 +28,26 @@ usage() {
 temp() { rm -rf "$tempdir"; }
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
-psd=2
-args=1
-while (( args > 0 )); do
+while (( $# )); do
 	case "$1" in
-		""|-h|--help)
-			[ -n "$1" ] && { usage; exit 0; } || usage=1 die
+		-h|--help)
+			usage
+			exit 0
 			;;
 		-k|--keep)
 			temp() { printf '%s\n' "Kept $tempdir"; }
-			shift
 			;;
 		-psd|--print-source-directories)
 			psd=3
-			shift
 			;;
-		-c|--cmd=*)
-			[ "$1" = -c ] && shift
-			cmd=${1#*=}
+		-c)
 			shift
+			;&
+		--cmd=*)
+			cmd=${1#*=}
 			;;
 		-b|--bump)
-			[ "$1" = -b ] && shift
-			portName=${1#*=}
+			portName=$2
 			directory=$(
 				find "$TREE_PATH" -mindepth 3 -maxdepth 3 \
 					-iname "$portName-*.*.recipe" |
@@ -62,26 +59,31 @@ while (( args > 0 )); do
 			;;
 		*://*)
 			SOURCE_URI=$1
-			shift
 			;;
 		*-*/*)
-			directory="$TREE_PATH"/"$1"
-			portName=$(sed 's/-/_/g' <<< "${1#*/}")
-			shift
+			directory=$TREE_PATH/$1
+			: "${1//-/_}"
+			portName=${_#*/}
+			;;
+		-?*)
+			usage=1 die "Invalid option."
 			;;
 		*)
-			usage=1 die "Invalid category and/or port"
+			usage=1 die "Invalid argument."
+			;;
 	esac
-	args=$#
-done
+	shift
+	false
+done && usage=1 die
 
 mkdir -p "$directory"/download
 cd "$directory" || die "Invalid port directory."
-trap 'cd $OLDPWD; trap - 0 RETURN' EXIT RETURN
 
 if (( bump )); then
-	set -- "$portName"*-*.recipe
-	eval "recipe=\${$#}"
+	eval "recipe=$(
+		ls -v --quoting-style=shell-escape \
+			"$portName"-[0-9]*.[0-9]*.recipe | tail -n 1
+	)"
 
 	portVersionedName=${recipe%.*}
 	portVersion=${portVersionedName##*-}
@@ -89,35 +91,33 @@ if (( bump )); then
 	getPackagePrefix() { :; }
 	defineDebugInfoPackage() { :; }
 
-	eval "$(cat "$recipe")" || die "Sourcing the recipe file failed."
+	. "$recipe" || die "Sourcing the recipe file failed."
 fi
 
-while true; do
-	case "" in
-		$directory)
-			usage=1 die "No category and/or port specified"
-			;;
-		$SOURCE_URI)
-			usage=1 die "SOURCE_URI is not set."
-			;;
-		$SOURCE_FILENAME)
-			SOURCE_FILENAME=$(basename "$SOURCE_URI")
-			;;
-		$CHECKSUM_SHA256)
-			wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" ||
-				die "Invalid URI."
-			CHECKSUM_SHA256=1
-			;;
-		$cmd)
-			cmd=$portName
-			;;
-		*)
-			break
-			;;
-	esac
-done
+case "" in
+	$directory)
+		usage=1 die "No category and/or port specified."
+		;;&
+	$SOURCE_URI)
+		usage=1 die "SOURCE_URI is not set."
+		;;&
+	$SOURCE_FILENAME)
+		SOURCE_FILENAME=$(basename "$SOURCE_URI")
+		;;&
+	$CHECKSUM_SHA256)
+		wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" ||
+			die "Invalid URI."
+		CHECKSUM_SHA256=1
+		;;&
+	$cmd)
+		cmd=$portName
+		;;&
+	$psd)
+		psd=2
+		;;
+esac
 
-if [ "$CHECKSUM_SHA256" != 1 ]; then
+if [[ "$CHECKSUM_SHA256" != 1 ]]; then
        	for (( i = 0; i < 3; i++ )); do
 		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
 			sha256sum -c && break
@@ -127,8 +127,8 @@ if [ "$CHECKSUM_SHA256" != 1 ]; then
 fi
 
 SOURCE_DIR=$(basename "$(tar --exclude="*/*" -tf download/"$SOURCE_FILENAME")")
-tempdir=$(mktemp -d "$SOURCE_DIR".XXXXXX --tmpdir=/tmp)
-trap 'cd $OLDPWD; temp; trap - 0 RETURN' EXIT RETURN
+tempdir=$(mktemp -d -t "$SOURCE_DIR".XXXXXX)
+trap 'temp' 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR/Cargo.*" ||
 	die "Invalid tar archive."
@@ -146,18 +146,17 @@ mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
 mapfile -t uris < <(
 	for crate in "${crates[@]}"; do
 		name=${crate%-*}
-		printf '%s\n' "https://static.crates.io/crates/$namee/$crate"
+		printf '%s\n' "https://static.crates.io/crates/$name/$crate"
 	done
 )
 
-for i in $(seq 0 $(( "${#crates[@]}" - 1 ))); do
-	j=$((i + 2))
+for (( i = 0, j = 2; i < ${#crates[@]}; i++, j++ )); do
 	source_uris+=( "SOURCE_URI_$j=\"${uris[i]}\"" )
 	checksums_sha256+=( "CHECKSUM_SHA256_$j=\"${checksums[i]}\"" )
-	[ "$psd" -eq 3 ] && source_dirs+=("$(
+	(( psd == 3 )) && source_dirs+=( "$(
 		source_dir=$(basename --suffix=.crate\" "${source_uris[i]}")
 		printf '%s\n' "SOURCE_DIR_$j=\"$source_dir\""
-	)")
+	)" )
 	merged+=( ${source_uris[i]} ${checksums_sha256[i]} ${source_dirs[i]} )
 done
 
@@ -179,11 +178,14 @@ eval "$(
 		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
-cat << end-of-file > "$tempdir"/"$portName"-"$version".recipe
+cat << end-of-file > "$tempdir"/"$portName-$version.recipe"
 SUMMARY="${description%.}"
 DESCRIPTION="$(
-	extended=$(grep -q extended-description "$tempdir"/Cargo.toml &&
-			printf "extended-")
+	extended=$(
+		grep -q extended-description "$tempdir"/Cargo.toml &&
+			printf "extended-"
+	)
+
 	sed -n "/${extended}description"' = """/,/"""/ {
 		s/.*"""//
 		/"""/d
@@ -195,10 +197,10 @@ COPYRIGHT=""
 LICENSE="$(sed 's,/\| AND \| OR ,\n\t,; s,-\([0-9]\)\.0, v\1,' <<< "$license")"
 REVISION="1"
 SOURCE_URI="$(
-	sed -e "$([ -v homepage ] && printf 's|$homepage|\$HOMEPAGE|')
-		s|$version|\$portVersion|" <<< "$SOURCE_URI"
+	sed -e "s|$version|\$portVersion|
+		s|$homepage|\$HOMEPAGE|" <<< "$SOURCE_URI"
 )"
-CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | cut -d\  -f1)"
+CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | cut -d " " -f 1)"
 SOURCE_FILENAME="$name-\$portVersion.tar.gz"
 
 $(printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\')
@@ -270,8 +272,9 @@ TEST()
 	cargo test --release
 }
 end-of-file
-mv -i "$tempdir"/"$portName"-"$version".recipe "$directory"
-if [ -v license_file ]; then
+mv -i "$tempdir"/"$portName-$version.recipe" "$directory"
+
+if [[ -v license_file ]]; then
 	cat <<- EOF
 	-----------------------------------------------------------------------
 	This port uses a custom license file.
