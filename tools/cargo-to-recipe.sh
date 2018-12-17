@@ -47,10 +47,10 @@ while (( $# )); do
 			cmd=${1#*=}
 			;;
 		-b|--bump)
-			portName=$2
+			portName=${2,,}
 			directory=$(
 				find "$TREE_PATH" -mindepth 3 -maxdepth 3 \
-					-iname "$portName-*.*.recipe" |
+					-name "$portName-*.*.recipe" |
 					awk 'FNR == 1 { gsub("/[^/]*$", "")
 							print }'
 			)
@@ -82,7 +82,7 @@ cd "$directory" || die "Invalid port directory."
 if (( bump )); then
 	eval "recipe=$(
 		ls -v --quoting-style=shell-escape \
-			"$portName"-[0-9]*.[0-9]*.recipe | tail -n 1
+			"$portName"-[0-9]*.[0-9]*.[0-9]*.recipe | tail -n 1
 	)"
 
 	portVersionedName=${recipe%.*}
@@ -94,6 +94,10 @@ if (( bump )); then
 	. "$recipe" || die "Sourcing the recipe file failed."
 fi
 
+: "${cmd:=$portName}" "${psd:=2}" "${SOURCE_URI%/}"
+SOURCE_FILE=${_##*/}
+: "${SOURCE_FILENAME:=$SOURCE_FILE}"
+
 case "" in
 	$directory)
 		usage=1 die "No category and/or port specified."
@@ -101,19 +105,10 @@ case "" in
 	$SOURCE_URI)
 		usage=1 die "SOURCE_URI is not set."
 		;;&
-	$SOURCE_FILENAME)
-		SOURCE_FILENAME=$(basename "$SOURCE_URI")
-		;;&
 	$CHECKSUM_SHA256)
 		wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" ||
 			die "Invalid URI."
 		CHECKSUM_SHA256=1
-		;;&
-	$cmd)
-		cmd=$portName
-		;;&
-	$psd)
-		psd=2
 		;;
 esac
 
@@ -150,7 +145,7 @@ mapfile -t uris < <(
 	done
 )
 
-for (( i = 0, j = 2; i < ${#crates[@]}; i++, j++ )); do
+for (( i = 0; j = i + 2, i < ${#crates[@]}; i++ )); do
 	source_uris+=( "SOURCE_URI_$j=\"${uris[i]}\"" )
 	checksums_sha256+=( "CHECKSUM_SHA256_$j=\"${checksums[i]}\"" )
 	(( psd == 3 )) && source_dirs+=( "$(
@@ -162,11 +157,11 @@ done
 
 if (( bump )); then
 	sed -i \
-		-e '/SOURCE_URI_2/,/ARCHITECTURES/ {/^A/!d}' \
+		-e '/SOURCE_URI_2/,/ARCHITECTURES/ { /^A/!d }' \
 		-e "/^ARCHITECTURES/i $(printf '%s\n' "${merged[@]}" |
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
-		-e "s/{2\.\.[0-9][0-9]}/{2..$(( "${#crates[@]}" + 1 ))}/" \
+		-e "s/{2\.\.[0-9]*}/{2..$(( "${#crates[@]}" + 1 ))}/" \
 		"$directory"/"$recipe"
 	exit
 fi
@@ -178,7 +173,7 @@ eval "$(
 		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
-cat << end-of-file > "$tempdir"/"$portName-$version.recipe"
+cat << end-of-file > "$tempdir"/"$portName"-"$version".recipe
 SUMMARY="${description%.}"
 DESCRIPTION="$(
 	extended=$(
@@ -194,16 +189,24 @@ DESCRIPTION="$(
 )"
 HOMEPAGE="$homepage"
 COPYRIGHT=""
-LICENSE="$(sed 's,/\| AND \| OR ,\n\t,; s,-\([0-9]\)\.0, v\1,' <<< "$license")"
+LICENSE="$(
+	sed -e 's,/\| AND \| OR ,\n\t,
+		s,-\([0-9]\)\.0, v\1,' <<< "$license"
+)"
 REVISION="1"
 SOURCE_URI="$(
 	sed -e "s|$version|\$portVersion|
 		s|$homepage|\$HOMEPAGE|" <<< "$SOURCE_URI"
 )"
-CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | cut -d " " -f 1)"
-SOURCE_FILENAME="$name-\$portVersion.tar.gz"
-
-$(printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\')
+CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | awk '{ print $1 }')"
+$(
+	suffix=tar.${SOURCE_FILE##*.}
+	if [[ "$SOURCE_FILE" != "$SOURCE_DIR.$suffix" ]]; then
+		printf '%s\n' "SOURCE_FILENAME=\"\$portVersionedName.$suffix\""
+	fi
+	printf '\n'
+	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
+)
 
 ARCHITECTURES="!x86_gcc2 ?x86 x86_64"
 commandBinDir=\$binDir
@@ -272,7 +275,7 @@ TEST()
 	cargo test --release
 }
 end-of-file
-mv -i "$tempdir"/"$portName-$version.recipe" "$directory"
+mv -i "$tempdir"/"$portName"-"$version".recipe "$directory"
 
 if [[ -v license_file ]]; then
 	cat <<- EOF
