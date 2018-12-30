@@ -28,6 +28,7 @@ usage() {
 temp() { rm -rf "$tempdir"; }
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
+(( $# == 0 )) && usage=1 die
 while (( $# )); do
 	case "$1" in
 		-h|--help)
@@ -73,8 +74,7 @@ while (( $# )); do
 			;;
 	esac
 	shift
-	false
-done && usage=1 die
+done
 
 mkdir -p "$directory"/download
 cd "$directory" || die "Invalid port directory."
@@ -95,8 +95,8 @@ if (( bump )); then
 fi
 
 : "${cmd:=$portName}" "${psd:=2}" "${SOURCE_URI%/}"
-SOURCE_FILE=${_##*/}
-: "${SOURCE_FILENAME:=$SOURCE_FILE}"
+source_file=${_##*/}
+: "${SOURCE_FILENAME:=$source_file}"
 
 case "" in
 	$directory)
@@ -121,7 +121,8 @@ if [[ "$CHECKSUM_SHA256" != 1 ]]; then
 	done || die "Checksum verification failed."
 fi
 
-SOURCE_DIR=$(basename "$(tar --exclude="*/*" -tf download/"$SOURCE_FILENAME")")
+: "$(tar --exclude="*/*" -tf download/"$SOURCE_FILENAME")"
+SOURCE_DIR=${_##*/}
 tempdir=$(mktemp -d -t "$SOURCE_DIR".XXXXXX)
 trap 'temp' 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
@@ -138,21 +139,16 @@ info=$(
 )
 mapfile -t crates < <(awk '{ print $1".crate" }' <<< "$info")
 mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
-mapfile -t uris < <(
-	for crate in "${crates[@]}"; do
-		name=${crate%-*}
-		printf '%s\n' "https://static.crates.io/crates/$name/$crate"
-	done
-)
+for crate in "${crates[@]}"; do
+	uris+=("https://static.crates.io/crates/${crate%-*}/$crate")
+	(( psd == 3 )) && dirs+=("${crate%.crate}")
+done
 
 for (( i = 0; j = i + 2, i < ${#crates[@]}; i++ )); do
-	source_uris+=( "SOURCE_URI_$j=\"${uris[i]}\"" )
-	checksums_sha256+=( "CHECKSUM_SHA256_$j=\"${checksums[i]}\"" )
-	(( psd == 3 )) && source_dirs+=( "$(
-		source_dir=$(basename --suffix=.crate\" "${source_uris[i]}")
-		printf '%s\n' "SOURCE_DIR_$j=\"$source_dir\""
-	)" )
-	merged+=( ${source_uris[i]} ${checksums_sha256[i]} ${source_dirs[i]} )
+	source_uris+=("SOURCE_URI_$j=\"${uris[i]}\"")
+	checksums_sha256+=("CHECKSUM_SHA256_$j=\"${checksums[i]}\"")
+	(( psd == 3 )) && source_dirs+=("SOURCE_DIR_$j=\"${dirs[i]}\"")
+	merged+=(${source_uris[i]} ${checksums_sha256[i]} ${source_dirs[i]})
 done
 
 if (( bump )); then
@@ -200,8 +196,8 @@ SOURCE_URI="$(
 )"
 CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | awk '{ print $1 }')"
 $(
-	suffix=tar.${SOURCE_FILE##*.}
-	if [[ "$SOURCE_FILE" != "$SOURCE_DIR.$suffix" ]]; then
+	suffix=tar.${source_file##*.}
+	if [[ "$source_file" != "$SOURCE_DIR.$suffix" ]]; then
 		printf '%s\n' "SOURCE_FILENAME=\"\$portVersionedName.$suffix\""
 	fi
 	printf '\n'
@@ -242,7 +238,8 @@ BUILD()
 	for i in {2..$(( "${#crates[@]}" + 1 ))}; do
 		eval temp=\\\$sourceDir\$i
 		eval shasum=\\\$CHECKSUM_SHA256_\$i
-		pkg=\$(basename \$temp/*)
+		: \$temp/*
+		pkg=\${_##*/}
 		cp -r \$temp/\$pkg \$CARGO_VENDOR
 		cat <<- EOF > \$CARGO_VENDOR/\$pkg/.cargo-checksum.json
 		{
