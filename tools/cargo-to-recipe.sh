@@ -16,12 +16,15 @@ usage() {
 	Options:
 	  -h, --help	show this help message and exit
 	  -k, --keep	keep the generated temporary directory
+	  -nc, --no-clobber
+	 		do not overwrite existing files
 	  -psd, --print-source-directories
 	 		also print SOURCE_DIRs
 	  -c CMD, --cmd=CMD
 	 		specify the command runtime
 	  -b PORTNAME, --bump PORTNAME
 	 		bump the crates.io dependencies of the specified port
+			(overrides --no-clobber)
 	EOF
 }
 
@@ -37,6 +40,9 @@ while (( $# )); do
 			;;
 		-k|--keep)
 			temp() { printf '%s\n' "Kept $tempdir"; }
+			;;
+		-nc|--no-clobber)
+			nc=1
 			;;
 		-psd|--print-source-directories)
 			psd=3
@@ -85,8 +91,8 @@ if (( bump )); then
 			"$portName"-[0-9]*.[0-9]*.[0-9]*.recipe | tail -n 1
 	)"
 
-	portVersionedName=${recipe%.*}
-	portVersion=${portVersionedName##*-}
+	portVersionedName=${recipe%.recipe}
+	portVersion=${portVersionedName#$portName-}
 
 	getPackagePrefix() { :; }
 	defineDebugInfoPackage() { :; }
@@ -103,11 +109,13 @@ case "" in
 		usage=1 die "No category and/or port specified."
 		;;&
 	$SOURCE_URI)
-		usage=1 die "SOURCE_URI is not set."
+		usage=1 die "SOURCE_URI is empty or unset."
 		;;&
 	$CHECKSUM_SHA256)
-		wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" ||
-			die "Invalid URI."
+		if ! [[ "$nc" -ne 0 && -f download/"$SOURCE_FILENAME" ]]; then
+			wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" ||
+				die "Invalid URI."
+		fi
 		CHECKSUM_SHA256=1
 		;;
 esac
@@ -119,15 +127,18 @@ if [[ "$CHECKSUM_SHA256" != 1 ]]; then
 		(( i < 2 )) && wget -O download/"$SOURCE_FILENAME" \
 			"$( (( i < 1 )) && printf -- "-c")" "$SOURCE_URI"
 	done || die "Checksum verification failed."
+else
+	: "$(sha256sum download/"$SOURCE_FILENAME")"
+	CHECKSUM_SHA256=${_::64}
 fi
 
-: "$(tar --exclude="*/*" -tf download/"$SOURCE_FILENAME")"
-SOURCE_DIR=${_##*/}
+: "$(tar --exclude=*/* -tf download/"$SOURCE_FILENAME")"
+SOURCE_DIR=${_%/}
 tempdir=$(mktemp -d -t "$SOURCE_DIR".XXXXXX)
 trap 'temp' 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR/Cargo.*" ||
-	die "Invalid tar archive."
+	die "Source file is not a valid tar archive."
 
 info=$(
 	sed -e '0,/\[metadata\]/d
@@ -169,7 +180,8 @@ eval "$(
 		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
-cat << end-of-file > "$tempdir"/"$portName"-"$version".recipe
+recipe=$portName-$version.recipe
+cat << end-of-file > "$tempdir"/"$recipe"
 SUMMARY="${description%.}"
 DESCRIPTION="$(
 	extended=$(
@@ -194,7 +206,7 @@ SOURCE_URI="$(
 	sed -e "s|$version|\$portVersion|
 		s|$homepage|\$HOMEPAGE|" <<< "$SOURCE_URI"
 )"
-CHECKSUM_SHA256="$(sha256sum download/"$SOURCE_FILENAME" | awk '{ print $1 }')"
+CHECKSUM_SHA256="$CHECKSUM_SHA256"
 $(
 	suffix=tar.${source_file##*.}
 	if [[ "$source_file" != "$SOURCE_DIR.$suffix" ]]; then
@@ -268,11 +280,10 @@ INSTALL()
 
 TEST()
 {
-	export CARGO_HOME=\$sourceDir/../cargo
 	cargo test --release
 }
 end-of-file
-mv -i "$tempdir"/"$portName"-"$version".recipe "$directory"
+mv $( (( nc )) && printf -- "-n") "$tempdir"/"$recipe" "$directory"
 
 if [[ -v license_file ]]; then
 	cat <<- EOF
