@@ -43,6 +43,8 @@ while (( $# )); do
 			;;
 		-nc|--no-clobber)
 			nc=1
+			shopt -s expand_aliases
+			alias mv='mv -n'
 			;;
 		-psd|--print-source-directories)
 			psd=3
@@ -134,6 +136,12 @@ fi
 
 : "$(tar --exclude=*/* -tf download/"$SOURCE_FILENAME")"
 SOURCE_DIR=${_%/}
+suffix=tar.${source_file##*.}
+if [[ "$SOURCE_FILENAME" != "$SOURCE_DIR.$suffix" ]]; then
+	mv "$directory"/download/{"$SOURCE_FILENAME","$SOURCE_DIR.$suffix"}
+	SOURCE_FILENAME=${_##*/}
+fi
+
 tempdir=$(mktemp -d -t "$SOURCE_DIR".XXXXXX)
 trap 'temp' 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
@@ -180,8 +188,7 @@ eval "$(
 		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
-recipe=$portName-$version.recipe
-cat << end-of-file > "$tempdir"/"$recipe"
+cat << end-of-file > "$tempdir/$portName-$version.recipe"
 SUMMARY="${description%.}"
 DESCRIPTION="$(
 	extended=$(
@@ -208,9 +215,9 @@ SOURCE_URI="$(
 )"
 CHECKSUM_SHA256="$CHECKSUM_SHA256"
 $(
-	suffix=tar.${source_file##*.}
-	if [[ "$source_file" != "$SOURCE_DIR.$suffix" ]]; then
-		printf '%s\n' "SOURCE_FILENAME=\"\$portVersionedName.$suffix\""
+	if [[ "$source_file" != "$SOURCE_FILENAME" ]]; then
+		file=$portName-\$portVersion.$suffix
+		printf '%s\n' "SOURCE_FILENAME=\"$file\""
 	fi
 	printf '\n'
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
@@ -283,7 +290,7 @@ TEST()
 	cargo test --release
 }
 end-of-file
-mv $( (( nc )) && printf -- "-n") "$tempdir"/"$recipe" "$directory"
+mv "$tempdir/$portName-$version.recipe" "$directory"
 
 if [[ -v license_file ]]; then
 	cat <<- EOF
