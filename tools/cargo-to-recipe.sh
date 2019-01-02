@@ -223,10 +223,10 @@ $(
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
 )
 
-ARCHITECTURES="!x86_gcc2 ?x86 x86_64"
+ARCHITECTURES="!x86_gcc2 ?x86 ?x86_64"
 commandBinDir=\$binDir
-if [ "\$targetArchitecture" = x86_gcc2 ]; then
-SECONDARY_ARCHITECTURES="x86"
+if [[ "\$targetArchitecture" == x86_gcc2 ]]; then
+SECONDARY_ARCHITECTURES="?x86"
 commandBinDir=\$prefix/bin
 fi
 
@@ -247,30 +247,28 @@ BUILD_PREREQUIRES="
 	"
 
 defineDebugInfoPackage $portName\$secondaryArchSuffix \\
-	\$commandBinDir/$cmd
+	"\$commandBinDir"/$cmd
 
 BUILD()
 {
 	export CARGO_HOME=\$sourceDir/../cargo
-	CARGO_VENDOR=\$CARGO_HOME/haiku
-	mkdir -p \$CARGO_VENDOR
-	for i in {2..$(( "${#crates[@]}" + 1 ))}; do
-		eval temp=\\\$sourceDir\$i
-		eval shasum=\\\$CHECKSUM_SHA256_\$i
-		: \$temp/*
-		pkg=\${_##*/}
-		cp -r \$temp/\$pkg \$CARGO_VENDOR
-		cat <<- EOF > \$CARGO_VENDOR/\$pkg/.cargo-checksum.json
+	vendor=$CARGO_HOME/haiku
+	mkdir -p "\$vendor"
+	for i in {2..$(( ${#crates[@]} + 1 ))}; do
+		eval "sha256sum=\\\$CHECKSUM_SHA256_\$i"
+		: sourceDir\$i
+		cp -r -t "\$vendor" "\${!_}"/*
+		cat <<- EOF > "\$vendor/\${_##*/}/.cargo-checksum.json"
 		{
-			"package": "\$shasum",
+			"package": "\$sha256sum",
 			"files": {}
 		}
 		EOF
 	done
 
-	cat <<- EOF > \$CARGO_HOME/config
+	cat <<- EOF > "\$CARGO_HOME"/config
 	[source.haiku]
-	directory = "\$CARGO_VENDOR"
+	directory = "\$vendor"
 
 	[source.crates-io]
 	replace-with = "haiku"
@@ -281,8 +279,8 @@ BUILD()
 
 INSTALL()
 {
-	install -D -m755 -t \$commandBinDir target/release/$cmd
-	install -D -m644 -t \$docDir README.md
+	install -D -m755 -t "\$commandBinDir" target/release/$cmd
+	install -D -m644 -t "\$docDir" README.md
 }
 
 TEST()
