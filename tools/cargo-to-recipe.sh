@@ -45,6 +45,7 @@ while (( $# )); do
 			nc=1
 			shopt -s expand_aliases
 			alias mv='mv -n'
+			alias cp='cp -n'
 			;;
 		-psd|--print-source-directories)
 			psd=3
@@ -136,9 +137,8 @@ fi
 
 : "$(tar --exclude=*/* -tf download/"$SOURCE_FILENAME")"
 SOURCE_DIR=${_%/}
-suffix=tar.${source_file##*.}
-if [[ "$SOURCE_FILENAME" != "$SOURCE_DIR.$suffix" ]]; then
-	mv "$directory"/download/{"$SOURCE_FILENAME","$SOURCE_DIR.$suffix"}
+if test "$SOURCE_FILENAME" != "$SOURCE_DIR.tar.${source_file##*.}"; then
+	mv download/{"$SOURCE_FILENAME","$_"}
 	SOURCE_FILENAME=${_##*/}
 fi
 
@@ -177,7 +177,7 @@ if (( bump )); then
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
 		-e "s/{2\.\.[0-9]*}/{2..$(( "${#crates[@]}" + 1 ))}/" \
-		"$directory"/"$recipe"
+		"$recipe"
 	exit
 fi
 
@@ -216,8 +216,8 @@ SOURCE_URI="$(
 CHECKSUM_SHA256="$CHECKSUM_SHA256"
 $(
 	if [[ "$source_file" != "$SOURCE_FILENAME" ]]; then
-		file=$portName-\$portVersion.$suffix
-		printf '%s\n' "SOURCE_FILENAME=\"$file\""
+		: "$(sed "s/$version/\$portVersion/" <<< "$SOURCE_FILENAME")"
+		printf '%s\n' "SOURCE_FILENAME=\"$_\""
 	fi
 	printf '\n'
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
@@ -288,7 +288,7 @@ TEST()
 	cargo test --release
 }
 end-of-file
-mv "$tempdir/$portName-$version.recipe" "$directory"
+cp "$tempdir/$portName-$version.recipe" .
 
 if [[ -v license_file ]]; then
 	cat <<- EOF
