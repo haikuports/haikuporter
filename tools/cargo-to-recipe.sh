@@ -30,6 +30,10 @@ usage() {
 
 temp() { rm -rf "$tempdir"; }
 
+for command in cat cp find install ls mkdir mv sed sha256sum tail tar wget; do
+	hash "$command" 2> /dev/null || die "$command not found."
+done
+
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 (( $# == 0 )) && usage=1 die
 while (( $# )); do
@@ -299,5 +303,5 @@ if [[ -v license_file ]]; then
 	EOF
 	tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 		-xf download/"$SOURCE_FILENAME" "${license_file/#./$SOURCE_DIR}"
-	install -D -m644 -t licenses "$tempdir"/"$license_file"
+	install -D -m 644 "$tempdir"/"$license_file" licenses
 fi
