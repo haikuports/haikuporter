@@ -31,27 +31,27 @@ usage() {
 temp() { rm -rf "$tempdir"; }
 
 for command in cat cp find install ls mkdir mv sed sha256sum tail tar wget; do
-	hash "$command" 2> /dev/null || die "$command not found."
+	hash "$command" 2> /dev/null || die "Command $command not found."
 done
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 (( $# == 0 )) && usage=1 die
 while (( $# )); do
 	case "$1" in
-		-h|--help)
+		-h | --help)
 			usage
 			exit 0
 			;;
-		-k|--keep)
+		-k | --keep)
 			temp() { printf '%s\n' "Kept $tempdir"; }
 			;;
-		-nc|--no-clobber)
+		-nc | --no-clobber)
 			nc=1
 			shopt -s expand_aliases
 			alias mv='mv -n'
 			alias cp='cp -n'
 			;;
-		-psd|--print-source-directories)
+		-psd | --print-source-directories)
 			psd=3
 			;;
 		-c)
@@ -60,7 +60,7 @@ while (( $# )); do
 		--cmd=*)
 			cmd=${1#*=}
 			;;
-		-b|--bump)
+		-b | --bump)
 			portName=${2,,}
 			directory=$(
 				find "$TREE_PATH" -mindepth 3 -maxdepth 3 \
@@ -128,7 +128,7 @@ case "" in
 esac
 
 if [[ "$CHECKSUM_SHA256" != 1 ]]; then
-       	for (( i = 0; i < 3; i++ )); do
+	for (( i = 0; i < 3; i++ )); do
 		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
 			sha256sum -c && break
 		(( i < 2 )) && wget -O download/"$SOURCE_FILENAME" \
@@ -192,7 +192,7 @@ eval "$(
 		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
-cat << end-of-file > "$tempdir/$portName-$version.recipe"
+cat << EOF > "$tempdir/$portName-$version.recipe"
 SUMMARY="${description%.}"
 DESCRIPTION="$(
 	extended=$(
@@ -214,14 +214,15 @@ LICENSE="$(
 )"
 REVISION="1"
 SOURCE_URI="$(
-	sed -e "s|$version|\$portVersion|
-		s|$homepage|\$HOMEPAGE|" <<< "$SOURCE_URI"
+	: "${SOURCE_URI//$portName-$version/\$portVersionedName}"
+	: "${_//$version/\$portVersion}"
+	printf '%s\n' "${_/$homepage/\$HOMEPAGE}"
 )"
 CHECKSUM_SHA256="$CHECKSUM_SHA256"
 $(
 	if [[ "$source_file" != "$SOURCE_FILENAME" ]]; then
-		: "$(sed "s/$version/\$portVersion/" <<< "$SOURCE_FILENAME")"
-		printf '%s\n' "SOURCE_FILENAME=\"$_\""
+		: "${SOURCE_FILENAME/$portName-$version/\$portVersionedName}"
+		printf '%s\n' "SOURCE_FILENAME=\"${_/$version/\$portVersion}\""
 	fi
 	printf '\n'
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
@@ -256,16 +257,16 @@ defineDebugInfoPackage $portName\$secondaryArchSuffix \\
 BUILD()
 {
 	export CARGO_HOME=\$sourceDir/../cargo
-	vendor=$CARGO_HOME/haiku
+	vendor=\$CARGO_HOME/haiku
 	mkdir -p "\$vendor"
 	for i in {2..$(( ${#crates[@]} + 1 ))}; do
 		eval "sha256sum=\\\$CHECKSUM_SHA256_\$i"
 		: sourceDir\$i
-		cp -r -t "\$vendor" "\${!_}"/*
+		cp -r -t "\$vendor" "\${!_}"$( (( psd == 2 )) && printf "/*")
 		cat <<- EOF > "\$vendor/\${_##*/}/.cargo-checksum.json"
 		{
-			"package": "\$sha256sum",
-			"files": {}
+		  "package": "\$sha256sum"
+		  "files": {}
 		}
 		EOF
 	done
@@ -283,15 +284,15 @@ BUILD()
 
 INSTALL()
 {
-	install -D -m755 -t "\$commandBinDir" target/release/$cmd
-	install -D -m644 -t "\$docDir" README.md
+	install -D -m 755 target/release/$cmd "\$commandBinDir"
+	install -D -m 644 README.md "\$docDir"
 }
 
 TEST()
 {
 	cargo test --release
 }
-end-of-file
+EOF
 cp "$tempdir/$portName-$version.recipe" .
 
 if [[ -v license_file ]]; then
