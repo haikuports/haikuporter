@@ -30,9 +30,21 @@ usage() {
 
 temp() { rm -rf "$tempdir"; }
 
-for command in cat cp find install ls mkdir mv sed sha256sum tail tar wget; do
-	hash "$command" 2> /dev/null || die "Command $command not found."
-done
+missing=$(
+	hash cat cp find install ls mkdir mv sed sha256sum tail tar wget 2>&1 |
+		awk '{
+			gsub(/:/, "")
+			print $5
+		}'
+)
+case "$missing" in
+	*$'\n'*)
+		die "The following commands were not found:"$'\n'"$missing"
+		;;
+	?*)
+		die "Command "$missing" not found."
+		;;
+esac
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 (( $# == 0 )) && usage=1 die
