@@ -8,11 +8,11 @@ die() {
 
 usage() {
 	cat <<- EOF
-	Usage: $0 [options] uri://to/source-tar-archive category/port
+	Usage: $0 [options] [uri://to/source-tarball] category/port
 
 	Creates a recipe template for a crates.io package, filled with
-	information at hand. Requires awk, coreutils, sed, tar (and the
-	appropriate decompression tool if compressed), and wget.
+	information at hand. Requires awk, coreutils, sed, tar (with the
+	appropriate decompression utility), and wget.
 
 	Options:
 	  -h, --help	show this help message and exit
@@ -21,11 +21,11 @@ usage() {
 	 		do not overwrite existing files
 	  -psd, --print-source-directories
 	 		also print SOURCE_DIRs
+	  -b, --bump
+	 		bump the crates.io dependencies of the port's highest
+	 		versioned recipe instead (overrides --no-clobber)
 	  -c CMD, --cmd=CMD
 	 		specify the command runtime
-	  -b PORTNAME, --bump PORTNAME
-	 		bump the crates.io dependencies of the specified port
-	 		(overrides --no-clobber)
 	EOF
 }
 
@@ -51,22 +51,14 @@ while (( $# )); do
 		-psd | --print-source-directories)
 			psd=3
 			;;
+		-b | --bump)
+			bump=1
+			;;
 		-c)
 			shift
 			;&
 		--cmd=*)
 			cmd=${1#*=}
-			;;
-		-b | --bump)
-			portName=${2,,}
-			directory=$(
-				find "$TREE_PATH" -mindepth 3 -maxdepth 3 \
-					-name "$portName-*.*.recipe" |
-					awk 'FNR == 1 { gsub("/[^/]*$", "")
-							print }'
-			)
-			bump=1
-			shift
 			;;
 		*://*)
 			SOURCE_URI=$1
@@ -98,8 +90,8 @@ if (( bump )); then
 	portVersionedName=${recipe%.recipe}
 	portVersion=${portVersionedName#$portName-}
 
-	getPackagePrefix() { :; }
 	defineDebugInfoPackage() { :; }
+	getPackagePrefix() { :; }
 
 	. "$recipe" || die "Sourcing the recipe file failed."
 fi
@@ -147,7 +139,7 @@ tempdir=$(mktemp -d -t "$SOURCE_DIR".XXXXXX)
 trap 'temp' 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR/Cargo.*" ||
-	die "Source file is not a valid tar archive."
+	die "Failed to extract the necessary files."
 
 info=$(
 	sed -e '0,/\[metadata\]/d
@@ -177,7 +169,7 @@ if (( bump )); then
 		-e "/^ARCHITECTURES/i $(printf '%s\n' "${merged[@]}" |
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
-		-e "s/{2\.\.[0-9]*}/{2..$(( "${#crates[@]}" + 1 ))}/" \
+		-e "s/{2\.\.[0-9]\+}/{2..$(( "${#crates[@]}" + 1 ))}/" \
 		"$recipe"
 	exit
 fi
@@ -281,8 +273,9 @@ BUILD()
 
 INSTALL()
 {
-	install -D -m 755 target/release/$cmd "\$commandBinDir"
-	install -D -m 644 README.md "\$docDir"
+	install -d "\$commandBinDir" "\$docDir"
+	install -m 755 target/release/$cmd "\$commandBinDir"
+	install -m 644 README.md "\$docDir"
 }
 
 TEST()
@@ -301,5 +294,6 @@ if [[ -v license_file ]]; then
 	EOF
 	tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 		-xf download/"$SOURCE_FILENAME" "${license_file/#./$SOURCE_DIR}"
-	install -D -m 644 "$tempdir"/"$license_file" licenses
+	mkdir -p licenses
+	cp "$tempdir"/"$license_file" licenses
 fi
