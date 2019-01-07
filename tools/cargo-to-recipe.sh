@@ -8,10 +8,11 @@ die() {
 
 usage() {
 	cat <<- EOF
-	Usage: $0 [options] URI category/port
+	Usage: $0 [options] uri://to/source-tar-archive category/port
 
 	Creates a recipe template for a crates.io package, filled with
-	information at hand.
+	information at hand. Requires awk, coreutils, sed, tar (and the
+	appropriate decompression tool if compressed), and wget.
 
 	Options:
 	  -h, --help	show this help message and exit
@@ -24,27 +25,11 @@ usage() {
 	 		specify the command runtime
 	  -b PORTNAME, --bump PORTNAME
 	 		bump the crates.io dependencies of the specified port
-			(overrides --no-clobber)
+	 		(overrides --no-clobber)
 	EOF
 }
 
 temp() { rm -rf "$tempdir"; }
-
-missing=$(
-	hash cat cp find install ls mkdir mv sed sha256sum tail tar wget 2>&1 |
-		awk '{
-			gsub(/:/, "")
-			print $5
-		}'
-)
-case "$missing" in
-	*$'\n'*)
-		die "The following commands were not found:"$'\n'"$missing"
-		;;
-	?*)
-		die "Command "$missing" not found."
-		;;
-esac
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 (( $# == 0 )) && usage=1 die
