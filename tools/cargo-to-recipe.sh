@@ -34,7 +34,7 @@ temp() { rm -rf "$tempdir"; }
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
 (( $# == 0 )) && usage=1 die
 while (( $# )); do
-	case "$1" in
+	case $1 in
 		-h | --help)
 			usage
 			exit 0
@@ -108,15 +108,15 @@ case "" in
 		usage=1 die "SOURCE_URI is empty or unset."
 		;;&
 	$CHECKSUM_SHA256)
-		if ! [[ "$nc" -ne 0 && -f download/"$SOURCE_FILENAME" ]]; then
+		if [[ nc -eq 0 || ! -e download/$SOURCE_FILENAME ]]; then
 			wget -O download/"$SOURCE_FILENAME" "$SOURCE_URI" ||
-				die "Invalid URI."
+				die "Failed to download the source file."
 		fi
 		CHECKSUM_SHA256=1
 		;;
 esac
 
-if [[ "$CHECKSUM_SHA256" != 1 ]]; then
+if [[ $CHECKSUM_SHA256 != 1 ]]; then
 	for (( i = 0; i < 3; i++ )); do
 		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
 			sha256sum -c && break
@@ -190,8 +190,9 @@ DESCRIPTION="$(
 	)
 
 	sed -n "/${extended}description"' = """/,/"""/ {
-		s/.*"""//
-		/"""/d
+		s/.*description = //
+		s/"""//g
+		/^$/d
 		p
 	}' "$tempdir"/Cargo.toml
 )"
@@ -203,15 +204,14 @@ LICENSE="$(
 )"
 REVISION="1"
 SOURCE_URI="$(
-	: "${SOURCE_URI//$portName-$version/\$portVersionedName}"
-	: "${_//$version/\$portVersion}"
+	: "${SOURCE_URI//$version/\$portVersion}"
 	printf '%s\n' "${_/$homepage/\$HOMEPAGE}"
 )"
 CHECKSUM_SHA256="$CHECKSUM_SHA256"
 $(
-	if [[ "$source_file" != "$SOURCE_FILENAME" ]]; then
-		: "${SOURCE_FILENAME/$portName-$version/\$portVersionedName}"
-		printf '%s\n' "SOURCE_FILENAME=\"${_/$version/\$portVersion}\""
+	if [[ $source_file != "$SOURCE_FILENAME" ]]; then
+		: "${SOURCE_FILENAME/$version/\$portVersion}"
+		printf '%s\n' "SOURCE_FILENAME=\"$_\""
 	fi
 	printf '\n'
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
@@ -219,7 +219,7 @@ $(
 
 ARCHITECTURES="!x86_gcc2 ?x86 ?x86_64"
 commandBinDir=\$binDir
-if [[ "\$targetArchitecture" == x86_gcc2 ]]; then
+if [[ \$targetArchitecture = x86_gcc2 ]]; then
 SECONDARY_ARCHITECTURES="?x86"
 commandBinDir=\$prefix/bin
 fi
@@ -246,15 +246,16 @@ defineDebugInfoPackage $portName\$secondaryArchSuffix \\
 BUILD()
 {
 	export CARGO_HOME=\$sourceDir/../cargo
-	vendor=\$CARGO_HOME/haiku
-	mkdir -p "\$vendor"
+	mkdir -p "\$CARGO_HOME/haiku"
 	for i in {2..$(( ${#crates[@]} + 1 ))}; do
-		eval "sha256sum=\\\$CHECKSUM_SHA256_\$i"
+		declare -n sha256sum=CHECKSUM_SHA256_$i
 		: sourceDir\$i
-		cp -r -t "\$vendor" "\${!_}"$( (( psd == 2 )) && printf "/*")
-		cat <<- EOF > "\$vendor/\${_##*/}/.cargo-checksum.json"
+		ln -f -s -t "\$CARGO_HOME/haiku" "\${!_}"$(
+			(( psd == 2 )) && printf "/*"
+		)
+		cat <<- EOF > "\$_/.cargo-checksum.json"
 		{
-		  "package": "\$sha256sum"
+		  "package": "\$sha256sum",
 		  "files": {}
 		}
 		EOF
@@ -262,7 +263,7 @@ BUILD()
 
 	cat <<- EOF > "\$CARGO_HOME"/config
 	[source.haiku]
-	directory = "\$vendor"
+	directory = "\$CARGO_HOME/haiku"
 
 	[source.crates-io]
 	replace-with = "haiku"
@@ -273,7 +274,7 @@ BUILD()
 
 INSTALL()
 {
-	install -d "\$commandBinDir" "\$docDir"
+	install -m 755 -d "\$commandBinDir" "\$docDir"
 	install -m 755 target/release/$cmd "\$commandBinDir"
 	install -m 644 README.md "\$docDir"
 }
