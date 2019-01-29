@@ -61,7 +61,7 @@ fi
 
 cd "$GENERATED_DIR"
 
-CLEAN_DIRS="download objects/haiku/*/packaging/packages"
+CLEAN_DIRS="objects/haiku/*/packaging/packages"
 for DIR in $CLEAN_DIRS
 do
 	if [ -e "$DIR" ]
