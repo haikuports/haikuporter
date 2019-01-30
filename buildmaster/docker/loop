@@ -49,10 +49,18 @@ do
 
 	$HAIKUPORTER --debug --prune-package-repository
 
-	echo "$(date) starting buildmaster update"
-	echo ""
-
-	$BUILDMASTER update
+	if [ -f buildmaster/do-everything ]; then
+		echo "$(date) buildmaster everything requested, starting"
+		echo ""
+		
+		rm buildmaster/do-everything
+		$BUILDMASTER everything
+	else
+		echo "$(date) starting buildmaster update"
+		echo ""
+		
+		$BUILDMASTER update
+	fi
 	RESULT=$?
 
 	echo ""
