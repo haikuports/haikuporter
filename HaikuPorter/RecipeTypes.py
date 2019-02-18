@@ -74,7 +74,7 @@ class MachineArchitecture(str):
 			return MachineArchitecture.PPC
 
 		# map "sparc64" to "sparc"
-		if architecture == 'powerpc64':
+		if architecture == 'sparc64':
 			return MachineArchitecture.SPARC
 
 		return None
