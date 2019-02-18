@@ -20,14 +20,11 @@ PROVIDES="
 	generic_font = $portVersion
 	"
 REQUIRES="
-	:
 	"
 
 BUILD_REQUIRES="
-	:
 	"
 BUILD_PREREQUIRES="
-	:
 	"
 
 BUILD()
@@ -39,7 +36,7 @@ INSTALL()
 {
 	FONTDIR=$fontsDir/ttfonts
 	install -d ${FONTDIR}
-	install -t generic-font1.ttf ${FONTDIR}
-	install -t generic-font2.ttf ${FONTDIR}
-	install -t generic-font-bold.ttf ${FONTDIR}
+	install -t ${FONTDIR} generic-font1.ttf
+	install -t ${FONTDIR} generic-font2.ttf
+	install -t ${FONTDIR} generic-font-bold.ttf
 }
