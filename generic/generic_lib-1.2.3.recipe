@@ -3,8 +3,8 @@ DESCRIPTION="Long ProjectX description.
 Spanning several paragraphs, maybe
  - containing
  - bullet points etc.
-You can also have really long lines that do not fit in 80 characters and use \
-a forward-slash to wrap the line."
+You can also have really long lines that do not fit in 100 characters and use a backslash to \
+wrap the line."
 HOMEPAGE="https://homepage/of/projectx.org"
 COPYRIGHT="2014 Developer name
 	2016 Another developer's name"
@@ -17,7 +17,7 @@ SOURCE_DIR="$portVersionedName"
 PATCHES="projectx-$portVersion.patchset"
 ADDITIONAL_FILES="projectx.rdef"
 
-ARCHITECTURES="?x86_gcc2 ?x86 ?x86_64"
+ARCHITECTURES="?all ?x86_gcc2"
 SECONDARY_ARCHITECTURES="?x86"
 
 libVersion="$portVersion"
@@ -26,6 +26,7 @@ libVersionCompat="$libVersion compat >= ${libVersion%%.*}"
 PROVIDES="
 	projectx$secondaryArchSuffix = $portVersion
 	lib:libprojectx$secondaryArchSuffix = $libVersionCompat
+	lib:libprojectx_1$secondaryArchSuffix = $libVersionCompat
 	"
 REQUIRES="
 	haiku$secondaryArchSuffix
@@ -34,6 +35,7 @@ REQUIRES="
 PROVIDES_devel="
 	projectx${secondaryArchSuffix}_devel = $portVersion
 	devel:libprojectx$secondaryArchSuffix = $libVersionCompat
+	devel:libprojectx_1$secondaryArchSuffix = $libVersionCompat
 	"
 REQUIRES_devel="
 	projectx$secondaryArchSuffix == $portVersion base
@@ -43,12 +45,13 @@ BUILD_REQUIRES="
 	haiku${secondaryArchSuffix}_devel
 	"
 BUILD_PREREQUIRES="
-	cmd:make
 	cmd:gcc$secondaryArchSuffix
+	cmd:make
 	"
 
 defineDebugInfoPackage projectx$secondaryArchSuffix \
-	"$libDir"/libprojectx.so.$libVersion
+	"$libDir"/libprojectx.so.$libVersion \
+	"$libDir"/libprojectx_1.so.$libVersion
 
 BUILD()
 {
@@ -60,8 +63,12 @@ INSTALL()
 {
 	make install
 
+	# Use prepareInstalledDevelLib if only one library is involved
 	prepareInstalledDevelLibs \
-		libprojectx
+		libprojectx \
+		libprojectx_1
+	fixPkgconfig
+
 	packageEntries devel \
 		"$developDir"
 }

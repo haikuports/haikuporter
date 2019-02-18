@@ -3,8 +3,8 @@ DESCRIPTION="Long ProjectX description.
 Spanning several paragraphs, maybe
  - containing
  - bullet points etc.
-You can also have really long lines that do not fit in 80 characters and use \
-a backslash to wrap the line."
+You can also have really long lines that do not fit in 100 characters and use a backslash to \
+wrap the line."
 HOMEPAGE="https://homepage/of/projectx.org"
 COPYRIGHT="2014 Developer name
 	2016 Another developer's name"
@@ -15,9 +15,8 @@ SOURCE_URI="https://github.com/HaikuArchives/ProjectX/archive/projectx-$portVers
 CHECKSUM_SHA256="000000000000000000000000000000000"
 SOURCE_DIR="$portVersionedName"
 PATCHES="projectx-$portVersion.patchset"
-ADDITIONAL_FILES="projectx.rdef"
 
-ARCHITECTURES="?x86_gcc2 ?x86 ?x86_64"
+ARCHITECTURES="?all !x86_gcc2"
 SECONDARY_ARCHITECTURES="?x86"
 
 # On x86_gcc2 we don't want to install the commands in bin/<arch>/, but in bin/.
@@ -28,34 +27,34 @@ if [ "$targetArchitecture" = x86_gcc2 ]; then
 	commandBinDir=$prefix/bin
 fi
 
-PROVIDES="
-	projectx = $portVersion
-	cmd:projectx$commandSuffix = $portVersion
-	"
-REQUIRES="
-	haiku
-	"
-
-BUILD_REQUIRES="
-	haiku_devel
-	"
-BUILD_PREREQUIRES="
-	cmd:make
-	cmd:gcc
-	"
-
 GLOBAL_WRITABLE_FILES="
 	settings/projectx.conf keep-old
 	"
 
+PROVIDES="
+	projectx$secondaryArchSuffix = $portVersion
+	cmd:projectx$commandSuffix = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	"
+BUILD_PREREQUIRES="
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	"
+
 defineDebugInfoPackage projectx \
-	"$commandBinDir"/projectx
+	$commandBinDir/projectx
 
 BUILD()
 {
 	runConfigure --omit-dirs "binDir sbinDir" ./configure \
-		--bindir="$commandBinDir" \
-		--sbindir="$commandBinDir"
+		--bindir=$commandBinDir \
+		--sbindir=$commandBinDir
 	make $jobArgs
 }
 

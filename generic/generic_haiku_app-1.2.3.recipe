@@ -3,8 +3,8 @@ DESCRIPTION="Long ProjectX description.
 Spanning several paragraphs, maybe
  - containing
  - bullet points etc.
-You can also have really long lines that do not fit in 80 characters and use \
-a backslash to wrap the line."
+You can also have really long lines that do not fit in 100 characters and use a backslash to \
+wrap the line."
 HOMEPAGE="https://homepage/of/projectx.org"
 COPYRIGHT="2014 Developer name
 	2016 Another developer's name"
@@ -17,7 +17,11 @@ SOURCE_DIR="$portVersionedName"
 PATCHES="projectx-$portVersion.patchset"
 ADDITIONAL_FILES="projectx.rdef"
 
-ARCHITECTURES="?x86_gcc2 ?x86 ?x86_64"
+ARCHITECTURES="?all"
+
+GLOBAL_WRITABLE_FILES="
+	settings/projectx.rc keep-old # If there is any
+	"
 
 PROVIDES="
 	projectx = $portVersion
@@ -32,16 +36,12 @@ BUILD_REQUIRES="
 	"
 BUILD_PREREQUIRES="
 	makefile_engine
-	cmd:make
 	cmd:gcc
+	cmd:make
 	"
 
 defineDebugInfoPackage projectx \
-	"$appsDir"/ProjectX
-
-GLOBAL_WRITABLE_FILES="
-	settings/projectx.rc keep-old # If there is any
-	"
+	$appsDir/ProjectX
 
 BUILD()
 {
@@ -50,14 +50,14 @@ BUILD()
 
 INSTALL()
 {
-	install -d "$appsDir"
-	install -t "$appsDir" objects/ProjectX
+	install -d $appsDir
+	install -t $appsDir objects/ProjectX
 
 	# Create the extra attributes
 	local APP_SIGNATURE="application/x-vnd.ProjectX"
 	local MAJOR="`echo "$portVersion" | cut -d. -f1`"
 	local MIDDLE="`echo "$portVersion" | cut -d. -f2`"
-#	local MINOR="`echo "$portVersion" | cut -d. -f3`"
+	local MINOR="`echo "$portVersion" | cut -d. -f3`"
 	local MINOR="0"
 	local LONG_INFO="$SUMMARY"
 
@@ -71,16 +71,11 @@ INSTALL()
 		$portDir/additional-files/projectx.rdef.in > projectx.rdef
 
 	# Add the resources to the application
-	addResourcesToBinaries projectx.rdef "$appsDir"/ProjectX
+	addResourcesToBinaries projectx.rdef $appsDir/ProjectX
 
 	# Set the acceptable mimetypes
-	mimeset -f "$appsDir"/ProjectX
+	mimeset -f $appsDir/ProjectX
 
 	# Create a Deskbar icon
-	addAppDeskbarSymlink "$appsDir"/ProjectX
-}
-
-TEST()
-{
-	make check
+	addAppDeskbarSymlink $appsDir/ProjectX
 }
