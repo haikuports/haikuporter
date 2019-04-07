@@ -225,8 +225,7 @@ class Package(object):
 	def makeHpkg(self, requiresUpdater):
 		"""Create a package suitable for distribution"""
 
-		if (requiresUpdater and self.type != PackageType.SOURCE
-			and self.architecture != Architectures.ANY):
+		if (requiresUpdater and self.type != PackageType.SOURCE):
 			requiresList = self.recipeKeys['REQUIRES']
 			self.recipeKeys['UPDATED_REQUIRES'] \
 				= requiresUpdater.updateRequiresList(requiresList)
