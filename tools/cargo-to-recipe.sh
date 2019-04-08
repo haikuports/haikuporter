@@ -248,7 +248,7 @@ BUILD()
 	export CARGO_HOME=\$sourceDir/../cargo
 	mkdir -p "\$CARGO_HOME/haiku"
 	for i in {2..$(( ${#crates[@]} + 1 ))}; do
-		declare -n sha256sum=CHECKSUM_SHA256_$i
+		declare -n sha256sum=CHECKSUM_SHA256_\$i
 		: sourceDir\$i
 		ln -f -s -t "\$CARGO_HOME/haiku" "\${!_}"$(
 			(( psd == 2 )) && printf "/*"
