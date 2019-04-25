@@ -72,7 +72,15 @@ class BuildPlatform(object):
 			return
 		resolver = DependencyResolver(self, requiresTypes, repositories,
 									  **kwargs)
-		return resolver.determineRequiredPackagesFor(dependencyInfoFiles)
+		resolver.determineRequiredPackagesFor(dependencyInfoFiles)
+		if Configuration.shallUseCcache():
+		    resolver.injectDependency('Required by configuration', 'cmd:ccache')
+		if Configuration.shallUseDistcc():
+		    # pump needs its own switch and is out of my scope.
+		    # see https://preview.tinyurl.com/y32dmfrv -- possible breakage!
+		    resolver.injectDependency('Required by configuration', 'cmd:distcc')
+			# is it worth pulling in ssh for "secure pump"? Probably not.
+		return resolver.getResult()
 
 
 # -- BuildPlatformHaiku class -------------------------------------------------

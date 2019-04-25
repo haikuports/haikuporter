@@ -36,6 +36,22 @@ def which(program):
 
 # allowed types of the configuration file values
 haikuportsAttributes = {
+	'USE_DISTCC': {
+		'type': YesNo,
+		'required': False,
+		'default': False,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'useDistcc',
+	},
+	'USE_CCACHE': {
+		'type': YesNo,
+		'required': False,
+		'default': False,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'useCcache',
+	},
 	'ALLOW_UNTESTED': {
 		'type': YesNo,
 		'required': False,
@@ -253,6 +269,8 @@ class Configuration(object):
 		self.vendor = None
 		self.packagesPath = None
 		self.sourceforgeMirror = None
+		self.useCcache = False
+		self.useDistcc = False
 
 		self._readConfigurationFile()
 
@@ -373,6 +391,22 @@ class Configuration(object):
 	@staticmethod
 	def getVendor():
 		return Configuration.configuration.vendor
+
+	@staticmethod
+	def shallUseCcache():
+		return Configuration.configuration.useCcache
+
+	@staticmethod
+	def shallUseDistcc():
+		return Configuration.configuration.useDistcc
+
+	@staticmethod
+	def setUseDistcc(yes=True):
+		Configuration.configuration.useDistcc = yes
+
+	@staticmethod
+	def setUseCcache(yes=True):
+		Configuration.configuration.useCcache = yes
 
 	def _readConfigurationFile(self):
 		# Find the configuration file. It may be

@@ -581,6 +581,10 @@ class Main(object):
 					'resolving build dependencies failed: {}'.format(exception))
 				return
 		else:
+			if self.options.useCache:
+			    Configuration.setUseCcache(True)
+			if self.options.useDistcc:
+			    Configuration.setUseDistcc(True)
 			buildDependencies = port.resolveDependencies(
 				self.packageRepositories, testPort)
 
@@ -675,6 +679,12 @@ class Main(object):
 			port.populateAdditionalFiles()
 			if self.options.patch:
 				port.patchSource()
+
+		if self.options.useCcache:
+		    Configuration.setUseCcache(True)
+
+		if self.options.useDistcc:
+		    Configuration.setUseDistcc(True)
 
 		if self.options.build:
 			port.build(self.packagesPath, self.options.package, targetPath)

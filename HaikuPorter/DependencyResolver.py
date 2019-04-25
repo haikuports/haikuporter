@@ -117,6 +117,22 @@ class DependencyResolver(object):
 		self._satisfiedPackagesCache += result
 		return result
 
+	def injectDependency(self, reason, requirement):
+		self._addImmediate(reason, ResolvableExpression(requirement),
+			'build_prerequires', True)
+		self._buildDependencyGraph()
+		result = [
+			node.path for node in self._packageNodes
+		]
+		return result
+
+	def getResult(self):
+		result = [
+			node.path for node in self._packageNodes
+		]
+		return result
+
+
 	def _populateProvidesManager(self):
 		for repository in self._repositories:
 			for entry in os.listdir(repository):
