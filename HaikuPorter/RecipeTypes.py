@@ -12,6 +12,7 @@ class MachineArchitecture(str):
 	## REFACTOR collections.namedtuple might make more sense
 
 	ARM = 'arm'
+	ARM64 = 'arm64'
 	M68K = 'm68k'
 	PPC = 'ppc'
 	RISCV64 = 'riscv64'
@@ -25,6 +26,7 @@ class MachineArchitecture(str):
 		# TODO: fetch this from PackageKit?
 		return [
 			Architectures.ARM,
+			Architectures.ARM64,
 			Architectures.M68K,
 			Architectures.PPC,
 			Architectures.RISCV64,
@@ -40,6 +42,7 @@ class MachineArchitecture(str):
 	def getTripleFor(architecture):
 		archMap = {
 			Architectures.ARM: 'arm-unknown-haiku',
+			Architectures.ARM64: 'aarch64-unknown-haiku',
 			Architectures.M68K: 'm68k-unknown-haiku',
 			Architectures.PPC: 'powerpc-apple-haiku',
 			Architectures.RISCV64: 'riscv64-unknown-haiku',
