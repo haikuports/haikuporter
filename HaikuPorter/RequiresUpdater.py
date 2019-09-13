@@ -81,6 +81,8 @@ class RequiresUpdater(object):
 
 		if not matchingProvides.version:
 			return requires
+		if operator in ['<', '<=', '!=']:
+			return requires
 
 		# Enforce the minimum found version, if the requires has no version
 		# requirement or also a minimum. Otherwise enforce the exact version
