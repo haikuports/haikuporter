@@ -237,7 +237,7 @@ class DependencyResolver(object):
 			if getOption('getDependencies'):
 				try:
 					print('Fetching package for ' + str(requires) + ' ...')
-					output = check_output(['pkgman', 'install', '-y', str(requires)])
+					output = check_output(['pkgman', 'install', '-y', str(requires).replace(' ', '')])
 					for pkg in re.findall(r'://.*/([^/\n]+\.hpkg)', output):
 						pkginfo = PackageInfo('/boot/system/packages/' + pkg)
 						self._providesManager.addProvidesFromPackageInfo(pkginfo)
