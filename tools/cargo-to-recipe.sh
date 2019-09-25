@@ -219,7 +219,7 @@ $(
 
 ARCHITECTURES="!x86_gcc2 ?x86 ?x86_64"
 commandBinDir=\$binDir
-if [[ \$targetArchitecture = x86_gcc2 ]]; then
+if [ "\$targetArchitecture" = x86_gcc2 ]; then
 SECONDARY_ARCHITECTURES="?x86"
 commandBinDir=\$prefix/bin
 fi
@@ -246,14 +246,16 @@ defineDebugInfoPackage $portName\$secondaryArchSuffix \\
 BUILD()
 {
 	export CARGO_HOME=\$sourceDir/../cargo
-	mkdir -p "\$CARGO_HOME/haiku"
-	for i in {2..$(( ${#crates[@]} + 1 ))}; do
-		declare -n sha256sum=CHECKSUM_SHA256_\$i
-		: sourceDir\$i
-		ln -f -s -t "\$CARGO_HOME/haiku" "\${!_}"$(
+	vendor=\$CARGO_HOME/haiku
+	mkdir -p "\$vendor"
+	for i in \$(seq 2 $(( ${#crates[@]} + 1 ))); do
+		eval "srcDir=\\\$sourceDir\$i"
+		eval "sha256sum=\\\$CHECKSUM_SHA256_\$i"
+		set -- "\$srcDir"$(
 			(( psd == 2 )) && printf "/*"
 		)
-		cat <<- EOF > "\$_/.cargo-checksum.json"
+		ln -sf "\$1" "\$vendor"
+		cat <<-EOF >"\$vendor/\${1##*/}/.cargo-checksum.json"
 		{
 		  "package": "\$sha256sum",
 		  "files": {}
@@ -261,9 +263,9 @@ BUILD()
 		EOF
 	done
 
-	cat <<- EOF > "\$CARGO_HOME"/config
+	cat <<-EOF >"\$CARGO_HOME"/config
 	[source.haiku]
-	directory = "\$CARGO_HOME/haiku"
+	directory = "\$vendor"
 
 	[source.crates-io]
 	replace-with = "haiku"
@@ -281,6 +283,7 @@ INSTALL()
 
 TEST()
 {
+	export CARGO_HOME=\$sourceDir/../cargo
 	cargo test --release
 }
 EOF
