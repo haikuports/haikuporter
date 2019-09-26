@@ -271,7 +271,7 @@ BUILD()
 	replace-with = "haiku"
 	EOF
 
-	cargo build --release
+	cargo build --release --frozen
 }
 
 INSTALL()
@@ -284,7 +284,7 @@ INSTALL()
 TEST()
 {
 	export CARGO_HOME=\$sourceDir/../cargo
-	cargo test --release
+	cargo test --release --frozen
 }
 EOF
 cp "$tempdir/$portName-$version.recipe" .
