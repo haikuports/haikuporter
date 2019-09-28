@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 die() {
-	printf '%s' "${*+$'\e[31mError: \e[0m'$*$'\n'}"
+	printf %s "${*+$'\e[31merror: \e[0m'$*$'\n'}"
 	(( usage )) && usage
 	exit 1
-} 1>&2
+} >&2
 
 usage() {
-	cat <<- EOF
+	cat <<-EOF
 	Usage: $0 [options] [uri://to/source-tarball] category/port
 
 	Creates a recipe template for a crates.io package, filled with
@@ -32,26 +32,26 @@ usage() {
 temp() { rm -rf "$tempdir"; }
 
 . "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
-(( $# == 0 )) && usage=1 die
+(( $# )) || usage=1 die
 while (( $# )); do
 	case $1 in
-		-h | --help)
+		-h|--help)
 			usage
 			exit 0
 			;;
-		-k | --keep)
+		-k|--keep)
 			temp() { printf '%s\n' "Kept $tempdir"; }
 			;;
-		-nc | --no-clobber)
+		-nc|--no-clobber)
 			nc=1
 			shopt -s expand_aliases
 			alias mv='mv -n'
 			alias cp='cp -n'
 			;;
-		-psd | --print-source-directories)
+		-psd|--print-source-directories)
 			psd=3
 			;;
-		-b | --bump)
+		-b|--bump)
 			bump=1
 			;;
 		-c)
@@ -117,7 +117,7 @@ case "" in
 esac
 
 if [[ $CHECKSUM_SHA256 != 1 ]]; then
-	for (( i = 0; i < 3; i++ )); do
+	for (( i = 0; i < 3; ++i )); do
 		printf '%s\n' "$CHECKSUM_SHA256  download/$SOURCE_FILENAME" |
 			sha256sum -c && break
 		(( i < 2 )) && wget -O download/"$SOURCE_FILENAME" \
@@ -136,7 +136,7 @@ if test "$SOURCE_FILENAME" != "$SOURCE_DIR.tar.${source_file##*.}"; then
 fi
 
 tempdir=$(mktemp -d -t "$SOURCE_DIR".XXXXXX)
-trap 'temp' 0
+trap temp 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR/Cargo.*" ||
 	die "Failed to extract the necessary files."
@@ -156,11 +156,14 @@ for crate in "${crates[@]}"; do
 	(( psd == 3 )) && dirs+=("${crate%.crate}")
 done
 
-for (( i = 0; j = i + 2, i < ${#crates[@]}; i++ )); do
+for (( i = 0; j = i+2, i < ${#crates[@]}; i++ )); do
 	source_uris+=("SOURCE_URI_$j=\"${uris[i]}\"")
 	checksums_sha256+=("CHECKSUM_SHA256_$j=\"${checksums[i]}\"")
-	(( psd == 3 )) && source_dirs+=("SOURCE_DIR_$j=\"${dirs[i]}\"")
-	merged+=(${source_uris[i]} ${checksums_sha256[i]} ${source_dirs[i]})
+	merged+=("${source_uris[i]}" "${checksums_sha256[i]}")
+	(( psd == 3 )) && {
+		source_dirs+=("SOURCE_DIR_$j=\"${dirs[i]}\"")
+		merged+=("${source_dirs[i]}")
+	}
 done
 
 if (( bump )); then
@@ -181,7 +184,7 @@ eval "$(
 		s/ = /=/p
 	}' "$tempdir"/Cargo.toml
 )"
-cat << EOF > "$tempdir/$portName-$version.recipe"
+cat <<EOF >"$tempdir/$portName-$version.recipe"
 SUMMARY="${description%.}"
 DESCRIPTION="$(
 	extended=$(
@@ -199,8 +202,12 @@ DESCRIPTION="$(
 HOMEPAGE="$homepage"
 COPYRIGHT=""
 LICENSE="$(
-	sed -e 's,/\| AND \| OR ,\n\t,
-		s,-\([0-9]\)\.0, v\1,' <<< "$license"
+	IFS=$'\n' read -d "" -ra licenses <<< "$(
+		sed -e 's,/\| AND \| OR ,\n,g
+			s,-\([0-9]\)\.0, v\1,g' <<< "$license" | sort
+	)"
+	printf %s "${licenses[0]}"
+	(( ${#licenses[@]} > 1 )) && printf '\n\t%s' "${licenses[@]:1}"
 )"
 REVISION="1"
 SOURCE_URI="$(
@@ -290,7 +297,7 @@ EOF
 cp "$tempdir/$portName-$version.recipe" .
 
 if [[ -v license_file ]]; then
-	cat <<- EOF
+	cat <<-EOF
 	-----------------------------------------------------------------------
 	This port uses a custom license file.
 	It will be installed to the port's license directory; please rename it
