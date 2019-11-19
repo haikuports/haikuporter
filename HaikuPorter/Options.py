@@ -326,6 +326,16 @@ def parseOptions():
 		dest='activeVersionsOnly', default=False,
 		help='only check in active versions of ports instead of all ports')
 
+	parser.add_option('--use-ccache', action='store_true',
+		dest='useCcache', default=False,
+		help='Use ccache to accelerate building by caching artefacts '
+		+ '(Uses ccache from ~)')
+
+	parser.add_option('--use-distcc', action='store_true',
+		dest='useDistcc', default=False,
+		help='Use Distcc to offload compilation to other machinesi '
+		+ '(uses configuration from ~/config)')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()

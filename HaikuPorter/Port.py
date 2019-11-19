@@ -44,6 +44,8 @@ from .ShellScriptlets import (
 	getShellVariableSetters,
 	recipeActionScript,
 	setupChrootScript,
+	setupDistccScript,
+	setupCcacheScript,
 )
 from .Source import Source
 from .Utils import (
@@ -77,6 +79,12 @@ class ChrootSetup(object):
 		shellEnv.update(self.envVars)
 		check_output(['bash', '-c', setupChrootScript], env=shellEnv,
 			cwd=self.path)
+		if Configuration.shallUseCcache():
+		    check_output(['bash', '-c', setupCcacheScript],
+			    env=shellEnv, cwd=self.path)
+		if Configuration.shallUseDistcc():
+		    check_output(['bash', '-c', setupDistccScript],
+			    env=shellEnv, cwd=self.path)
 		return self
 
 	def __exit__(self, ignoredType, value, traceback):
@@ -1563,6 +1571,11 @@ class Port(object):
 
 		# define a terminal
 		shellEnv['TERM'] = 'xterm'
+
+		if Configuration.shallUseDistcc():
+		    shellEnv['HOME'] = '/boot/home'
+		    if Configuration.shallUseCcache():
+			shellEnv['CCACHE_PREFIX'] = 'distcc'
 
 		# execute the requested action via a shell ...
 		args = ['bash']

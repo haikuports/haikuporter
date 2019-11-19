@@ -763,6 +763,95 @@ fi
 
 # -----------------------------------------------------------------------------
 
+# Shell scriptlet which sets up ccache in chroot
+# MUST be called BEFORE distcc setup!
+# we add distcc to the chain if req'd by passing an extra environment variable.
+# Something like CCACHE_PREFIX=distcc and we let computer find it for us
+# We don't remove this on success: cache might be reused after a patch
+setupCcacheScript = r'''
+
+if ! [ -e boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper ]; then
+
+    # this is the first thing in $PATH after . so we're jumping in front of gcc
+    mkdir -p boot/home/config/non-packaged/bin
+
+    # catch unprefixed invocations and redo them correctly
+    echo '#!/bin/bash
+	    exec '$targetArchitecture'-unknown-haiku-g${0:$[-2]} "$@"' > \
+	     boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper
+    chmod a+x boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper
+
+    # we add the prefix because otherwise both machines just use 'gcc'
+    # and i can't link linux objects to haiku objects so that fails
+    ln -s /bin/ccache boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-c++
+    ln -s /bin/ccache boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-g++
+    ln -s /bin/ccache boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-gcc
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/cc
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/gcc
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/g++
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/c++
+
+    # this stops the gxx from above from falling straight through to /bin/gxx
+    mkdir -p boot/home/config/bin
+    ln -s /bin/c++ boot/home/config/bin/$targetArchitecture-unknown-haiku-c++
+    ln -s /bin/g++ boot/home/config/bin/$targetArchitecture-unknown-haiku-g++
+    ln -s /bin/gcc boot/home/config/bin/$targetArchitecture-unknown-haiku-gcc
+    ln -s /bin/cc boot/home/config/bin/$targetArchitecture-unknown-haiku-cc
+fi
+
+# ?? We don't want to lose this but a soft link can't point to the real directory. it still helps...
+if ! [ -e boot/home/.ccache.ccache.conf ]; then
+    mkdir -p boot/home/.ccache
+    cp /boot/home/.ccache/ccache.conf boot/home/.ccache
+fi
+
+'''
+
+
+# -----------------------------------------------------------------------------
+
+# Shell scriptlet which sets up distcc in chroot
+setupDistccScript = r'''
+
+if ! [ -e boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper ]; then
+
+    # this is the first thing in $PATH after . so we're jumping in front of gcc
+    mkdir -p boot/home/config/non-packaged/bin
+
+    # catch unprefixed invocations and redo them correctly
+    echo '#!/bin/bash
+	    exec '$targetArchitecture'-unknown-haiku-g${0:$[-2]} "$@"' > \
+	     boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper
+    chmod a+x boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper
+    ln -s /bin/distcc boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-c++
+    ln -s /bin/distcc boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-g++
+    ln -s /bin/distcc boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-gcc
+
+    # we add the prefix because otherwise both machines just use 'gcc'
+    # and i can't link linux objects to haiku objects so that fails
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/cc
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/gcc
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/g++
+    ln -s /boot/home/config/non-packaged/bin/$targetArchitecture-unknown-haiku-wrapper boot/home/config/non-packaged/bin/c++
+
+    # this stops the gxx from above from falling straight through to /bin/gxx
+    mkdir -p boot/home/config/bin
+    ln -s /bin/c++ boot/home/config/bin/$targetArchitecture-unknown-haiku-c++
+    ln -s /bin/g++ boot/home/config/bin/$targetArchitecture-unknown-haiku-g++
+    ln -s /bin/gcc boot/home/config/bin/$targetArchitecture-unknown-haiku-gcc
+    ln -s /bin/cc boot/home/config/bin/$targetArchitecture-unknown-haiku-cc
+fi
+
+if ! [ -e boot/home/.distcc ]; then
+    # copy user's distcc setup into chroot so we know our volunteers etc
+    cp -R /boot/home/.distcc boot/home
+fi
+
+'''
+
+
+# -----------------------------------------------------------------------------
+
 # Shell scriptlet that prepares a chroot environment for entering.
 # Invoked with $packages filled with the list of packages that should
 # be activated (via system/packages) and $recipeFilePath pointing to the
