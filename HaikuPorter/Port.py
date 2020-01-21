@@ -38,6 +38,7 @@ from .RecipeTypes import (
 	MachineArchitecture,
 	Phase,
 	Status)
+from .ReleaseChecker import createReleaseChecker
 from .RequiresUpdater import RequiresUpdater
 from .ShellScriptlets import (
 	cleanupChrootScript,
@@ -443,6 +444,17 @@ class Port(object):
 			if u"copyright" in lowerc or u"(c)" in lowerc or u"©" in lowerc:
 				sysExit(u'%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
 					% (key, self.recipeFilePath))
+
+	def checkPortReleases(self):
+		"""Check port for newer releases from upstream"""
+
+		self.parseRecipeFileIfNeeded()
+		# we assume first URI of first SOURCE_URI
+		checker = createReleaseChecker(self.recipeKeys['SOURCE_URI']['1'][0], self.version)
+		if checker:
+			newer = checker.check()
+			if newer:
+				print 'NEWER RELEASE for %s: %s -> %s' % (self.name, self.version, newer)
 
 	def printDescription(self):
 		"""Show port description"""

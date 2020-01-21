@@ -96,7 +96,8 @@ class Main(object):
 			or self.options.why
 			or self.options.analyzeDependencies
 			or self.options.checkPackageRepositoryConsistency
-			or self.options.checkRepositoryConsistency)
+			or self.options.checkRepositoryConsistency
+			or self.options.checkPortsReleases)
 
 		# init build platform
 		buildPlatform.init(self.treePath, self.outputDirectory,
@@ -274,6 +275,15 @@ class Main(object):
 
 		if self.options.analyzeDependencies:
 			DependencyAnalyzer(self.repository).printDependencies()
+			return
+
+		# if requested, check for newer upstream releases
+		if self.options.checkPortsReleases:
+			self._createRepositoryIfNeeded(True)
+			if not args:
+				self._checkPortsReleases("")
+			else:
+				self._checkPortsReleases(args[0])
 			return
 
 		bootstrapPorts = set()
@@ -897,3 +907,44 @@ class Main(object):
 			sysExit(u'The version of the recipe file format used in the ports '
 					u'tree is older than the one supported by haikuporter.\n'
 					u'Please upgrade the ports tree.')
+
+	def _checkPortsReleases(self, portArgument):
+		self._createRepositoryIfNeeded(True)
+		if portArgument:
+			print 'Checking for newer release for port: ' + portArgument
+
+			allPorts = self.repository.allPorts
+			portVersionsByName = self.repository.portVersionsByName
+
+			if portArgument in allPorts:
+				# Full port name / ver
+				port = allPorts[portArgument]
+				print '%s	[%s]' % (portArgument, port.category)
+				port.checkPortReleases()
+				return
+			elif portArgument in portVersionsByName:
+				# Base port name
+				version = self.repository.getActiveVersionOf(portArgument)
+				if not version:
+					sysExit(u'%s does not have an active version!' % portArgument)
+				portID = portArgument + '-' + version
+				port = allPorts[portID]
+				print '%s	[%s]' % (portID, port.category)
+				port.checkPortReleases()
+			else:
+				# Unknown
+				sysExit(u'%s is not a known port!' % portArgument)
+
+		else:
+			print 'Checking for newer release for ports from tree at: ' + self.treePath
+			allPorts = self.repository.allPorts
+			portVersionsByName = self.repository.portVersionsByName
+			somethingFailed = False
+			for portName in sorted(portVersionsByName.keys(), key=unicode.lower):
+				version = self.repository.getActiveVersionOf(portName)
+				if not version:
+					continue
+				portID = portName + '-' + version
+				port = allPorts[portID]
+				print '%s	[%s]' % (portID, port.category)
+				port.checkPortReleases()

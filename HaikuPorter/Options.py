@@ -326,6 +326,10 @@ def parseOptions():
 		dest='activeVersionsOnly', default=False,
 		help='only check in active versions of ports instead of all ports')
 
+	parser.add_option('--check-ports-releases', action='store_true',
+		dest='checkPortsReleases', default=False,
+		help='check for newer releases of ports published upstream')
+
 	global __Options__
 
 	(__Options__, args) = parser.parse_args()
