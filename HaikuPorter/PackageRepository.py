@@ -154,12 +154,12 @@ class PackageRepository(object):
 
 			output = subprocess.check_output([packageRepoCommand, 'create',
 					'-v', repoInfoFile, packageList[0].path],
-				stderr=subprocess.STDOUT)
+				stderr=subprocess.STDOUT).decode('utf-8')
 			info(output)
 
 		output = subprocess.check_output([packageRepoCommand, 'update', '-C',
 				repoPackagesPath, '-v', repoFile, repoFile, packageListFile],
-			stderr=subprocess.STDOUT)
+			stderr=subprocess.STDOUT).decode('utf-8')
 		info(output)
 
 		checksum = hashlib.sha256()

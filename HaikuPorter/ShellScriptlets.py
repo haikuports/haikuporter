@@ -49,12 +49,12 @@ def getShellVariableSetters(shellVariables):
 		return ''
 
 	result = '\n'.join("%s='%s'" % (k, v)
-		for k, v in shellVariables.iteritems()) + '\n'
+		for k, v in shellVariables.items()) + '\n'
 
 	# Add a variable "revisionVariables" that contains the name of all
 	# variables that need to be reevaluated after the revision is known.
 	revisionVariables = []
-	for name, value in shellVariables.iteritems():
+	for name, value in shellVariables.items():
 		if '$REVISION' in value:
 			revisionVariables.append(name)
 	if revisionVariables:

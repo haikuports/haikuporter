@@ -53,7 +53,7 @@ haikuportsAttributes = {
 		'setAttribute': 'allowUnsafeSources'
 	},
 	'CROSS_DEVEL_PACKAGE': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -62,7 +62,7 @@ haikuportsAttributes = {
 		'setAttribute': 'crossDevelPackage',
 	},
 	'CROSS_TOOLS': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -79,7 +79,7 @@ haikuportsAttributes = {
 		'setAttribute': 'downloadInPortDirectory',
 	},
 	'DOWNLOAD_MIRROR': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': 'https://ports-mirror.haiku-os.org',
 		'extendable': Extendable.NO,
@@ -87,7 +87,7 @@ haikuportsAttributes = {
 		'setAttribute': 'downloadMirror',
 	},
 	'LICENSES_DIRECTORY': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -96,7 +96,7 @@ haikuportsAttributes = {
 		'setAttribute': 'licensesDirectory',
 	},
 	'MIMESET_COMMAND': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -105,7 +105,7 @@ haikuportsAttributes = {
 		'setAttribute': 'mimesetCommand',
 	},
 	'OUTPUT_DIRECTORY': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -113,7 +113,7 @@ haikuportsAttributes = {
 		'setAttribute': 'outputDirectory',
 	},
 	'PACKAGES_PATH': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -121,7 +121,7 @@ haikuportsAttributes = {
 		'setAttribute': 'packagesPath',
 	},
 	'PACKAGE_COMMAND': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -130,7 +130,7 @@ haikuportsAttributes = {
 		'setAttribute': 'packageCommand',
 	},
 	'PACKAGE_REPO_COMMAND': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -139,7 +139,7 @@ haikuportsAttributes = {
 		'setAttribute': 'packageRepoCommand',
 	},
 	'PACKAGER': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': True,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -147,7 +147,7 @@ haikuportsAttributes = {
 		'setAttribute': 'packager',
 	},
 	'REPOSITORY_PATH': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -155,7 +155,7 @@ haikuportsAttributes = {
 		'setAttribute': 'repositoryPath',
 	},
 	'SECONDARY_CROSS_DEVEL_PACKAGES': {
-		'type': types.ListType,
+		'type': list,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.NO,
@@ -164,14 +164,14 @@ haikuportsAttributes = {
 		'setAttribute': 'secondaryCrossDevelPackages',
 	},
 	'SECONDARY_CROSS_TOOLS': {
-		'type': types.ListType,
+		'type': list,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.NO,
 		'indexable': False,
 	},
 	'SECONDARY_TARGET_ARCHITECTURES': {
-		'type': types.ListType,
+		'type': list,
 		'required': False,
 		'default': [],
 		'extendable': Extendable.NO,
@@ -179,7 +179,7 @@ haikuportsAttributes = {
 		'setAttribute': 'secondaryArchitectures',
 	},
 	'SOURCEFORGE_MIRROR': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -196,7 +196,7 @@ haikuportsAttributes = {
 		'setAttribute': 'targetArchitecture',
 	},
 	'TREE_PATH': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': True,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -204,7 +204,7 @@ haikuportsAttributes = {
 		'setAttribute': 'treePath',
 	},
 	'SYSTEM_MIME_DB': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': None,
 		'extendable': Extendable.NO,
@@ -213,7 +213,7 @@ haikuportsAttributes = {
 		'setAttribute': 'systemMimeDB',
 	},
 	'VENDOR': {
-		'type': types.StringType,
+		'type': bytes,
 		'required': False,
 		'default': 'Haiku Project',
 		'extendable': Extendable.NO,
@@ -390,7 +390,7 @@ class Configuration(object):
 					haikuportsConf = '/system/settings/haikuports.conf'
 
 		if not os.path.exists(haikuportsConf):
-			sysExit(u"Unable to find haikuports.conf in known search paths.\n"
+			sysExit("Unable to find haikuports.conf in known search paths.\n"
 				+ u"See haikuports-sample.conf for more information")
 
 		configParser = ConfigParser(haikuportsConf, haikuportsAttributes, {})
@@ -406,7 +406,7 @@ class Configuration(object):
 
 			if key not in configurationValue:
 				if haikuportsAttributes[key]['required']:
-					sysExit(u"Required value '" + key + u"' not present in "
+					sysExit("Required value '" + key + u"' not present in "
 							+ haikuportsConf)
 
 				# set default value, as no other value has been provided
@@ -424,13 +424,13 @@ class Configuration(object):
 		# determine if we are using a cross-build repository
 		self.isCrossBuildRepository = os.path.exists(self.treePath + '/.cross')
 		if self.isCrossBuildRepository and not self.targetArchitecture:
-			sysExit(u'For a cross-build repository, TARGET_ARCHITECTURE '
-				u'needs to be set in ' + haikuportsConf)
+			sysExit('For a cross-build repository, TARGET_ARCHITECTURE '
+				'needs to be set in ' + haikuportsConf)
 
 		# split packager into name and email:
 		m = re.match(r'^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', self.packager)
 		if not m:
-			sysExit(u"Couldn't parse name/email from PACKAGER value "
+			sysExit("Couldn't parse name/email from PACKAGER value "
 					+ self.packager)
 		self.packagerName = m.group('name')
 		self.packagerEmail = m.group('email')
@@ -440,8 +440,8 @@ class Configuration(object):
 			crossTools = configurationValue.get('SECONDARY_CROSS_TOOLS')
 			if crossTools:
 				if len(crossTools) != len(self.secondaryArchitectures):
-					sysExit(u'A cross-tools directory must be specified for '
-						u'each secondary architecture')
+					sysExit('A cross-tools directory must be specified for '
+						'each secondary architecture')
 				for architecture, tools \
 						in zip(self.secondaryArchitectures, crossTools):
 					self.secondaryCrossTools[architecture] = tools
@@ -450,8 +450,8 @@ class Configuration(object):
 				crossDevelPackages = self.secondaryCrossDevelPackages
 				self.secondaryCrossDevelPackages = {}
 				if len(crossDevelPackages) != len(self.secondaryArchitectures):
-					sysExit(u'A cross-tools devel pacakge must be specified for '
-						u'each secondary architecture')
+					sysExit('A cross-tools devel pacakge must be specified for '
+						'each secondary architecture')
 				for architecture, package \
 						in zip(self.secondaryArchitectures, crossDevelPackages):
 					self.secondaryCrossDevelPackages[architecture] = package

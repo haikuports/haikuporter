@@ -19,13 +19,13 @@ import time
 import zipfile
 
 if sys.stdout.isatty():
-	colorWarning = u'\033[1;36m'
-	colorError = u'\033[1;35m'
-	colorReset = u'\033[1;m'
+	colorWarning = '\033[1;36m'
+	colorError = '\033[1;35m'
+	colorReset = '\033[1;m'
 else:
-	colorWarning = u''
-	colorError = u''
-	colorReset = u''
+	colorWarning = ''
+	colorError = ''
+	colorReset = ''
 
 # -- MyTarInfo -------------------------------------------------------------
 
@@ -62,16 +62,16 @@ haikuporterRepoUrl = 'https://github.com/haikuports/haikuporter.git'
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
-	message = '\n'.join([colorError + u'Error: ' + line + colorReset
+	message = '\n'.join([colorError + 'Error: ' + line + colorReset
 		for line in message.split('\n')])
-	sys.exit(message.encode('utf-8'))
+	sys.exit(message)
 
 def warn(message):
 	"""print a warning"""
 
-	message = '\n'.join([colorWarning + u'Warning: ' + line + colorReset
+	message = '\n'.join([colorWarning + 'Warning: ' + line + colorReset
 		for line in message.split('\n')])
-	logging.getLogger("buildLogger").warn(message.encode('utf-8'))
+	logging.getLogger("buildLogger").warn(message)
 
 def info(message):
 	"""print an info"""
@@ -134,7 +134,6 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			def filterByDir(members):
 				for member in members:
 					member = copy.copy(member)
-					member.name = member.name.decode("utf-8")
 					if (os.path.normpath(member.name).startswith(subdir)
 							and not os.path.normpath(member.name).endswith("/.git")):
 						if hasattr(os, "geteuid") and os.geteuid() == 0:
@@ -155,11 +154,11 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				if os.path.normpath(name).startswith(subdir)
 			]
 			if not names:
-				sysExit(u'sub-directory %s not found in archive' % subdir)
+				sysExit('sub-directory %s not found in archive' % subdir)
 		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
 	else:
-		sysExit(u'Unrecognized archive type in file '
+		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
 
 def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst=True):
@@ -227,7 +226,10 @@ def ensureCommandIsAvailable(command):
 	"""checks if the given command is available and bails if not"""
 
 	if not isCommandAvailable(command):
-		sysExit(u"'" + command + u"' is not available, please install it")
+		sysExit("'" + command + u"' is not available, please install it")
+
+def cmp(a, b):
+	return (a > b) - (a < b)
 
 def naturalCompare(left, right):
 	"""performs a natural compare between the two given strings - returns:

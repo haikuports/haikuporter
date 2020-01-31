@@ -6,7 +6,8 @@
 
 # -- Modules ------------------------------------------------------------------
 
-import BuildPlatform
+from . import BuildPlatform
+
 from .Configuration import Configuration
 from .Options import getOption
 from .PackageInfo import PackageInfo, Resolvable

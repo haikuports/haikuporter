@@ -32,7 +32,7 @@ def parseCheckoutUri(uri):
 	# If it doesn't find the 'type' it should extract 'real_uri' and 'rev'
 	m = re.match(r'^((?P<type>\w*)\+)?(?P<realUri>.+?)(#(?P<rev>.+))?$', uri)
 	if not m or not m.group('realUri'):
-		sysExit(u"Couldn't parse repository URI " + uri)
+		sysExit("Couldn't parse repository URI " + uri)
 
 	uriType = m.group('type')
 	realUri = m.group('realUri')
@@ -45,7 +45,7 @@ def parseCheckoutUri(uri):
 			uriType = m.group(1)
 
 	if not uriType:
-		sysExit(u"Couldn't parse repository type from URI " + realUri)
+		sysExit("Couldn't parse repository type from URI " + realUri)
 
 	return (uriType, realUri, rev)
 
@@ -61,7 +61,7 @@ def unpackCheckoutWithTar(checkoutDir, sourceBaseDir, sourceSubDir, foldSubDir):
 				   % (foldSubDir, sourceDir))
 	else:
 		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
-	output = check_output(command, cwd=checkoutDir, shell=True)
+	output = check_output(command, cwd=checkoutDir, shell=True).decode('utf-8')
 	info(output)
 
 	if foldSubDir:
@@ -117,8 +117,8 @@ class SourceFetcherForBazaar(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -128,11 +128,11 @@ class SourceFetcherForBazaar(object):
 		if self.rev:
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
-		output = check_output(command, shell=True, stderr=STDOUT)
+		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
-		warn(u"Updating of a Bazaar repository to a specific revision has "
+		warn("Updating of a Bazaar repository to a specific revision has "
 			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
@@ -153,8 +153,8 @@ class SourceFetcherForCvs(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -172,11 +172,11 @@ class SourceFetcherForCvs(object):
 			else:
 				command += ' -r' + self.rev
 		command += ' "%s"' % self.module
-		output = check_output(command, shell=True, cwd=baseDir, stderr=STDOUT)
+		output = check_output(command, shell=True, cwd=baseDir, stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
-		warn(u"Updating of a CVS repository to a specific revision has "
+		warn("Updating of a CVS repository to a specific revision has "
 			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
@@ -206,7 +206,7 @@ class SourceFetcherForDownload(object):
 		for tries in range(0, 3):
 			process = Popen(args, cwd=downloadDir, stdout=PIPE, stderr=STDOUT)
 			for line in iter(process.stdout.readline, b''):
-				info(line[:-1])
+				info(line.decode('utf-8')[:-1])
 			process.stdout.close()
 			code = process.wait()
 			if code in (0, 2, 6, 8):
@@ -239,8 +239,8 @@ class SourceFetcherForFossil(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -253,11 +253,11 @@ class SourceFetcherForFossil(object):
 				   + ' && fossil open ' + fossilDir)
 		if self.rev:
 			command += ' ' + self.rev
-		output = check_output(command, shell=True, stderr=STDOUT)
+		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
-		warn(u"Updating of a Fossil repository to a specific revision has "
+		warn("Updating of a Fossil repository to a specific revision has "
 			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
@@ -277,15 +277,15 @@ class SourceFetcherForGit(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
-		output = check_output(command, shell=True, stderr=STDOUT)
+		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
@@ -294,21 +294,21 @@ class SourceFetcherForGit(object):
 		self.rev = rev
 		command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
 		try:
-			output = check_output(command, shell=True, cwd=self.fetchTarget)
+			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 			info(output)
 		except:
 			print('trying to fetch revision %s from upstream' % self.rev)
 			command = "git branch | cut -c3-"
 			branches = check_output(command, shell=True,
-									cwd=self.fetchTarget, stderr=STDOUT).splitlines()
+									cwd=self.fetchTarget, stderr=STDOUT).decode('utf-8').splitlines()
 			for branch in branches:
 				command = 'git fetch origin %s:%s' % (branch, branch)
 				print(command)
-				output = check_output(command, shell=True, cwd=self.fetchTarget)
+				output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 				info(output)
 			# ensure that the revision really is available now
 			command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
-			output = check_output(command, shell=True, cwd=self.fetchTarget)
+			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 			info(output)
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
@@ -319,7 +319,7 @@ class SourceFetcherForGit(object):
 					   % (self.rev, foldSubDir, sourceDir))
 		else:
 			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
-		output = check_output(command, shell=True, cwd=self.fetchTarget)
+		output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 		info(output)
 
 		if foldSubDir:
@@ -359,8 +359,8 @@ class SourceFetcherForMercurial(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -369,7 +369,7 @@ class SourceFetcherForMercurial(object):
 		if self.rev:
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
-		output = check_output(command, shell=True, stderr=STDOUT)
+		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
@@ -387,7 +387,7 @@ class SourceFetcherForMercurial(object):
 				% (self.rev, foldSubDir, sourceDir)
 		else:
 			command = 'hg archive -r %s -t files "%s"' % (self.rev, sourceDir)
-		output = check_output(command, shell=True, cwd=self.fetchTarget)
+		output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 		info(output)
 
 		if foldSubDir:
@@ -425,7 +425,7 @@ class SourceFetcherForSourcePackage(object):
 
 		output = check_output([Configuration.getPackageCommand(), 'extract',
 					'-C', sourceDir, self.sourcePackagePath,
-					relativeSourcePath], stderr=STDOUT)
+					relativeSourcePath], stderr=STDOUT).decode('utf-8')
 		info(output)
 		foldSubdirIntoSourceDir(relativeSourcePath, sourceDir)
 
@@ -440,19 +440,19 @@ class SourceFetcherForSubversion(object):
 
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
-			sysExit(u'Downloading from unsafe sources is disabled in ' +
-					u'haikuports.conf!')
+			sysExit('Downloading from unsafe sources is disabled in ' +
+					'haikuports.conf!')
 
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'
 		if self.rev:
 			command += ' -r ' + self.rev
 		command += ' ' + self.uri + ' ' + self.fetchTarget
-		output = check_output(command, shell=True, stderr=STDOUT)
+		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
-		warn(u"Updating of a Subversion repository to a specific revision has "
+		warn("Updating of a Subversion repository to a specific revision has "
 			 u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
@@ -486,4 +486,4 @@ def createSourceFetcher(uri, fetchTarget):
 	elif ':' not in lowerUri:
 		return SourceFetcherForLocalFile(uri, fetchTarget)
 	else:
-		sysExit(u'The protocol of SOURCE_URI %s is unsupported, sorry.' % uri)
+		sysExit('The protocol of SOURCE_URI %s is unsupported, sorry.' % uri)

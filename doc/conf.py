@@ -48,8 +48,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'HaikuPorter'
-copyright = u'2014, Haiku, Inc.'
+project = 'HaikuPorter'
+copyright = '2014, Haiku, Inc.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -201,8 +201,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'HaikuPorter.tex', u'HaikuPorter Documentation',
-   u'Haiku, Inc.', 'manual'),
+  ('index', 'HaikuPorter.tex', 'HaikuPorter Documentation',
+   'Haiku, Inc.', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -231,7 +231,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-	('index', 'haikuporter', u'HaikuPorter Documentation',
+	('index', 'haikuporter', 'HaikuPorter Documentation',
 	 [u'Haiku, Inc.'], 1)
 ]
 
@@ -245,8 +245,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'HaikuPorter', u'HaikuPorter Documentation',
-   u'Haiku, Inc.', 'HaikuPorter', 'One line description of project.',
+  ('index', 'HaikuPorter', 'HaikuPorter Documentation',
+   'Haiku, Inc.', 'HaikuPorter', 'One line description of project.',
    'Miscellaneous'),
 ]
 

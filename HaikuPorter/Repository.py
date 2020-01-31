@@ -12,6 +12,7 @@ from .Port import Port
 from .Utils import prefixLines, sysExit, touchFile, versionCompare, warn
 
 import codecs
+from functools import cmp_to_key
 import glob
 import json
 import os
@@ -50,9 +51,9 @@ class Repository(object):
 		# check repository format
 		formatVersion = self._readFormatVersion()
 		if formatVersion > Repository.currentFormatVersion:
-			sysExit(u'The version of the repository format used in\n\t%s'
-					u'\nis newer than the one supported by haikuporter.\n'
-					u'Please upgrade haikuporter.' % self.path)
+			sysExit('The version of the repository format used in\n\t%s'
+					'\nis newer than the one supported by haikuporter.\n'
+					'Please upgrade haikuporter.' % self.path)
 
 		Port.setRepositoryDir(self.path)
 
@@ -67,11 +68,11 @@ class Repository(object):
 				self._updateRepository()
 		else:
 			if getOption('noRepositoryUpdate'):
-				sysExit(u'no or outdated repository found but no update '
-					u'allowed')
+				sysExit('no or outdated repository found but no update '
+					'allowed')
 			if formatVersion < Repository.currentFormatVersion:
-				warn(u'Found old repository format - repopulating the '
-					u'repository ...')
+				warn('Found old repository format - repopulating the '
+					'repository ...')
 			self._populateRepository(preserveFlags)
 			self._writeFormatVersion()
 		self._writePortForPackageMaps()
@@ -122,7 +123,7 @@ class Repository(object):
 			port = self._allPorts[portID]
 			if port.hasBrokenRecipe:
 				if warnAboutSkippedVersions:
-					warn(u'skipping %s, as the recipe is broken' % portID)
+					warn('skipping %s, as the recipe is broken' % portID)
 					try:
 						port.parseRecipeFileRaisingExceptions(True)
 					except SystemExit as e:
@@ -131,7 +132,7 @@ class Repository(object):
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
 					status = port.statusOnTargetArchitecture
-					warn((u'skipping %s, as it is %s on the target '
+					warn(('skipping %s, as it is %s on the target '
 						+ 'architecture.') % (portID, status))
 				continue
 			return version
@@ -271,12 +272,12 @@ class Repository(object):
 							if not self.quiet and not getOption('doBootstrap'):
 								otherPort = self._allPorts[versionedName]
 								if otherPort.category == '<source-package>':
-									warn(u'%s/%s	 is overruled by input '
-										u'source package' % (category,
+									warn('%s/%s	 is overruled by input '
+										'source package' % (category,
 											versionedName))
 								else:
-									warn(u'%s/%s	 is overruled by duplicate '
-										u'in %s - please remove one of them'
+									warn('%s/%s	 is overruled by duplicate '
+										'in %s - please remove one of them'
 										% (category, versionedName,
 											otherPort.category))
 							continue
@@ -312,8 +313,9 @@ class Repository(object):
 						self._portVersionsByName[name].append(version)
 
 		# Sort version list of each port
-		for portName in self._portVersionsByName.keys():
-			self._portVersionsByName[portName].sort(cmp=versionCompare)
+		for portName in list(self._portVersionsByName.keys()):
+			self._portVersionsByName[portName].sort(
+				key=cmp_to_key(versionCompare))
 
 	def _initPortForPackageMaps(self):
 		"""Initialize dictionaries that map package names/IDs to port
@@ -415,7 +417,7 @@ class Repository(object):
 			os.mkdir(skippedDir)
 
 		for portName in sorted(self._portVersionsByName.keys(),
-				key=unicode.lower):
+				key=str.lower):
 
 			if explicitPortVersion and explicitPortVersion['name'] == portName:
 				versions = [explicitPortVersion['version']]
@@ -488,7 +490,7 @@ class Repository(object):
 		self._removeStalePortForPackageMappings(activePorts)
 
 		# Add port for package mappings for updated ports.
-		for portID, port in updatedPorts.iteritems():
+		for portID, port in updatedPorts.items():
 			for package in port.packages:
 				self._portIdForPackageId[package.versionedName] \
 					= port.versionedName
@@ -590,7 +592,7 @@ class Repository(object):
 				relativeBasePath + '/patches',
 			]
 			entries = check_output([Configuration.getPackageCommand(), 'list',
-				'-p', sourcePackagePath]).splitlines()
+				'-p', sourcePackagePath]).decode('utf-8').splitlines()
 			entries = [
 				entry for entry in entries if entry in allowedEntries
 			]

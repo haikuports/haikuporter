@@ -76,7 +76,7 @@ print("* Generating new keys...")
 call(["ssh-keygen", "-q", "-t", "rsa", "-b", "4096", "-f", private_key_path, "-P", "", "-C", args.name])
 
 with open(os.devnull, 'w') as devnull:
-	hostkeys = check_output(["ssh-keyscan", "-t", "rsa", "-p", args.port, args.host], stderr=devnull)
+	hostkeys = check_output(["ssh-keyscan", "-t", "rsa", "-p", args.port, args.host], stderr=devnull).decode('utf-8')
 
 if not len(hostkeys):
     print("* WARNING: Unable to obtain hostkey from " + args.host + ":" + args.port)
@@ -89,5 +89,5 @@ else:
 print("* Configuration complete.\n")
 print("Please authorize the following key on your builder:\n")
 print("--8<-------8<-------------8<----------------")
-print(check_output(["ssh-keygen", "-y", "-f", private_key_path]).strip())
+print(check_output(["ssh-keygen", "-y", "-f", private_key_path]).decode('utf-8').strip())
 print("----------8<-------8<----------------8<-----")

@@ -868,7 +868,7 @@ class BuildMaster(object):
 				self.activeBuilders.append(builder)
 
 		if len(self.activeBuilders) == 0:
-			sysExit(u'no builders available')
+			sysExit('no builders available')
 
 		self.availableBuilders += self.activeBuilders
 
@@ -963,11 +963,11 @@ class BuildMaster(object):
 		try:
 			ensureCommandIsAvailable('git')
 			origin = subprocess.check_output(['git', 'remote', 'get-url',
-					'origin'], cwd=self.portsTreePath, stderr=subprocess.STDOUT)
+					'origin'], cwd=self.portsTreePath, stderr=subprocess.STDOUT).decode('utf-8')
 			head = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
-				cwd=self.portsTreePath, stderr=subprocess.STDOUT)
+				cwd=self.portsTreePath, stderr=subprocess.STDOUT).decode('utf-8')
 		except:
-			warn(u'unable to determine origin and revision of haikuports tree')
+			warn('unable to determine origin and revision of haikuports tree')
 			origin = '<unknown> '
 			head = '<unknown> '
 
@@ -1021,7 +1021,7 @@ class BuildMaster(object):
 			with self.builderCondition:
 				if len(self.activeBuilders) == 0:
 					self._setBuildStatus('all builders lost')
-					sysExit(u'all builders lost')
+					sysExit('all builders lost')
 
 				if len(self.availableBuilders) == 0:
 					self._setBuildStatus('waiting for available builders')

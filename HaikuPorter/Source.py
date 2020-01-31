@@ -142,7 +142,7 @@ class Source(object):
 								   + self.fetchTargetName)
 						break
 				else:
-					warn(u"Stored SOURCE_URI is no longer in recipe, automatic "
+					warn("Stored SOURCE_URI is no longer in recipe, automatic "
 						 u"repository update won't work")
 					self.sourceFetcher \
 						= createSourceFetcher(storedUri, self.fetchTarget)
@@ -172,14 +172,14 @@ class Source(object):
 				if isinstance(e, CalledProcessError):
 					info(e.output)
 				if uri != self.uris[-1]:
-					warn((u'Unable to fetch source from %s (error: %s), '
-						  + u'trying next location.') % (uri, e))
+					warn(('Unable to fetch source from %s (error: %s), '
+						  + 'trying next location.') % (uri, e))
 				else:
-					warn((u'Unable to fetch source from %s (error: %s)')
+					warn(('Unable to fetch source from %s (error: %s)')
 						 % (uri, e))
 
 		# failed to fetch source
-		sysExit(u'Failed to fetch source from all known locations.')
+		sysExit('Failed to fetch source from all known locations.')
 
 	def clean(self):
 		if os.path.exists(self.fetchTarget):
@@ -199,7 +199,7 @@ class Source(object):
 		# Check to see if the source was already unpacked.
 		if port.checkFlag('unpack', self.index) and not getOption('force'):
 			if not os.path.exists(self.sourceBaseDir):
-				warn(u'Source dir has changed or been removed, unpacking in new dir')
+				warn('Source dir has changed or been removed, unpacking in new dir')
 				port.unsetFlag('unpack', self.index)
 			else:
 				info('Skipping unpack of ' + self.fetchTargetName)
@@ -262,20 +262,20 @@ class Source(object):
 
 		if self.checksum is not None:
 			if sha256.hexdigest() != self.checksum:
-				sysExit(u'Expected SHA-256: ' + self.checksum + '\n'
+				sysExit('Expected SHA-256: ' + self.checksum + '\n'
 						+ 'Found SHA-256:	 ' + sha256.hexdigest())
 		else:
-			warn(u'----- CHECKSUM TEMPLATE -----')
-			warn(u'CHECKSUM_SHA256%(index)s="%(digest)s"' % {
+			warn('----- CHECKSUM TEMPLATE -----')
+			warn('CHECKSUM_SHA256%(index)s="%(digest)s"' % {
 				"digest": sha256.hexdigest(),
 				"index": ("_" + self.index) if self.index != "1" else ""})
-			warn(u'-----------------------------')
+			warn('-----------------------------')
 
 		if self.checksum is None:
 			if not Configuration.shallAllowUnsafeSources():
-				sysExit(u'No checksum found in recipe!')
+				sysExit('No checksum found in recipe!')
 			else:
-				warn(u'No checksum found in recipe!')
+				warn('No checksum found in recipe!')
 
 		port.setFlag('validate', self.index)
 
@@ -339,30 +339,30 @@ class Source(object):
 			# Apply patches
 			for patch in self.patches:
 				if not os.path.exists(patch):
-					sysExit(u'patch file "' + patch + u'" not found.')
+					sysExit('patch file "' + patch + '" not found.')
 
 				if getOption('noGitRepo'):
 					info('Applying patch(set) "%s" ...' % patch)
 					output = check_output(['patch', '--ignore-whitespace', '-p1', '-i',
-								patch], cwd=self.sourceDir)
+								patch], cwd=self.sourceDir).decode('utf-8')
 					info(output)
 				else:
 					if patch.endswith('.patchset'):
 						info('Applying patchset "%s" ...' % patch)
 						output = check_output(['git', 'am', '--ignore-whitespace', '-3',
 									'--keep-cr', patch], cwd=self.sourceDir,
-								   env=self.gitEnv)
+								   env=self.gitEnv).decode('utf-8')
 						info(output)
 					else:
 						info('Applying patch "%s" ...' % patch)
 						output = check_output(['git', 'apply', '--ignore-whitespace',
 									'-p1', '--index', patch],
-									cwd=self.sourceDir)
+									cwd=self.sourceDir).decode('utf-8')
 						info(output)
 						output = check_output(['git', 'commit', '-q', '-m',
 									'applying patch %s'
 									% os.path.basename(patch)],
-								   cwd=self.sourceDir, env=self.gitEnv)
+								   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8')
 						info(output)
 				patched = True
 		except:
@@ -379,9 +379,9 @@ class Source(object):
 	def reset(self):
 		"""Reset source to original state"""
 
-		output = check_output(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir)
+		output = check_output(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir).decode('utf-8')
 		info(output)
-		output = check_output(['git', 'clean', '-f', '-d'], cwd=self.sourceDir)
+		output = check_output(['git', 'clean', '-f', '-d'], cwd=self.sourceDir).decode('utf-8')
 		info(output)
 
 	def commitPatchPhase(self):
@@ -389,7 +389,7 @@ class Source(object):
 
 		# see if there are any changes at all
 		changes = check_output(['git', 'status', '--porcelain'],
-							   cwd=self.sourceDir)
+							   cwd=self.sourceDir).decode('utf-8')
 		if not changes:
 			info("Patch function hasn't changed anything for "
 				  + self.fetchTargetName)
@@ -398,10 +398,10 @@ class Source(object):
 		info('Committing changes done in patch function for '
 			  + self.fetchTargetName)
 		output = check_output(['git', 'commit', '-a', '-q', '-m', 'patch function'],
-				   cwd=self.sourceDir, env=self.gitEnv)
+				   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8')
 		info(output)
 		output = check_output(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'],
-				   cwd=self.sourceDir)
+				   cwd=self.sourceDir).decode('utf-8')
 		info(output)
 
 	def extractPatchset(self, patchSetFilePath, archPatchSetFilePath):
@@ -410,7 +410,7 @@ class Source(object):
 		   during the patch phase"""
 
 		if not os.path.exists(self.sourceDir):
-			sysExit(u"Can't extract patchset for " + self.sourceDir
+			sysExit("Can't extract patchset for " + self.sourceDir
 					+ u" as the source directory doesn't exist yet")
 
 		print('Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath)
@@ -445,21 +445,21 @@ class Source(object):
 
 		# warn if there's a correpsonding arch-specific patchset file
 		if os.path.exists(archPatchSetFilePath):
-			warn(u'arch-specific patchset file %s requires manual update'
+			warn('arch-specific patchset file %s requires manual update'
 				 % os.path.basename(archPatchSetFilePath))
 
 		# if there's a corresponding patch file, remove it, as we now have
 		# the patchset
 		patchFilePath = patchSetFilePath[:-3]
 		if os.path.exists(patchFilePath):
-			warn(u'removing obsolete patch file '
+			warn('removing obsolete patch file '
 				 + os.path.basename(patchFilePath))
 			os.remove(patchFilePath)
 		# if there's a corresponding diff file, remove it, as we now have
 		# the patchset
 		diffFilePath = patchFilePath[:-6] + '.diff'
 		if os.path.exists(diffFilePath):
-			warn(u'removing obsolete diff file '
+			warn('removing obsolete diff file '
 				 + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 
@@ -500,16 +500,16 @@ class Source(object):
 		"""Import sources into git repository"""
 
 		ensureCommandIsAvailable('git')
-		info(check_output(['git', 'init'], cwd=self.sourceDir))
-		info(check_output(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir))
+		info(check_output(['git', 'init'], cwd=self.sourceDir).decode('utf-8'))
+		info(check_output(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir).decode('utf-8'))
 			# Disable automatic garbage collection. This works around an issue
 			# with git failing to do that with the haikuwebkit repository.
 		info(check_output(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'],
-				   cwd=self.sourceDir))
-		info(check_output(['git', 'add', '-f', '.'], cwd=self.sourceDir))
+				   cwd=self.sourceDir).decode('utf-8'))
+		info(check_output(['git', 'add', '-f', '.'], cwd=self.sourceDir).decode('utf-8'))
 		info(check_output(['git', 'commit', '-m', 'import', '-q'],
-				   cwd=self.sourceDir, env=self.gitEnv))
-		info(check_output(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir))
+				   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8'))
+		info(check_output(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir).decode('utf-8'))
 
 	def _isInGitWorkingDirectory(self, path):
 		"""Returns whether the given source directory path is in a git working

@@ -84,7 +84,7 @@ class Policy(object):
 		self._checkPostInstallScripts()
 
 		if self.strict and self.violationEncountered:
-			sysExit(u"packaging policy violation(s) in strict mode")
+			sysExit("packaging policy violation(s) in strict mode")
 
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir(self.package.packagingDir):
@@ -184,7 +184,7 @@ class Policy(object):
 		try:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(['readelf', '--dynamic', path],
-					stderr=devnull)
+					stderr=devnull).decode('utf-8')
 		except:
 			return
 
@@ -256,7 +256,7 @@ class Policy(object):
 
 		# The library might be provided by a sibling package.
 		providingPackage = None
-		for packageName in self.portPackagesProvides.iterkeys():
+		for packageName in self.portPackagesProvides.keys():
 			packageProvides = self.portPackagesProvides[packageName]
 			if resolvableName in packageProvides:
 				providingPackage = packageName
@@ -311,7 +311,7 @@ class Policy(object):
 		try:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(
-					['catattr', '-d', 'SYS:PACKAGE_FILE', path], stderr=devnull)
+					['catattr', '-d', 'SYS:PACKAGE_FILE', path], stderr=devnull).decode('utf-8')
 				if output.endswith('\n'):
 					output = output[:-1]
 				return output
@@ -324,7 +324,7 @@ class Policy(object):
 			with open(os.devnull, "w") as devnull:
 				output = check_output(
 					[Configuration.getPackageCommand(), 'list', package],
-					stderr=devnull)
+					stderr=devnull).decode('utf-8')
 		except:
 			return None
 

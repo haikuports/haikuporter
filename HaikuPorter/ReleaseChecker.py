@@ -39,7 +39,7 @@ class ReleaseCheckerForGitHub(object):
 	def check(self):
 		parts = self.uri.split("/")
 		if parts[2] != "github.com":
-			sysExit(u'Bad URI in GitHub ReleaseChecker!')
+			sysExit('Bad URI in GitHub ReleaseChecker!')
 
 		project = "/".join(parts[3:5])
 		# some "releases" are actually just tags
@@ -90,7 +90,7 @@ def createReleaseChecker(uri, version):
 	"""Creates an appropriate release checker for the given URI"""
 
 	if "requests" not in sys.modules:
-		sysExit(u'requests missing for ReleaseChecker!')
+		sysExit('requests missing for ReleaseChecker!')
 
 	lowerUri = uri.lower()
 	if "://github.com/" in lowerUri:
