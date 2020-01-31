@@ -422,7 +422,7 @@ class BuildPlatformUnix(BuildPlatform):
 			shutil.rmtree(sysrootDir)
 		os.makedirs(sysrootDir)
 
-		print 'Setting up sysroot for non-chroot build: ' + sysrootDir
+		print('Setting up sysroot for non-chroot build: ' + sysrootDir)
 
 		os.mkdir(sysrootDir + '/packages')
 		os.mkdir(sysrootDir + '/boot')
@@ -432,7 +432,7 @@ class BuildPlatformUnix(BuildPlatform):
 
 		# extract the haiku_cross_devel_sysroot package
 		crossDevelPackage = self._getCrossDevelPackage(secondaryArchitecture)
-		print 'Activating haiku_cross_devel_sysroot package: ' + crossDevelPackage
+		print('Activating haiku_cross_devel_sysroot package: ' + crossDevelPackage)
 		self._activatePackage(crossDevelPackage, sysrootDir, '/boot/system')
 
 		# extract the required packages

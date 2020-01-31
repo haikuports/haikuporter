@@ -26,7 +26,7 @@ class color:
 
 # Get state of cluster
 def cluster_health(arguments):
-	print color.HEADER + "Name              + Host                        + Status" + color.ENDC
+	print(color.HEADER + "Name              + Host                        + Status" + color.ENDC)
 	for filename in os.listdir(args.confdir):
 		fullpath = os.path.join(args.confdir, filename)
 		basename = os.path.basename(fullpath)
@@ -44,7 +44,7 @@ def cluster_health(arguments):
 		try:
 			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
 		except:
-			print color.FAIL + "FAIL: Invalid host key" + color.ENDC
+			print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
 			continue
 
 		try:
@@ -53,7 +53,7 @@ def cluster_health(arguments):
 				username=data["ssh"]["user"],
 				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
 		except:
-			print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
+			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
 			continue
 
 		# All highly prone to messing up. yay.
@@ -62,12 +62,12 @@ def cluster_health(arguments):
 		stdin, stdout, stderr = ssh.exec_command("sysinfo -cpu | grep 'CPU #' | wc -l")
 		cpus = stdout.readlines()[0].split()[0]
 
-		print color.OKGREEN + "Connected: " + uname[0] + " " + uname[3] + ". " + cpus + " " + uname[8] + " cores." + color.ENDC
+		print(color.OKGREEN + "Connected: " + uname[0] + " " + uname[3] + ". " + cpus + " " + uname[8] + " cores." + color.ENDC)
 		ssh.close()
 
 # Get provision nodes
 def cluster_provision(arguments):
-	print color.HEADER + "Name              + Status" + color.ENDC
+	print(color.HEADER + "Name              + Status" + color.ENDC)
 	for filename in os.listdir(args.confdir):
 		fullpath = os.path.join(args.confdir, filename)
 		basename = os.path.basename(fullpath)
@@ -83,7 +83,7 @@ def cluster_provision(arguments):
 		try:
 			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
 		except:
-			print color.FAIL + "FAIL: Invalid host key" + color.ENDC
+			print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
 			continue
 
 		try:
@@ -92,7 +92,7 @@ def cluster_provision(arguments):
 				username=data["ssh"]["user"],
 				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
 		except:
-			print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
+			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
 			continue
 
 		# All highly prone to messing up. yay.
@@ -116,13 +116,13 @@ def cluster_provision(arguments):
 		command = "sed -i 's/^Subsystem\s*sftp.*/Subsystem sftp \/boot\/system\/lib\/openssh\/sftp-server/' /boot/system/settings/ssh/sshd_config"
 		stdin, stdout, stderr = ssh.exec_command(command)
 
-		print color.OKBLUE + "Complete" + color.ENDC
+		print(color.OKBLUE + "Complete" + color.ENDC)
 		ssh.close()
-	print "It may be necessary to reboot the buildslaves to pick up the changes."
-	print "This can be done with 'builderctl reboot'"
+	print("It may be necessary to reboot the buildslaves to pick up the changes.")
+	print("This can be done with 'builderctl reboot'")
 
 def cluster_reboot(arguments):
-	print color.HEADER + "Name              + Result" + color.ENDC
+	print(color.HEADER + "Name              + Result" + color.ENDC)
 	for filename in os.listdir(args.confdir):
 		fullpath = os.path.join(args.confdir, filename)
 		basename = os.path.basename(fullpath)
@@ -138,7 +138,7 @@ def cluster_reboot(arguments):
 		try:
 			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
 		except:
-			print color.FAIL + "FAIL: Invalid host key" + color.ENDC
+			print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
 			continue
 
 		try:
@@ -147,11 +147,11 @@ def cluster_reboot(arguments):
 				username=data["ssh"]["user"],
 				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
 		except:
-			print color.FAIL + "FAIL: Error connecting to host!" + color.ENDC
+			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
 			continue
 
 		stdin, stdout, stderr = ssh.exec_command("shutdown -r && exit")
-		print color.FAIL + "Issued" + color.ENDC
+		print(color.FAIL + "Issued" + color.ENDC)
 		ssh.close()
 
 parser = argparse.ArgumentParser(description='List and test connections to builders')

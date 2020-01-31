@@ -38,11 +38,11 @@ def launch_ssh(arguments):
 		port = data["ssh"]["port"]
 		cmd = ["ssh","-i",privateKey,"-o","UserKnownHostsFile="+hostKey,"-p",port,user+"@"+host]
 		
-		print color.OKGREEN + "Connecting to builder " + user + "@" + host + ":" + port + color.ENDC
+		print(color.OKGREEN + "Connecting to builder " + user + "@" + host + ":" + port + color.ENDC)
 		call(cmd)
 		
 	except:
-		print color.FAIL + "Error connecting to " + arguments.buildername + "!"
+		print(color.FAIL + "Error connecting to " + arguments.buildername + "!")
 		parser.print_help()
 
 parser = argparse.ArgumentParser(description='Open SSH connection to builder')

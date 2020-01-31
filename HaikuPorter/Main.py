@@ -41,9 +41,9 @@ class Main(object):
 				traceback.print_exc()
 			elif type(exception).__name__ == "SystemExit":
 				if type(exception.code).__name__ != "int":
-					print exception.code
+					print(exception.code)
 			else:
-				print exception
+				print(exception)
 			exit(1)
 
 	def run(self, args):
@@ -146,7 +146,7 @@ class Main(object):
 
 		# if requested, print the location of the haikuports source tree
 		if self.options.tree:
-			print self.treePath
+			print(self.treePath)
 			return
 
 		# if requested, scan the ports tree for problems
@@ -173,7 +173,7 @@ class Main(object):
 					self.options.printFilenames)
 
 			for name in sorted(allNames):
-				print name
+				print(name)
 			return
 
 		# if requested, search for a port
@@ -192,14 +192,14 @@ class Main(object):
 						portID = portName + '-' + versions[0]
 						port = self.repository.allPorts[portID]
 						if self.options.printRaw:
-							print portName
+							print(portName)
 						else:
-							print port.category + '::' + portName
+							print(port.category + '::' + portName)
 				else:
 					packageNames = self.repository.searchPackages(arg,
 						self.options.printFilenames)
 					for packageName in packageNames:
-						print packageName
+						print(packageName)
 			return
 
 		# if requested, print the ports related to the supplied files
@@ -216,7 +216,7 @@ class Main(object):
 
 			for port in allPorts:
 				if port.referencesFiles(files):
-					print port.versionedName
+					print(port.versionedName)
 
 			return
 
@@ -235,7 +235,7 @@ class Main(object):
 					if package.hpkgName in args:
 						ports.add(port.versionedName)
 
-			print '\n'.join(sorted(ports))
+			print('\n'.join(sorted(ports)))
 			return
 
 		if self.options.location:
@@ -250,7 +250,7 @@ class Main(object):
 				versions = self.repository.portVersionsByName[portName]
 				portID = portName + '-' + versions[0]
 				port = self.repository.allPorts[portID]
-				print os.path.join(self.treePath, port.category, portName)
+				print(os.path.join(self.treePath, port.category, portName))
 			return
 
 		if self.options.portsfile:
@@ -305,9 +305,9 @@ class Main(object):
 			# first untangle and build all ports with circular dependencies
 			dependencyAnalyzer = DependencyAnalyzer(self.repository)
 			portsToBuild = dependencyAnalyzer.getBuildOrderForBootstrap()
-			print 'Untangling the ports with circular dependencies gave this:'
-			print "	 " + "\n  ".join(portsToBuild)
-			print 'After that, all other available ports will be built, too'
+			print('Untangling the ports with circular dependencies gave this:')
+			print("	 " + "\n  ".join(portsToBuild))
+			print('After that, all other available ports will be built, too')
 			portsNotYetBuilt = []
 			for portId in portsToBuild:
 				port = self.repository.allPorts[portId]
@@ -477,11 +477,11 @@ class Main(object):
 
 		# show summary of policy violations
 		if Policy.violationsByPort:
-			print 'Summary of policy violations in this session:'
+			print('Summary of policy violations in this session:')
 			for portName in sorted(Policy.violationsByPort.keys()):
-				print 'Policy violations of %s:' + portName
+				print('Policy violations of %s:' + portName)
 				for violation in Policy.violationsByPort[portName]:
-					print '\t' + violation
+					print('\t' + violation)
 
 		if self.options.buildMaster:
 			if self.options.display:
@@ -492,28 +492,28 @@ class Main(object):
 				self.buildMaster.runBuilds()
 
 	def _listDependencies(self, port):
-		print '-' * 70
-		print 'dependencies of ' + port.versionedName
+		print('-' * 70)
+		print('dependencies of ' + port.versionedName)
 
 		presentDependencyPackages = []
 		buildDependencies = port.resolveDependencies(
 			self.packageRepositories, self.options.test,
 			presentDependencyPackages)
 
-		print 'packages already present:'
+		print('packages already present:')
 		presentDependencyPackageNames = [os.path.basename(package)
 			for package in presentDependencyPackages]
 		for name in sorted(presentDependencyPackageNames):
-			print "\t" + name
-		print ''
+			print("\t" + name)
+		print('')
 
-		print 'packages that need to be built:'
+		print('packages that need to be built:')
 		for dependency in buildDependencies:
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
 			try:
 				portID = self.repository.getPortIdForPackageId(packageID)
-				print "\t" + packageID + ' -> ' + portID
+				print("\t" + packageID + ' -> ' + portID)
 
 			except KeyError:
 				sysExit(u'Inconsistency: ' + port.versionedName
@@ -548,18 +548,18 @@ class Main(object):
 				if answer == '':
 					sys.exit(1)
 				if answer[0].lower() == 'y':
-					print ' ok'
+					print(' ok')
 				else:
 					sys.exit(1)
 
 		if not self.options.ignoreMessages and port.recipeKeys['MESSAGE']:
-			print port.recipeKeys['MESSAGE']
+			print(port.recipeKeys['MESSAGE'])
 			if not self.options.yes:
 				answer = raw_input('Continue (y/n + enter)? ')
 				if answer == '':
 					sys.exit(1)
 				if answer[0].lower() == 'y':
-					print ' ok'
+					print(' ok')
 				else:
 					sys.exit(1)
 
@@ -573,9 +573,9 @@ class Main(object):
 
 		self._setupForPossiblyObsoletePort(port)
 
-		print '=' * 70
-		print port.category + '::' + port.versionedName
-		print '=' * 70
+		print('=' * 70)
+		print(port.category + '::' + port.versionedName)
+		print('=' * 70)
 
 		allPorts = self.repository.allPorts
 
@@ -594,7 +594,7 @@ class Main(object):
 			buildDependencies = port.resolveDependencies(
 				self.packageRepositories, testPort)
 
-		print 'The following build dependencies were found:'
+		print('The following build dependencies were found:')
 		for dependency in buildDependencies:
 			print('\t' + dependency)
 
@@ -628,7 +628,7 @@ class Main(object):
 			if port in requiredPortsToBuild:
 				sysExit(u'Port ' + port.versionedName + ' depends on itself')
 
-			print 'The following required ports will be built first:'
+			print('The following required ports will be built first:')
 			for requiredPort in requiredPortsToBuild:
 				print('\t' + requiredPort.category + '::'
 					  + requiredPort.versionedName)
@@ -662,10 +662,10 @@ class Main(object):
 
 		targetPath = self._setupForPossiblyObsoletePort(port)
 
-		print '-' * 70
-		print port.category + '::' + port.versionedName
-		print '\t' + port.recipeFilePath
-		print '-' * 70
+		print('-' * 70)
+		print(port.category + '::' + port.versionedName)
+		print('\t' + port.recipeFilePath)
+		print('-' * 70)
 
 		# pass-on options to port
 		port.forceOverride = self.options.force
@@ -718,9 +718,9 @@ class Main(object):
 	def _testPort(self, port):
 		"""Build a single port"""
 
-		print '-' * 70
-		print 'TESTING ' + port.category + '::' + port.versionedName
-		print '-' * 70
+		print('-' * 70)
+		print('TESTING ' + port.category + '::' + port.versionedName)
+		print('-' * 70)
 
 		# pass-on options to port
 		port.beQuiet = self.options.quiet
@@ -792,7 +792,7 @@ class Main(object):
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via git"""
-		print 'Refreshing the port tree: %s' % self.treePath
+		print('Refreshing the port tree: %s' % self.treePath)
 		ensureCommandIsAvailable('git')
 		if os.path.exists(self.treePath + '/.git'):
 			check_call(['git', 'pull'], cwd=self.treePath)
@@ -835,7 +835,7 @@ class Main(object):
 
 	def _checkSourceTree(self, portArgument):
 		if portArgument:
-			print 'Checking ports of: ' + portArgument
+			print('Checking ports of: ' + portArgument)
 
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
@@ -843,7 +843,7 @@ class Main(object):
 			if portArgument in allPorts:
 				# Full port name / ver
 				port = allPorts[portArgument]
-				print '%s	[%s]' % (portArgument, port.category)
+				print('%s	[%s]' % (portArgument, port.category))
 				port.validateRecipeFile(True) # exit 1 if fail
 				return
 			elif portArgument in portVersionsByName:
@@ -852,12 +852,12 @@ class Main(object):
 				for version in portVersionsByName[portArgument]:
 					portID = portArgument + '-' + version
 					port = allPorts[portID]
-					print '%s	[%s]' % (portID, port.category)
+					print('%s	[%s]' % (portID, port.category))
 					try:
 						port.validateRecipeFile(True)
 					except SystemExit as e:
 						somethingFailed = True
-						print e.code
+						print(e.code)
 				if somethingFailed:
 					sys.exit(1)
 			else:
@@ -865,7 +865,7 @@ class Main(object):
 				sysExit(u'%s is not a known port!' % portArgument)
 
 		else:
-			print 'Checking HaikuPorts tree at: ' + self.treePath
+			print('Checking HaikuPorts tree at: ' + self.treePath)
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
 			somethingFailed = False
@@ -873,11 +873,11 @@ class Main(object):
 				for version in portVersionsByName[portName]:
 					portID = portName + '-' + version
 					port = allPorts[portID]
-					print '%s	[%s]' % (portID, port.category)
+					print('%s	[%s]' % (portID, port.category))
 					try:
 						port.validateRecipeFile(True)
 					except SystemExit as e:
-						print e.code
+						print(e.code)
 						somethingFailed = True
 			if somethingFailed:
 				sys.exit(1)
@@ -911,7 +911,7 @@ class Main(object):
 	def _checkPortsReleases(self, portArgument):
 		self._createRepositoryIfNeeded(True)
 		if portArgument:
-			print 'Checking for newer release for port: ' + portArgument
+			print('Checking for newer release for port: ' + portArgument)
 
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
@@ -919,7 +919,7 @@ class Main(object):
 			if portArgument in allPorts:
 				# Full port name / ver
 				port = allPorts[portArgument]
-				print '%s	[%s]' % (portArgument, port.category)
+				print('%s	[%s]' % (portArgument, port.category))
 				port.checkPortReleases()
 				return
 			elif portArgument in portVersionsByName:
@@ -929,14 +929,14 @@ class Main(object):
 					sysExit(u'%s does not have an active version!' % portArgument)
 				portID = portArgument + '-' + version
 				port = allPorts[portID]
-				print '%s	[%s]' % (portID, port.category)
+				print('%s	[%s]' % (portID, port.category))
 				port.checkPortReleases()
 			else:
 				# Unknown
 				sysExit(u'%s is not a known port!' % portArgument)
 
 		else:
-			print 'Checking for newer release for ports from tree at: ' + self.treePath
+			print('Checking for newer release for ports from tree at: ' + self.treePath)
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
 			somethingFailed = False
@@ -946,5 +946,5 @@ class Main(object):
 					continue
 				portID = portName + '-' + version
 				port = allPorts[portID]
-				print '%s	[%s]' % (portID, port.category)
+				print('%s	[%s]' % (portID, port.category))
 				port.checkPortReleases()
