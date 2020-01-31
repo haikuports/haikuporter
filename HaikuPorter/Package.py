@@ -186,7 +186,7 @@ class Package(object):
 		obsoleteDir = packagesPath + '/.obsolete'
 		packageFile = packagesPath + '/' + self.hpkgName
 		if os.path.exists(packageFile):
-			print '\tobsoleting package ' + self.hpkgName
+			print('\tobsoleting package ' + self.hpkgName)
 			obsoletePackage = obsoleteDir + '/' + self.hpkgName
 			if not os.path.exists(obsoleteDir):
 				os.mkdir(obsoleteDir)

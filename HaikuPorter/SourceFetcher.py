@@ -297,13 +297,13 @@ class SourceFetcherForGit(object):
 			output = check_output(command, shell=True, cwd=self.fetchTarget)
 			info(output)
 		except:
-			print 'trying to fetch revision %s from upstream' % self.rev
+			print('trying to fetch revision %s from upstream' % self.rev)
 			command = "git branch | cut -c3-"
 			branches = check_output(command, shell=True,
 									cwd=self.fetchTarget, stderr=STDOUT).splitlines()
 			for branch in branches:
 				command = 'git fetch origin %s:%s' % (branch, branch)
-				print command
+				print(command)
 				output = check_output(command, shell=True, cwd=self.fetchTarget)
 				info(output)
 			# ensure that the revision really is available now

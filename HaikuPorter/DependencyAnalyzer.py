@@ -133,20 +133,20 @@ class DependencyAnalyzer(object):
 		if not self.portNodes:
 			self._doInitialDependencyResolution()
 
-		print 'Required system packages:'
+		print('Required system packages:')
 		for packageNode in sorted(self.systemPackageNodes,
 				key=lambda packageNode: packageNode.name):
-			print '	 %s' % packageNode.name
+			print('	 %s' % packageNode.name)
 
-		print 'Ports required by haikuporter:'
+		print('Ports required by haikuporter:')
 		for packageNode in sorted(self.haikuporterRequires,
 				key=lambda packageNode: packageNode.name):
-			print '	 %s' % packageNode.portNode.name
+			print('	 %s' % packageNode.portNode.name)
 
-		print 'Ports depending cyclically on each other:'
+		print('Ports depending cyclically on each other:')
 		for node in sorted(sorted(self.cyclicNodes, key=lambda node: node.name),
 				key=lambda node: node.outdegree):
-			print '	 %s (out-degree %d)' % (node.name, node.outdegree)
+			print('	 %s (out-degree %d)' % (node.name, node.outdegree))
 
 	def getBuildOrderForBootstrap(self):
 		if not self.portNodes:
@@ -162,7 +162,7 @@ class DependencyAnalyzer(object):
 		while nodes:
 			lastDoneCount = len(done)
 			for node in sorted(list(nodes), key=lambda node: node.name):
-				print '# checking if %s is buildable ...' % node.name
+				print('# checking if %s is buildable ...' % node.name)
 				if node.isBuildable(self.repository.path, doneRepositoryPath):
 					done.append(node.name)
 					nodes.remove(node)
@@ -182,7 +182,7 @@ class DependencyAnalyzer(object):
 		# depend on. A package automatically depends on the port it belongs to.
 		# Furthermore it depends on the packages its requires specify. Build
 		# requires and build prerequires are dependencies for a port.
-		print 'Resolving dependencies ...'
+		print('Resolving dependencies ...')
 
 		self._collectDependencyInfos(self.repository.path)
 		self._collectSystemPackages()
@@ -191,7 +191,7 @@ class DependencyAnalyzer(object):
 		for portName in sorted(self.repository.portVersionsByName.keys()):
 			activePortVersion = self.repository.getActiveVersionOf(portName)
 			if not activePortVersion:
-				print 'Warning: Skipping ' + portName + ', no version active'
+				print('Warning: Skipping ' + portName + ', no version active')
 				continue
 
 			allActivePorts.append(portName + '-' + activePortVersion)
@@ -298,7 +298,7 @@ class DependencyAnalyzer(object):
 		for node in nodes:
 			if node.outdegree == 0:
 				outdegreeZeroStack.append(node)
-				print '[%s] has out-degree 0' % node.name
+				print('[%s] has out-degree 0' % node.name)
 
 		# remove the acyclic part of the graph that depends on nothing else
 		while outdegreeZeroStack:
@@ -323,7 +323,7 @@ class DependencyAnalyzer(object):
 			try:
 				packageInfo = PackageInfo(dependencyInfoFile)
 			except CalledProcessError:
-				print ('Warning: Ignoring broken dependency-info file "%s"'
+				print('Warning: Ignoring broken dependency-info file "%s"'
 					   % dependencyInfoFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
 			self.packageInfos[packageInfo.versionedName] = packageInfo
@@ -340,7 +340,7 @@ class DependencyAnalyzer(object):
 			try:
 				packageInfo = PackageInfo(packageFile)
 			except CalledProcessError:
-				print ('Warning: Ignoring broken package file "%s"'
+				print('Warning: Ignoring broken package file "%s"'
 					   % packageFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
 			self.packageInfos[packageInfo.versionedName] = packageInfo

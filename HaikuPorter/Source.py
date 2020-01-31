@@ -183,7 +183,7 @@ class Source(object):
 
 	def clean(self):
 		if os.path.exists(self.fetchTarget):
-			print 'Removing source %s ...' % self.fetchTarget
+			print('Removing source %s ...' % self.fetchTarget)
 			if os.path.isdir(self.fetchTarget):
 				shutil.rmtree(self.fetchTarget)
 			else:
@@ -413,7 +413,7 @@ class Source(object):
 			sysExit(u"Can't extract patchset for " + self.sourceDir
 					+ u" as the source directory doesn't exist yet")
 
-		print 'Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath
+		print('Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath)
 		needToRebase = True
 		try:
 			# check if the tag 'PATCH_FUNCTION' exists

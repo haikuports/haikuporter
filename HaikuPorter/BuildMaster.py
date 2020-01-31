@@ -815,11 +815,11 @@ class BuildMaster(object):
 		if paramiko:
 			self.remoteAvailable = True
 		else:
-			print 'Remote mode unavailable'
+			print('Remote mode unavailable')
 			if self.localBuilders == 0:
 				self.localBuilders = 1
 
-		print 'Local builders count: ' + str(self.localBuilders)
+		print('Local builders count: ' + str(self.localBuilders))
 
 		logHandler = logging.FileHandler(
 			os.path.join(self.buildOutputBaseDir, 'master.log'))

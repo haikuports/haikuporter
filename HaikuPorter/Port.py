@@ -454,24 +454,24 @@ class Port(object):
 		if checker:
 			newer = checker.check()
 			if newer:
-				print 'NEWER RELEASE for %s: %s -> %s' % (self.name, self.version, newer)
+				print('NEWER RELEASE for %s: %s -> %s' % (self.name, self.version, newer))
 
 	def printDescription(self):
 		"""Show port description"""
 
 		self.parseRecipeFileIfNeeded()
-		print '*' * 80
-		print 'VERSION: %s' % self.versionedName
-		print 'REVISION: %s' % self.revision
-		print 'HOMEPAGE: %s' % self.recipeKeys['HOMEPAGE']
+		print('*' * 80)
+		print('VERSION: %s' % self.versionedName)
+		print('REVISION: %s' % self.revision)
+		print('HOMEPAGE: %s' % self.recipeKeys['HOMEPAGE'])
 		for package in self.allPackages:
-			print '-' * 80
-			print 'PACKAGE: %s' % package.versionedName
-			print 'SUMMARY: %s' % package.recipeKeys['SUMMARY']
+			print('-' * 80)
+			print('PACKAGE: %s' % package.versionedName)
+			print('SUMMARY: %s' % package.recipeKeys['SUMMARY'])
 			print('STATUS: %s'
 				% package.getStatusOnArchitecture(self.targetArchitecture))
-			print 'ARCHITECTURE: %s' % package.architecture
-		print '*' * 80
+			print('ARCHITECTURE: %s' % package.architecture)
+		print('*' * 80)
 
 	@property
 	def statusOnTargetArchitecture(self):
@@ -646,13 +646,13 @@ class Port(object):
 		"""Clean the working directory"""
 
 		if os.path.exists(self.workDir):
-			print 'Cleaning work directory of %s ...' % self.versionedName
+			print('Cleaning work directory of %s ...' % self.versionedName)
 			shutil.rmtree(self.workDir)
 
 	def purge(self):
 		"""Clean the working directory and remove downloads"""
 
-		print 'Removing sources of %s ...' % self.versionedName
+		print('Removing sources of %s ...' % self.versionedName)
 
 		self.parseRecipeFileIfNeeded()
 		for source in self.sources:
@@ -1292,13 +1292,13 @@ class Port(object):
 					chrootFunctions['success']()
 		except KeyboardInterrupt:
 			if pid > 0:
-				print '*** interrupted - stopping child process'
+				print('*** interrupted - stopping child process')
 				try:
 					os.kill(pid, signal.SIGINT)
 					os.waitpid(pid, 0)
 				except:
 					pass
-				print '*** child stopped'
+				print('*** child stopped')
 				sysExit(u'Interrupted.')
 
 	def _getNeededPackages(self, packagesPath, requiresTypes, description,
@@ -1526,14 +1526,14 @@ class Port(object):
 				if package.type != PackageType.SOURCE:
 					package.activateBuildPackage()
 
-		print 'Testing ...'
+		print('Testing ...')
 		self._doRecipeAction(Phase.TEST, self.sourceDir)
 
 	def _doRecipeAction(self, action, targetDir):
 		"""Run the specified action, as defined in the recipe file"""
 
 		if getOption('enterChroot'):
-			print "opening chroot shell for " + action
+			print("opening chroot shell for " + action)
 			ps1 = action + '-chroot:' + os.environ['PS1']
 			self._openShell([], self.sourceDir, {'PS1': ps1})
 			return
