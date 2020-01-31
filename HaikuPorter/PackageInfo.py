@@ -107,7 +107,7 @@ class PackageInfo(object):
 
 		if prune:
 			with open(cls.hpkgCachePath, 'wb') as cacheFile:
-				for entry in cls.hpkgCache.itervalues():
+				for entry in cls.hpkgCache.values():
 					pickle.dump(entry, cacheFile, pickle.HIGHEST_PROTOCOL)
 
 	@classmethod

@@ -217,7 +217,7 @@ class DependencyAnalyzer(object):
 		remainingPortNodes = set()
 		nonSystemPackageNodes = set()
 
-		for packageNode in self.packageNodes.itervalues():
+		for packageNode in self.packageNodes.values():
 			if packageNode.isSystemPackage:
 				self.systemPackageNodes.add(packageNode)
 			else:

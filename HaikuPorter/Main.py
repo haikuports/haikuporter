@@ -21,7 +21,7 @@ from .PackageRepository import PackageRepository
 from .RecipeAttributes import getRecipeFormatVersion
 from .RecipeTypes import MachineArchitecture
 from .Repository import Repository
-from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn
+from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn, info
 
 import os
 import re
@@ -209,7 +209,7 @@ class Main(object):
 			if self.options.activeVersionsOnly:
 				allPorts = self.repository.activePorts
 			else:
-				allPorts = self.repository.allPorts.itervalues()
+				allPorts = self.repository.allPorts.values()
 
 			files = [arg if os.path.isabs(arg) \
 				else os.path.join(self.treePath, arg) for arg in args]
@@ -225,7 +225,7 @@ class Main(object):
 			self._createRepositoryIfNeeded(True)
 
 			ports = set()
-			for port in self.repository.allPorts.itervalues():
+			for port in self.repository.allPorts.values():
 				try:
 					port.parseRecipeFileIfNeeded()
 				except:
@@ -835,7 +835,7 @@ class Main(object):
 
 	def _checkSourceTree(self, portArgument):
 		if portArgument:
-			print('Checking ports of: ' + portArgument)
+			info('Checking ports of: ' + portArgument)
 
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
@@ -865,7 +865,7 @@ class Main(object):
 				sysExit('%s is not a known port!' % portArgument)
 
 		else:
-			print('Checking HaikuPorts tree at: ' + self.treePath)
+			info('Checking HaikuPorts tree at: ' + self.treePath)
 			allPorts = self.repository.allPorts
 			portVersionsByName = self.repository.portVersionsByName
 			somethingFailed = False
