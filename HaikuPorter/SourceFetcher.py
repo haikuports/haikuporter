@@ -315,10 +315,10 @@ class SourceFetcherForGit(object):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
 			if sourceSubDir else sourceBaseDir
 		if foldSubDir:
-			command = ('git archive %s "%s" | tar -x -C "%s"'
-					   % (self.rev, foldSubDir, sourceDir))
+			command = ('mkdir -p "%s" && git archive %s "%s" | tar -x -C "%s"'
+					   % (sourceDir, self.rev, foldSubDir, sourceDir))
 		else:
-			command = 'git archive %s | tar -x -C "%s"' % (self.rev, sourceDir)
+			command = 'mkdir -p "%s" && git archive %s | tar -x -C "%s"' % (sourceDir, self.rev, sourceDir)
 		output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 		info(output)
 
