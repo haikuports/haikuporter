@@ -298,7 +298,7 @@ class Repository(object):
 		# are supported, but we won't know until we have parsed the recipe file.
 		secondaryArchitectures = Configuration.getSecondaryTargetArchitectures()
 		if secondaryArchitectures:
-			for port in self._allPorts.values():
+			for port in tuple(self._allPorts.values()):
 				for architecture in secondaryArchitectures:
 					newPort = Port(port.baseName, port.version, port.category,
 						port.baseDir, port.outputDir, self.shellVariables,
@@ -546,11 +546,11 @@ class Repository(object):
 		"""drops any port-for-package mappings that refer to non-existing or
 		   broken ports"""
 
-		for packageId, portId in self._portIdForPackageId.items():
+		for packageId, portId in tuple(self._portIdForPackageId.items()):
 			if portId not in activePorts:
 				del self._portIdForPackageId[packageId]
 
-		for packageName, portName in self._portNameForPackageName.items():
+		for packageName, portName in tuple(self._portNameForPackageName.items()):
 			if portName not in self._portVersionsByName:
 				del self._portNameForPackageName[packageName]
 				continue
