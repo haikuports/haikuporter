@@ -429,7 +429,6 @@ fixPkgconfig()
 		return
 	fi
 
-
 	mkdir -p $targetPkgconfigDir
 
 	for file in $sourcePkgconfigDir/*; do
@@ -445,6 +444,31 @@ fixPkgconfig()
 	done
 
 	rm -r $sourcePkgconfigDir
+}
+
+fixCMake()
+{
+	sourceCMakeDir=$installDestDir$libDir/cmake
+	targetCMakeDir=$installDestDir$developLibDir/cmake
+
+	if [ ! -d $sourceCMakeDir ]; then
+		return
+	fi
+
+	mkdir -p $targetCMakeDir
+
+	for path in $(find $sourceCMakeDir); do
+		name=$(realpath --relative-to="$sourceCMakeDir" $path)
+		if [ -d $path ]; then
+			mkdir -p $targetCMakeDir/$name
+			continue
+		fi
+
+		sed -e 's,${libDir},${developLibDir},' \
+			$path > $targetCMakeDir/$name
+	done
+
+	rm -r $sourceCMakeDir
 }
 
 fixLibtoolArchives()
