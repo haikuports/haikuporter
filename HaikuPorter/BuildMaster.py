@@ -390,7 +390,7 @@ class RemoteBuilder(object):
 
 	def setBuild(self, scheduledBuild, buildNumber):
 		logHandler = logging.FileHandler(os.path.join(self.buildOutputDir,
-				str(buildNumber) + '.log'))
+				str(buildNumber) + '.log'), encoding='utf-8')
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
 		self.buildLogger.addHandler(logHandler)
 
