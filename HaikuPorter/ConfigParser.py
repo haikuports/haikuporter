@@ -291,7 +291,7 @@ class ConfigParser(object):
 				configurationString += reduce(
 					lambda result, item: result + ' ' + item, config[key],
 					'').strip()
-			elif isinstance(config[key], types.BooleanType):
+			elif type(config[key]) is bool:
 				configurationString += 'yes' if config[key] else 'no'
 			else:
 				configurationString += str(config[key])
