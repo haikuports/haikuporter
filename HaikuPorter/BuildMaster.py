@@ -188,7 +188,8 @@ class RemoteBuilder(object):
 
 		formatter = logging.Formatter('%(asctime)s: %(message)s')
 		logHandler = logging.FileHandler(
-			os.path.join(self.builderOutputDir, self.name + '.log'))
+			os.path.join(self.builderOutputDir, self.name + '.log'),
+			encoding='utf-8')
 		logHandler.setFormatter(formatter)
 		self.logger.addHandler(logHandler)
 
