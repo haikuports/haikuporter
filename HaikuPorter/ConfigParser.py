@@ -7,7 +7,7 @@ from __future__ import absolute_import
 # -- Modules ------------------------------------------------------------------
 
 from subprocess import CalledProcessError, check_output
-import types
+import types, functools
 
 from .RecipeTypes import (
 	Architectures,
@@ -288,7 +288,7 @@ class ConfigParser(object):
 			configurationString += key + '="'
 
 			if isinstance(config[key], list):
-				configurationString += reduce(
+				configurationString += functools.reduce(
 					lambda result, item: result + ' ' + item, config[key],
 					'').strip()
 			elif type(config[key]) is bool:
