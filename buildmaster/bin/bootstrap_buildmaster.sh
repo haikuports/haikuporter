@@ -95,7 +95,7 @@ if [ -z "$BUILDTOOLS_DIR" ]
 then
 	BUILDTOOLS_DIR="$(realpath "buildtools")"
 	echo "Cloning buildtools repository to $BUILDTOOLS_DIR"
-	git clone --depth=1 https://git.haiku-os.org/buildtools "$BUILDTOOLS_DIR"
+	git clone --depth=1 https://review.haiku-os.org/buildtools "$BUILDTOOLS_DIR"
 else
 	echo "Using existing buildtools repository in $BUILDTOOLS_DIR"
 fi
@@ -104,7 +104,7 @@ if [ -z "$HAIKU_DIR" ]
 then
 	HAIKU_DIR="$(realpath "haiku")"
 	echo "Cloning Haiku repository to $HAIKU_DIR"
-	git clone --depth=1 https://git.haiku-os.org/haiku "$HAIKU_DIR"
+	git clone --depth=1 https://review.haiku-os.org/haiku "$HAIKU_DIR"
 else
 	echo "Using existing Haiku repository in $HAIKU_DIR"
 fi
