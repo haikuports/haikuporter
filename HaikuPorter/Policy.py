@@ -104,6 +104,11 @@ class Policy(object):
 		return names
 
 	def _checkProvides(self):
+		# check if the package provides itself
+		if self.package.name not in self.provides:
+			self._violation('no matching self provides for "%s"'
+				% self.package.name)
+
 		# everything in bin/ must be declared as cmd:*
 		binDir = os.path.join(self.package.packagingDir, 'bin')
 		if os.path.exists(binDir):
