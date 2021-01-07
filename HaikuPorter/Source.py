@@ -500,7 +500,7 @@ class Source(object):
 		"""Import sources into git repository"""
 
 		ensureCommandIsAvailable('git')
-		info(check_output(['git', 'init'], cwd=self.sourceDir).decode('utf-8'))
+		info(check_output(['git', 'init', '-b', 'main'], cwd=self.sourceDir).decode('utf-8'))
 		info(check_output(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir).decode('utf-8'))
 			# Disable automatic garbage collection. This works around an issue
 			# with git failing to do that with the haikuwebkit repository.
