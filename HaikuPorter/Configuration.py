@@ -104,6 +104,15 @@ haikuportsAttributes = {
 		'optionAttribute': 'commandMimeset',
 		'setAttribute': 'mimesetCommand',
 	},
+	'REPORTING_URI': {
+		'type': bytes,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'reportingURI',
+		'setAttribute': 'reportingURI',
+	},
 	'OUTPUT_DIRECTORY': {
 		'type': bytes,
 		'required': False,
@@ -242,6 +251,7 @@ class Configuration(object):
 		self.packageCommand = None
 		self.packageRepoCommand = None
 		self.mimesetCommand = None
+		self.reportingURI = None
 		self.systemMimeDB = None
 		self.licensesDirectory = None
 		self.crossTools = None
@@ -324,6 +334,10 @@ class Configuration(object):
 		if Configuration.configuration.mimesetCommand is None:
 			return which("mimeset")
 		return Configuration.configuration.mimesetCommand
+
+	@staticmethod
+	def getReportingURI():
+		return Configuration.configuration.reportingURI
 
 	@staticmethod
 	def getSystemMimeDbDirectory():

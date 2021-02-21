@@ -2,7 +2,7 @@
 #
 # Copyright 2015 Michael Lotz
 # Copyright 2016 Jerome Duval
-# COpyright 2017-2021 Haiku, Inc.
+# Copyright 2017-2020 Haiku, Inc. All rights reserved.
 # Distributed under the terms of the MIT License.
 
 # -- Modules ------------------------------------------------------------------
@@ -11,7 +11,9 @@ from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
-from .Utils import ensureCommandIsAvailable, sysExit, warn
+from .ReporterMongo import ReporterMongo
+from .ReporterJson import ReporterJson
+from .Utils import ensureCommandIsAvailable, sysExit, warn, info
 
 from .Builders.Builder import _BuilderState
 from .Builders.LocalBuilder import LocalBuilder
@@ -208,8 +210,21 @@ class BuildMaster(object):
 
 		self.logger.info('portstree head is at ' + self.portsTreeHead)
 
-		self.statusOutputPath = os.path.join(self.buildOutputBaseDir,
-			'status.json')
+		# Setup our reporting engine
+		self.reporter = None
+		reportURI = Configuration.getReportingURI()
+		if reportURI == None:
+			reportFile = os.path.join(self.buildOutputBaseDir, 'status.json')
+			info("Reporting to " + reportFile)
+			self.reporter = ReporterJson(reportFile, "master",
+				Configuration.getTargetArchitecture())
+			if not self.reporter.connected():
+				sysExit('unable to setup json reporting engine')
+		elif reportURI.startswith("mongodb://"):
+			self.reporter = ReporterMongo(reportURI, "master",
+				Configuration.getTargetArchitecture())
+			if not self.reporter.connected():
+				sysExit('unable to connect to reporting engine @ ' + reportURI)
 
 		if self.localBuilders == 0:
 			for fileName in os.listdir(self.builderBaseDir):
@@ -279,7 +294,7 @@ class BuildMaster(object):
 
 		skippedBuild = SkippedBuild(self.portsTreePath, port, reason)
 		self.skippedBuilds.append(skippedBuild)
-		self._dumpStatus()
+		self._reportStatus()
 
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		# Skip builds that would overwrite existing packages.
@@ -470,7 +485,7 @@ class BuildMaster(object):
 		scheduledBuild.buildNumbers.append(buildNumber)
 
 		builder.setBuild(scheduledBuild, buildNumber)
-		self._dumpStatus()
+		self._reportStatus()
 		startTime = time.time()
 
 		(buildSuccess, reschedule) = builder.runBuild()
@@ -517,7 +532,7 @@ class BuildMaster(object):
 
 			self.builderCondition.notify()
 
-		self._dumpStatus()
+		self._reportStatus()
 
 	def _ensureConsistentSchedule(self):
 		buildingPackagesIDs = []
@@ -611,11 +626,10 @@ class BuildMaster(object):
 
 	def _setBuildStatus(self, buildStatus):
 		self.buildStatus = buildStatus
-		self._dumpStatus()
+		self._reportStatus()
 
-	def _dumpStatus(self):
+	def _reportStatus(self):
+		if not self.reporter:
+			return
 		with self.statusLock:
-			tempFile = self.statusOutputPath + '.temp'
-			with open(tempFile, 'w') as outputFile:
-				outputFile.write(json.dumps(self.status))
-			os.rename(tempFile, self.statusOutputPath)
+			self.reporter.updateBuildrun(self.buildNumber, self.status)
