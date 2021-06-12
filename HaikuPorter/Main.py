@@ -544,7 +544,7 @@ class Main(object):
 				return False
 
 			if not self.options.yes:
-				answer = raw_input('Continue (y/n + enter)? ')
+				answer = input('Continue (y/n + enter)? ')
 				if answer == '':
 					sys.exit(1)
 				if answer[0].lower() == 'y':
