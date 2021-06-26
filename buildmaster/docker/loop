@@ -55,6 +55,13 @@ do
 		
 		rm buildmaster/do-everything
 		$BUILDMASTER everything
+	else if [ -f buildmaster/do-packages ]; then
+		LIST=$(cat buildmaster/do-packages | tr '\n' ' ')
+		echo "$(date) buildmaster list requested, starting the following:"
+		echo "  $LIST"
+		echo ""
+		rm buildmaster/do-packages
+		$BUILDMASTER build $LIST
 	else
 		echo "$(date) starting buildmaster update"
 		echo ""
