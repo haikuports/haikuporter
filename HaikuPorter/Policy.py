@@ -12,6 +12,7 @@ from .Utils import isCommandAvailable, sysExit, warn
 from subprocess import check_output
 import os
 import re
+import glob
 
 allowedWritableTopLevelDirectories = [
 	'cache',
@@ -225,15 +226,21 @@ class Policy(object):
 			'lib' + self.secondaryArchSubDir + '/' + library)
 		if os.path.exists(libDir):
 			return False
+		if len(glob.glob(libDir + '*')) == 1:
+			return False
 
 		# the library might be provided by the package (%A/lib)
 		libDir = os.path.join(dirPath, 'lib/' + library)
 		if os.path.exists(libDir):
 			return False
+		if len(glob.glob(libDir + '*')) == 1:
+			return False
 
 		# the library might be provided by the package, same dir (%A)
 		libDir = os.path.join(dirPath, library)
 		if os.path.exists(libDir):
+			return False
+		if len(glob.glob(libDir + '*')) == 1:
 			return False
 
 		# the library might be provided by the package in rpath
