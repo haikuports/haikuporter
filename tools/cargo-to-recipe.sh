@@ -142,13 +142,31 @@ tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 	die "Failed to extract the necessary files."
 
 info=$(
-	sed -e '0,/\[metadata\]/d
-		s/checksum //
-		s/(.*)//
-		s/ /-/
-		s/ = //
-		s/"//g' "$tempdir"/Cargo.lock
+	if grep -q '\[metadata\]' "$tempdir"/Cargo.lock; then
+		sed -e '0,/\[metadata\]/d
+			s/checksum //
+			s/(.*)//
+			s/ /-/
+			s/ = //
+			s/"//g' "$tempdir"/Cargo.lock
+	else
+		awk -F \" '
+		/name|version|checksum/ {
+			if ($1 ~ "name")
+				i += 1
+			data[i] = data[i] "," $2
+		}
+
+		END {
+			for (j in data) {
+				split(data[j], f, ",")
+				if (length(f[4]) == 64)
+					print f[2] " " f[3] " " f[4]
+			}
+		}' "$tempdir"/Cargo.lock | sort | sed 's/ /-/'
+	fi
 )
+
 mapfile -t crates < <(awk '{ print $1".crate" }' <<< "$info")
 mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
 echo "$info"
