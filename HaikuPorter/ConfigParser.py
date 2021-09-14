@@ -202,12 +202,16 @@ class ConfigParser(object):
 						status = Status.STABLE
 						architecture = value
 					knownArchitectures = Architectures.getAll()
-					if architecture not in knownArchitectures:
-						architectures = ','.join(knownArchitectures)
-						sysExit('%s refers to unknown architecture %s\n'
-								'known architectures: %s'
-								% (filename, architecture, architectures))
-					entries[key][architecture] = status
+					if architecture == 'all':
+						for machineArch in MachineArchitecture.getAll():
+							entries[key][machineArch] = status
+					else:
+						if architecture not in knownArchitectures:
+							architectures = ','.join(knownArchitectures)
+							sysExit('%s refers to unknown architecture %s\n'
+									'known architectures: %s'
+									% (filename, architecture, architectures))
+						entries[key][architecture] = status
 				if 'any' in entries[key] and len(entries[key]) > 1:
 					sysExit("%s specifies both 'any' and other architectures"
 							% (filename))
