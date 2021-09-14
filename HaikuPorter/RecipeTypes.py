@@ -67,15 +67,6 @@ class MachineArchitecture(str):
 		if architecture in MachineArchitecture.getAll():
 			return architecture
 
-		# map "i*8" to "x86"
-		match = re.match('i.86', architecture)
-		if match and match.group(0) == architecture:
-			return MachineArchitecture.X86
-
-		# map "powerpc" to "ppc"
-		if architecture == 'powerpc':
-			return MachineArchitecture.PPC
-
 		# map "sparc64" to "sparc"
 		if architecture == 'sparc64':
 			return MachineArchitecture.SPARC
