@@ -333,6 +333,11 @@ class DependencyAnalyzer(object):
 			return
 
 		path = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+		if not os.path.exists(path):
+			print('Warning: "%s" system package path not found!' % path)
+			# Do we want to "fake inject" haiku, haiku_dev here?
+			return
+
 		for entry in os.listdir(path):
 			if not entry.endswith('.hpkg'):
 				continue
