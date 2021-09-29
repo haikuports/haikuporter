@@ -318,6 +318,28 @@ runConfigure()
 	$configure $dirArgs $buildSpec $@
 }
 
+# helper function to validate CMake invocations (and use the correct one)
+cmake()
+{
+	if [[ "$*" != *CMAKE_BUILD_TYPE* ]]; then
+		echo "error: invoking cmake without CMAKE_BUILD_TYPE specified"
+		exit 1
+	fi
+
+	$portPackageLinksDir/cmd~cmake/bin/cmake $*
+}
+
+# helper function to validate Meson invocations (and use the correct one)
+meson()
+{
+	if [[ "$*" != *buildtype* ]]; then
+		echo "error: invoking meson without --buildtype argument"
+		exit 1
+	fi
+
+	$portPackageLinksDir/cmd~meson/bin/meson $*
+}
+
 fixDevelopLibDirReferences()
 {
 	# Usage: fixDevelopLibDirReferences <file> ...
