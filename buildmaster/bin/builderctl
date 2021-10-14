@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Copyright 2016-2017 Haiku, Inc. All rights reserved.
+# Copyright 2016-2021 Haiku, Inc. All rights reserved.
 # Distributed under the terms of the MIT License.
 #
 # Authors:
@@ -158,6 +158,11 @@ parser = argparse.ArgumentParser(description='List and test connections to build
 parser.add_argument('-C', '--confdir', help='Builder config directory on local machine', required=False, default=os.path.join(os.getcwd(), "buildmaster/builders"))
 parser.add_argument('action', help='[ health | provision | reboot ]')
 args = parser.parse_args()
+
+if not os.path.isdir(args.confdir):
+	print("Error: Builder inventory not found!")
+	print("Please change to haikuports directory before running this tool (or pass --confdir)!")
+	sys.exit()
 
 if args.action == "health":
 	cluster_health(args)

@@ -7,6 +7,7 @@ RUN apt-get update \
 	&& apt-get clean
 
 RUN mkdir /var/sources /var/buildmaster
+RUN echo 'export PATH=$PATH:/var/sources/haikuporter/buildmaster/bin/' >> /etc/bash.bashrc
 
 VOLUME ["/var/sources", "/var/buildmaster"]
 
