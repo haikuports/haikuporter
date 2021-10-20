@@ -96,15 +96,9 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 	## REFACTOR into separate functions and dispatch
 
 	process = None
-	# in python3 tarfile handles xz itself
-	# until then we have to handle xz, and lz anyway, directly
 	if not tarfile.is_tarfile(archiveFile):
 		ext = archiveFile.split('/')[-1].split('.')[-1]
-		if ext == 'xz':
-			ensureCommandIsAvailable('xz')
-			process = Popen(['xz', '-c', '-d', archiveFile],
-				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-		elif ext == 'lz':
+		if ext == 'lz':
 			ensureCommandIsAvailable('lzip')
 			process = Popen(['lzip', '-c', '-d', archiveFile],
 				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
