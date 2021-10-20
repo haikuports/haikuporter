@@ -321,12 +321,19 @@ runConfigure()
 # helper function to validate CMake invocations (and use the correct one)
 cmake()
 {
-	if [[ "$*" != *CMAKE_BUILD_TYPE* ]]; then
-		echo "error: invoking cmake without CMAKE_BUILD_TYPE specified"
+	if [[ "$*" != *CMAKE_BUILD_TYPE* ]] && [[ "$*" != *--build* ]] \
+			&& [[ "$*" != *--install* ]]; then
+		echo "error: invoking cmake without CMAKE_BUILD_TYPE specified!"
+		echo "note: you probably want -DCMAKE_BUILD_TYPE=Release or -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 		exit 1
 	fi
 
-	$portPackageLinksDir/cmd~cmake/bin/cmake $*
+	CMAKE=$portPackageLinksDir/cmd~cmake/bin/cmake
+	if [ ! -f $CMAKE ]; then
+		CMAKE=$(which cmake)
+	fi
+
+	$CMAKE "$@"
 }
 
 # helper function to validate Meson invocations (and use the correct one)
@@ -334,10 +341,16 @@ meson()
 {
 	if [[ "$*" != *buildtype* ]]; then
 		echo "error: invoking meson without --buildtype argument"
+		echo "note: you probably want --buildtype=release or --buildtype=debugoptimized"
 		exit 1
 	fi
 
-	$portPackageLinksDir/cmd~meson/bin/meson $*
+	MESON=$portPackageLinksDir/cmd~meson/bin/meson
+	if [ ! -f $MESON ]; then
+		MESON=$(which meson)
+	fi
+
+	$MESON "$@"
 }
 
 fixDevelopLibDirReferences()
