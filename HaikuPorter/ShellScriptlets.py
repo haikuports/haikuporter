@@ -19,6 +19,7 @@ scriptletPrerequirements = r'''
 	cmd:${targetMachinePrefix}readelf
 	cmd:sed
 	cmd:${targetMachinePrefix}strip
+	cmd:which
 	cmd:xres
 '''
 
