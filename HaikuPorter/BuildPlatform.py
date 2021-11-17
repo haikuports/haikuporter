@@ -322,6 +322,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:sed',
 			'cmd:strip',
 			'cmd:tar',
+			'cmd:which',
 			'cmd:xargs',
 			'cmd:xres',
 			'cmd:zcat',
