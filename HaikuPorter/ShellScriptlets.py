@@ -351,7 +351,7 @@ meson()
 		MESON=$(which meson)
 	fi
 
-	$MESON "$@"
+	$MESON --wrap-mode=nodownload "$@"
 }
 
 fixDevelopLibDirReferences()
