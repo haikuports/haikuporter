@@ -186,6 +186,13 @@ class BuildMaster(object):
 		except Exception as exception:
 			pass
 
+		# Prevents the 'haiku package requirement not met' error
+		# These system packages are uploaded to every builder and used as the
+		# base set of packages for builds
+		if not getOption('systemPackagesDirectory'):
+			raise Exception('Error: Must provide --system-packages-directory flag in build-master'
+				' mode for global builder package solving')
+
 		self.localBuilders = getOption('localBuilders')
 		self.remoteAvailable = False
 
