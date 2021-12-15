@@ -288,8 +288,8 @@ class BuildMaster(object):
 			if not os.path.exists(packagePath):
 				continue
 
-			self.addSkipped(port,
-				'some packages already exist, revision bump required')
+			self.addSkipped(port, 'some packages already exist at '
+				+ self.packagesPath + ', revision bump required')
 			return
 
 		self.logger.info('scheduling build of ' + port.versionedName)
