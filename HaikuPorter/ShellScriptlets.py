@@ -840,7 +840,8 @@ mkdir -p \
 	boot/system/packages \
 	boot/system/cache/tmp \
 	boot/system/packages \
-	boot/system/settings/etc
+	boot/system/settings/etc \
+	boot/system/var/shared_memory
 
 ln -sfn /boot/system system
 ln -sfn /boot/system/bin bin
