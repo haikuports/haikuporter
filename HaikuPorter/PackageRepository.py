@@ -161,18 +161,44 @@ class PackageRepository(object):
 				repoPackagesPath, '-v', repoFile, repoFile, packageListFile],
 			stderr=subprocess.STDOUT).decode('utf-8')
 		info(output)
+		self._checksumPackageRepository(repoFile)
+		self._signPackageRepository(repoFile)
 
+	def _checksumPackageRepository(self, repoFile):
+		"""Create a checksum of the package repository"""
 		checksum = hashlib.sha256()
 		with open(repoFile, 'rb') as inputFile:
 			while True:
 				data = inputFile.read(1 * 1024 * 1024)
 				if not data:
 					break
-
 				checksum.update(data)
-
-		with open(os.path.join(outputPath, 'repo.sha256'), 'w') as outputFile:
+		with open(repoFile + '.sha256', 'w') as outputFile:
 			outputFile.write(checksum.hexdigest())
+
+	def _signPackageRepository(self, repoFile):
+		"""Sign the package repository if a private key was provided"""
+		privateKeyFile = getOption('packageRepositorySignPrivateKeyFile')
+		privateKeyPass = getOption('packageRepositorySignPrivateKeyPass')
+		if not privateKeyFile and not privateKeyPass:
+			info("Warning: unsigned package repository")
+			return
+		if not os.path.exists(privateKeyFile):
+			sysExit('specified package repo private key file missing!')
+
+		if not os.path.exists(repoFile):
+			sysExit('no repo file was found to sign!')
+
+		minisignCommand = Configuration.getMinisignCommand()
+		if not minisignCommand:
+			sysExit('minisign command missing to sign repository!')
+		
+		# minisign -s /tmp/minisign.key -Sm ${ARTIFACT}
+		info("signing repository")
+		output = subprocess.check_output([minisignCommand, '-s',
+			privateKeyFile, "-Sm", repoFile], input=privateKeyPass.encode('utf-8'),
+			stderr=subprocess.STDOUT).decode('utf-8')
+		info(output)
 
 	def checkPackageRepositoryConsistency(self):
 		"""Check consistency of package repository by dependency solving all

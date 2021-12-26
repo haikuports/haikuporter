@@ -300,6 +300,12 @@ def parseOptions():
 	advanced_flags.add_option('--create-package-repository', action='store',
 		type='string', dest='createPackageRepository', default=None,
 		help='create a package repository at the given output path')
+	advanced_flags.add_option('--sign-package-repository-privkey-file', action='store',
+		type='string', dest='packageRepositorySignPrivateKeyFile', default=None,
+		help='sign the package repository with the given minisign private key file')
+	advanced_flags.add_option('--sign-package-repository-privkey-pass', action='store',
+		type='string', dest='packageRepositorySignPrivateKeyPass', default=None,
+		help='sign the package repository with the given minisign password')
 	advanced_flags.add_option('--check-package-repository-consistency',
 		action='store_true', dest='checkPackageRepositoryConsistency',
 		default=False, help='check consistency of package repository by'
