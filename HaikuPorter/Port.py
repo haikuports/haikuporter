@@ -390,8 +390,8 @@ class Port(object):
 		if entries[key].count(' ') < 2:
 			sysExit('%s must have at least 3 words (%s).'
 					% (key, self.recipeFilePath))
-		if len(entries[key]) > 80:
-			sysExit('%s exceeds 80 chars (in %s)'
+		if len(entries[key]) > 100:
+			sysExit('%s exceeds 100 chars (in %s)'
 				% (key, self.recipeFilePath))
 
 	def _validateDESCRIPTION(self, key, entries, showWarnings):
