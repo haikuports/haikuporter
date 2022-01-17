@@ -279,9 +279,9 @@ def versionCompare(left, right):
 		if len(rightElements) < 2:
 			return 0
 		else:
-			return -1
+			return 1
 	elif len(rightElements) < 2:
-		return 1
+		return -1
 
 	# compare pre-release strings
 	return naturalCompare(leftElements[1], rightElements[1])
