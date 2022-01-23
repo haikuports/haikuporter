@@ -320,6 +320,10 @@ class Configuration(object):
 		return Configuration.configuration.packageRepoCommand
 
 	@staticmethod
+	def getMinisignCommand():
+		return which("minisign")
+
+	@staticmethod
 	def getMimesetCommand():
 		if Configuration.configuration.mimesetCommand is None:
 			return which("mimeset")
