@@ -8,3 +8,4 @@ The following have contributed to this project:
 * Alexander Deynichenko
 * HaikuBot (aka RISC)
 * Jack Laxson
+* Alexander von Gluck IV
