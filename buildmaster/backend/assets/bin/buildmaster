@@ -6,21 +6,15 @@ then
 	exit 1
 fi
 
-BASE_DIR="$(pwd)/buildmaster"
-CONFIG_FILE="$BASE_DIR/config"
-source "$CONFIG_FILE"
-
-if [ $? -ne 0 ]
+if [ -z "$BUILD_TARGET_ARCH" ]
 then
-	echo "configuration file $CONFIG_FILE couldn't be sourced"
+	echo "buildmaster instance configuration invalid"
 	exit 1
 fi
 
-if [ -z "$HAIKUPORTER" ]
-then
-	echo "HAIKUPORTER environment variable not set"
-	exit 1
-fi
+export BASE_DIR="$(pwd)/buildmaster"
+export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/var/buildmaster/package_tools"
 
 case "$1" in
 	update)
@@ -42,11 +36,11 @@ case "$1" in
 		fi
 
 		echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
-		"$HAIKUPORTER" --no-package-obsoletion --repository-update
+		haikuporter --no-package-obsoletion --repository-update
 
 		PORTS_TO_BUILD=$(git diff-tree -z -r --name-only --diff-filter ACMTR \
 				$PREVIOUS_REVISION..$HEAD_REVISION \
-			| xargs --null "$HAIKUPORTER" --no-package-obsoletion \
+			| xargs --null haikuporter --no-package-obsoletion \
 				--no-repository-update --ports-for-files \
 				--active-versions-only 2> /dev/null \
 			| sort -u)
@@ -59,7 +53,7 @@ case "$1" in
 		fi
 	;;
 	everything)
-		PORTS_TO_BUILD=$("$HAIKUPORTER" --no-package-obsoletion --print-raw \
+		PORTS_TO_BUILD=$(haikuporter --no-package-obsoletion --print-raw \
 			--list 2> /dev/null)
 	;;
 	build)
@@ -114,7 +108,7 @@ echo "$BUILDRUN" > "$BUILDRUN_FILE"
 rm "$BUILDRUN_BASE/current"
 ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 
-"$HAIKUPORTER" --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
+haikuporter --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
 	--system-packages-directory="$BASE_DIR/initial-packages" \
 	--build-master $PORTS_TO_BUILD
 

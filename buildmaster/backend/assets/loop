@@ -8,22 +8,21 @@ then
 	exit 1
 fi
 
-cd "$WORKDIR"
-
-. buildmaster/config
-
-if [ -z "$HAIKUPORTER" ]
+if [ -z "$BUILD_TARGET_ARCH" ]
 then
 	echo "buildmaster instance configuration invalid"
 	exit 1
 fi
 
+cd "$WORKDIR"
+
 SUCCESS_WAIT=60
 ERROR_WAIT=60
-COMMANDS_DIR="$(realpath "$(dirname "$HAIKUPORTER")/buildmaster/bin")"
-BUILDMASTER="$COMMANDS_DIR/buildmaster"
 
 export PYTHONUNBUFFERED=1
+export BUILD_TARGET_ARCH="$BUILD_TARGET_ARCH"
+export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/var/buildmaster/package_tools"
 
 exec 2>&1
 
@@ -31,12 +30,12 @@ build_prep () {
 	CONSISTENCY_REPORT_FILE="$REPO_DIR/repo_consistency.txt"
 	echo "repo consistency report at $(git rev-parse HEAD)" \
 		> "$CONSISTENCY_REPORT_FILE"
-	$HAIKUPORTER --debug --check-repository-consistency \
+	haikuporter --debug --check-repository-consistency \
 		--no-package-obsoletion \
 		--system-packages-directory buildmaster/initial-packages \
 		>> "$CONSISTENCY_REPORT_FILE"
 
-	$HAIKUPORTER --debug --prune-package-repository
+	haikuporter --debug --prune-package-repository
 }
 
 while true
@@ -52,7 +51,7 @@ do
 		rm buildmaster/do-everything
 
 		build_prep
-		$BUILDMASTER everything
+		buildmaster everything
 	elif [ -f buildmaster/do-packages ]; then
 		LIST=$(cat buildmaster/do-packages | tr '\n' ' ')
 		echo "$(date) buildmaster list requested, starting the following:"
@@ -61,7 +60,7 @@ do
 		rm buildmaster/do-packages
 
 		build_prep
-		$BUILDMASTER build $LIST
+		buildmaster build $LIST
 	elif [ $(git rev-parse HEAD) = $HEAD_REVISION ]; then
 		echo "$(date) no new revision"
 		sleep $SUCCESS_WAIT
@@ -71,7 +70,7 @@ do
 		echo ""
 		
 		build_prep
-		$BUILDMASTER update
+		buildmaster update
 	fi
 	RESULT=$?
 
@@ -85,7 +84,8 @@ do
 
 	# Careful here
 	SIGFLAGS=""
-	if [ -f /run/secrets/sig_repo_privatekey && -f /run/secrets/sig_repo_privatekeypass ]; then
+	if [ -f /run/secrets/sig_repo_privatekey ] && [ -f /run/secrets/sig_repo_privatekeypass ]
+	then
 		echo "Info: Found package repository signature information."
 		touch /tmp/haiku-secret.key && chown 600 /tmp/haiku-secret.key
 		echo "untrusted comment: minisign encrypted secret key" > /tmp/haiku-secret.key
@@ -99,7 +99,7 @@ do
 
 	echo ""
 	echo "$(date) pruning packages and creating repository"
-	$HAIKUPORTER --debug --prune-package-repository \
+	haikuporter --debug --prune-package-repository \
 		--system-packages-directory buildmaster/initial-packages \
 		--check-package-repository-consistency \
 		--create-package-repository "$REPO_DIR" \

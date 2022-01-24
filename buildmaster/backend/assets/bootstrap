@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd /var/sources
+
+git clone --depth=1 https://github.com/haikuports/haikuporter
+
+bootstrap_buildmaster --haikuporter-dir haikuporter --base-dir /var/buildmaster $@
