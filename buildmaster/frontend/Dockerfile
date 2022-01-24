@@ -5,4 +5,4 @@ RUN mkdir /var/sources /var/instances /var/lib/buildmaster-frontend
 VOLUME ["/var/sources", "/var/instances"]
 
 COPY configs/buildmaster-frontend.conf /etc/nginx/conf.d/default.conf
-ADD www/* /var/lib/buildmaster-frontend
+COPY www/. /var/lib/buildmaster-frontend/
