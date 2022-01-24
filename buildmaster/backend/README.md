@@ -27,5 +27,3 @@ One buildmaster container per architecture
       * buildmaster
         * builders
         * haikuports.conf
-    * package_tools
-      * host tools and libraries for managing packages

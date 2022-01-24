@@ -14,7 +14,7 @@ fi
 
 export BASE_DIR="$(pwd)/buildmaster"
 export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/var/buildmaster/package_tools"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 
 case "$1" in
 	update)

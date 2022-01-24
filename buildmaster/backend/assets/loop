@@ -22,7 +22,7 @@ ERROR_WAIT=60
 export PYTHONUNBUFFERED=1
 export BUILD_TARGET_ARCH="$BUILD_TARGET_ARCH"
 export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/var/buildmaster/package_tools"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 
 exec 2>&1
 
