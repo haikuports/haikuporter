@@ -10,7 +10,7 @@ from setuptools import setup
 from HaikuPorter.__version__ import __version__
 
 setup(name='HaikuPorter',
-	packages=["HaikuPorter"],
+	packages=["HaikuPorter", "HaikuPorter.Builders"],
 	version=__version__,
 	description="Haiku package management",
 	author="Haiku, Inc. See also AUTHORS.txt",
