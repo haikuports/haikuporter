@@ -12,8 +12,16 @@ then
 	exit 1
 fi
 
-export BASE_DIR="$(pwd)/buildmaster"
-export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
+export BRANCH="master"
+export BASE_DIR="/var/buildmaster"
+export REPO_DIR="/var/packages/repository/$BRANCH/$BUILD_TARGET_ARCH/current"
+
+export HAIKUPORTS_DIR="$BASE_DIR/haikuports"
+export WORKING_DIR="$HAIKUPORTS_DIR/buildmaster"
+export SYSTEM_PACKAGES_DIR="$BASE_DIR/system-packages/$BRANCH"
+export OUTPUT_DIR="$BASE_DIR/output"
+export BUILDRUN_BASE="$OUTPUT_DIR/buildruns"
+
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 
 case "$1" in
@@ -25,7 +33,7 @@ case "$1" in
 			exit 2
 		fi
 
-		REVISIONS_FILE="$BASE_DIR/processed_rev"
+		REVISIONS_FILE="$WORKING_DIR/processed_rev"
 		PREVIOUS_REVISION=$(cat "$REVISIONS_FILE")
 		HEAD_REVISION=$(git rev-parse HEAD)
 
@@ -88,34 +96,31 @@ fi
 
 echo "ports to be built: $PORTS_TO_BUILD"
 
-OUTPUT_BASE_DIR="$BASE_DIR/output"
-
-BUILDRUN_BASE="$OUTPUT_BASE_DIR/buildruns"
 if [ ! -e "$BUILDRUN_BASE" ]
 then
 	mkdir -p "$BUILDRUN_BASE"
 fi
 
 BUILDRUN_FILE="$BUILDRUN_BASE/last_buildrun"
-BUILDRUN=$(expr $(cat "$BUILDRUN_FILE" 2> /dev/null) + 1)
-BUILDRUN_OUTPUT_DIR="$BUILDRUN_BASE/$BUILDRUN"
+BUILDRUN_ID=$(expr $(cat "$BUILDRUN_FILE" 2> /dev/null) + 1)
+BUILDRUN_OUTPUT_DIR="$BUILDRUN_BASE/$BUILDRUN_ID"
 BUILDRUN_INDEX="$BUILDRUN_BASE/buildruns.txt"
 
-echo "$BUILDRUN" >> "$BUILDRUN_INDEX"
-echo "$BUILDRUN" > "$BUILDRUN_FILE"
+echo "$BUILDRUN_ID" >> "$BUILDRUN_INDEX"
+echo "$BUILDRUN_ID" > "$BUILDRUN_FILE"
 
 # Remove and relink the current output dir.
 rm "$BUILDRUN_BASE/current"
 ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 
 haikuporter --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
-	--system-packages-directory="$BASE_DIR/initial-packages" \
+	--system-packages-directory="$SYSTEM_PACKAGES_DIR" \
 	--build-master $PORTS_TO_BUILD
 
 BUILDMASTER_RESULT=$?
 
 # Link build logs and records into global dirs.
-ALL_BUILDS_DIR="$OUTPUT_BASE_DIR/builds"
+ALL_BUILDS_DIR="$OUTPUT_DIR/builds"
 if [ ! -e "$ALL_BUILDS_DIR" ]
 then
 	mkdir -p "$ALL_BUILDS_DIR"
@@ -123,7 +128,7 @@ fi
 
 ln -rst "$ALL_BUILDS_DIR" "$BUILDRUN_OUTPUT_DIR"/builds/*
 
-ALL_RECORDS_DIR="$OUTPUT_BASE_DIR/records"
+ALL_RECORDS_DIR="$OUTPUT_DIR/records"
 if [ ! -e "$ALL_RECORDS_DIR" ]
 then
 	mkdir -p "$ALL_RECORDS_DIR"

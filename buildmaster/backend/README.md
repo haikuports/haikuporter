@@ -18,11 +18,15 @@ One buildmaster container per architecture
 ## Volumes
 
   * /var/sources
-    * Storage for various required sources like haikuports or haiku
+    * Storage for various required sources like haiku
   * /var/packages
-    * Storage for packages (TODO, more info)
+    * Storage for packages and repositories
   * /var/buildmaster
     * Main state directory for buildmaster
+    * output
+      * records - json dump of internal haikuporter state data during buildrun. Symlinks to buildruns
+      * builds - logs of buildruns. Symlinks to buildruns
+      * buildruns - complete log of every buildrun and build
     * haikuports
       * buildmaster
         * builders

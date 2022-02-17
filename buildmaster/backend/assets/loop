@@ -1,6 +1,7 @@
 #!/bin/sh
 
-WORKDIR="haikuports"
+BASE_DIR="/var/buildmaster"
+WORKDIR="$BASE_DIR/haikuports"
 
 if [ ! -d "$WORKDIR" ]
 then
@@ -23,6 +24,7 @@ export PYTHONUNBUFFERED=1
 export BUILD_TARGET_ARCH="$BUILD_TARGET_ARCH"
 export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+export SYSTEM_PACKAGE_DIR="$BASE_DIR/system-packages/r1beta3"
 
 exec 2>&1
 
@@ -32,7 +34,7 @@ build_prep () {
 		> "$CONSISTENCY_REPORT_FILE"
 	haikuporter --debug --check-repository-consistency \
 		--no-package-obsoletion \
-		--system-packages-directory buildmaster/initial-packages \
+		--system-packages-directory $SYSTEM_PACKAGES_DIR \
 		>> "$CONSISTENCY_REPORT_FILE"
 
 	haikuporter --debug --prune-package-repository
@@ -40,6 +42,12 @@ build_prep () {
 
 while true
 do
+	if [ ! -d $SYSTEM_PACKAGE_DIR ]; then
+		echo "system-packages missing at $SYSTEM_PACKAGE_DIRECTORY"
+		sleep $ERROR_WAIT
+		continue
+	fi
+
 	echo "$(date) updating tree and pruning packages of removed ports"
 	HEAD_REVISION=$(git rev-parse HEAD)
 	git pull --ff-only
@@ -100,7 +108,7 @@ do
 	echo ""
 	echo "$(date) pruning packages and creating repository"
 	haikuporter --debug --prune-package-repository \
-		--system-packages-directory buildmaster/initial-packages \
+		--system-packages-directory $SYSTEM_PACKAGES_DIR \
 		--check-package-repository-consistency \
 		--create-package-repository "$REPO_DIR" \
 		$SIGFLAGS \

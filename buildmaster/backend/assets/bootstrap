@@ -1,7 +1,116 @@
 #!/bin/sh
 
-cd /var/sources
+BASE_DIR="/var/buildmaster"
+SOURCE_DIR="/var/sources"
 
-git clone --depth=1 https://github.com/haikuports/haikuporter
+if [ -z "$1" ]
+then
+	echo "usage: $0 <arch> [<secondaryArch1> [<secondaryArch2> ...]]"
+	echo ""
+	echo "This tool bootstraps a HaikuPorter buildmaster instance for the"
+	echo "specified architecture(s). It builds the needed tools and gets the"
+	echo "set of initial packages by building a Haiku image for the target"
+	echo "architecture. It then clones a HaikuPorts repository and configures"
+	echo "the ports tree and buildmaster."
+	exit 1
+fi
 
-bootstrap_buildmaster --haikuporter-dir haikuporter --base-dir /var/buildmaster $@
+set -e
+
+unset ARCH
+unset SECONDARY_ARCHS
+
+while [ $# -ne 0 ]
+do
+	case "$1" in
+		--*)
+			echo "Invalid option: \"$1\""
+			exit 1
+		;;
+
+		*)
+			if [ -z "$ARCH" ]
+			then
+				ARCH=$1
+			else
+				SECONDARY_ARCHS="$SECONDARY_ARCHS $1"
+			fi
+		;;
+	esac
+
+	shift
+done
+
+BUILDTOOLS_DIR=$SOURCE_DIR/buildtools
+HAIKU_DIR=$SOURCE_DIR/haiku
+GENERATED_DIR=$BASE_DIR/generated
+PORTS_DIR=$BASE_DIR/haikuports
+OUTPUT_DIR=$BASE_DIR/output
+BUILDERS_DIR=$PORTS_DIR/buildmaster/builders
+
+if [ -z "$ARCH" ]
+then
+	echo "No architecture specified"
+	exit 1
+fi
+
+if [ -z "$BASE_DIR" ]
+then
+	BASE_DIR=$(realpath "buildmaster_$ARCH")
+	echo "Using default base directory $BASE_DIR"
+else
+	echo "Using base directory $BASE_DIR"
+fi
+
+mkdir -p "$BASE_DIR"
+cd "$BASE_DIR"
+
+### Get HaikuPorts
+if [ ! -d "$PORTS_DIR" ]; then
+	echo "Cloning HaikuPorts repository to $PORTS_DIR"
+	git clone --depth=1 https://github.com/haikuports/haikuports "$PORTS_DIR"
+else
+	echo "Using existing HaikuPorts repository at $PORTS_DIR"
+fi
+
+### Get Haiku
+
+if [ ! -d "$HAIKU_DIR" ]; then
+	echo "Cloning Haiku repository to $HAIKU_DIR"
+	git clone --depth=1 https://review.haiku-os.org/haiku "$HAIKU_DIR"
+else
+	echo "Using existing Haiku repository at $HAIKU_DIR"
+fi
+
+# Configure the ports tree.
+
+cd "$PORTS_DIR"
+echo "Configuring ports tree"
+
+echo "TREE_PATH=\"$PORTS_DIR\"" > haikuports.conf
+echo "LICENSES_DIRECTORY=\"$HAIKU_DIR/data/system/data/licenses\"" \
+	>> haikuports.conf
+echo "PACKAGE_COMMAND=\"package\"" >> haikuports.conf
+echo "PACKAGE_REPO_COMMAND=\"package_repo\"" >> haikuports.conf
+echo "PACKAGER=\"buildmaster $ARCH$SECONDARY_ARCHS" \
+		"<buildmaster@haiku-os.org>\"" >> haikuports.conf
+echo "TARGET_ARCHITECTURE=\"$ARCH\"" >> haikuports.conf
+if [ ! -z "$SECONDARY_ARCHS" ]
+then
+	echo "SECONDARY_TARGET_ARCHITECTURES=\"$SECONDARY_ARCHS\"" \
+		>> haikuports.conf
+fi
+
+# Create some buildmaster paths
+mkdir -p $OUTPUT_DIR
+mkdir -p $BUILDERS_DIR
+
+# Done.
+
+echo ""
+echo "Buildmaster instance bootstrapped in $BASE_DIR."
+echo ""
+echo "Next Steps:"
+echo "  * Prepare a set of system-packages, place in $BASE_DIR/system-packages/<branch>"
+echo "  * Use createbuilder to generate builder configurations"
+echo "  * Switch container to 'loop' to enter monitoring loop"

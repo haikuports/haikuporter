@@ -1,20 +1,8 @@
 #!/bin/bash
-#
-# This is to be used on a local system trusted for generating a set of initial_packages
-# for a single architecture to be transfered to the haikuporter buildmaster.
-#
-# You'll use this when updating the set of Haiku packages all haikuports are compiled
-# against. You would generally do this when a new major version of Haiku is being tested
-# for release.
-#
-# You may want to consider compiling a new set of package tools (package, package_repo, etc)
-# on a "haikuporter buildmaster" compatible system as well when doing this.
-#
-# If you're building this on haiku's server within the buildmaster container, use
-# update_initial_packages.sh instead
 
 if [ $# -ne 3 ]; then	
-	echo "generates an archive of initial_packages for haikuporter buildmaster"
+	echo "generates an archive of system-packages for haikuporter buildmaster"
+	echo ""
 	echo "reminder: ensure haiku and buildtools directories are on the branches you want"
 	echo "usage: $0 <haiku dir> <buildtools dir> <arch>"
 	exit 1
@@ -61,7 +49,7 @@ cd $WORK
 # Configure
 $CONFIGURE
 
-# nightly-raw == goldilocks of packages
+# nightly-raw == golidlocks of packages
 ./jam -q -j$CPUS @nightly-raw
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$WORK/objects/linux/lib"
@@ -80,4 +68,5 @@ cp "$WORK"/download/*.hpkg .
 cd ~/.tmp
 tar cvzf ~/.tmp/haiku-${HAIKU_BRANCH}-$ARCH.tar.gz haiku-${HAIKU_BRANCH}-$ARCH
 
-echo "Done!  ~/.tmp/haiku-${HAIKU_BRANCH}-$ARCH.tar.gz is ready for the Haiku buildmaster"
+echo "~/.tmp/haiku-${HAIKU_BRANCH}-$ARCH.tar.gz is ready for the Haiku buildmaster"
+echo "Extract into /var/buildmaster/system-packages/$BRANCH"
