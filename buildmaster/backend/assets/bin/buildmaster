@@ -12,14 +12,16 @@ then
 	exit 1
 fi
 
-export BRANCH="master"
+# TODO: We might want to move these to haikuports.conf?
+export BUILD_TARGET_BRANCH="master"
+export SYSTEM_PACKAGE_BRANCH="r1beta3"
 export BASE_DIR="/var/buildmaster"
-export REPO_DIR="/var/packages/repository/$BRANCH/$BUILD_TARGET_ARCH/current"
 
+export SYSTEM_PACKAGES_DIR="$BASE_DIR/system-packages/$SYSTEM_PACKAGE_BRANCH"
 export HAIKUPORTS_DIR="$BASE_DIR/haikuports"
 export WORKING_DIR="$HAIKUPORTS_DIR/buildmaster"
-export SYSTEM_PACKAGES_DIR="$BASE_DIR/system-packages/$BRANCH"
 export OUTPUT_DIR="$BASE_DIR/output"
+export REPO_DIR="/var/packages/repository/$BUILD_TARGET_BRANCH/$BUILD_TARGET_ARCH/current"
 export BUILDRUN_BASE="$OUTPUT_DIR/buildruns"
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
