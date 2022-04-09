@@ -192,6 +192,7 @@ class BuildPlatformHaiku(BuildPlatform):
 	def _waitForPackageSelfLink(self, revisionedName, activated):
 		while True:
 			try:
+				time.sleep(0.5)
 				linkTarget = os.readlink('/packages/%s/.self'
 										 % revisionedName)
 				packagingFolder = revisionedName.split('-')[0]
