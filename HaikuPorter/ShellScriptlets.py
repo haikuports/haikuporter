@@ -863,6 +863,10 @@ fi
 if ! [ -e boot/system/settings/network ]; then
 	cp -r /system/settings/network boot/system/settings/
 fi
+# copy font settings
+if ! [ -e boot/system/settings/fonts ]; then
+	cp -r /system/settings/fonts boot/system/settings/
+fi
 
 # remove any packages that may be lying around
 rm -f boot/system/packages/*.hpkg
