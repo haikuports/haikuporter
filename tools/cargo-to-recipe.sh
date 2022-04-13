@@ -171,7 +171,7 @@ mapfile -t crates < <(awk '{ print $1".crate" }' <<< "$info")
 mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
 echo "$info"
 for crate in "${crates[@]}"; do
-	uris+=("https://static.crates.io/crates/${crate%-*.*.*}/$crate")
+	uris+=("https://static.crates.io/crates/${crate%%-[0-9]*.[0-9]*.[0-9]*}/$crate")
 	(( psd == 3 )) && dirs+=("${crate%.crate}")
 done
 
