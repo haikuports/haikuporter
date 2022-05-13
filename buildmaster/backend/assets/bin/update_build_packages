@@ -1,0 +1,28 @@
+#!/bin/bash
+
+BASE_DIR=/var/packages
+
+if [ $# -ne 1 ]; then
+	echo ""
+	echo "usage: $0 [jam RemotePackageRepository file]"
+	echo ""
+	echo "  This tool updates the inventory of build-packages to the latest package"
+	echo "  versions for the repository RemotePackageRepository file provided. After"
+	echo "  the latest packages are assigned, they are hardlinked into a repository"
+	echo "  with a matching sha256 signature."
+	echo ""
+	echo "  1. Please ensure latest build-packages have been placed in $BASE_DIR"
+	echo "  2. Note that the [jam RemotePackageRepository file] will be modified."
+	echo "     After this tool modifies it, you must check it into git as-is without"
+        echo "     modification of any kind. (the repo is based on the sha256 of it)"
+	echo ""
+	exit 1
+fi
+JAM_REMOTE_REPO=$1
+
+if [ ! -f $JAM_REMOTE_REPO ]; then
+	echo "Specified RemotePackageRepository file missing"
+	exit 1
+fi
+
+hardlink_packages.py $JAM_REMOTE_REPO $BASE_DIR/build-packages/master/packages $BASE_DIR/build-packages/master
