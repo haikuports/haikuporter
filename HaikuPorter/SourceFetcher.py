@@ -422,7 +422,7 @@ class SourceFetcherForSourcePackage(object):
 		relativeSourcePath = ('develop/sources/%s-%s-%s/%s'
 							  % (name, version, revision,
 								 os.path.basename(sourceBaseDir)))
-
+		os.mkdir(sourceDir)
 		output = check_output([Configuration.getPackageCommand(), 'extract',
 					'-C', sourceDir, self.sourcePackagePath,
 					relativeSourcePath], stderr=STDOUT).decode('utf-8')
