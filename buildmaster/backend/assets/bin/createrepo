@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# Basic tool to recreate a repo
+#
+
+if [ ! -d ./packages ] ; then
+	echo "packages directory missing from pwd. Please change to repo base first"
+	exit 1;
+fi
+
+if [ ! -f ./repo.info ]; then
+	echo "repo.info missing from pwd. Please change to repo base first"
+	exit 1;
+fi
+
+package_repo create repo.info $(find packages/ -name "*.hpkg" | tr '\n' ' ')
