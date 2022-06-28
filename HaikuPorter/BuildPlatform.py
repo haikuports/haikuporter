@@ -305,6 +305,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:find',
 			'cmd:flex',
 			'cmd:gcc',
+			'cmd:git',
 			'cmd:grep',
 			'cmd:gunzip',
 			'cmd:ld',
