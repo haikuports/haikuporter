@@ -49,7 +49,7 @@ def getShellVariableSetters(shellVariables):
 	if not shellVariables:
 		return ''
 
-	result = '\n'.join("%s='%s'" % (k, v)
+	result = '\n'.join("%s='%s'" % (k, v.replace("'", "'\\''"))
 		for k, v in shellVariables.items()) + '\n'
 
 	# Add a variable "revisionVariables" that contains the name of all
