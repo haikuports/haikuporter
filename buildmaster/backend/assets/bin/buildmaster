@@ -8,13 +8,19 @@ fi
 
 if [ -z "$BUILD_TARGET_ARCH" ]
 then
-	echo "buildmaster instance configuration invalid"
+	echo "please specify BUILD_TARGET_ARCH"
+	exit 1
+fi
+
+# This is the system-package set to use from /var/buildmaster/system-packages/XXX
+if [ -z "$SYSTEM_PACKAGE_BRANCH" ]
+then
+	echo "please specify SYSTEM_PACKAGE_BRANCH"
 	exit 1
 fi
 
 # TODO: We might want to move these to haikuports.conf?
 export BUILD_TARGET_BRANCH="master"
-export SYSTEM_PACKAGE_BRANCH="r1beta3"
 export BASE_DIR="/var/buildmaster"
 
 export SYSTEM_PACKAGES_DIR="$BASE_DIR/system-packages/$SYSTEM_PACKAGE_BRANCH"
