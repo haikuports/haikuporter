@@ -10,6 +10,7 @@ fi
 
 HAIKU_SRC=$(realpath $1)
 HAIKU_BRANCH=$(git -C "${HAIKU_SRC}" branch --show-current)
+HAIKU_REV=$(git -C "${HAIKU_SRC}" describe --dirty --tags --match=hrev* --abbrev=1 | tr '-' '_')
 BUILDTOOLS_SRC=$(realpath $2)
 BUILDTOOLS_BRANCH=$(git -C "${BUILDTOOLS_SRC}" branch --show-current)
 ARCH=$3
@@ -66,7 +67,8 @@ done
 cp "$WORK"/download/*.hpkg .
 
 cd ~/.tmp
-tar cvzf ~/.tmp/haiku-${HAIKU_BRANCH}-$ARCH.tar.gz haiku-${HAIKU_BRANCH}-$ARCH
+rm -f ~/.tmp/haiku-${HAIKU_BRANCH}-${HAIKU_REV}-$ARCH.tar.gz
+tar cvzf ~/.tmp/haiku-${HAIKU_BRANCH}-${HAIKU_REV}-$ARCH.tar.gz haiku-${HAIKU_BRANCH}-$ARCH
 
-echo "~/.tmp/haiku-${HAIKU_BRANCH}-$ARCH.tar.gz is ready for the Haiku buildmaster"
+echo "~/.tmp/haiku-${HAIKU_BRANCH}-${HAIKU_REV}-$ARCH.tar.gz is ready for the Haiku buildmaster"
 echo "Extract into /var/buildmaster/system-packages/$BRANCH"
