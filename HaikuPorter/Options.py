@@ -334,6 +334,9 @@ def parseOptions():
 	buildmaster_flags.add_option('--build-master-output-dir', action='store',
 		type='string', dest='buildMasterOutputDir', default=None,
 		help='specifies where build master output shall be written')
+	buildmaster_flags.add_option('--reporting-uri', action='store', type='string',
+		dest='reportingURI', default=None,
+		help='specifies an optional remote reporting server (ex: mongodb://)')
 	buildmaster_flags.add_option('--local-builders', action='store', type='int',
 		dest='localBuilders', default=0, help='number of local builders (native Haiku only)')
 	buildmaster_flags.add_option('--console', action='store_true', dest='display',
