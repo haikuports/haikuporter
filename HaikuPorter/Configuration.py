@@ -52,6 +52,14 @@ haikuportsAttributes = {
 		'indexable': False,
 		'setAttribute': 'allowUnsafeSources'
 	},
+	'CREATE_SOURCE_PACKAGES': {
+		'type': YesNo,
+		'required': False,
+		'default': False,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'createSourcePackages',
+	},
 	'CROSS_DEVEL_PACKAGE': {
 		'type': bytes,
 		'required': False,
@@ -247,6 +255,7 @@ class Configuration(object):
 		self.packagerEmail = None
 		self.allowUntested = False
 		self.allowUnsafeSources = False
+		self.createSourcePackages = True
 		self.downloadInPortDirectory = False
 		self.packageCommand = None
 		self.packageRepoCommand = None
@@ -312,6 +321,10 @@ class Configuration(object):
 	@staticmethod
 	def shallAllowUnsafeSources():
 		return Configuration.configuration.allowUnsafeSources
+
+	@staticmethod
+	def shallCreateSourcePackages():
+		return Configuration.configuration.createSourcePackages
 
 	@staticmethod
 	def shallDownloadInPortDirectory():
