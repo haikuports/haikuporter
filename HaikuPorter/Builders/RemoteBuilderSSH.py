@@ -192,7 +192,8 @@ class RemoteBuilderSSH(object):
 				'SECONDARY_TARGET_ARCHITECTURES': \
 					Configuration.getSecondaryTargetArchitectures(),
 				'ALLOW_UNTESTED': Configuration.shallAllowUntested(),
-				'ALLOW_UNSAFE_SOURCES': Configuration.shallAllowUnsafeSources()
+				'ALLOW_UNSAFE_SOURCES': Configuration.shallAllowUnsafeSources(),
+				'CREATE_SOURCE_PACKAGES': Configuration.shallCreateSourcePackages()
 			}
 
 			with self._openRemoteFile(self.config['portstree']['builderConfig'],
