@@ -85,8 +85,8 @@ class ChrootSetup(object):
 		shellEnv.update(self.envVars)
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
-		check_output(['bash', '-c', cleanupChrootScript], env=shellEnv,
-			cwd=self.path).decode('utf-8')
+		check_call(['bash', '-c', cleanupChrootScript], env=shellEnv,
+			cwd=self.path)
 
 
 
