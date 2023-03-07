@@ -1213,18 +1213,23 @@ class Port(object):
 
 		# add one more variable containing all the dir args for CMake:
 		cmakeDirArgs = {
-			'PREFIX': prefix,
-			'SYSCONFDIR': portPackageLinksDir + '/.settings'
+			'CMAKE_INSTALL_PREFIX': prefix,
+			'CMAKE_INSTALL_SYSCONFDIR': portPackageLinksDir + '/.settings'
 			}
 		for k, v in relativeConfigureDirs.items():
-			cmakeDirArgs[k.upper()] = v
+			cmakeDirArgs['CMAKE_INSTALL_' + k.upper()] = v
 		self.shellVariables['cmakeDirArgs'] \
-			= ' '.join('-DCMAKE_INSTALL_%s=%s' % (k, v)
+			= ' '.join('-D%s=%s' % (k, v)
 				for k, v in cmakeDirArgs.items())
+
+		self.shellVariables.update(cmakeDirArgs)
 
 		# add another one with the list of possible variables
 		self.shellVariables['configureDirVariables'] \
 			= ' '.join(configureDirs.keys())
+
+		self.shellVariables['cmakeDirVariables'] \
+			= ' '.join(cmakeDirArgs.keys())
 
 		# Add variables for other standard directories. Consequently, we should
 		# use finddir to get them (also for the configure variables above), but

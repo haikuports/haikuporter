@@ -319,6 +319,52 @@ runConfigure()
 	$configure $dirArgs $buildSpec $@
 }
 
+# helper function to invoke cmake with the correct directory
+# arguments
+runCmake()
+{
+	# parse arguments
+	varsToOmit=""
+
+	while [ $# -ge 1 ]; do
+		case $1 in
+			--omit-dirs)
+				shift 1
+				if [ $# -lt 1 ]; then
+					echo "runCmake: \"--omit-dirs\" needs an argument!" >&2
+				fi
+				varsToOmit="$1"
+				shift 1
+				;;
+			*)
+				break
+				;;
+		esac
+	done
+
+	if [ $# -lt 1 ]; then
+		echo "Usage: runCmake [ --omit-dirs <dirsToOmit> ]" \
+			"<argsToCmake> ..." >&2
+		echo "	<dirsToOmit>" >&2
+		echo "		Space-separated list of directory arguments not to be" >&2
+		echo "		passed to cmake, e.g. \"docDir manDir\" (single" >&2
+		echo "		argument!)." >&2
+		echo "	<argsToCmake>" >&2
+		echo "		The additional arguments passed to cmake." >&2
+		exit 1
+	fi
+
+	# build the directory arguments string
+	dirArgs=""
+	for dir in $cmakeDirVariables; do
+		if ! [[ "$varsToOmit" =~ (^|\ )${dir}($|\ ) ]]; then
+			dirArgs="$dirArgs -D${dir^^}=${!dir}"
+		fi
+	done
+
+	cmake $dirArgs $@
+}
+
 # helper function to validate CMake invocations (and use the correct one)
 cmake()
 {
