@@ -361,10 +361,9 @@ class Port(object):
 						fileExtension)
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
 						and patchFileName not in allPatches):
-						if showWarnings:
-							warn('Patch file %s is not referenced in '
-								'PATCHES, so it will not be used'
-								% patchFileName)
+						sysExit('Patch file %s is not referenced in '
+							'PATCHES, so it will not be used'
+							% patchFileName)
 
 		return recipeKeysByExtension, recipeConfig.definedPhases
 
