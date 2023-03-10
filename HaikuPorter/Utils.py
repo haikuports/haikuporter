@@ -62,7 +62,10 @@ haikuporterRepoUrl = 'https://github.com/haikuports/haikuporter.git'
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
-	message = '\n'.join([colorError + 'Error: ' + line + colorReset
+	prefix = colorError + 'Error: '
+	message = message.replace(prefix, '')  # in case we already had one, remove it before adding it again below
+
+	message = '\n'.join([prefix + line + colorReset
 		for line in message.split('\n')])
 	sys.exit(message)
 
