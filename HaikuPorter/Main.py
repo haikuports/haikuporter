@@ -117,7 +117,7 @@ class Main(object):
 
 		if self.options.repositoryUpdate \
 			or self.options.checkRepositoryConsistency:
-			self._createRepositoryIfNeeded(False)
+			self._createRepositoryIfNeeded(self.options.quiet)
 
 			if self.options.checkRepositoryConsistency:
 				self.repository.checkRepositoryConsistency(self.options.verbose)
