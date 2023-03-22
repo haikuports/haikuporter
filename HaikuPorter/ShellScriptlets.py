@@ -428,15 +428,6 @@ prepareInstalledDevelLib()
 		fi
 	done
 
-	# Make sure there is not a static library in addition to a shared library.
-	if [ -f "$sharedLib" ] \
-			&& [ -f "$installDestDir$libDir/$libBaseName.a" \
-				-o -f "$installDestDir$developLibDir/$libBaseName.a" ]; then
-		echo "prepareInstalledDevelLib error:" \
-			"there is both a shared and a static library for $libBaseName!"
-		exit 1
-	fi
-
 	# Move things/create symlinks: The shared library file and the symlink for
 	# the soname remain where they are, but we create respective symlinks in the
 	# development directory. Everything else is moved there.
