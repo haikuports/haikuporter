@@ -429,7 +429,7 @@ prepareInstalledDevelLib()
 	done
 
 	# Make sure there is not a static library in addition to a shared library.
-	if [ -f "$sharedLib" ] \
+	if [ -f "$installDestDir$libDir/$libBaseName.so" ] \
 			&& [ -f "$installDestDir$libDir/$libBaseName.a" \
 				-o -f "$installDestDir$developLibDir/$libBaseName.a" ]; then
 		echo "prepareInstalledDevelLib error:" \
