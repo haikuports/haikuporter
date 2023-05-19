@@ -55,10 +55,6 @@ INSTALL()
 		pythonVersion=${PYTHON_VERSIONS[$i]}
 
 		python=python$pythonVersion
-		installLocation=$prefix/lib/$python/vendor-packages/
-		export PYTHONPATH=$installLocation:$PYTHONPATH
-		mkdir -p $installLocation
-		rm -rf build
 		$python -m installer -p $prefix $portName-$portVersion-py3-none-any.whl
 
 		packageEntries ${PYTHON_PACKAGES[i]} \
