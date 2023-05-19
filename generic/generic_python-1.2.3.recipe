@@ -66,7 +66,7 @@ INSTALL()
 		$python setup.py build install \
 			--root=/ --prefix=$prefix
 
-		packageEntries  $pythonPackage \
+		packageEntries $pythonPackage \
 			$prefix/lib/python*
 	done
 }
