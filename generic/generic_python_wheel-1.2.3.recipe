@@ -51,7 +51,6 @@ done
 INSTALL()
 {
 	for i in "${!PYTHON_PACKAGES[@]}"; do
-		pythonPackage=${PYTHON_PACKAGES[i]}
 		pythonVersion=${PYTHON_VERSIONS[$i]}
 
 		python=python$pythonVersion
