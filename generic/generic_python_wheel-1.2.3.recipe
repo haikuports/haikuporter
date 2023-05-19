@@ -61,7 +61,7 @@ INSTALL()
 		rm -rf build
 		$python -m installer -p $prefix $portName-$portVersion-py3-none-any.whl
 
-		packageEntries  $pythonPackage \
+		packageEntries ${PYTHON_PACKAGES[i]} \
 			$prefix/lib/python*
 	done
 }
