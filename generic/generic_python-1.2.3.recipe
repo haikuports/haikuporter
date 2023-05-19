@@ -59,8 +59,10 @@ INSTALL()
 		python=python$pythonVersion
 		installLocation=$prefix/lib/$python/vendor-packages/
 		export PYTHONPATH=$installLocation:$PYTHONPATH
+
 		mkdir -p $installLocation
 		rm -rf build
+
 		$python setup.py build install \
 			--root=/ --prefix=$prefix
 
