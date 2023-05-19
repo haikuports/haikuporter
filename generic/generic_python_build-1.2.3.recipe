@@ -56,20 +56,14 @@ done
 INSTALL()
 {
 	for i in "${!PYTHON_PACKAGES[@]}"; do
-		pythonPackage=${PYTHON_PACKAGES[i]}
 		pythonVersion=${PYTHON_VERSIONS[$i]}
 
 		python=python$pythonVersion
-		installLocation=$prefix/lib/$python/vendor-packages/
-		export PYTHONPATH=$installLocation:$PYTHONPATH
 
-		mkdir -p $installLocation
-		rm -rf build
-
-		$python -m build --wheel --no-isolation
+		$python -m build --wheel --skip-dependency-check --no-isolation
 		$python -m installer -p $prefix dist/*.whl
 
-		packageEntries  $pythonPackage \
+		packageEntries ${PYTHON_PACKAGES[i]} \
 			$prefix/lib/python*
 	done
 }
