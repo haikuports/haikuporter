@@ -11,13 +11,16 @@ from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
-from .ReporterMongo import ReporterMongo
-from .ReporterJson import ReporterJson
-from .Utils import ensureCommandIsAvailable, sysExit, warn, info
 
 from .Builders.Builder import _BuilderState
 from .Builders.LocalBuilder import LocalBuilder
 from .Builders.RemoteBuilderSSH import RemoteBuilderSSH
+
+from .Reporters.ReporterMongo import ReporterMongo
+from .Reporters.ReporterJson import ReporterJson
+
+from .Utils import ensureCommandIsAvailable, sysExit, warn, info
+
 
 import errno
 import json
