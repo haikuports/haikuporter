@@ -45,6 +45,8 @@ for i in "${!PYTHON_PACKAGES[@]}"; do
 	BUILD_REQUIRES+="
 		build_$pythonPackage
 		installer_$pythonPackage
+		setuptools_$pythonPackage
+		wheel_$pythonPackage
 		"
 	BUILD_PREREQUIRES+="
 		cmd:python$pythonVersion
