@@ -1009,6 +1009,8 @@ if [[ $buildOk ]]; then
 		tmp \
 		var
 else
+	echo "cleaning 'chroot/boot' folder"
+	rm -rf boot
 	echo "keeping chroot folder $PWD intact for inspection"
 fi
 '''
