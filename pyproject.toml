@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "haiku_porter"
+name = "haikuporter"
 version = "0.0.1"
 description = "HAIKUPORTER"
 authors = ["Haiku Inc. <fhaiku@haiku.com>"]
@@ -7,7 +7,7 @@ repository = "https://github.com/haikuports/haiku-porter"
 documentation = "https://haikuports.github.io/haiku-porter/"
 readme = "README.md"
 packages = [
-  {include = "haiku_porter"}
+  {include = "src/haikuporter"}
 ]
 
 [tool.poetry.dependencies]
@@ -39,7 +39,7 @@ target-version = ['py37']
 preview = true
 
 [tool.mypy]
-files = ["haiku_porter"]
+files = ["src/haikuporter"]
 disallow_untyped_defs = "True"
 disallow_any_unimported = "True"
 no_implicit_optional = "True"
@@ -99,6 +99,4 @@ skip_empty = true
 
 [tool.coverage.run]
 branch = true
-source = ["haiku_porter"]
-
-
+source = ["src/haikuporter"]
