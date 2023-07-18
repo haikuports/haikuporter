@@ -78,7 +78,3 @@ erase the container without losing your work.
  - useradd sshd ; ssh-keygen -A
  - Enable PermitRootLogin in /system/settings/ssh/sshd\_config and make sure the path to the sftp server is correct
  - install xz\_utils\_x86, lzip\_x86 (required for extracting packages), patch, dos2unix (required for PATCH() function in some packages)
-
----
-
-Repository initiated with [fpgmaas/cookiecutter-poetry](https://github.com/fpgmaas/cookiecutter-poetry).
