@@ -1,13 +1,6 @@
-# haikuporter
+# HaikuPorter
 
-[![Release](https://img.shields.io/github/v/release/haikuports/haikuporter)](https://img.shields.io/github/v/release/haikuports/haikuporter)
-[![Build status](https://img.shields.io/github/actions/workflow/status/haikuports/haikuporter/main.yml?branch=main)](https://github.com/haikuports/haikuporter/actions/workflows/main.yml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/haikuports/haikuporter/branch/main/graph/badge.svg)](https://codecov.io/gh/haikuports/haikuporter)
-[![Commit activity](https://img.shields.io/github/commit-activity/m/haikuports/haikuporter)](https://img.shields.io/github/commit-activity/m/haikuports/haikuporter)
-[![License](https://img.shields.io/github/license/haikuports/haikuporter)](https://img.shields.io/github/license/haikuports/haikuporter)
-
-- **Github repository**: <https://github.com/haikuports/haikuporter/>
-- **Documentation** <https://haikuports.github.io/haikuporter/>
+The HaikuPorter tool is provided to ease the fetching, patching and building of source code. It can be compared to a slim version of [Gentoo Portage](https://www.gentoo.org/main/en/about.xml). Each port contains the [Haiku](http://haiku-os.org) specific patches to the original source code. It fetches the original source code, applies the Haiku-specific patches, builds the software, and packages it.
 
 ## Quick start
 
