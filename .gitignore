@@ -1,6 +1,9 @@
-docs/source
+# HaikuPorter
+*.pyc
+*.pyo
+recipeCache/
 
-# From https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
+docs/source
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -59,22 +62,6 @@ cover/
 *.mo
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
 # PyBuilder
 .pybuilder/
 target/
@@ -91,13 +78,6 @@ ipython_config.py
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
 # Environments
 .env
 .venv
@@ -107,13 +87,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
 # mkdocs documentation
 /site
 
@@ -121,12 +94,6 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
 
 # Cython debug symbols
 cython_debug/
@@ -138,9 +105,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/.history
 
+# VSCode
 .history*
 .vscode*
+
+# Poetry
 poetry.lock
-*.pyc
-*.pyo
-recipeCache/
+
