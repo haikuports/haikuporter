@@ -1,23 +1,26 @@
-# Haikuporter
+# HaikuPorter
 
 The HaikuPorter tool is provided to ease the fetching, patching and building of source code. It can be compared to a slim version of [Gentoo Portage](https://www.gentoo.org/main/en/about.xml). Each port contains the [Haiku](http://haiku-os.org) specific patches to the original source code. It fetches the original source code, applies the Haiku-specific patches, builds the software, and packages it.
 
 Detailed information available on the [wiki](https://github.com/haikuports/haikuports/wiki/).
 
-# Quick start
+## Quick start
 
-## Single Machine (Haiku)
+### Single Machine (Haiku)
 
 A single machine installation is for building individual packages.
 
-### Installation (Haiku)
+## Installation (Haiku)
 
 HaikuPorts installation can be done via the following command sequence:
- - `git clone https://github.com/haikuports/haikuporter.git`
- - `git clone https://github.com/haikuports/haikuports.git --depth=10`
- - `cd haikuporter`
- - `cp haikuports-sample.conf /boot/home/config/settings/haikuports.conf # Copy the config file`
- - `lpe ~/config/settings/haikuports.conf # and edit it`
+
+```shell
+ $ git clone https://github.com/haikuports/haikuporter.git
+ $ git clone https://github.com/haikuports/haikuports.git --depth=10
+ $ cd haikuporter
+ $ cp haikuports-sample.conf /boot/home/config/settings/haikuports.conf # Copy the config file
+ $ lpe ~/config/settings/haikuports.conf # and edit it
+```
 
 ### Build port
  - `./haikuporter mesa -j4`
