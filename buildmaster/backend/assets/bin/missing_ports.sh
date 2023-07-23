@@ -10,7 +10,7 @@ fi
 
 set -e
 
-HAIKUPORTER=${HAIKUPORTER:-haikuporter}
+HAIKUPORTER=${HAIKUPORTER:-haikuporter.py}
 VALID_PACKAGE_LIST=$(mktemp)
 PRESENT_PACKAGE_LIST=$(mktemp)
 
