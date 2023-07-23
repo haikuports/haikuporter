@@ -32,12 +32,12 @@ build_prep () {
 	CONSISTENCY_REPORT_FILE="$REPO_DIR/repo_consistency.txt"
 	echo "repo consistency report at $(git rev-parse HEAD)" \
 		> "$CONSISTENCY_REPORT_FILE"
-	haikuporter --debug --check-repository-consistency \
+	haikuporter.py --debug --check-repository-consistency \
 		--no-package-obsoletion \
 		--system-packages-directory $SYSTEM_PACKAGES_DIR \
 		>> "$CONSISTENCY_REPORT_FILE" 2>&1
 
-	haikuporter --debug --prune-package-repository
+	haikuporter.py --debug --prune-package-repository
 }
 
 while true
@@ -107,7 +107,7 @@ do
 
 	echo ""
 	echo "$(date) pruning packages and creating repository"
-	haikuporter --debug --prune-package-repository \
+	haikuporter.py --debug --prune-package-repository \
 		--system-packages-directory $SYSTEM_PACKAGES_DIR \
 		--check-package-repository-consistency \
 		--create-package-repository "$REPO_DIR" \

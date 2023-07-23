@@ -41,4 +41,4 @@ function _haikuporter()
 
 	return 0
 }
-complete -F _haikuporter -o filenames haikuporter
+complete -F _haikuporter.py -o filenames haikuporter
