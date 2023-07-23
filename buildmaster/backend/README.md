@@ -47,6 +47,6 @@ One buildmaster container per architecture
 * haikuporter buildmaster then moves obsolete packages from /var/buildmaster/haikuports/packages /var/buildmaster/haikuports/packages/.obsolete/ (keeping in mind packages is a symlink)
   * This follows the basic haikuporter behaviour
 * haikuporter buildmaster then hardlinks packages in /var/packages/instances to /var/packages/repository/(branch)/(arch)/current/packages/
-  * This is something performed by haikuporter --create-package-repository called by loop
+  * This is something performed by haikuporter.py --create-package-repository called by loop
 * haikuporter buildmaster then generates a repository for the hardlinked packages in /var/packages/repository/(branch)/(arch)/current/
-  * This is something performed by haikuporter --create-package-repository called by loop
+  * This is something performed by haikuporter.py --create-package-repository called by loop

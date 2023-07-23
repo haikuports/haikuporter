@@ -52,7 +52,7 @@ case "$1" in
 		fi
 
 		echo "moving from $PREVIOUS_REVISION to $HEAD_REVISION"
-		haikuporter --no-package-obsoletion --repository-update
+		haikuporter.py --no-package-obsoletion --repository-update
 
 		PORTS_TO_BUILD=$(git diff-tree -z -r --name-only --diff-filter ACMTR \
 				$PREVIOUS_REVISION..$HEAD_REVISION \
