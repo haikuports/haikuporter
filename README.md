@@ -23,10 +23,10 @@ HaikuPorts installation can be done via the following command sequence:
 ```
 
 ### Build port
- - `./haikuporter mesa -j4`
+ - `./haikuporter.py mesa -j4`
 
 ### Build port and all outdated dependency ports
- - `./haikuporter mesa --all-dependencies -j4`
+ - `./haikuporter.py mesa --all-dependencies -j4`
 
 ## Multi-node cluster (Linux + Haiku)
 
