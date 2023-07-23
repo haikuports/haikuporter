@@ -56,7 +56,7 @@ case "$1" in
 
 		PORTS_TO_BUILD=$(git diff-tree -z -r --name-only --diff-filter ACMTR \
 				$PREVIOUS_REVISION..$HEAD_REVISION \
-			| xargs --null haikuporter --no-package-obsoletion \
+			| xargs --null haikuporter.py --no-package-obsoletion \
 				--no-repository-update --ports-for-files \
 				--active-versions-only 2> /dev/null \
 			| sort -u)
@@ -69,7 +69,7 @@ case "$1" in
 		fi
 	;;
 	everything)
-		PORTS_TO_BUILD=$(haikuporter --no-package-obsoletion --print-raw \
+		PORTS_TO_BUILD=$(haikuporter.py --no-package-obsoletion --print-raw \
 			--list 2> /dev/null)
 	;;
 	build)
@@ -121,7 +121,7 @@ echo "$BUILDRUN_ID" > "$BUILDRUN_FILE"
 rm "$BUILDRUN_BASE/current"
 ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 
-haikuporter --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
+haikuporter.py --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
 	--system-packages-directory="$SYSTEM_PACKAGES_DIR" \
 	--build-master $PORTS_TO_BUILD
 
