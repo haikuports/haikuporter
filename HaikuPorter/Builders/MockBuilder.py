@@ -6,51 +6,49 @@
 
 
 class MockBuilder(object):
-	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
-		self.name = name
-		self.buildCount = 0
-		self.failedBuilds = 0
-		self.buildFailInterval = buildFailInterval
-		self.builderFailInterval = builderFailInterval
-		self.lostAfter = lostAfter
-		self.lost = False
-		self.currentBuild = None
+    def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
+        self.name = name
+        self.buildCount = 0
+        self.failedBuilds = 0
+        self.buildFailInterval = buildFailInterval
+        self.builderFailInterval = builderFailInterval
+        self.lostAfter = lostAfter
+        self.lost = False
+        self.currentBuild = None
 
-	def setBuild(self, scheduledBuild, buildNumber):
-		self.currentBuild = {
-			'build': scheduledBuild.status,
-			'number': buildNumber
-		}
+    def setBuild(self, scheduledBuild, buildNumber):
+        self.currentBuild = {"build": scheduledBuild.status, "number": buildNumber}
 
-	def unsetBuild(self):
-		self.currentBuild = None
+    def unsetBuild(self):
+        self.currentBuild = None
 
-	def runBuild(self):
-		buildSuccess = False
-		reschedule = True
+    def runBuild(self):
+        buildSuccess = False
+        reschedule = True
 
-		try:
-			self.buildCount += 1
-			if self.buildCount >= self.lostAfter:
-				self.lost = True
-				time.sleep(1)
-				raise Exception('lost')
+        try:
+            self.buildCount += 1
+            if self.buildCount >= self.lostAfter:
+                self.lost = True
+                time.sleep(1)
+                raise Exception("lost")
 
-			buildSuccess = self.buildCount % self.buildFailInterval != 0
-			if not buildSuccess:
-				time.sleep(1)
-				self.failedBuilds += 1
-				reschedule = self.failedBuilds % self.builderFailInterval == 0
-				raise Exception('failed')
+            buildSuccess = self.buildCount % self.buildFailInterval != 0
+            if not buildSuccess:
+                time.sleep(1)
+                self.failedBuilds += 1
+                reschedule = self.failedBuilds % self.builderFailInterval == 0
+                raise Exception("failed")
 
-			time.sleep(1)
-		except Exception as exception:
-			pass
+            time.sleep(1)
+        except Exception as exception:
+            pass
 
-		return (buildSuccess, reschedule)
+        return (buildSuccess, reschedule)
 
-	@property
-	def status(self):
-		return {
-			'name': self.name,
-			'lost': self.lost,
+    @property
+    def status(self):
+        return {
+            "name": self.name,
+            "lost": self.lost,
+        }
