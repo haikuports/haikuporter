@@ -11,7 +11,7 @@ from string import Template
 
 # A list of all the commands/packages that are prerequired in the chroot, such
 # that these scriptlets have all the commands available that they are using.
-scriptletPrerequirements = r'''
+scriptletPrerequirements = r"""
 	coreutils
 	cmd:bash
 	cmd:grep
@@ -21,53 +21,66 @@ scriptletPrerequirements = r'''
 	cmd:${targetMachinePrefix}strip
 	cmd:which
 	cmd:xres
-'''
+"""
+
 
 def getScriptletPrerequirements(targetMachineTripleAsName=None):
-	"""Returns the list of prerequirements for executing scriptlets.
-	   If targetMachineTriple is given, the prerequirements will be specialized
-	   for cross-building for the given target machine."""
+    """Returns the list of prerequirements for executing scriptlets.
+    If targetMachineTriple is given, the prerequirements will be specialized
+    for cross-building for the given target machine."""
 
-	targetMachinePrefix \
-		= (targetMachineTripleAsName + '_') if targetMachineTripleAsName else ''
+    targetMachinePrefix = (
+        (targetMachineTripleAsName + "_") if targetMachineTripleAsName else ""
+    )
 
-	prerequirements = Template(scriptletPrerequirements).substitute({
-		'targetMachinePrefix': targetMachinePrefix,
-	}).splitlines()
+    prerequirements = (
+        Template(scriptletPrerequirements)
+        .substitute(
+            {
+                "targetMachinePrefix": targetMachinePrefix,
+            }
+        )
+        .splitlines()
+    )
 
-	result = []
-	for prerequirement in prerequirements:
-		prerequirement = prerequirement.partition('#')[0].strip()
-		if prerequirement:
-			result.append(prerequirement)
+    result = []
+    for prerequirement in prerequirements:
+        prerequirement = prerequirement.partition("#")[0].strip()
+        if prerequirement:
+            result.append(prerequirement)
 
-	return result
+    return result
+
 
 def getShellVariableSetters(shellVariables):
-	"""Converts a dict {variableName -> value} to a string with shell code to
-	   set the variables to the respective value."""
-	if not shellVariables:
-		return ''
+    """Converts a dict {variableName -> value} to a string with shell code to
+    set the variables to the respective value."""
+    if not shellVariables:
+        return ""
 
-	result = '\n'.join("%s='%s'" % (k, v.replace("'", "'\\''"))
-		for k, v in shellVariables.items()) + '\n'
+    result = (
+        "\n".join(
+            "%s='%s'" % (k, v.replace("'", "'\\''")) for k, v in shellVariables.items()
+        )
+        + "\n"
+    )
 
-	# Add a variable "revisionVariables" that contains the name of all
-	# variables that need to be reevaluated after the revision is known.
-	revisionVariables = []
-	for name, value in shellVariables.items():
-		if '$REVISION' in value:
-			revisionVariables.append(name)
-	if revisionVariables:
-		result += 'revisionVariables="' + ' '.join(revisionVariables) + '"\n'
+    # Add a variable "revisionVariables" that contains the name of all
+    # variables that need to be reevaluated after the revision is known.
+    revisionVariables = []
+    for name, value in shellVariables.items():
+        if "$REVISION" in value:
+            revisionVariables.append(name)
+    if revisionVariables:
+        result += 'revisionVariables="' + " ".join(revisionVariables) + '"\n'
 
-	return result
+    return result
 
 
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that is used to trigger one of the actions defined in a build
-commonRecipeScriptHead = r'''
+commonRecipeScriptHead = r"""
 
 # stop on every error
 set -e
@@ -153,7 +166,7 @@ defineDebugInfoPackage()
 		eval "$debugInfos[$count]=\"$debugInfo\""
 	done
 }
-'''
+"""
 
 
 # -----------------------------------------------------------------------------
@@ -164,7 +177,7 @@ defineDebugInfoPackage()
 # and "supportedKeysPattern" must be set to the configuration file respectively
 # a '|'-separated list of  supported configuration keys.
 # Note: this script requires bash, it won't work with any other shells
-configFileEvaluatorScript = commonRecipeScriptHead + r'''
+configFileEvaluatorScript = commonRecipeScriptHead + r"""
 
 
 updateRevisionVariables()
@@ -201,7 +214,7 @@ for phase in ${recipePhases}; do
 		echo "${phase}_DEFINED=1"
 	fi
 done
-'''
+"""
 
 
 # -----------------------------------------------------------------------------
@@ -209,7 +222,7 @@ done
 # Shell scriptlet that is used to trigger one of the actions defined in a build
 # recipe. The shell variables "fileToParse" and "recipeAction" must be set to
 # the recipe file respectively the name of the action to be invoked.
-recipeActionScript = commonRecipeScriptHead + r'''
+recipeActionScript = commonRecipeScriptHead + r"""
 
 # provide defaults for every action
 PATCH()
@@ -827,7 +840,7 @@ if [ $recipeAction = "INSTALL" ]; then
 	packageDebugInfos
 fi
 
-'''
+"""
 
 
 # -----------------------------------------------------------------------------
@@ -839,7 +852,7 @@ fi
 # Additionally, $crossSysrootDir will be set to the cross-sysroot directory
 # when the cross-build repository is active and $targetArchitecture will be
 # filled with the target architecture.
-setupChrootScript = r'''
+setupChrootScript = r"""
 # ignore sigint but stop on every error
 trap '' SIGINT
 set -e
@@ -910,7 +923,7 @@ fi
 # mount dev and system-packagefs
 mount -t bindfs -p "source /dev" dev
 mount -t packagefs -p "type system" boot/system
-'''
+"""
 
 
 # -----------------------------------------------------------------------------
@@ -918,7 +931,7 @@ mount -t packagefs -p "type system" boot/system
 # Shell scriptlet that cleans up a chroot environment after it has been exited.
 # Invoked with $buildOk indicating if the build has worked and thus all paths
 # required for building only should be wiped.
-cleanupChrootScript = r'''
+cleanupChrootScript = r"""
 
 checkedUnmount()
 {
@@ -1013,4 +1026,4 @@ else
 	rm -rf boot
 	echo "keeping chroot folder $PWD intact for inspection"
 fi
-'''
+"""
