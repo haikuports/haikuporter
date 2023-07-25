@@ -5,6 +5,9 @@
 # Distributed under the terms of the MIT License.
 
 
+import time
+
+
 class MockBuilder(object):
 	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
 		self.name = name
@@ -54,3 +57,4 @@ class MockBuilder(object):
 		return {
 			'name': self.name,
 			'lost': self.lost,
+		}
