@@ -13,11 +13,9 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .Utils import ensureCommandIsAvailable, info, sysExit, unpackArchive, warn
-
-import json
 import sys
+
+from .Utils import sysExit
 
 try:
 	import requests

@@ -16,7 +16,6 @@ from .Package import PackageType
 from .RecipeTypes import (Architectures, Extendable, LinesOfText,
 						  Phase, ProvidesList, RequiresList, YesNo)
 import copy
-import types
 
 
 # -- recipe keys and their attributes -----------------------------------------
