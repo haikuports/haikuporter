@@ -5,6 +5,7 @@
 #
 # Authors:
 #   Alexander von Gluck IV <kallisti5@unixzen.com>
+from .Utils import warn, info
 
 try:
 	from pymongo import MongoClient
