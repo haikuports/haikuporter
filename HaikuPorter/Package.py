@@ -18,9 +18,8 @@ from .Configuration import Configuration
 from .Options import getOption
 from .RecipeTypes import Architectures, Status
 from .ShellScriptlets import getScriptletPrerequirements
-from .Utils import (ensureCommandIsAvailable, escapeForPackageInfo,
-					haikuporterRepoUrl, haikuportsRepoUrl, info, naturalCompare,
-					sysExit, touchFile, warn)
+from .Utils import (ensureCommandIsAvailable, escapeForPackageInfo, haikuporterRepoUrl,
+                    haikuportsRepoUrl, info, naturalCompare, sysExit, touchFile, warn)
 
 import codecs
 from functools import cmp_to_key
@@ -30,8 +29,8 @@ import os
 import shutil
 from subprocess import check_call, check_output, CalledProcessError, STDOUT
 
-
 # -- The supported package types ----------------------------------------------
+
 
 class PackageType(str):
 	DEBUG_INFO = 'debuginfo'
@@ -58,9 +57,16 @@ class PackageType(str):
 
 # -- Base class for all packages ----------------------------------------------
 
+
 class Package(object):
-	def __init__(self, packageType, name, port, recipeKeys, policy,
-			isRiggedSourcePackage=False):
+
+	def __init__(self,
+	             packageType,
+	             name,
+	             port,
+	             recipeKeys,
+	             policy,
+	             isRiggedSourcePackage=False):
 		self.type = packageType
 		if 'PACKAGE_NAME' in recipeKeys:
 			self.name = recipeKeys['PACKAGE_NAME']
@@ -97,9 +103,9 @@ class Package(object):
 				self.architecture = port.targetArchitecture
 			else:
 				self.architecture = Architectures.SOURCE
-		elif ((port.secondaryArchitecture is not None and
-			  port.secondaryArchitecture in self.recipeKeys['SECONDARY_ARCHITECTURES']) or
-			  port.targetArchitecture in self.recipeKeys['ARCHITECTURES']):
+		elif ((port.secondaryArchitecture is not None and port.secondaryArchitecture
+		       in self.recipeKeys['SECONDARY_ARCHITECTURES'])
+		      or port.targetArchitecture in self.recipeKeys['ARCHITECTURES']):
 			# if this package can be built for the current target architecture,
 			# we do so and create a package for the host architecture (which
 			# is the same as the target architecture, except for "_cross_"
@@ -108,15 +114,15 @@ class Package(object):
 		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
 			self.architecture = Architectures.ANY
 		else:
-			sysExit('package %s cannot be built for architecture %s'
-					% (self.versionedName, port.targetArchitecture))
+			sysExit('package %s cannot be built for architecture %s' %
+			        (self.versionedName, port.targetArchitecture))
 
 		self.fullVersionedName = self.versionedName + '-' + self.architecture
 		self.fullRevisionedName = self.revisionedName + '-' + self.architecture
 		self.hpkgName = self.fullRevisionedName + '.hpkg'
 
 		self.targetMachineTripleAsName \
-			= port.shellVariables.get('targetMachineTripleAsName', '')
+               = port.shellVariables.get('targetMachineTripleAsName', '')
 
 		self.buildPackage = None
 		self.activeBuildPackage = None
@@ -139,10 +145,9 @@ class Package(object):
 		status = self.getStatusOnArchitecture(architecture)
 		allowUntested = Configuration.shallAllowUntested()
 		return (status == Status.STABLE
-			or (status == Status.UNTESTED and allowUntested))
+		        or (status == Status.UNTESTED and allowUntested))
 
-	def getStatusOnSecondaryArchitecture(self, architecture,
-			secondaryArchitecture):
+	def getStatusOnSecondaryArchitecture(self, architecture, secondaryArchitecture):
 		# check the secondary architecture
 		if secondaryArchitecture:
 			secondaryStatus = Status.UNSUPPORTED
@@ -154,14 +159,15 @@ class Package(object):
 		else:
 			return self.getStatusOnArchitecture(architecture)
 
-	def isBuildableOnSecondaryArchitecture(self, architecture,
-			secondaryArchitecture, forceAllowUnstable=False):
+	def isBuildableOnSecondaryArchitecture(self,
+	                                       architecture,
+	                                       secondaryArchitecture,
+	                                       forceAllowUnstable=False):
 		status = self.getStatusOnSecondaryArchitecture(architecture,
-			secondaryArchitecture)
+		                                               secondaryArchitecture)
 		allowUntested = Configuration.shallAllowUntested()
-		return (status == Status.STABLE
-			or (status == Status.UNTESTED and allowUntested)
-			or forceAllowUnstable)
+		return (status == Status.STABLE or (status == Status.UNTESTED and allowUntested)
+		        or forceAllowUnstable)
 
 	def dependencyInfoFile(self, repositoryPath):
 		return os.path.join(repositoryPath, self.dependencyInfoName)
@@ -169,10 +175,8 @@ class Package(object):
 	def writeDependencyInfoIntoRepository(self, repositoryPath):
 		"""Write a DependencyInfo-file for this package into the repository"""
 
-		requires = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES',
-			'TEST_REQUIRES']
-		self.generateDependencyInfo(self.dependencyInfoFile(repositoryPath),
-			requires)
+		requires = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'REQUIRES', 'TEST_REQUIRES']
+		self.generateDependencyInfo(self.dependencyInfoFile(repositoryPath), requires)
 
 	def removeDependencyInfoFromRepository(self, repositoryPath):
 		"""Remove DependencyInfo-file from repository, if it's there"""
@@ -193,13 +197,14 @@ class Package(object):
 				os.mkdir(obsoleteDir)
 			os.rename(packageFile, obsoletePackage)
 
-	def generateDependencyInfoWithoutProvides(self, dependencyInfoPath,
-											  requiresToUse):
+	def generateDependencyInfoWithoutProvides(self, dependencyInfoPath, requiresToUse):
 		"""Create a .DependencyInfo file that doesn't include any provides
 		   except for the one matching the package name"""
 
-		self._generateDependencyInfo(dependencyInfoPath, requiresToUse,
-			fakeProvides=True, architectures=Architectures.ANY)
+		self._generateDependencyInfo(dependencyInfoPath,
+		                             requiresToUse,
+		                             fakeProvides=True,
+		                             architectures=Architectures.ANY)
 
 	def generateDependencyInfo(self, dependencyInfoPath, requiresToUse):
 		"""Create a .DependencyInfo file (used for dependency resolving)"""
@@ -229,13 +234,13 @@ class Package(object):
 		if (requiresUpdater and self.type != PackageType.SOURCE):
 			requiresList = self.recipeKeys['REQUIRES']
 			self.recipeKeys['UPDATED_REQUIRES'] \
-				= requiresUpdater.updateRequiresList(requiresList)
+                      = requiresUpdater.updateRequiresList(requiresList)
 			requiresName = 'UPDATED_REQUIRES'
 		else:
 			requiresName = 'REQUIRES'
 
-		self._generatePackageInfo(self.packagingDir + '/.PackageInfo',
-			[requiresName], getOption('quiet'), False, True, self.architecture)
+		self._generatePackageInfo(self.packagingDir + '/.PackageInfo', [requiresName],
+		                          getOption('quiet'), False, True, self.architecture)
 
 		packageFile = self.hpkgDir + '/' + self.hpkgName
 		if os.path.exists(packageFile):
@@ -245,10 +250,12 @@ class Package(object):
 		info('mimesetting files for package ' + self.hpkgName + ' ...')
 		dataDir = os.path.join(self.packagingDir, 'data')
 		mimeDBDir = os.path.join(dataDir, 'mime_db')
-		check_call([Configuration.getMimesetCommand(), '--all', '--mimedb',
-			'data/mime_db', '--mimedb',
-			buildPlatform.getSystemMimeDbDirectory(), '.'],
-			cwd=self.packagingDir)
+		check_call([
+		    Configuration.getMimesetCommand(), '--all', '--mimedb', 'data/mime_db',
+		    '--mimedb',
+		    buildPlatform.getSystemMimeDbDirectory(), '.'
+		],
+		           cwd=self.packagingDir)
 
 		# If data/mime_db is empty, remove it.
 		if not os.listdir(mimeDBDir):
@@ -262,8 +269,9 @@ class Package(object):
 
 		# Create the package
 		info('creating package ' + self.hpkgName + ' ...')
-		output = check_output([Configuration.getPackageCommand(), 'create', packageFile],
-			cwd=self.packagingDir).decode('utf-8')
+		output = check_output(
+		    [Configuration.getPackageCommand(), 'create', packageFile],
+		    cwd=self.packagingDir).decode('utf-8')
 		info(output)
 		# policy check
 		self.policy.checkPackage(self, packageFile)
@@ -275,24 +283,26 @@ class Package(object):
 		"""Create the build package"""
 
 		# create a package info for a build package
-		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName
-							+ '-build.PackageInfo')
+		buildPackageInfo = (self.buildPackageDir + '/' + self.revisionedName +
+		                    '-build.PackageInfo')
 		self._generatePackageInfo(buildPackageInfo,
-			['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES'], True, False,
-			False, self.architecture)
+		                          ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES'],
+		                          True, False, False, self.architecture)
 
 		# create the build package
-		buildPackage = (self.buildPackageDir + '/' + self.revisionedName
-						+ '-build.hpkg')
-		cmdlineArgs = [Configuration.getPackageCommand(), 'create', '-bi',
-			buildPackageInfo, '-I', self.packagingDir, buildPackage]
+		buildPackage = (self.buildPackageDir + '/' + self.revisionedName +
+		                '-build.hpkg')
+		cmdlineArgs = [
+		    Configuration.getPackageCommand(), 'create', '-bi', buildPackageInfo, '-I',
+		    self.packagingDir, buildPackage
+		]
 		if getOption('quiet'):
 			cmdlineArgs.insert(2, '-q')
 		try:
 			output = check_output(cmdlineArgs, stderr=STDOUT).decode('utf-8')
 		except CalledProcessError as exception:
-			raise Exception('failure creating the build package: '
-				+ exception.output[:-1].decode('utf-8'))
+			raise Exception('failure creating the build package: ' +
+			                exception.output[:-1].decode('utf-8'))
 		info(output)
 		self.buildPackage = buildPackage
 		os.remove(buildPackageInfo)
@@ -301,21 +311,21 @@ class Package(object):
 		"""Activate the build package"""
 
 		self.activeBuildPackage = buildPlatform.activateBuildPackage(
-			self.workDir, self.buildPackage, self.revisionedName)
+		    self.workDir, self.buildPackage, self.revisionedName)
 
 	def removeBuildPackage(self):
 		"""Deactivate and remove the build package"""
 
 		if self.activeBuildPackage:
-			buildPlatform.deactivateBuildPackage(self.workDir,
-				self.activeBuildPackage, self.revisionedName)
+			buildPlatform.deactivateBuildPackage(self.workDir, self.activeBuildPackage,
+			                                     self.revisionedName)
 			self.activeBuildPackage = None
 		if self.buildPackage and os.path.exists(self.buildPackage):
 			os.remove(self.buildPackage)
 			self.buildPackage = None
 
 	def _generatePackageInfo(self, packageInfoPath, requiresToUse, quiet,
-			fakeEmptyProvides, withActivationActions, architecture):
+	                         fakeEmptyProvides, withActivationActions, architecture):
 		"""Create a .PackageInfo file for inclusion in a package or for
 		   dependency resolving"""
 
@@ -334,14 +344,12 @@ class Package(object):
 				infoFile.write('name\t\t\t' + self.name + '\n')
 			infoFile.write('version\t\t\t' + self.fullVersion + '\n')
 			infoFile.write('architecture\t\t' + architecture + '\n')
-			infoFile.write('summary\t\t\t"'
-				+ escapeForPackageInfo(self.recipeKeys['SUMMARY'])
-				+ '"\n'
-			)
+			infoFile.write('summary\t\t\t"' +
+			               escapeForPackageInfo(self.recipeKeys['SUMMARY']) + '"\n')
 
 			infoFile.write('description\t\t"')
 			infoFile.write(
-				escapeForPackageInfo('\n'.join(self.recipeKeys['DESCRIPTION'])))
+			    escapeForPackageInfo('\n'.join(self.recipeKeys['DESCRIPTION'])))
 			infoFile.write('"\n')
 
 			infoFile.write('packager\t\t"' + Configuration.getPackager() + '"\n')
@@ -370,10 +378,10 @@ class Package(object):
 					# as those are running in the context of the build machine.
 					targetMachineTripleAsName = self.targetMachineTripleAsName
 					if (Configuration.isCrossBuildRepository()
-						and '_cross_' in self.name):
+					    and '_cross_' in self.name):
 						targetMachineTripleAsName = ''
 					requiresForKey = getScriptletPrerequirements(
-						targetMachineTripleAsName)
+					    targetMachineTripleAsName)
 				else:
 					requiresForKey = self.recipeKeys[requiresKey]
 				for require in requiresForKey:
@@ -381,41 +389,37 @@ class Package(object):
 						requires.append(require)
 
 			if fakeEmptyProvides:
-				infoFile.write('provides {\n\tfaked_' + self.name + ' = '
-							   + self.version + '\n}\n')
+				infoFile.write('provides {\n\tfaked_' + self.name + ' = ' +
+				               self.version + '\n}\n')
 			else:
-				self._writePackageInfoListByKey(infoFile, 'PROVIDES',
-												'provides')
+				self._writePackageInfoListByKey(infoFile, 'PROVIDES', 'provides')
 			self._writePackageInfoList(infoFile, requires, 'requires')
-			self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS',
-											'supplements')
+			self._writePackageInfoListByKey(infoFile, 'SUPPLEMENTS', 'supplements')
 			self._writePackageInfoListByKey(infoFile, 'CONFLICTS', 'conflicts')
 			self._writePackageInfoListByKey(infoFile, 'FRESHENS', 'freshens')
 			self._writePackageInfoListByKey(infoFile, 'REPLACES', 'replaces')
 
-			self._writePackageInfoListQuotePaths(infoFile,
-				self.recipeKeys['HOMEPAGE'], 'urls')
+			self._writePackageInfoListQuotePaths(infoFile, self.recipeKeys['HOMEPAGE'],
+			                                     'urls')
 
 			if withActivationActions:
-				self._writePackageInfoListQuotePaths(infoFile,
-					self.recipeKeys['GLOBAL_WRITABLE_FILES'],
-					'global-writable-files')
-				self._writePackageInfoListQuotePaths(infoFile,
-					self.recipeKeys['USER_SETTINGS_FILES'],
-					'user-settings-files')
-				self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS',
-					'users')
-				self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS',
-					'groups')
-				self._writePackageInfoListQuotePaths(infoFile,
-					self.recipeKeys['POST_INSTALL_SCRIPTS'],
-					'post-install-scripts')
+				self._writePackageInfoListQuotePaths(
+				    infoFile, self.recipeKeys['GLOBAL_WRITABLE_FILES'],
+				    'global-writable-files')
+				self._writePackageInfoListQuotePaths(
+				    infoFile, self.recipeKeys['USER_SETTINGS_FILES'],
+				    'user-settings-files')
+				self._writePackageInfoListByKey(infoFile, 'PACKAGE_USERS', 'users')
+				self._writePackageInfoListByKey(infoFile, 'PACKAGE_GROUPS', 'groups')
+				self._writePackageInfoListQuotePaths(
+				    infoFile, self.recipeKeys['POST_INSTALL_SCRIPTS'],
+				    'post-install-scripts')
 
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.
 			infoFile.write('source-urls {\n')
 			for index in sorted(list(self.recipeKeys['SOURCE_URI'].keys()),
-					key=cmp_to_key(naturalCompare)):
+			                    key=cmp_to_key(naturalCompare)):
 				uricount = 1
 				for uri in self.recipeKeys['SOURCE_URI'][index]:
 					if 'file://' in uri:
@@ -479,8 +483,7 @@ class Package(object):
 				infoFile.write('\t' + item + '\n')
 			infoFile.write('}\n')
 
-	def _generateDependencyInfo(self, dependencyInfoPath, requiresToUse,
-								**kwargs):
+	def _generateDependencyInfo(self, dependencyInfoPath, requiresToUse, **kwargs):
 		"""Create a .DependencyInfo file (used for dependency resolving)"""
 
 		architecture = kwargs.get('architecture', self.architecture)
@@ -493,25 +496,25 @@ class Package(object):
 
 		with codecs.open(dependencyInfoPath, 'w', 'utf-8') as infoFile:
 			dependencyInfo = {
-				'name': self.name,
-				'version': self.version,
-				'architecture': architecture,
-				'provides': self.recipeKeys['PROVIDES'],
-				'requires': [],
-				'buildRequires': [],
-				'buildPrerequires': [],
-				'testRequires': []
+			    'name': self.name,
+			    'version': self.version,
+			    'architecture': architecture,
+			    'provides': self.recipeKeys['PROVIDES'],
+			    'requires': [],
+			    'buildRequires': [],
+			    'buildPrerequires': [],
+			    'testRequires': []
 			}
 
 			if fakeProvides:
 				dependencyInfo['provides'] = []
 
 			requiresKeyMap = {
-				'BUILD_REQUIRES': 'buildRequires',
-				'BUILD_PREREQUIRES': 'buildPrerequires',
-				'TEST_REQUIRES': 'testRequires',
-				'REQUIRES': 'requires',
-				'SCRIPTLET_PREREQUIRES': 'buildPrerequires',
+			    'BUILD_REQUIRES': 'buildRequires',
+			    'BUILD_PREREQUIRES': 'buildPrerequires',
+			    'TEST_REQUIRES': 'testRequires',
+			    'REQUIRES': 'requires',
+			    'SCRIPTLET_PREREQUIRES': 'buildPrerequires',
 			}
 			for requiresKey in requiresToUse:
 				if requiresKey == 'SCRIPTLET_PREREQUIRES':
@@ -522,10 +525,10 @@ class Package(object):
 					# as those are running in the context of the build machine.
 					targetMachineTripleAsName = self.targetMachineTripleAsName
 					if (Configuration.isCrossBuildRepository()
-						and '_cross_' in self.name):
+					    and '_cross_' in self.name):
 						targetMachineTripleAsName = ''
 					requiresForKey = getScriptletPrerequirements(
-						targetMachineTripleAsName)
+					    targetMachineTripleAsName)
 				else:
 					requiresForKey = self.recipeKeys[requiresKey]
 
@@ -535,13 +538,19 @@ class Package(object):
 					if require and require not in requiresList:
 						requiresList.append(require)
 
-			json.dump(dependencyInfo, infoFile, sort_keys=True,
-				indent=4, separators=(',', ' : '))
+			json.dump(dependencyInfo,
+			          infoFile,
+			          sort_keys=True,
+			          indent=4,
+			          separators=(',', ' : '))
 			infoFile.write('\n')
+
 
 # -- A source package ---------------------------------------------------------
 
+
 class SourcePackage(Package):
+
 	def populatePackagingDir(self, port):
 		"""Prefill packaging directory with stuff from the outside"""
 
@@ -552,11 +561,9 @@ class SourcePackage(Package):
 
 		super(SourcePackage, self).populatePackagingDir(port)
 
-		targetBaseDir = (self.packagingDir + '/develop/sources/'
-						 + port.revisionedName)
+		targetBaseDir = (self.packagingDir + '/develop/sources/' + port.revisionedName)
 		for source in port.sources:
-			targetDir = (targetBaseDir + '/'
-						 + os.path.basename(source.sourceBaseDir))
+			targetDir = (targetBaseDir + '/' + os.path.basename(source.sourceBaseDir))
 			# export sources and additional files (if any)
 			source.exportSources(targetDir, self.isRiggedSourcePackage)
 			source.populateAdditionalFiles(targetBaseDir)
@@ -566,7 +573,7 @@ class SourcePackage(Package):
 			patchesTargetDir = targetBaseDir + '/patches'
 			for patchFileName in os.listdir(port.patchesDir):
 				if not (patchFileName.startswith(port.versionedName + '.')
-						or patchFileName.startswith(port.versionedName + '-')):
+				        or patchFileName.startswith(port.versionedName + '-')):
 					continue
 				if not os.path.exists(patchesTargetDir):
 					os.mkdir(patchesTargetDir)
@@ -588,25 +595,26 @@ class SourcePackage(Package):
 			try:
 				ensureCommandIsAvailable('git')
 				haikuportsRev \
-					= check_output(['git', 'rev-parse', '--short', 'HEAD'],
-						cwd=Configuration.getTreePath(), stderr=STDOUT).decode('utf-8')
+                             = check_output(['git', 'rev-parse', '--short', 'HEAD'],
+				  cwd=Configuration.getTreePath(), stderr=STDOUT).decode('utf-8')
 			except:
 				warn('unable to determine revision of haikuports tree')
 		with open(targetBaseDir + '/ReadMe', 'w') as readmeFile:
-			readmeFile.write((
-				'These are the sources (and optionally patches) that were\n'
-				'used to build the "%s"-package(s).\n\n'
-				'In order to build them, please checkout the haikuports tree\n'
-				'and use the haikuporter tool to run the build for you.\n\n'
-				'haikuports-URL: %s (revision %s)\n'
-				'haikuporter-URL: %s\n')
-				% (port.name, haikuportsRepoUrl, haikuportsRev.strip(),
-				   haikuporterRepoUrl))
+			readmeFile.write(
+			    ('These are the sources (and optionally patches) that were\n'
+			     'used to build the "%s"-package(s).\n\n'
+			     'In order to build them, please checkout the haikuports tree\n'
+			     'and use the haikuporter tool to run the build for you.\n\n'
+			     'haikuports-URL: %s (revision %s)\n'
+			     'haikuporter-URL: %s\n') % (port.name, haikuportsRepoUrl,
+			                                 haikuportsRev.strip(), haikuporterRepoUrl))
 
 		# copy recipe file
 		shutil.copy(port.recipeFilePath, targetBaseDir)
 
+
 # -- package factory function -------------------------------------------------
+
 
 def packageFactory(packageType, name, port, recipeKeys, policy):
 	"""Creates a package matching the given type"""
@@ -616,10 +624,11 @@ def packageFactory(packageType, name, port, recipeKeys, policy):
 	else:
 		return Package(packageType, name, port, recipeKeys, policy)
 
+
 # -- source package factory function ------------------------------------------
+
 
 def sourcePackageFactory(name, port, recipeKeys, policy, rigged):
 	"""Creates a source package"""
 
-	return SourcePackage(PackageType.SOURCE, name, port, recipeKeys, policy,
-						 rigged)
+	return SourcePackage(PackageType.SOURCE, name, port, recipeKeys, policy, rigged)

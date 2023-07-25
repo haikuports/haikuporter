@@ -21,21 +21,28 @@ import shutil
 from subprocess import check_call, check_output
 from textwrap import dedent
 
-
 # -- Repository class ---------------------------------------------------------
+
 
 class Repository(object):
 
 	currentFormatVersion = 2
 
-	def __init__(self, treePath, outputDirectory, repositoryPath,
-			packagesPath, shellVariables,
-			policy, preserveFlags, quiet=False, verbose=False):
+	def __init__(self,
+	             treePath,
+	             outputDirectory,
+	             repositoryPath,
+	             packagesPath,
+	             shellVariables,
+	             policy,
+	             preserveFlags,
+	             quiet=False,
+	             verbose=False):
 		self.treePath = treePath
 		self.outputDirectory = outputDirectory
 		self.path = repositoryPath
 		self.inputSourcePackagesPath \
-			= self.outputDirectory + '/input-source-packages'
+               = self.outputDirectory + '/input-source-packages'
 		self.packagesPath = packagesPath
 		self.shellVariables = shellVariables
 		self.policy = policy
@@ -44,16 +51,16 @@ class Repository(object):
 
 		self._formatVersionFilePath = self.path + '/.formatVersion'
 		self._portIdForPackageIdFilePath \
-			= self.path + '/.portIdForPackageIdMap'
+               = self.path + '/.portIdForPackageIdMap'
 		self._portNameForPackageNameFilePath \
-			= self.path + '/.portNameForPackageNameMap'
+               = self.path + '/.portNameForPackageNameMap'
 
 		# check repository format
 		formatVersion = self._readFormatVersion()
 		if formatVersion > Repository.currentFormatVersion:
 			sysExit('The version of the repository format used in\n\t%s'
-					'\nis newer than the one supported by haikuporter.\n'
-					'Please upgrade haikuporter.' % self.path)
+			        '\nis newer than the one supported by haikuporter.\n'
+			        'Please upgrade haikuporter.' % self.path)
 
 		Port.setRepositoryDir(self.path)
 
@@ -61,18 +68,18 @@ class Repository(object):
 		self._initAllPorts()
 		self._initPortForPackageMaps()
 		if (os.path.isdir(self.path) and os.listdir(self.path)
-			and os.path.exists(self._portIdForPackageIdFilePath)
-			and os.path.exists(self._portNameForPackageNameFilePath)
-			and formatVersion == Repository.currentFormatVersion):
+		    and os.path.exists(self._portIdForPackageIdFilePath)
+		    and os.path.exists(self._portNameForPackageNameFilePath)
+		    and formatVersion == Repository.currentFormatVersion):
 			if not getOption('noRepositoryUpdate'):
 				self._updateRepository()
 		else:
 			if getOption('noRepositoryUpdate'):
 				sysExit('no or outdated repository found but no update '
-					'allowed')
+				        'allowed')
 			if formatVersion < Repository.currentFormatVersion:
 				warn('Found old repository format - repopulating the '
-					'repository ...')
+				     'repository ...')
 			self._populateRepository(preserveFlags)
 			self._writeFormatVersion()
 		self._writePortForPackageMaps()
@@ -102,8 +109,7 @@ class Repository(object):
 			activePortVersion = self.getActiveVersionOf(portName)
 			if not activePortVersion:
 				continue
-			self._activePorts.append(
-				self._allPorts[portName + '-' + activePortVersion])
+			self._activePorts.append(self._allPorts[portName + '-' + activePortVersion])
 
 		return self._activePorts
 
@@ -132,8 +138,8 @@ class Repository(object):
 			if not port.isBuildableOnTargetArchitecture():
 				if warnAboutSkippedVersions:
 					status = port.statusOnTargetArchitecture
-					warn(('skipping %s, as it is %s on the target '
-						+ 'architecture.') % (portID, status))
+					warn(('skipping %s, as it is %s on the target ' + 'architecture.') %
+					     (portID, status))
 				continue
 			return version
 
@@ -220,12 +226,11 @@ class Repository(object):
 		# any corresponding port in the recipe tree)
 		if os.path.exists(self.inputSourcePackagesPath):
 			for fileName in sorted(os.listdir(self.inputSourcePackagesPath)):
-				if not ('_source-' in fileName
-						or '_source_rigged-' in fileName):
+				if not ('_source-' in fileName or '_source_rigged-' in fileName):
 					continue
 
 				recipeFilePath \
-					= self._partiallyExtractSourcePackageIfNeeded(fileName)
+                             = self._partiallyExtractSourcePackageIfNeeded(fileName)
 
 				recipeName = os.path.basename(recipeFilePath)
 				name, version = recipeName[:-7].split('-')
@@ -239,28 +244,27 @@ class Repository(object):
 					portOutputPath = portPath
 				else:
 					portOutputPath = self.outputDirectory \
-						+ '/input-source-packages/' + name
+                                    + '/input-source-packages/' + name
 				self._allPorts[name + '-' + version] \
-					= Port(name, version, '<source-package>', portPath,
-						portOutputPath, self.shellVariables,
-						self.policy)
+                             = Port(name, version, '<source-package>', portPath,
+				  portOutputPath, self.shellVariables,
+				  self.policy)
 
 		# collect ports from the recipe tree
 		for category in sorted(os.listdir(self.treePath)):
 			categoryPath = self.treePath + '/' + category
 			if (not os.path.isdir(categoryPath) or category[0] == '.'
-				or '-' not in category):
+			    or '-' not in category):
 				continue
 			for port in sorted(os.listdir(categoryPath)):
 				portPath = categoryPath + '/' + port
-				portOutputPath = (self.outputDirectory + '/' + category + '/'
-					+ port)
+				portOutputPath = (self.outputDirectory + '/' + category + '/' + port)
 				if not os.path.isdir(portPath) or port[0] == '.':
 					continue
 				for recipe in os.listdir(portPath):
 					recipePath = portPath + '/' + recipe
 					if (not os.path.isfile(recipePath)
-						or not recipe.endswith('.recipe')):
+					    or not recipe.endswith('.recipe')):
 						continue
 					portElements = recipe[:-7].split('-')
 					if len(portElements) == 2:
@@ -273,26 +277,24 @@ class Repository(object):
 								otherPort = self._allPorts[versionedName]
 								if otherPort.category == '<source-package>':
 									warn('%s/%s	 is overruled by input '
-										'source package' % (category,
-											versionedName))
+									     'source package' % (category, versionedName))
 								else:
 									warn('%s/%s	 is overruled by duplicate '
-										'in %s - please remove one of them'
-										% (category, versionedName,
-											otherPort.category))
+									     'in %s - please remove one of them' %
+									     (category, versionedName, otherPort.category))
 							continue
 						if name not in self._portVersionsByName:
 							self._portVersionsByName[name] = [version]
 						else:
 							self._portVersionsByName[name].append(version)
-						self._allPorts[name + '-' + version] = Port(name,
-							version, category, portPath, portOutputPath,
-							self.shellVariables, self.policy)
+						self._allPorts[name + '-' + version] = Port(
+						    name, version, category, portPath, portOutputPath,
+						    self.shellVariables, self.policy)
 					else:
 						# invalid argument
 						if not self.quiet:
-							print("Warning: Couldn't parse port/version info: "
-								+ recipe)
+							print("Warning: Couldn't parse port/version info: " +
+							      recipe)
 
 		# Create ports for the secondary architectures. Not all make sense or
 		# are supported, but we won't know until we have parsed the recipe file.
@@ -301,8 +303,8 @@ class Repository(object):
 			for port in tuple(self._allPorts.values()):
 				for architecture in secondaryArchitectures:
 					newPort = Port(port.baseName, port.version, port.category,
-						port.baseDir, port.outputDir, self.shellVariables,
-						port.policy, architecture)
+					               port.baseDir, port.outputDir, self.shellVariables,
+					               port.policy, architecture)
 					self._allPorts[newPort.versionedName] = newPort
 
 					name = newPort.name
@@ -314,8 +316,7 @@ class Repository(object):
 
 		# Sort version list of each port
 		for portName in list(self._portVersionsByName.keys()):
-			self._portVersionsByName[portName].sort(
-				key=cmp_to_key(versionCompare))
+			self._portVersionsByName[portName].sort(key=cmp_to_key(versionCompare))
 
 	def _initPortForPackageMaps(self):
 		"""Initialize dictionaries that map package names/IDs to port
@@ -343,15 +344,21 @@ class Repository(object):
 
 		try:
 			with open(self._portIdForPackageIdFilePath, 'w') as fh:
-				json.dump(self._portIdForPackageId, fh, sort_keys=True,
-					indent=4, separators=(',', ' : '))
+				json.dump(self._portIdForPackageId,
+				          fh,
+				          sort_keys=True,
+				          indent=4,
+				          separators=(',', ' : '))
 		except BaseException as e:
 			print(e)
 
 		try:
 			with open(self._portNameForPackageNameFilePath, 'w') as fh:
-				json.dump(self._portNameForPackageName, fh, sort_keys=True,
-					indent=4, separators=(',', ' : '))
+				json.dump(self._portNameForPackageName,
+				          fh,
+				          sort_keys=True,
+				          indent=4,
+				          separators=(',', ' : '))
 		except BaseException as e:
 			print(e)
 
@@ -372,9 +379,7 @@ class Repository(object):
 		"""Writes the version of the repository format into a file"""
 
 		try:
-			data = {
-				'formatVersion': Repository.currentFormatVersion
-			}
+			data = {'formatVersion': Repository.currentFormatVersion}
 			with open(self._formatVersionFilePath, 'w') as fh:
 				json.dump(data, fh, indent=4, separators=(',', ' : '))
 		except BaseException as e:
@@ -416,8 +421,7 @@ class Repository(object):
 		if not os.path.exists(skippedDir):
 			os.mkdir(skippedDir)
 
-		for portName in sorted(self._portVersionsByName.keys(),
-				key=str.lower):
+		for portName in sorted(self._portVersionsByName.keys(), key=str.lower):
 
 			if explicitPortVersion and explicitPortVersion['name'] == portName:
 				versions = [explicitPortVersion['version']]
@@ -433,33 +437,29 @@ class Repository(object):
 
 				# ignore recipes that were skipped last time unless they've
 				# been changed since then
-				if (os.path.exists(skippedFlag)
-					and (os.path.getmtime(port.recipeFilePath)
-						<= os.path.getmtime(skippedFlag))):
+				if (os.path.exists(skippedFlag) and (os.path.getmtime(
+				    port.recipeFilePath) <= os.path.getmtime(skippedFlag))):
 					continue
 
 				# update all dependency-infos of port if the recipe is newer
 				# than the main dependency-info of that port
 				mainDependencyInfoFile = os.path.join(self.path,
-					port.dependencyInfoName)
-				if (os.path.exists(mainDependencyInfoFile)
-					and (os.path.getmtime(port.recipeFilePath)
-						<= os.path.getmtime(mainDependencyInfoFile))):
+				                                      port.dependencyInfoName)
+				if (os.path.exists(mainDependencyInfoFile) and (os.path.getmtime(
+				    port.recipeFilePath) <= os.path.getmtime(mainDependencyInfoFile))):
 					activePorts.append(portID)
 					break
 
 				# try to parse updated recipe
 				try:
-					port.parseRecipeFile(False, forceAllowUnstable,
-						forceAllowUnstable)
+					port.parseRecipeFile(False, forceAllowUnstable, forceAllowUnstable)
 
-					if not port.isBuildableOnTargetArchitecture(
-							forceAllowUnstable):
+					if not port.isBuildableOnTargetArchitecture(forceAllowUnstable):
 						touchFile(skippedFlag)
 						if not self.quiet:
 							status = port.statusOnTargetArchitecture
-							print(('\t%s is still marked as %s on target '
-								+ 'architecture') % (portID, status))
+							print(('\t%s is still marked as %s on target ' +
+							       'architecture') % (portID, status))
 						continue
 
 					if os.path.exists(skippedFlag):
@@ -493,9 +493,9 @@ class Repository(object):
 		for portID, port in updatedPorts.items():
 			for package in port.packages:
 				self._portIdForPackageId[package.versionedName] \
-					= port.versionedName
+                             = port.versionedName
 				self._portNameForPackageName[package.name] \
-					= port.name
+                             = port.name
 			activePorts.append(portID)
 
 		# Note that removing stale dependency infos uses the port for package
@@ -515,7 +515,7 @@ class Repository(object):
 		for dependencyInfo in dependencyInfos:
 			dependencyInfoFileName = os.path.basename(dependencyInfo)
 			packageID \
-				= dependencyInfoFileName[:dependencyInfoFileName.rindex('.')]
+                      = dependencyInfoFileName[:dependencyInfoFileName.rindex('.')]
 			portID = self.getPortIdForPackageId(packageID)
 
 			if not portID or portID not in activePorts:
@@ -568,7 +568,7 @@ class Repository(object):
 		   a source package, unless that has already been done"""
 
 		sourcePackagePath \
-			= self.inputSourcePackagesPath + '/' + sourcePackageName
+               = self.inputSourcePackagesPath + '/' + sourcePackageName
 		(name, version, revision, _) = sourcePackageName.split('-')
 		# determine port name by dropping '_source' or '_source_rigged'
 		if name.endswith('_source_rigged'):
@@ -576,29 +576,28 @@ class Repository(object):
 		elif name.endswith('_source'):
 			name = name[:-7]
 		relativeBasePath \
-			= 'develop/sources/%s-%s-%s' % (name, version, revision)
+               = 'develop/sources/%s-%s-%s' % (name, version, revision)
 		recipeName = name + '-' + version + '.recipe'
-		recipeFilePath = (self.inputSourcePackagesPath + '/' + relativeBasePath
-			+ '/' + recipeName)
+		recipeFilePath = (self.inputSourcePackagesPath + '/' + relativeBasePath + '/' +
+		                  recipeName)
 
-		if (not os.path.exists(recipeFilePath)
-			or (os.path.getmtime(recipeFilePath)
-				<= os.path.getmtime(sourcePackagePath))):
+		if (not os.path.exists(recipeFilePath) or
+		    (os.path.getmtime(recipeFilePath) <= os.path.getmtime(sourcePackagePath))):
 			# extract recipe, patches and licenses (but skip everything else)
 			allowedEntries = [
-				relativeBasePath + '/' + recipeName,
-				relativeBasePath + '/additional-files',
-				relativeBasePath + '/licenses',
-				relativeBasePath + '/patches',
+			    relativeBasePath + '/' + recipeName,
+			    relativeBasePath + '/additional-files',
+			    relativeBasePath + '/licenses',
+			    relativeBasePath + '/patches',
 			]
-			entries = check_output([Configuration.getPackageCommand(), 'list',
-				'-p', sourcePackagePath]).decode('utf-8').splitlines()
-			entries = [
-				entry for entry in entries if entry in allowedEntries
-			]
-			check_call([Configuration.getPackageCommand(), 'extract',
-					'-C', self.inputSourcePackagesPath, sourcePackagePath]
-				+ entries)
+			entries = check_output(
+			    [Configuration.getPackageCommand(), 'list', '-p',
+			     sourcePackagePath]).decode('utf-8').splitlines()
+			entries = [entry for entry in entries if entry in allowedEntries]
+			check_call([
+			    Configuration.getPackageCommand(), 'extract', '-C',
+			    self.inputSourcePackagesPath, sourcePackagePath
+			] + entries)
 
 			# override all SOURCE_URIs in recipe to point to the source package
 			textToAdd = dedent(r'''
@@ -633,18 +632,20 @@ class Repository(object):
 		if systemPackagesDirectory:
 			repositories.append(systemPackagesDirectory)
 
-		resolver = DependencyResolver(None, Port.requiresTypes, repositories,
-			quiet=True)
+		resolver = DependencyResolver(None,
+		                              Port.requiresTypes,
+		                              repositories,
+		                              quiet=True)
 
 		for port in sorted(self.activePorts, key=lambda port: port.name):
 			for package in port.packages:
 				if verbose:
-					print('checking package {} of {}'.format(
-							package.revisionedName, port.versionedName))
+					print('checking package {} of {}'.format(package.revisionedName,
+					                                         port.versionedName))
 
 				try:
 					resolver.determineRequiredPackagesFor(
-						[package.dependencyInfoFile(self.path)])
+					    [package.dependencyInfoFile(self.path)])
 				except LookupError as error:
 					print('{}:\n{}\n'.format(package.revisionedName,
-							prefixLines('\t', str(error))))
+					                         prefixLines('\t', str(error))))

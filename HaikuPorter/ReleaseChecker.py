@@ -24,12 +24,13 @@ try:
 except ImportError:
 	pass
 
-
 # -----------------------------------------------------------------------------
 
 # -- Checks releases from GitHub --------------------------------------------------
 
+
 class ReleaseCheckerForGitHub(object):
+
 	def __init__(self, uri, version):
 		self.uri = uri
 		self.currentVersion = version
@@ -49,8 +50,8 @@ class ReleaseCheckerForGitHub(object):
 		request = "http://api.github.com/repos/%s/%s" % (project, endpoint)
 		print("Checking from %s" % request)
 		headers = {
-			"Accept": "application/vnd.github.v3+json",
-			"User-Agent": "HaikuPorter"
+		    "Accept": "application/vnd.github.v3+json",
+		    "User-Agent": "HaikuPorter"
 		}
 		with requests.get(request, headers=headers) as r:
 			j = r.json()
@@ -69,7 +70,7 @@ class ReleaseCheckerForGitHub(object):
 				if self.currentVersion != name:
 					return name
 
-			else: # tags
+			else:  # tags
 				if self.currentVersion not in parts[-1]:
 					print("cannot find version prefix in URI")
 					return False
@@ -85,6 +86,7 @@ class ReleaseCheckerForGitHub(object):
 
 
 # -- release checker factory function for given URI ----------------------------
+
 
 def createReleaseChecker(uri, version):
 	"""Creates an appropriate release checker for the given URI"""

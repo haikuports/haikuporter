@@ -15,7 +15,9 @@ import os
 import re
 import types
 
+
 def which(program):
+
 	def isExecutable(path):
 		return os.path.isfile(path) and os.access(path, os.X_OK)
 
@@ -32,215 +34,216 @@ def which(program):
 
 	return None
 
+
 # -----------------------------------------------------------------------------
 
 # allowed types of the configuration file values
 haikuportsAttributes = {
-	'ALLOW_UNTESTED': {
-		'type': YesNo,
-		'required': False,
-		'default': False,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'allowUntested',
-	},
-	'ALLOW_UNSAFE_SOURCES': {
-		'type': YesNo,
-		'required': False,
-		'default': False,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'allowUnsafeSources'
-	},
-	'CREATE_SOURCE_PACKAGES': {
-		'type': YesNo,
-		'required': False,
-		'default': False,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'createSourcePackages',
-	},
-	'CROSS_DEVEL_PACKAGE': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'crossDevelPackage',
-		'setAttribute': 'crossDevelPackage',
-	},
-	'CROSS_TOOLS': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'crossTools',
-		'setAttribute': 'crossTools',
-	},
-	'DOWNLOAD_IN_PORT_DIRECTORY': {
-		'type': YesNo,
-		'required': False,
-		'default': False,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'downloadInPortDirectory',
-	},
-	'DOWNLOAD_MIRROR': {
-		'type': bytes,
-		'required': False,
-		'default': 'https://ports-mirror.haiku-os.org',
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'downloadMirror',
-	},
-	'LICENSES_DIRECTORY': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'licensesDirectory',
-		'setAttribute': 'licensesDirectory',
-	},
-	'MIMESET_COMMAND': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'commandMimeset',
-		'setAttribute': 'mimesetCommand',
-	},
-	'REPORTING_URI': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'reportingURI',
-		'setAttribute': 'reportingURI',
-	},
-	'OUTPUT_DIRECTORY': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'outputDirectory',
-	},
-	'PACKAGES_PATH': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'packagesPath',
-	},
-	'PACKAGE_COMMAND': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'commandPackage',
-		'setAttribute': 'packageCommand',
-	},
-	'PACKAGE_REPO_COMMAND': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'commandPackageRepo',
-		'setAttribute': 'packageRepoCommand',
-	},
-	'PACKAGER': {
-		'type': bytes,
-		'required': True,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'packager',
-	},
-	'REPOSITORY_PATH': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'repositoryPath',
-	},
-	'SECONDARY_CROSS_DEVEL_PACKAGES': {
-		'type': list,
-		'required': False,
-		'default': [],
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'secondaryCrossDevelPackages',
-		'setAttribute': 'secondaryCrossDevelPackages',
-	},
-	'SECONDARY_CROSS_TOOLS': {
-		'type': list,
-		'required': False,
-		'default': [],
-		'extendable': Extendable.NO,
-		'indexable': False,
-	},
-	'SECONDARY_TARGET_ARCHITECTURES': {
-		'type': list,
-		'required': False,
-		'default': [],
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'secondaryArchitectures',
-	},
-	'SOURCEFORGE_MIRROR': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'sourceforgeMirror',
-		'setAttribute': 'sourceforgeMirror',
-	},
-	'TARGET_ARCHITECTURE': {
-		'type': MachineArchitecture,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'targetArchitecture',
-	},
-	'TREE_PATH': {
-		'type': bytes,
-		'required': True,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'treePath',
-	},
-	'SYSTEM_MIME_DB': {
-		'type': bytes,
-		'required': False,
-		'default': None,
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'optionAttribute': 'systemMimeDB',
-		'setAttribute': 'systemMimeDB',
-	},
-	'VENDOR': {
-		'type': bytes,
-		'required': False,
-		'default': 'Haiku Project',
-		'extendable': Extendable.NO,
-		'indexable': False,
-		'setAttribute': 'vendor',
-	},
+    'ALLOW_UNTESTED': {
+        'type': YesNo,
+        'required': False,
+        'default': False,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'allowUntested',
+    },
+    'ALLOW_UNSAFE_SOURCES': {
+        'type': YesNo,
+        'required': False,
+        'default': False,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'allowUnsafeSources'
+    },
+    'CREATE_SOURCE_PACKAGES': {
+        'type': YesNo,
+        'required': False,
+        'default': False,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'createSourcePackages',
+    },
+    'CROSS_DEVEL_PACKAGE': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'crossDevelPackage',
+        'setAttribute': 'crossDevelPackage',
+    },
+    'CROSS_TOOLS': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'crossTools',
+        'setAttribute': 'crossTools',
+    },
+    'DOWNLOAD_IN_PORT_DIRECTORY': {
+        'type': YesNo,
+        'required': False,
+        'default': False,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'downloadInPortDirectory',
+    },
+    'DOWNLOAD_MIRROR': {
+        'type': bytes,
+        'required': False,
+        'default': 'https://ports-mirror.haiku-os.org',
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'downloadMirror',
+    },
+    'LICENSES_DIRECTORY': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'licensesDirectory',
+        'setAttribute': 'licensesDirectory',
+    },
+    'MIMESET_COMMAND': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'commandMimeset',
+        'setAttribute': 'mimesetCommand',
+    },
+    'REPORTING_URI': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'reportingURI',
+        'setAttribute': 'reportingURI',
+    },
+    'OUTPUT_DIRECTORY': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'outputDirectory',
+    },
+    'PACKAGES_PATH': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'packagesPath',
+    },
+    'PACKAGE_COMMAND': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'commandPackage',
+        'setAttribute': 'packageCommand',
+    },
+    'PACKAGE_REPO_COMMAND': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'commandPackageRepo',
+        'setAttribute': 'packageRepoCommand',
+    },
+    'PACKAGER': {
+        'type': bytes,
+        'required': True,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'packager',
+    },
+    'REPOSITORY_PATH': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'repositoryPath',
+    },
+    'SECONDARY_CROSS_DEVEL_PACKAGES': {
+        'type': list,
+        'required': False,
+        'default': [],
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'secondaryCrossDevelPackages',
+        'setAttribute': 'secondaryCrossDevelPackages',
+    },
+    'SECONDARY_CROSS_TOOLS': {
+        'type': list,
+        'required': False,
+        'default': [],
+        'extendable': Extendable.NO,
+        'indexable': False,
+    },
+    'SECONDARY_TARGET_ARCHITECTURES': {
+        'type': list,
+        'required': False,
+        'default': [],
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'secondaryArchitectures',
+    },
+    'SOURCEFORGE_MIRROR': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'sourceforgeMirror',
+        'setAttribute': 'sourceforgeMirror',
+    },
+    'TARGET_ARCHITECTURE': {
+        'type': MachineArchitecture,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'targetArchitecture',
+    },
+    'TREE_PATH': {
+        'type': bytes,
+        'required': True,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'treePath',
+    },
+    'SYSTEM_MIME_DB': {
+        'type': bytes,
+        'required': False,
+        'default': None,
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'optionAttribute': 'systemMimeDB',
+        'setAttribute': 'systemMimeDB',
+    },
+    'VENDOR': {
+        'type': bytes,
+        'required': False,
+        'default': 'Haiku Project',
+        'extendable': Extendable.NO,
+        'indexable': False,
+        'setAttribute': 'vendor',
+    },
 }
 
-
 # -- Configuration class ------------------------------------------------------
+
 
 class Configuration(object):
 	configuration = None
@@ -378,8 +381,7 @@ class Configuration(object):
 
 	@staticmethod
 	def getSecondaryCrossDevelPackage(architecture):
-		return Configuration.configuration.secondaryCrossDevelPackages.get(
-			architecture)
+		return Configuration.configuration.secondaryCrossDevelPackages.get(architecture)
 
 	@staticmethod
 	def getOutputDirectory():
@@ -415,14 +417,14 @@ class Configuration(object):
 		if not haikuportsConf:
 			haikuportsConf = 'haikuports.conf'
 			if not os.path.exists(haikuportsConf):
-				haikuportsConf = (os.path.expanduser('~')
-					+ '/config/settings/haikuports.conf')
+				haikuportsConf = (os.path.expanduser('~') +
+				                  '/config/settings/haikuports.conf')
 				if not os.path.exists(haikuportsConf):
 					haikuportsConf = '/system/settings/haikuports.conf'
 
 		if not os.path.exists(haikuportsConf):
-			sysExit("Unable to find haikuports.conf in known search paths.\n"
-				+ u"See haikuports-sample.conf for more information")
+			sysExit("Unable to find haikuports.conf in known search paths.\n" +
+			        u"See haikuports-sample.conf for more information")
 
 		configParser = ConfigParser(haikuportsConf, haikuportsAttributes, {})
 		configurationValue = configParser.getEntriesForExtension('')
@@ -437,16 +439,16 @@ class Configuration(object):
 
 			if key not in configurationValue:
 				if haikuportsAttributes[key]['required']:
-					sysExit("Required value '" + key + u"' not present in "
-							+ haikuportsConf)
+					sysExit("Required value '" + key + u"' not present in " +
+					        haikuportsConf)
 
 				# set default value, as no other value has been provided
 				if haikuportsAttributes[key]['default'] is not None:
 					configurationValue[key] \
-						= haikuportsAttributes[key]['default']
+                                    = haikuportsAttributes[key]['default']
 
 			if ('setAttribute' in haikuportsAttributes[key]
-				and key in configurationValue):
+			    and key in configurationValue):
 				setAttribute = haikuportsAttributes[key]['setAttribute']
 				setattr(self, setAttribute, configurationValue[key])
 
@@ -456,13 +458,12 @@ class Configuration(object):
 		self.isCrossBuildRepository = os.path.exists(self.treePath + '/.cross')
 		if self.isCrossBuildRepository and not self.targetArchitecture:
 			sysExit('For a cross-build repository, TARGET_ARCHITECTURE '
-				'needs to be set in ' + haikuportsConf)
+			        'needs to be set in ' + haikuportsConf)
 
 		# split packager into name and email:
 		m = re.match(r'^\s*(?P<name>.+?)\s*<(?P<email>.+?)>$', self.packager)
 		if not m:
-			sysExit("Couldn't parse name/email from PACKAGER value "
-					+ self.packager)
+			sysExit("Couldn't parse name/email from PACKAGER value " + self.packager)
 		self.packagerName = m.group('name')
 		self.packagerEmail = m.group('email')
 
@@ -472,9 +473,9 @@ class Configuration(object):
 			if crossTools:
 				if len(crossTools) != len(self.secondaryArchitectures):
 					sysExit('A cross-tools directory must be specified for '
-						'each secondary architecture')
+					        'each secondary architecture')
 				for architecture, tools \
-						in zip(self.secondaryArchitectures, crossTools):
+                              in zip(self.secondaryArchitectures, crossTools):
 					self.secondaryCrossTools[architecture] = tools
 
 			if self.secondaryCrossDevelPackages:
@@ -482,9 +483,9 @@ class Configuration(object):
 				self.secondaryCrossDevelPackages = {}
 				if len(crossDevelPackages) != len(self.secondaryArchitectures):
 					sysExit('A cross-tools devel pacakge must be specified for '
-						'each secondary architecture')
+					        'each secondary architecture')
 				for architecture, package \
-						in zip(self.secondaryArchitectures, crossDevelPackages):
+                              in zip(self.secondaryArchitectures, crossDevelPackages):
 					self.secondaryCrossDevelPackages[architecture] = package
 			else:
 				self.secondaryCrossDevelPackages = {}

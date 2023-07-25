@@ -29,18 +29,21 @@ else:
 
 # -- MyTarInfo -------------------------------------------------------------
 
+
 class MyTarInfo(tarfile.TarInfo):
 	"""Override tarfile.TarInfo in order to automatically treat hardlinks
 	   contained in tar archives as symbolic links during extraction.
 	"""
+
 	@classmethod
 	def frombuf(cls, buf):
 		tarinfo = tarfile.TarInfo.frombuf(buf)
 		if tarinfo.type == tarfile.LNKTYPE:
 			tarinfo.type = tarfile.SYMTYPE
-			tarinfo.linkname = os.path.join(os.path.relpath(os.path.dirname(
-				tarinfo.linkname), os.path.dirname(tarinfo.name)),
-				os.path.basename(tarinfo.linkname))
+			tarinfo.linkname = os.path.join(
+			    os.path.relpath(os.path.dirname(tarinfo.linkname),
+			                    os.path.dirname(tarinfo.name)),
+			    os.path.basename(tarinfo.linkname))
 		return tarinfo
 
 	@classmethod
@@ -48,10 +51,12 @@ class MyTarInfo(tarfile.TarInfo):
 		tarinfo = tarfile.TarInfo.fromtarfile(theTarfile)
 		if tarinfo.type == tarfile.LNKTYPE:
 			tarinfo.type = tarfile.SYMTYPE
-			tarinfo.linkname = os.path.join(os.path.relpath(os.path.dirname(
-				tarinfo.linkname), os.path.dirname(tarinfo.name)),
-				os.path.basename(tarinfo.linkname))
+			tarinfo.linkname = os.path.join(
+			    os.path.relpath(os.path.dirname(tarinfo.linkname),
+			                    os.path.dirname(tarinfo.name)),
+			    os.path.basename(tarinfo.linkname))
 		return tarinfo
+
 
 # path to haikuports-tree --------------------------------------------------
 haikuportsRepoUrl = 'https://github.com/haikuports/haikuports.git'
@@ -59,25 +64,30 @@ haikuportsRepoUrl = 'https://github.com/haikuports/haikuports.git'
 # path to haikuporter-tree
 haikuporterRepoUrl = 'https://github.com/haikuports/haikuporter.git'
 
+
 def sysExit(message):
 	"""wrap invocation of sys.exit()"""
 
-	message = '\n'.join([colorError + 'Error: ' + line + colorReset
-		for line in message.split('\n')])
+	message = '\n'.join(
+	    [colorError + 'Error: ' + line + colorReset for line in message.split('\n')])
 	sys.exit(message)
+
 
 def warn(message):
 	"""print a warning"""
 
-	message = '\n'.join([colorWarning + 'Warning: ' + line + colorReset
-		for line in message.split('\n')])
+	message = '\n'.join([
+	    colorWarning + 'Warning: ' + line + colorReset for line in message.split('\n')
+	])
 	logging.getLogger("buildLogger").warn(message)
+
 
 def info(message):
 	"""print an info"""
 	if message is not None and message != '':
-		logging.getLogger("buildLogger").info(message if message[-1] != '\n'
-			else message[:-1])
+		logging.getLogger("buildLogger").info(message if message[-1] !=
+		                                      '\n' else message[:-1])
+
 
 def printError(*args):
 	"""print a to stderr"""
@@ -90,6 +100,7 @@ def escapeForPackageInfo(string):
 
 	return string.replace('\\', '\\\\').replace('"', '\\"')
 
+
 def unpackArchive(archiveFile, targetBaseDir, subdir):
 	"""Unpack archive into a directory"""
 
@@ -101,15 +112,24 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 		if ext == 'lz':
 			ensureCommandIsAvailable('lzip')
 			process = Popen(['lzip', '-c', '-d', archiveFile],
-				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+			                bufsize=10240,
+			                stdin=PIPE,
+			                stdout=PIPE,
+			                stderr=PIPE)
 		elif ext == '7z':
 			ensureCommandIsAvailable('7za')
 			process = Popen(['7za', 'x', '-so', archiveFile],
-				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+			                bufsize=10240,
+			                stdin=PIPE,
+			                stdout=PIPE,
+			                stderr=PIPE)
 		elif ext == 'zst':
 			ensureCommandIsAvailable('zstd')
 			process = Popen(['zstd', '-c', '-d', archiveFile],
-				bufsize=10240, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+			                bufsize=10240,
+			                stdin=PIPE,
+			                stdout=PIPE,
+			                stderr=PIPE)
 
 	if subdir and not subdir.endswith('/'):
 		subdir += '/'
@@ -117,43 +137,44 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 	if process or tarfile.is_tarfile(archiveFile):
 		tarFile = None
 		if process:
-			tarFile = tarfile.open(fileobj=process.stdout, mode='r|',
-				tarinfo=MyTarInfo)
+			tarFile = tarfile.open(fileobj=process.stdout, mode='r|', tarinfo=MyTarInfo)
 		else:
 			tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
 
 		if subdir is None:
 			tarFile.extractall(path=targetBaseDir)
 		else:
+
 			def filterByDir(members):
 				for member in members:
 					member = copy.copy(member)
 					if (os.path.normpath(member.name).startswith(subdir)
-							and not os.path.normpath(member.name).endswith("/.git")):
+					    and not os.path.normpath(member.name).endswith("/.git")):
 						if hasattr(os, "geteuid") and os.geteuid() == 0:
 							member.gname = ""
 							member.uname = ""
 							member.gid = 0
 							member.uid = 0
 						yield member
+
 			tarFile.extractall(members=filterByDir(tarFile), path=targetBaseDir)
-			
+
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
 		names = None
 		if subdir:
 			names = [
-				name for name in zipFile.namelist()
-				if os.path.normpath(name).startswith(subdir)
+			    name for name in zipFile.namelist()
+			    if os.path.normpath(name).startswith(subdir)
 			]
 			if not names:
 				sysExit('sub-directory %s not found in archive' % subdir)
 		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
 	else:
-		sysExit('Unrecognized archive type in file '
-				+ archiveFile)
+		sysExit('Unrecognized archive type in file ' + archiveFile)
+
 
 def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst=True):
 	"""Populates targetDir with symlinks to all files from sourceDir"""
@@ -161,11 +182,13 @@ def symlinkDirectoryContents(sourceDir, targetDir, emptyTargetDirFirst=True):
 	files = [sourceDir + '/' + fileName for fileName in os.listdir(sourceDir)]
 	symlinkFiles(files, targetDir)
 
+
 def symlinkGlob(globSpec, targetDir, emptyTargetDirFirst=True):
 	"""Populates targetDir with symlinks to all files matching given globSpec"""
 
 	files = glob.glob(globSpec)
 	symlinkFiles(files, targetDir)
+
 
 def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst=True):
 	"""Populates targetDir with symlinks to all the given files"""
@@ -176,6 +199,7 @@ def symlinkFiles(sourceFiles, targetDir, emptyTargetDirFirst=True):
 		os.makedirs(targetDir)
 	for sourceFile in sourceFiles:
 		os.symlink(sourceFile, targetDir + '/' + os.path.basename(sourceFile))
+
 
 def touchFile(theFile, stamp=None):  # @DontTrace
 	"""Touches given file, making sure that its modification date is bumped"""
@@ -189,11 +213,13 @@ def touchFile(theFile, stamp=None):  # @DontTrace
 		if stamp is not None:
 			os.utime(theFile, (t, t))
 
+
 def storeStringInFile(string, theFile):
 	"""Stores the given string in the file with the given name"""
 
 	with codecs.open(theFile, 'w', 'utf-8') as fo:
 		fo.write(string)
+
 
 def readStringFromFile(theFile):
 	"""Returns the contents of the file with the given name as a string"""
@@ -201,7 +227,10 @@ def readStringFromFile(theFile):
 	with codecs.open(theFile, 'r', 'utf-8') as fo:
 		return fo.read()
 
+
 availableCommands = {}
+
+
 def isCommandAvailable(command):
 	"""returns whether the given command is available"""
 
@@ -216,14 +245,17 @@ def isCommandAvailable(command):
 	availableCommands[command] = False
 	return False
 
+
 def ensureCommandIsAvailable(command):
 	"""checks if the given command is available and bails if not"""
 
 	if not isCommandAvailable(command):
 		sysExit("'" + command + u"' is not available, please install it")
 
+
 def cmp(a, b):
 	return (a > b) - (a < b)
+
 
 def naturalCompare(left, right):
 	"""performs a natural compare between the two given strings - returns:
@@ -234,6 +266,7 @@ def naturalCompare(left, right):
 	convert = lambda text: int(text) if text.isdigit() else text.lower()
 	alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
 	return cmp(alphanum_key(left), alphanum_key(right))
+
 
 def bareVersionCompare(left, right):
 	"""Compares two given bare versions - returns:
@@ -262,6 +295,7 @@ def bareVersionCompare(left, right):
 
 		index += 1
 
+
 def versionCompare(left, right):
 	"""Compares two given versions that may include a pre-release - returns
 		-1 if left is lower than right
@@ -286,6 +320,7 @@ def versionCompare(left, right):
 	# compare pre-release strings
 	return naturalCompare(leftElements[1], rightElements[1])
 
+
 def filteredEnvironment():
 	"""returns a filtered version of os.environ, such that none of the
 	   variables that we export for one port leak into the shell environment
@@ -298,6 +333,7 @@ def filteredEnvironment():
 			env[key] = os.environ[key]
 
 	return env
+
 
 def prefixLines(prefix, string):
 	"""prefixes each line in the given string by prefix"""

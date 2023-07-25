@@ -6,6 +6,7 @@
 
 
 class MockBuilder(object):
+
 	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
 		self.name = name
 		self.buildCount = 0
@@ -17,10 +18,7 @@ class MockBuilder(object):
 		self.currentBuild = None
 
 	def setBuild(self, scheduledBuild, buildNumber):
-		self.currentBuild = {
-			'build': scheduledBuild.status,
-			'number': buildNumber
-		}
+		self.currentBuild = {'build': scheduledBuild.status, 'number': buildNumber}
 
 	def unsetBuild(self):
 		self.currentBuild = None
@@ -52,5 +50,6 @@ class MockBuilder(object):
 	@property
 	def status(self):
 		return {
-			'name': self.name,
-			'lost': self.lost,
+		    'name': self.name,
+		    'lost': self.lost,
+		}

@@ -29,13 +29,16 @@ import subprocess
 import threading
 import time
 
+
 class ThreadFilter(object):
+
 	def __init__(self):
 		self.ident = threading.current_thread().ident
 		self.build = None
 
 	def reset(self):
 		self.ident = threading.current_thread().ident
+
 	def setBuild(self, build):
 		self.build = build
 
@@ -47,17 +50,19 @@ class ThreadFilter(object):
 
 
 class ScheduledBuild(object):
+
 	def __init__(self, port, portsTreePath, requiredPackageIDs, packagesPath,
-		presentDependencyPackages):
+	             presentDependencyPackages):
 		self.port = port
 		self.recipeFilePath \
-			= os.path.relpath(port.recipeFilePath, portsTreePath)
+               = os.path.relpath(port.recipeFilePath, portsTreePath)
 		self.resultingPackages \
-			= [package.hpkgName for package in self.port.packages]
+               = [package.hpkgName for package in self.port.packages]
 		self.packagesPath = packagesPath
 		self.requiredPackages = presentDependencyPackages
 		self.requiredPackageIDs = [
-			os.path.basename(path) for path in presentDependencyPackages]
+		    os.path.basename(path) for path in presentDependencyPackages
+		]
 		self.missingPackageIDs = set(requiredPackageIDs)
 		self.buildNumbers = []
 		self.lost = False
@@ -73,37 +78,38 @@ class ScheduledBuild(object):
 				self.missingPackageIDs.remove(packageID)
 				self.requiredPackageIDs.append(package.hpkgName)
 				self.requiredPackages.append(
-					os.path.join(self.packagesPath, package.hpkgName))
+				    os.path.join(self.packagesPath, package.hpkgName))
 			else:
 				self.lost = True
 
 	@property
 	def status(self):
 		return {
-			'port': {
-				'name': self.port.name,
-				'version': self.port.version,
-				'revision': self.port.revision,
-				'revisionedName': self.port.revisionedName,
-				'recipeFilePath': self.recipeFilePath
-			},
-			'resultingPackages': self.resultingPackages,
-			'requiredPackages': sorted(list(self.requiredPackageIDs)),
-			'missingPackageIDs': sorted(list(self.missingPackageIDs)),
-			'buildable': self.buildable,
-			'buildNumbers': self.buildNumbers,
-			'lost': self.lost
+		    'port': {
+		        'name': self.port.name,
+		        'version': self.port.version,
+		        'revision': self.port.revision,
+		        'revisionedName': self.port.revisionedName,
+		        'recipeFilePath': self.recipeFilePath
+		    },
+		    'resultingPackages': self.resultingPackages,
+		    'requiredPackages': sorted(list(self.requiredPackageIDs)),
+		    'missingPackageIDs': sorted(list(self.missingPackageIDs)),
+		    'buildable': self.buildable,
+		    'buildNumbers': self.buildNumbers,
+		    'lost': self.lost
 		}
 
 
 class SkippedBuild(object):
+
 	def __init__(self, portsTreePath, port, reason):
 		if isinstance(port, Port):
 			self.port = port
 			self.recipeFilePath \
-				= os.path.relpath(port.recipeFilePath, portsTreePath)
+                      = os.path.relpath(port.recipeFilePath, portsTreePath)
 			self.resultingPackages \
-				= [package.hpkgName for package in port.packages]
+                      = [package.hpkgName for package in port.packages]
 		else:
 			self.port = None
 			self.name = port
@@ -115,20 +121,21 @@ class SkippedBuild(object):
 	@property
 	def status(self):
 		return {
-			'port': {
-				'name': self.port.name if self.port else self.name,
-				'version': self.port.version if self.port else '',
-				'revision': self.port.revision if self.port else '',
-				'revisionedName': \
-					self.port.revisionedName if self.port else self.name,
-				'recipeFilePath': self.recipeFilePath
-			},
-			'resultingPackages': self.resultingPackages,
-			'reason': self.reason
+		 'port': {
+		  'name': self.port.name if self.port else self.name,
+		  'version': self.port.version if self.port else '',
+		  'revision': self.port.revision if self.port else '',
+		  'revisionedName': \
+                 self.port.revisionedName if self.port else self.name,
+		  'recipeFilePath': self.recipeFilePath
+		 },
+		 'resultingPackages': self.resultingPackages,
+		 'reason': self.reason
 		}
 
 
 class BuildRecord(object):
+
 	def __init__(self, scheduledBuild, startTime, buildSuccess, builderId):
 		self.port = scheduledBuild.port
 		self.buildNumbers = scheduledBuild.buildNumbers
@@ -140,21 +147,22 @@ class BuildRecord(object):
 	@property
 	def status(self):
 		return {
-			'port': {
-				'name': self.port.name,
-				'version': self.port.version,
-				'revision': self.port.revision,
-				'revisionedName': self.port.revisionedName
-			},
-			'buildNumbers': self.buildNumbers,
-			'startTime': self.startTime,
-			'duration': self.duration,
-			'buildSuccess': self.buildSuccess,
-			'builderId': self.builderId
+		    'port': {
+		        'name': self.port.name,
+		        'version': self.port.version,
+		        'revision': self.port.revision,
+		        'revisionedName': self.port.revisionedName
+		    },
+		    'buildNumbers': self.buildNumbers,
+		    'startTime': self.startTime,
+		    'duration': self.duration,
+		    'buildSuccess': self.buildSuccess,
+		    'builderId': self.builderId
 		}
 
 
 class BuildMaster(object):
+
 	def __init__(self, portsTreePath, packagesPath, options):
 		self.portsTreePath = portsTreePath
 		self._fillPortsTreeInfo()
@@ -192,8 +200,9 @@ class BuildMaster(object):
 		# These system packages are uploaded to every builder and used as the
 		# base set of packages for builds
 		if not getOption('systemPackagesDirectory'):
-			raise Exception('Error: Must provide --system-packages-directory flag in build-master'
-				' mode for global builder package solving')
+			raise Exception(
+			    'Error: Must provide --system-packages-directory flag in build-master'
+			    ' mode for global builder package solving')
 
 		self.localBuilders = getOption('localBuilders')
 		self.remoteAvailable = False
@@ -201,7 +210,7 @@ class BuildMaster(object):
 		print('Local builders count: ' + str(self.localBuilders))
 
 		logHandler = logging.FileHandler(
-			os.path.join(self.buildOutputBaseDir, 'master.log'))
+		    os.path.join(self.buildOutputBaseDir, 'master.log'))
 		logHandler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
 
 		self.logger = logging.getLogger('buildMaster')
@@ -217,12 +226,12 @@ class BuildMaster(object):
 			reportFile = os.path.join(self.buildOutputBaseDir, 'status.json')
 			info("Reporting to " + reportFile)
 			self.reporter = ReporterJson(reportFile, "master",
-				Configuration.getTargetArchitecture())
+			                             Configuration.getTargetArchitecture())
 			if not self.reporter.connected():
 				sysExit('unable to setup json reporting engine')
 		elif reportURI.startswith("mongodb://"):
 			self.reporter = ReporterMongo(reportURI, "master",
-				Configuration.getTargetArchitecture())
+			                              Configuration.getTargetArchitecture())
 			if not self.reporter.connected():
 				sysExit('unable to connect to reporting engine @ ' + reportURI)
 
@@ -235,11 +244,12 @@ class BuildMaster(object):
 				builder = None
 				try:
 					builder = RemoteBuilderSSH(configFilePath, packagesPath,
-						self.buildOutputBaseDir, self.portsTreeOriginURL,
-						self.portsTreeHead)
+					                           self.buildOutputBaseDir,
+					                           self.portsTreeOriginURL,
+					                           self.portsTreeHead)
 				except Exception as exception:
-					self.logger.error('failed to add builder from config '
-						+ configFilePath + ':' + str(exception))
+					self.logger.error('failed to add builder from config ' +
+					                  configFilePath + ':' + str(exception))
 					continue
 
 				self.remoteAvailable = True
@@ -252,10 +262,9 @@ class BuildMaster(object):
 				builder = None
 				try:
 					builder = LocalBuilder(str(i), packagesPath,
-						self.buildOutputBaseDir, options)
+					                       self.buildOutputBaseDir, options)
 				except Exception as exception:
-					self.logger.error('failed to add local builder: '
-						+ str(exception))
+					self.logger.error('failed to add local builder: ' + str(exception))
 					continue
 
 				self.activeBuilders.append(builder)
@@ -281,9 +290,9 @@ class BuildMaster(object):
 		self.display = None
 
 		self.buildableCondition = threading.Condition()
-			# protectes the scheduled builds lists
+		# protectes the scheduled builds lists
 		self.builderCondition = threading.Condition()
-			# protects the builders lists
+		# protects the builders lists
 		self.statusLock = threading.Lock()
 
 		self._setBuildStatus('preparing')
@@ -303,13 +312,14 @@ class BuildMaster(object):
 			if not os.path.exists(packagePath):
 				continue
 
-			self.addSkipped(port, 'some packages already exist at '
-				+ self.packagesPath + ', revision bump required')
+			self.addSkipped(
+			    port, 'some packages already exist at ' + self.packagesPath +
+			    ', revision bump required')
 			return
 
 		self.logger.info('scheduling build of ' + port.versionedName)
-		scheduledBuild = ScheduledBuild(port, self.portsTreePath,
-			requiredPackageIDs, self.packagesPath, presentDependencyPackages)
+		scheduledBuild = ScheduledBuild(port, self.portsTreePath, requiredPackageIDs,
+		                                self.packagesPath, presentDependencyPackages)
 
 		if scheduledBuild.buildable:
 			self.scheduledBuilds.append(scheduledBuild)
@@ -355,10 +365,12 @@ class BuildMaster(object):
 	def _fillPortsTreeInfo(self):
 		try:
 			ensureCommandIsAvailable('git')
-			origin = subprocess.check_output(['git', 'remote', 'get-url',
-					'origin'], cwd=self.portsTreePath, stderr=subprocess.STDOUT).decode('utf-8')
+			origin = subprocess.check_output(['git', 'remote', 'get-url', 'origin'],
+			                                 cwd=self.portsTreePath,
+			                                 stderr=subprocess.STDOUT).decode('utf-8')
 			head = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
-				cwd=self.portsTreePath, stderr=subprocess.STDOUT).decode('utf-8')
+			                               cwd=self.portsTreePath,
+			                               stderr=subprocess.STDOUT).decode('utf-8')
 		except:
 			warn('unable to determine origin and revision of haikuports tree')
 			origin = '<unknown> '
@@ -427,9 +439,8 @@ class BuildMaster(object):
 				builder = self.availableBuilders.pop(0)
 				buildNumber = self._getBuildNumber()
 
-			threading.Thread(None, self._buildThread,
-				'build ' + str(buildNumber),
-				(builder, scheduledBuild, buildNumber)).start()
+			threading.Thread(None, self._buildThread, 'build ' + str(buildNumber),
+			                 (builder, scheduledBuild, buildNumber)).start()
 			break
 
 	def _persistBuildNumber(self):
@@ -443,17 +454,17 @@ class BuildMaster(object):
 
 			while len(completePackages) > 0:
 				package = completePackages.pop(0)
-				self.logger.info('package ' + package.versionedName + ' '
-					+ ('became available' if available else 'lost'))
+				self.logger.info('package ' + package.versionedName + ' ' +
+				                 ('became available' if available else 'lost'))
 
 				stillBlockedBuilds = []
 				for blockedBuild in self.blockedBuilds:
 					blockedBuild.packageCompleted(package, available)
 					if blockedBuild.buildable or blockedBuild.lost:
 						notify = True
-						self.logger.info('scheduled build '
-							+ blockedBuild.port.versionedName + ' '
-							+ ('became buildable' if available else 'lost'))
+						self.logger.info('scheduled build ' +
+						                 blockedBuild.port.versionedName + ' ' +
+						                 ('became buildable' if available else 'lost'))
 
 						if blockedBuild.buildable:
 							self.scheduledBuilds.append(blockedBuild)
@@ -478,9 +489,9 @@ class BuildMaster(object):
 		self._packagesCompleted(scheduledBuild.port.packages, buildSuccess)
 
 	def _buildThread(self, builder, scheduledBuild, buildNumber):
-		self.logger.info('starting build ' + str(buildNumber) + ', '
-			+ scheduledBuild.port.versionedName + ' on builder '
-			+ builder.name)
+		self.logger.info('starting build ' + str(buildNumber) + ', ' +
+		                 scheduledBuild.port.versionedName + ' on builder ' +
+		                 builder.name)
 
 		scheduledBuild.buildNumbers.append(buildNumber)
 
@@ -492,9 +503,9 @@ class BuildMaster(object):
 
 		builder.unsetBuild()
 
-		self.logger.info('build ' + str(buildNumber) + ', '
-			+ scheduledBuild.port.versionedName + ' '
-			+ ('succeeded' if buildSuccess else 'failed'))
+		self.logger.info('build ' + str(buildNumber) + ', ' +
+		                 scheduledBuild.port.versionedName + ' ' +
+		                 ('succeeded' if buildSuccess else 'failed'))
 
 		if not buildSuccess and reschedule:
 			self.logger.info('transient error, rescheduling build')
@@ -503,19 +514,19 @@ class BuildMaster(object):
 				self.scheduledBuilds.append(scheduledBuild)
 				self.buildableCondition.notify()
 		else:
-			record = BuildRecord(scheduledBuild, startTime, buildSuccess,
-				builder.name)
+			record = BuildRecord(scheduledBuild, startTime, buildSuccess, builder.name)
 
 			with open(os.path.join(self.buildRecordsDir,
-					str(buildNumber) + '.json'), 'w') as outputFile:
+			                       str(buildNumber) + '.json'), 'w') as outputFile:
 				outputFile.write(json.dumps(record.status))
 
 			self.buildHistory.append(record)
 			if self.display:
 				self.display.updateHistory(self.buildHistory)
 
-			self._buildComplete(scheduledBuild, buildSuccess,
-				self.completeBuilds if buildSuccess else self.failedBuilds)
+			self._buildComplete(
+			    scheduledBuild, buildSuccess,
+			    self.completeBuilds if buildSuccess else self.failedBuilds)
 
 		with self.builderCondition:
 			if builder.state == _BuilderState.LOST:
@@ -523,8 +534,7 @@ class BuildMaster(object):
 				self.activeBuilders.remove(builder)
 				self.lostBuilders.append(builder)
 			elif builder.state == _BuilderState.RECONNECT:
-				self.logger.error(
-					'builder ' + builder.name + ' is reconnecting')
+				self.logger.error('builder ' + builder.name + ' is reconnecting')
 				self.activeBuilders.remove(builder)
 				self.reconnectingBuilders.append(builder)
 			else:
@@ -545,9 +555,10 @@ class BuildMaster(object):
 		for blockedBuild in self.blockedBuilds:
 			for missingPackageID in blockedBuild.missingPackageIDs:
 				if missingPackageID not in buildingPackagesIDs:
-					self.logger.error('missing package ' + missingPackageID
-						+ ' of blocked build ' + blockedBuild.port.versionedName
-						+ ' is not scheduled')
+					self.logger.error('missing package ' + missingPackageID +
+					                  ' of blocked build ' +
+					                  blockedBuild.port.versionedName +
+					                  ' is not scheduled')
 					brokenBuilds.append(blockedBuild)
 					break
 
@@ -561,30 +572,34 @@ class BuildMaster(object):
 	@property
 	def status(self):
 		return {
-			'builds': {
-				'active': [build.status for build in self.activeBuilds],
-				'scheduled': [build.status for build in self.scheduledBuilds],
-				'blocked': [build.status for build in self.blockedBuilds],
-				'complete': [build.status for build in self.completeBuilds],
-				'failed': [build.status for build in self.failedBuilds],
-				'lost': [build.status for build in self.lostBuilds],
-				'skipped': [build.status for build in self.skippedBuilds]
-			},
-			'builders': {
-				'active': [builder.status for builder in self.activeBuilders
-						if builder.currentBuild is not None],
-				'reconnecting':
-					[builder.status for builder in self.reconnectingBuilders],
-				'idle': [builder.status for builder in self.activeBuilders
-						if builder.currentBuild is None],
-				'lost': [builder.status for builder in self.lostBuilders]
-			},
-			'nextBuildNumber': self.buildNumber,
-			'portsTreeOriginURL': self.portsTreeOriginURL,
-			'portsTreeHead': self.portsTreeHead,
-			'buildStatus': self.buildStatus,
-			'startTime': self.startTime,
-			'endTime': self.endTime
+		    'builds': {
+		        'active': [build.status for build in self.activeBuilds],
+		        'scheduled': [build.status for build in self.scheduledBuilds],
+		        'blocked': [build.status for build in self.blockedBuilds],
+		        'complete': [build.status for build in self.completeBuilds],
+		        'failed': [build.status for build in self.failedBuilds],
+		        'lost': [build.status for build in self.lostBuilds],
+		        'skipped': [build.status for build in self.skippedBuilds]
+		    },
+		    'builders': {
+		        'active': [
+		            builder.status for builder in self.activeBuilders
+		            if builder.currentBuild is not None
+		        ],
+		        'reconnecting':
+		        [builder.status for builder in self.reconnectingBuilders],
+		        'idle': [
+		            builder.status for builder in self.activeBuilders
+		            if builder.currentBuild is None
+		        ],
+		        'lost': [builder.status for builder in self.lostBuilders]
+		    },
+		    'nextBuildNumber': self.buildNumber,
+		    'portsTreeOriginURL': self.portsTreeOriginURL,
+		    'portsTreeHead': self.portsTreeHead,
+		    'buildStatus': self.buildStatus,
+		    'startTime': self.startTime,
+		    'endTime': self.endTime
 		}
 
 	@property
@@ -593,35 +608,33 @@ class BuildMaster(object):
 		if self.impulseIndex >= len(self.impulseData):
 			self.impulseIndex = 0
 		impulseTime = (self.impulseData[self.impulseIndex]['time']
-			) if self.impulseData[self.impulseIndex] else None
+		               ) if self.impulseData[self.impulseIndex] else None
 		impulsePkgCount = (self.impulseData[self.impulseIndex]['pkgCount']
-			) if self.impulseData[self.impulseIndex] else None
+		                   ) if self.impulseData[self.impulseIndex] else None
 		now = time.time()
 		pkgCount = len(self.completeBuilds) + len(self.failedBuilds)
-		self.impulseData[self.impulseIndex] = {
-			'time': now,
-			'pkgCount': pkgCount
-		}
+		self.impulseData[self.impulseIndex] = {'time': now, 'pkgCount': pkgCount}
 		return {
-			'builds': {
-				'active': len(self.activeBuilds),
-				'scheduled': len(self.scheduledBuilds),
-				'blocked': len(self.blockedBuilds),
-				'complete': len(self.completeBuilds),
-				'failed': len(self.failedBuilds),
-				'lost': len(self.lostBuilds),
-				'total': self.totalBuildCount
-			},
-			'builders': {
-				'active': len(self.activeBuilders),
-				'lost': len(self.lostBuilders),
-				'total': len(self.activeBuilders) + len(self.lostBuilders)
-			},
-			'duration': (now - self.startTime) if self.startTime else None,
-			'pkg_hour': int(pkgCount * 3600
-				/ (now - self.startTime)) if self.startTime else None,
-			'impulse': int((pkgCount - impulsePkgCount) * 3600
-				/ (now - impulseTime)) if impulsePkgCount else None
+		    'builds': {
+		        'active': len(self.activeBuilds),
+		        'scheduled': len(self.scheduledBuilds),
+		        'blocked': len(self.blockedBuilds),
+		        'complete': len(self.completeBuilds),
+		        'failed': len(self.failedBuilds),
+		        'lost': len(self.lostBuilds),
+		        'total': self.totalBuildCount
+		    },
+		    'builders': {
+		        'active': len(self.activeBuilders),
+		        'lost': len(self.lostBuilders),
+		        'total': len(self.activeBuilders) + len(self.lostBuilders)
+		    },
+		    'duration': (now - self.startTime) if self.startTime else None,
+		    'pkg_hour':
+		    int(pkgCount * 3600 / (now - self.startTime)) if self.startTime else None,
+		    'impulse':
+		    int((pkgCount - impulsePkgCount) * 3600 /
+		        (now - impulseTime)) if impulsePkgCount else None
 		}
 
 	def _setBuildStatus(self, buildStatus):

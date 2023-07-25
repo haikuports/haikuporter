@@ -40,7 +40,9 @@ requires {
 
 # -- PortNode class ------------------------------------------------------------
 
+
 class PortNode(object):
+
 	def __init__(self, portID, port):
 		self.portID = portID
 		self.port = port
@@ -72,17 +74,15 @@ class PortNode(object):
 	def isBuildable(self, repositoryPath, doneRepositoryPath):
 		# check prerequires
 		dependencyInfoFiles = self.port.getDependencyInfoFiles()
-		requiresTypes = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES',
-			'SCRIPTLET_PREREQUIRES']
+		requiresTypes = ['BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES']
 		repositories = [doneRepositoryPath]
 		if not getOption('noSystemPackages'):
 			repositories.append(
-				buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+			    buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 		try:
-			buildPlatform.resolveDependencies(dependencyInfoFiles,
-											  requiresTypes,
-											  repositories)
+			buildPlatform.resolveDependencies(dependencyInfoFiles, requiresTypes,
+			                                  repositories)
 		except (CalledProcessError, LookupError):
 			return False
 
@@ -92,9 +92,12 @@ class PortNode(object):
 		with self.port.temporaryRepositoryDir(doneRepositoryPath):
 			self.port.writeDependencyInfosIntoRepository()
 
+
 # -- PackageNode class ---------------------------------------------------------
 
+
 class PackageNode(object):
+
 	def __init__(self, portNode, packageID):
 		self.portNode = portNode
 		self.name = packageID
@@ -119,9 +122,12 @@ class PackageNode(object):
 	def addRequires(self, elements):
 		self.requires |= elements
 
+
 # -- DependencyAnalyzer class --------------------------------------------------
 
+
 class DependencyAnalyzer(object):
+
 	def __init__(self, repository):
 		self.repository = repository
 		self.portNodes = {}
@@ -135,17 +141,17 @@ class DependencyAnalyzer(object):
 
 		print('Required system packages:')
 		for packageNode in sorted(self.systemPackageNodes,
-				key=lambda packageNode: packageNode.name):
+		                          key=lambda packageNode: packageNode.name):
 			print('	 %s' % packageNode.name)
 
 		print('Ports required by haikuporter:')
 		for packageNode in sorted(self.haikuporterRequires,
-				key=lambda packageNode: packageNode.name):
+		                          key=lambda packageNode: packageNode.name):
 			print('	 %s' % packageNode.portNode.name)
 
 		print('Ports depending cyclically on each other:')
 		for node in sorted(sorted(self.cyclicNodes, key=lambda node: node.name),
-				key=lambda node: node.outdegree):
+		                   key=lambda node: node.outdegree):
 			print('	 %s (out-degree %d)' % (node.name, node.outdegree))
 
 	def getBuildOrderForBootstrap(self):
@@ -168,8 +174,8 @@ class DependencyAnalyzer(object):
 					nodes.remove(node)
 					node.markAsBuilt(doneRepositoryPath)
 			if lastDoneCount == len(done):
-				sysExit("None of these cyclic dependencies can be built:\n\t"
-						+ "\n\t".join(sorted([node.name for node in nodes])))
+				sysExit("None of these cyclic dependencies can be built:\n\t" +
+				        "\n\t".join(sorted([node.name for node in nodes])))
 
 		shutil.rmtree(doneRepositoryPath)
 
@@ -203,14 +209,13 @@ class DependencyAnalyzer(object):
 				packageNode = self._getPackageNode(packageID)
 				packageInfo = self.packageInfos[packageID]
 				packageNode.addRequires(
-					self._resolveRequiresList(packageInfo.requires, portID,
-						packageID))
+				    self._resolveRequiresList(packageInfo.requires, portID, packageID))
 				portNode.addBuildRequires(
-					self._resolveRequiresList(packageInfo.buildRequires, portID,
-						packageID))
+				    self._resolveRequiresList(packageInfo.buildRequires, portID,
+				                              packageID))
 				portNode.addBuildPrerequires(
-					self._resolveRequiresList(packageInfo.buildPrerequires,
-						portID, packageID))
+				    self._resolveRequiresList(packageInfo.buildPrerequires, portID,
+				                              packageID))
 
 		# determine the needed system packages
 		self.systemPackageNodes = set()
@@ -228,24 +233,26 @@ class DependencyAnalyzer(object):
 		for packageNode in self.systemPackageNodes:
 			packageInfo = self.packageInfos[packageNode.name]
 			packageNode.addRequires(
-				self._resolveRequiresList(packageInfo.requires,
-					'system packages', packageNode.name))
+			    self._resolveRequiresList(packageInfo.requires, 'system packages',
+			                              packageNode.name))
 
 		nodeStack = list(self.systemPackageNodes)
 		while nodeStack:
 			packageNode = nodeStack.pop()
 			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
-					and dependency not in self.systemPackageNodes):
+				    and dependency not in self.systemPackageNodes):
 					nodeStack.append(dependency)
 					self.systemPackageNodes.add(dependency)
 
 		# resolve the haikuporter dependencies
-		scriptletPrerequirements = [ResolvableExpression(requires)
-				for requires in getScriptletPrerequirements()]
+		scriptletPrerequirements = [
+		    ResolvableExpression(requires)
+		    for requires in getScriptletPrerequirements()
+		]
 		haikuporterDependencies \
-			= self._resolveRequiresList(scriptletPrerequirements,
-				'haikuporter', 'scriptlet requires')
+               = self._resolveRequiresList(scriptletPrerequirements,
+		  'haikuporter', 'scriptlet requires')
 		self.haikuporterRequires = set()
 		for packageNode in haikuporterDependencies:
 			if not packageNode.isSystemPackage:
@@ -257,7 +264,7 @@ class DependencyAnalyzer(object):
 			packageNode = nodeStack.pop()
 			for dependency in packageNode.requires:
 				if (dependency in nonSystemPackageNodes
-					and dependency not in self.haikuporterRequires):
+				    and dependency not in self.haikuporterRequires):
 					nodeStack.append(dependency)
 					self.haikuporterRequires.add(dependency)
 
@@ -305,15 +312,12 @@ class DependencyAnalyzer(object):
 			node = outdegreeZeroStack.pop()
 			nodes.remove(node)
 			for otherNode in nodes:
-				if (node in otherNode.dependencies
-					and otherNode in nodes):
+				if (node in otherNode.dependencies and otherNode in nodes):
 					otherNode.outdegree -= 1
 					if otherNode.outdegree == 0:
 						outdegreeZeroStack.append(otherNode)
 
-		self.cyclicNodes = [
-			node for node in nodes if node.isPort
-		]
+		self.cyclicNodes = [node for node in nodes if node.isPort]
 
 	def _collectDependencyInfos(self, path):
 		for entry in os.listdir(path):
@@ -323,8 +327,8 @@ class DependencyAnalyzer(object):
 			try:
 				packageInfo = PackageInfo(dependencyInfoFile)
 			except CalledProcessError:
-				print('Warning: Ignoring broken dependency-info file "%s"'
-					   % dependencyInfoFile)
+				print('Warning: Ignoring broken dependency-info file "%s"' %
+				      dependencyInfoFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
 			self.packageInfos[packageInfo.versionedName] = packageInfo
 
@@ -345,8 +349,7 @@ class DependencyAnalyzer(object):
 			try:
 				packageInfo = PackageInfo(packageFile)
 			except CalledProcessError:
-				print('Warning: Ignoring broken package file "%s"'
-					   % packageFile)
+				print('Warning: Ignoring broken package file "%s"' % packageFile)
 			self.providesManager.addProvidesFromPackageInfo(packageInfo)
 			self.packageInfos[packageInfo.versionedName] = packageInfo
 
@@ -356,13 +359,13 @@ class DependencyAnalyzer(object):
 			providesInfo = self.providesManager.getMatchingProvides(requires)
 			if providesInfo:
 				isSystemPackage \
-					= buildPlatform.isSystemPackage(providesInfo.path)
+                             = buildPlatform.isSystemPackage(providesInfo.path)
 				packageNode = self._getPackageNode(providesInfo.packageID,
-												   isSystemPackage)
+				                                   isSystemPackage)
 				dependencies.add(packageNode)
 			else:
 				print('Warning: Ignoring unresolvable requires "%s" of package'
-					' %s in %s' % (requires, packageID, portID))
+				      ' %s in %s' % (requires, packageID, portID))
 		return dependencies
 
 	def _getPortNode(self, portID):

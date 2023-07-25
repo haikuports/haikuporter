@@ -31,7 +31,9 @@ import traceback
 
 # -- Main Class ---------------------------------------------------------------
 
+
 class Main(object):
+
 	def __init__(self, options, args):
 		self.options = options
 		try:
@@ -62,9 +64,8 @@ class Main(object):
 
 		self.packageRepositories = [self.packagesPath]
 		if not self.options.noSystemPackages \
-			and self.options.systemPackagesDirectory is not None:
-			self.packageRepositories.append(
-				self.options.systemPackagesDirectory)
+               and self.options.systemPackagesDirectory is not None:
+			self.packageRepositories.append(self.options.systemPackagesDirectory)
 
 		# if requested, checkout or update ports tree
 		if self.options.get:
@@ -79,29 +80,23 @@ class Main(object):
 
 		# determine if haikuporter has just been invoked for a short-term
 		# command
-		self.shallowInitIsEnough = (self.options.lint or self.options.tree
-			or self.options.get or self.options.list
-			or self.options.portsForFiles
-			or self.options.portsForPackages
-			or self.options.listPackages
-			or self.options.listDependencies
-			or self.options.search
-			or self.options.searchPackages
-			or self.options.about
-			or self.options.location
-			or self.options.buildMaster
-			or self.options.repositoryUpdate
-			or self.options.prunePackageRepository
-			or self.options.createPackageRepository
-			or self.options.why
-			or self.options.analyzeDependencies
-			or self.options.checkPackageRepositoryConsistency
-			or self.options.checkRepositoryConsistency
-			or self.options.checkPortsReleases)
+		self.shallowInitIsEnough = (
+		    self.options.lint or self.options.tree or self.options.get
+		    or self.options.list or self.options.portsForFiles
+		    or self.options.portsForPackages or self.options.listPackages
+		    or self.options.listDependencies or self.options.search
+		    or self.options.searchPackages or self.options.about
+		    or self.options.location or self.options.buildMaster
+		    or self.options.repositoryUpdate or self.options.prunePackageRepository
+		    or self.options.createPackageRepository or self.options.why
+		    or self.options.analyzeDependencies
+		    or self.options.checkPackageRepositoryConsistency
+		    or self.options.checkRepositoryConsistency
+		    or self.options.checkPortsReleases)
 
 		# init build platform
-		buildPlatform.init(self.treePath, self.outputDirectory,
-			self.packagesPath, self.shallowInitIsEnough)
+		buildPlatform.init(self.treePath, self.outputDirectory, self.packagesPath,
+		                   self.shallowInitIsEnough)
 
 		# set up the global variables we'll inherit to the shell
 		self._initGlobalShellVariables()
@@ -109,14 +104,14 @@ class Main(object):
 		if self.options.buildMaster:
 			from .BuildMaster import BuildMaster
 			self.buildMaster = BuildMaster(self.treePath, self.packagesPath,
-				self.options)
+			                               self.options)
 
 			self.options.allDependencies = True
 			self.options.noPackageObsoletion = True
 			self.options.ignoreMessages = True
 
 		if self.options.repositoryUpdate \
-			or self.options.checkRepositoryConsistency:
+               or self.options.checkRepositoryConsistency:
 			self._createRepositoryIfNeeded(self.options.quiet)
 
 			if self.options.checkRepositoryConsistency:
@@ -124,14 +119,15 @@ class Main(object):
 			return
 
 		if self.options.prunePackageRepository \
-			or self.options.createPackageRepository \
-			or self.options.checkPackageRepositoryConsistency:
+               or self.options.createPackageRepository \
+               or self.options.checkPackageRepositoryConsistency:
 
 			self.options.noPackageObsoletion = True
 			self._createRepositoryIfNeeded(True)
 
-			packageRepository = PackageRepository(self.packagesPath,
-				self.repository, self.options.quiet, self.options.verbose)
+			packageRepository = PackageRepository(self.packagesPath, self.repository,
+			                                      self.options.quiet,
+			                                      self.options.verbose)
 
 			if self.options.prunePackageRepository:
 				packageRepository.prune()
@@ -141,7 +137,7 @@ class Main(object):
 
 			if self.options.createPackageRepository:
 				packageRepository.createPackageRepository(
-					self.options.createPackageRepository)
+				    self.options.createPackageRepository)
 			return
 
 		# if requested, print the location of the haikuports source tree
@@ -152,9 +148,9 @@ class Main(object):
 		# if requested, scan the ports tree for problems
 		if self.options.lint:
 			if (not buildPlatform.isHaiku
-				and Configuration.getLicensesDirectory() is None):
+			    and Configuration.getLicensesDirectory() is None):
 				sysExit('LICENSES_DIRECTORY must be set in configuration on '
-					'this build platform!')
+				        'this build platform!')
 			self._createRepositoryIfNeeded(True)
 			if not args:
 				self._checkSourceTree("")
@@ -167,10 +163,10 @@ class Main(object):
 			self._createRepositoryIfNeeded(True)
 			if self.options.list:
 				allNames = self.repository.searchPorts(None,
-					self.options.printFilenames)
+				                                       self.options.printFilenames)
 			else:
 				allNames = self.repository.searchPackages(None,
-					self.options.printFilenames)
+				                                          self.options.printFilenames)
 
 			for name in sorted(allNames):
 				print(name)
@@ -180,8 +176,8 @@ class Main(object):
 		if self.options.search or self.options.searchPackages:
 			if not args:
 				sysExit('You need to specify a search string.\n'
-						u"Invoke '" + sys.argv[0] + u" -h' for usage "
-						u"information.")
+				        u"Invoke '" + sys.argv[0] + u" -h' for usage "
+				        u"information.")
 			self._createRepositoryIfNeeded(True)
 
 			for arg in args:
@@ -196,8 +192,8 @@ class Main(object):
 						else:
 							print(port.category + '::' + portName)
 				else:
-					packageNames = self.repository.searchPackages(arg,
-						self.options.printFilenames)
+					packageNames = self.repository.searchPackages(
+					    arg, self.options.printFilenames)
 					for packageName in packageNames:
 						print(packageName)
 			return
@@ -212,7 +208,7 @@ class Main(object):
 				allPorts = self.repository.allPorts.values()
 
 			files = [arg if os.path.isabs(arg) \
-				else os.path.join(self.treePath, arg) for arg in args]
+                      else os.path.join(self.treePath, arg) for arg in args]
 
 			for port in allPorts:
 				if port.referencesFiles(files):
@@ -241,8 +237,8 @@ class Main(object):
 		if self.options.location:
 			if not args:
 				sysExit('You need to specify a search string.\n'
-						u"Invoke '" + sys.argv[0] + u" -h' for usage "
-						u"information.")
+				        u"Invoke '" + sys.argv[0] + u" -h' for usage "
+				        u"information.")
 			# Provide the installed location of a port (for quick editing)
 			self._createRepositoryIfNeeded(True)
 			portNames = self.repository.searchPorts(args[0])
@@ -262,14 +258,14 @@ class Main(object):
 			for port in ports:
 				portSpec = self._splitPortSpecIntoNameVersionAndRevision(port)
 				if portSpec['version']:
-					portsfileAsRequires.append(portSpec['name'] + ' =='
-											   + portSpec['version'])
+					portsfileAsRequires.append(portSpec['name'] + ' ==' +
+					                           portSpec['version'])
 				else:
 					portsfileAsRequires.append(portSpec['name'])
 			if not portsfileAsRequires:
 				sysExit("The given ports-file doesn't contain any ports.")
 			self.shellVariables['portsfileAsRequires'] \
-				= '\n'.join(portsfileAsRequires)
+                      = '\n'.join(portsfileAsRequires)
 
 		self._createRepositoryIfNeeded(self.options.quiet, self.options.verbose)
 
@@ -300,7 +296,7 @@ class Main(object):
 			if metaPortSpec not in self.repository.allPorts:
 				sysExit("no recipe found for '%s'" % metaPortSpec)
 			self.portSpecs.append(
-				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
+			    self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
 		elif self.options.doBootstrap:
 			# first untangle and build all ports with circular dependencies
 			dependencyAnalyzer = DependencyAnalyzer(self.repository)
@@ -313,10 +309,9 @@ class Main(object):
 				port = self.repository.allPorts[portId]
 				mainPackage = port.mainPackage
 				if (mainPackage
-					and os.path.exists(
-						self.packagesPath + '/' + mainPackage.hpkgName)):
+				    and os.path.exists(self.packagesPath + '/' + mainPackage.hpkgName)):
 					print('skipping port %s, since its main package already '
-						'exists' % portId)
+					      'exists' % portId)
 					continue
 				portsNotYetBuilt.append(portId)
 				bootstrapPorts.add(portId)
@@ -325,26 +320,24 @@ class Main(object):
 				if portId not in bootstrapPorts:
 					port = self.repository.allPorts[portId]
 					mainPackage = port.mainPackage
-					if (mainPackage
-						and os.path.exists(
-							self.packagesPath + '/' + mainPackage.hpkgName)):
+					if (mainPackage and
+					    os.path.exists(self.packagesPath + '/' + mainPackage.hpkgName)):
 						print('skipping port %s, since its main package '
-							'already exists' % portId)
+						      'already exists' % portId)
 						continue
 					portsNotYetBuilt.append(portId)
 			# add all ports as if they were given on the cmdline
 			self.portSpecs = [
-				self._splitPortSpecIntoNameVersionAndRevision(port)
-				for port in portsNotYetBuilt
+			    self._splitPortSpecIntoNameVersionAndRevision(port)
+			    for port in portsNotYetBuilt
 			]
 		else:
 			# if there is no argument given, exit
 			if not args:
 				sysExit('You need to specify a search string.\nInvoke '
-						u"'" + sys.argv[0] + u" -h' for usage information.")
+				        u"'" + sys.argv[0] + u" -h' for usage information.")
 			self.portSpecs = [
-				self._splitPortSpecIntoNameVersionAndRevision(port)
-					for port in args
+			    self._splitPortSpecIntoNameVersionAndRevision(port) for port in args
 			]
 
 		# don't build or package when not patching
@@ -364,20 +357,19 @@ class Main(object):
 				portNameFound = False
 				if Configuration.isCrossBuildRepository():
 					nameWithTargetArch \
-						= (portName + '_'
-						+ self.shellVariables['targetArchitecture'])
+                                    = (portName + '_'
+					 + self.shellVariables['targetArchitecture'])
 					if nameWithTargetArch in portVersionsByName:
 						portName = nameWithTargetArch
 						portNameFound = True
 
 				# it might actually be a package name
 				if not portNameFound:
-					portName = self.repository.getPortNameForPackageName(
-						portName)
+					portName = self.repository.getPortNameForPackageName(portName)
 					if not portName:
 						if self.options.buildMaster:
 							self.buildMaster.addSkipped(portSpec['name'],
-								'not found in repository')
+							                            'not found in repository')
 							continue
 
 						sysExit(portSpec['name'] + ' not found in repository')
@@ -389,17 +381,15 @@ class Main(object):
 			if portSpec['version']:
 				portID = portSpec['name'] + '-' + portSpec['version']
 			else:
-				version = self.repository.getActiveVersionOf(portSpec['name'],
-															 True)
+				version = self.repository.getActiveVersionOf(portSpec['name'], True)
 				if not version:
 					if self.options.buildMaster:
-						self.buildMaster.addSkipped(portSpec['name'],
-							'no version of ' + portSpec['name']
-								+ ' can be built')
+						self.buildMaster.addSkipped(
+						    portSpec['name'],
+						    'no version of ' + portSpec['name'] + ' can be built')
 						continue
 					else:
-						sysExit('No version of ' + portSpec['name']
-							+ ' can be built')
+						sysExit('No version of ' + portSpec['name'] + ' can be built')
 				portID = portSpec['name'] + '-' + version
 
 			if portID not in allPorts:
@@ -435,12 +425,11 @@ class Main(object):
 		if self.options.why:
 			# find out about why another port is required
 			port = allPorts[self.portSpecs[0]['id']]
-			whySpec = self._splitPortSpecIntoNameVersionAndRevision(
-				self.options.why)
+			whySpec = self._splitPortSpecIntoNameVersionAndRevision(self.options.why)
 			if not whySpec['version']:
 				whySpec['version'] \
-					= self.repository.getActiveVersionOf(whySpec['name'],
-														 False)
+                             = self.repository.getActiveVersionOf(whySpec['name'],
+				           False)
 			whyID = whySpec['name'] + '-' + whySpec['version']
 			if whyID not in allPorts:
 				sysExit(whyID + ' not found in tree.')
@@ -461,7 +450,7 @@ class Main(object):
 			elif self.options.purge:
 				port.purge()
 			elif ((self.options.build and portSpec['id'] not in bootstrapPorts)
-					or self.options.test) and self.options.allDependencies:
+			      or self.options.test) and self.options.allDependencies:
 				try:
 					self._buildMainPort(port, self.options.test)
 				except SystemExit as exception:
@@ -496,13 +485,14 @@ class Main(object):
 		print('dependencies of ' + port.versionedName)
 
 		presentDependencyPackages = []
-		buildDependencies = port.resolveDependencies(
-			self.packageRepositories, self.options.test,
-			presentDependencyPackages)
+		buildDependencies = port.resolveDependencies(self.packageRepositories,
+		                                             self.options.test,
+		                                             presentDependencyPackages)
 
 		print('packages already present:')
-		presentDependencyPackageNames = [os.path.basename(package)
-			for package in presentDependencyPackages]
+		presentDependencyPackageNames = [
+		    os.path.basename(package) for package in presentDependencyPackages
+		]
 		for name in sorted(presentDependencyPackageNames):
 			print("\t" + name)
 		print('')
@@ -516,9 +506,8 @@ class Main(object):
 				print("\t" + packageID + ' -> ' + portID)
 
 			except KeyError:
-				sysExit('Inconsistency: ' + port.versionedName
-					+ ' requires ' + packageID
-					+ ' but no corresponding port was found!')
+				sysExit('Inconsistency: ' + port.versionedName + ' requires ' +
+				        packageID + ' but no corresponding port was found!')
 
 	def _validateMainPort(self, port, revision=None):
 		"""Parse the recipe file for the given port and get any required
@@ -529,15 +518,14 @@ class Main(object):
 
 		# if a specific revision has been given, check if this port matches it
 		if revision and port.revision != revision:
-			sysExit((u"Port %s isn't available in revision %s (found revision "
-					+ '%s instead)')
-					% (port.versionedName, revision, port.revision))
+			sysExit((u"Port %s isn't available in revision %s (found revision " +
+			         '%s instead)') % (port.versionedName, revision, port.revision))
 
 		# warn when the port is not buildable on this architecture
 		if not port.isBuildableOnTargetArchitecture():
 			status = port.statusOnTargetArchitecture
 			message = 'Port {} is {} on this architecture.'.format(
-				port.versionedName, status)
+			    port.versionedName, status)
 			warn(message)
 			if self.options.buildMaster:
 				self.buildMaster.addSkipped(port, message)
@@ -584,15 +572,16 @@ class Main(object):
 		if self.options.buildMaster:
 			presentDependencyPackages = []
 			try:
-				buildDependencies = port.resolveDependencies(
-					self.packageRepositories, False, presentDependencyPackages)
+				buildDependencies = port.resolveDependencies(self.packageRepositories,
+				                                             False,
+				                                             presentDependencyPackages)
 			except Exception as exception:
-				self.buildMaster.addSkipped(port,
-					'resolving build dependencies failed: {}'.format(exception))
+				self.buildMaster.addSkipped(
+				    port, 'resolving build dependencies failed: {}'.format(exception))
 				return
 		else:
-			buildDependencies = port.resolveDependencies(
-				self.packageRepositories, testPort)
+			buildDependencies = port.resolveDependencies(self.packageRepositories,
+			                                             testPort)
 
 		print('The following build dependencies were found:')
 		for dependency in buildDependencies:
@@ -612,17 +601,15 @@ class Main(object):
 				if portID not in requiredPortIDs:
 					requiredPort = allPorts[portID]
 					if ((getOption('createSourcePackagesForBootstrap')
-							or getOption('createSourcePackages'))
-						and (not requiredPort.sourcePackage
-							or requiredPort.sourcePackageExists(
-								self.packagesPath))):
+					     or getOption('createSourcePackages'))
+					    and (not requiredPort.sourcePackage
+					         or requiredPort.sourcePackageExists(self.packagesPath))):
 						continue
 					requiredPortsToBuild.append(requiredPort)
 					requiredPortIDs.add(portID)
 			except KeyError:
-				sysExit('Inconsistency: ' + port.versionedName
-						 + ' requires ' + packageID
-						 + ' but no corresponding port was found!')
+				sysExit('Inconsistency: ' + port.versionedName + ' requires ' +
+				        packageID + ' but no corresponding port was found!')
 
 		if requiredPortsToBuild:
 			if port in requiredPortsToBuild:
@@ -630,26 +617,25 @@ class Main(object):
 
 			print('The following required ports will be built first:')
 			for requiredPort in requiredPortsToBuild:
-				print('\t' + requiredPort.category + '::'
-					  + requiredPort.versionedName)
+				print('\t' + requiredPort.category + '::' + requiredPort.versionedName)
 			for requiredPort in requiredPortsToBuild:
 				if self.options.buildMaster:
 					requiredPort.parseRecipeFile(True)
 					try:
 						self._buildMainPort(requiredPort, False)
 					except SystemExit as exception:
-						self.buildMaster.addSkipped(port,
-							'Skipping ' + port.versionedName + ', dependency '
-								+ requiredPort.versionedName
-								+ ' cannot be built: ' + str(exception))
-						sysExit('Dependency of ' + port.versionedName
-							+ ' cannot be built')
+						self.buildMaster.addSkipped(
+						    port, 'Skipping ' + port.versionedName + ', dependency ' +
+						    requiredPort.versionedName + ' cannot be built: ' +
+						    str(exception))
+						sysExit('Dependency of ' + port.versionedName +
+						        ' cannot be built')
 				else:
 					self._buildPort(requiredPort, True, False)
 
 		if self.options.buildMaster:
 			self.buildMaster.schedule(port, requiredPackageIDs,
-				presentDependencyPackages)
+			                          presentDependencyPackages)
 			self.builtPortIDs.add(port.versionedName)
 		else:
 			self._buildPort(port, False, testPort)
@@ -706,12 +692,11 @@ class Main(object):
 			if not os.path.exists(targetPath):
 				os.makedirs(targetPath)
 
-			warn('building obsolete port, packages will be put in {}'.format(
-					targetPath))
+			warn(
+			    'building obsolete port, packages will be put in {}'.format(targetPath))
 
 			# make sure the correct dependencyInfo-file has been created
-			self.repository.supportBackwardsCompatibility(port.name,
-				port.version)
+			self.repository.supportBackwardsCompatibility(port.name, port.version)
 
 		return targetPath
 
@@ -735,22 +720,23 @@ class Main(object):
 			if not targetHaikuPackage:
 				if not buildPlatform.isHaiku:
 					sysExit('On this platform a haiku cross devel package '
-						'must be specified (via --cross-devel-package)')
+					        'must be specified (via --cross-devel-package)')
 				targetHaikuPackage = ('/boot/system/develop/cross/'
-					+ 'haiku_cross_devel_sysroot_%s.hpkg') \
-					% targetArchitecture
+				 + 'haiku_cross_devel_sysroot_%s.hpkg') \
+                             % targetArchitecture
 		else:
 			if (not buildPlatform.isHaiku and not self.shallowInitIsEnough
-				and not (getOption('createSourcePackagesForBootstrap')
-					or getOption('createSourcePackages'))):
+			    and not (getOption('createSourcePackagesForBootstrap')
+			             or getOption('createSourcePackages'))):
 				sysExit('Native building not supported on this platform '
-					'(%s)' % buildPlatform.name)
+				        '(%s)' % buildPlatform.name)
 
 		self.shellVariables = {
-			'haikuVersion': 'r1~alpha1',	# just a dummy value for compatibility with old recipes
-			'buildArchitecture': buildPlatform.architecture,
-			'targetArchitecture': targetArchitecture,
-			'jobs': str(self.options.jobs),
+		    'haikuVersion':
+		    'r1~alpha1',  # just a dummy value for compatibility with old recipes
+		    'buildArchitecture': buildPlatform.architecture,
+		    'targetArchitecture': targetArchitecture,
+		    'jobs': str(self.options.jobs),
 		}
 		if self.options.jobs > 1:
 			self.shellVariables['jobArgs'] = '-j' + str(self.options.jobs)
@@ -762,7 +748,7 @@ class Main(object):
 
 			buildMachineTriple = buildPlatform.machineTriple
 			targetMachineTriple \
-				= MachineArchitecture.getTripleFor(targetArchitecture)
+                      = MachineArchitecture.getTripleFor(targetArchitecture)
 
 			# If build- and target machine triple are the same, force a
 			# cross-build by faking the build-machine triple as something
@@ -773,11 +759,11 @@ class Main(object):
 
 			self.shellVariables['buildMachineTriple'] = buildMachineTriple
 			self.shellVariables['buildMachineTripleAsName'] \
-				= buildMachineTriple.replace('-', '_')
+                      = buildMachineTriple.replace('-', '_')
 			self.shellVariables['targetArchitecture'] = targetArchitecture
 			self.shellVariables['targetMachineTriple'] = targetMachineTriple
 			self.shellVariables['targetMachineTripleAsName'] \
-				= targetMachineTriple.replace('-', '_')
+                      = targetMachineTriple.replace('-', '_')
 		else:
 			self.shellVariables['isCrossRepository'] = 'false'
 
@@ -785,10 +771,10 @@ class Main(object):
 		"""create/update repository"""
 		if self.repository:
 			return
-		self.repository = Repository(self.treePath,
-			self.outputDirectory, self.repositoryPath,
-			self.packagesPath, self.shellVariables, self.policy,
-			self.options.preserveFlags, quiet, verbose)
+		self.repository = Repository(self.treePath, self.outputDirectory,
+		                             self.repositoryPath, self.packagesPath,
+		                             self.shellVariables, self.policy,
+		                             self.options.preserveFlags, quiet, verbose)
 
 	def _updatePortsTree(self):
 		"""Get/Update the port tree via git"""
@@ -804,11 +790,11 @@ class Main(object):
 		if len(elements) < 1 or len(elements) > 3:
 			sysExit('Invalid port specifier ' + portSpecString)
 
-		return	{
-			'specifier': portSpecString,
-			'name': elements[0],
-			'version': elements[1] if len(elements) > 1 else None,
-			'revision': elements[2] if len(elements) > 2 else None,
+		return {
+		    'specifier': portSpecString,
+		    'name': elements[0],
+		    'version': elements[1] if len(elements) > 1 else None,
+		    'revision': elements[2] if len(elements) > 2 else None,
 		}
 
 	def _getCategory(self, portName):
@@ -844,7 +830,7 @@ class Main(object):
 				# Full port name / ver
 				port = allPorts[portArgument]
 				print('%s	[%s]' % (portArgument, port.category))
-				port.validateRecipeFile(True) # exit 1 if fail
+				port.validateRecipeFile(True)  # exit 1 if fail
 				return
 			elif portArgument in portVersionsByName:
 				# Base port name
@@ -891,8 +877,8 @@ class Main(object):
 			with open(formatVersionsFile, 'r') as f:
 				formatVersions = f.read()
 			recipeFormatVersionMatch = re.search('^RecipeFormatVersion=(.+?)$',
-												 formatVersions,
-												 flags=re.MULTILINE)
+			                                     formatVersions,
+			                                     flags=re.MULTILINE)
 			if recipeFormatVersionMatch:
 				try:
 					recipeFormatVersion = int(recipeFormatVersionMatch.group(1))
@@ -901,12 +887,12 @@ class Main(object):
 
 		if recipeFormatVersion > getRecipeFormatVersion():
 			sysExit('The version of the recipe file format used in the ports '
-					'tree is newer than the one supported by haikuporter.\n'
-					'Please upgrade haikuporter.')
+			        'tree is newer than the one supported by haikuporter.\n'
+			        'Please upgrade haikuporter.')
 		if recipeFormatVersion < getRecipeFormatVersion():
 			sysExit('The version of the recipe file format used in the ports '
-					'tree is older than the one supported by haikuporter.\n'
-					'Please upgrade the ports tree.')
+			        'tree is older than the one supported by haikuporter.\n'
+			        'Please upgrade the ports tree.')
 
 	def _checkPortsReleases(self, portArgument):
 		self._createRepositoryIfNeeded(True)

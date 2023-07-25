@@ -10,30 +10,31 @@ from subprocess import CalledProcessError, check_output
 import types, functools
 
 from .RecipeTypes import (
-	Architectures,
-	Extendable,
-	LinesOfText,
-	MachineArchitecture,
-	Phase,
-	ProvidesList,
-	RequiresList,
-	Status,
-	YesNo,
+    Architectures,
+    Extendable,
+    LinesOfText,
+    MachineArchitecture,
+    Phase,
+    ProvidesList,
+    RequiresList,
+    Status,
+    YesNo,
 )
 from .ShellScriptlets import (
-	configFileEvaluatorScript,
-	getShellVariableSetters,
+    configFileEvaluatorScript,
+    getShellVariableSetters,
 )
 from .Utils import (
-	filteredEnvironment,
-	sysExit,
-	warn,
+    filteredEnvironment,
+    sysExit,
+    warn,
 )
-
 
 # -- haikuports.conf and *.recipe parser --------------------------------
 
+
 class ConfigParser(object):
+
 	def __init__(self, filename, attributes, shellVariables):
 
 		## REFACTOR environment setup and conf location into a single function
@@ -51,10 +52,11 @@ class ConfigParser(object):
 		shellVariables['supportedKeysPattern'] = supportedKeysString
 		shellVariables['fileToParse'] = filename
 
-		wrapperScript = (getShellVariableSetters(shellVariables)
-						 + configFileEvaluatorScript)
+		wrapperScript = (getShellVariableSetters(shellVariables) +
+		                 configFileEvaluatorScript)
 		try:
-			output = check_output(['bash', '-c', wrapperScript], env=shellEnv).decode('utf-8')
+			output = check_output(['bash', '-c', wrapperScript],
+			                      env=shellEnv).decode('utf-8')
 		except (OSError, CalledProcessError):
 			sysExit("Can't evaluate config file: " + filename)
 
@@ -69,9 +71,9 @@ class ConfigParser(object):
 			key, separator, valueString = line.partition('=')
 			if not separator:
 				sysExit('evaluating file %s produced illegal '
-						'key-values line:\n	 %s\nexpected "<key>=<value>"\n'
-						'output of configuration script was: %s\n'
-						% (filename, line, output))
+				        'key-values line:\n	 %s\nexpected "<key>=<value>"\n'
+				        'output of configuration script was: %s\n' %
+				        (filename, line, output))
 
 			# some keys may have a package-specific extension, check:
 			if key in attributes:
@@ -110,8 +112,8 @@ class ConfigParser(object):
 
 					if not isPhaseKey:
 						# skip unsupported key, just in case
-						warn('Key %s in file %s is unsupported, ignoring it'
-							 % (key, filename))
+						warn('Key %s in file %s is unsupported, ignoring it' %
+						     (key, filename))
 					continue
 
 			# create empty dictionary for new extension
@@ -142,8 +144,8 @@ class ConfigParser(object):
 						entries[key] = int(valueString)
 				except ValueError:
 					sysExit('evaluating file %s produced illegal value '
-							'"%s" for key %s, expected an <integer> value'
-							% (filename, valueString, key))
+					        '"%s" for key %s, expected an <integer> value' %
+					        (filename, valueString, key))
 			elif attrType in [list, ProvidesList, RequiresList]:
 				values = [v.strip() for v in valueString.splitlines()]
 				values = [v for v in values if len(v) > 0]
@@ -154,10 +156,9 @@ class ConfigParser(object):
 					for value in values:
 						if '-' in value.split()[0]:
 							sysExit('evaluating file %s produced illegal value '
-									'"%s" for key %s\n'
-									'dashes are not allowed in provides- or '
-									'requires declarations'
-									% (filename, value, key))
+							        '"%s" for key %s\n'
+							        'dashes are not allowed in provides- or '
+							        'requires declarations' % (filename, value, key))
 				if attributes[baseKey]['indexable']:
 					entries[baseKey][index] = values
 				else:
@@ -174,9 +175,9 @@ class ConfigParser(object):
 			elif attrType == Phase:
 				if valueString.upper() not in Phase.getAllowedValues():
 					sysExit('evaluating file %s\nproduced illegal value "%s" '
-							'for key %s\nexpected one of: %s'
-							% (filename, valueString, key,
-							   ','.join(Phase.getAllowedValues())))
+					        'for key %s\nexpected one of: %s' %
+					        (filename, valueString, key, ','.join(
+					            Phase.getAllowedValues())))
 				entries[key] = valueString.upper()
 			elif attrType == MachineArchitecture:
 				entries[key] = {}
@@ -185,8 +186,8 @@ class ConfigParser(object):
 				if valueString not in knownArchitectures:
 					architectures = ','.join(knownArchitectures)
 					sysExit('%s refers to unknown machine-architecture %s\n'
-							'known machine-architectures: %s'
-							% (filename, valueString, architectures))
+					        'known machine-architectures: %s' %
+					        (filename, valueString, architectures))
 				entries[key] = valueString
 			elif attrType == Architectures:
 				entries[key] = {}
@@ -209,24 +210,23 @@ class ConfigParser(object):
 						if architecture not in knownArchitectures:
 							architectures = ','.join(knownArchitectures)
 							sysExit('%s refers to unknown architecture %s\n'
-									'known architectures: %s'
-									% (filename, architecture, architectures))
+							        'known architectures: %s' %
+							        (filename, architecture, architectures))
 						entries[key][architecture] = status
 				if 'any' in entries[key] and len(entries[key]) > 1:
-					sysExit("%s specifies both 'any' and other architectures"
-							% (filename))
+					sysExit("%s specifies both 'any' and other architectures" %
+					        (filename))
 				if 'source' in entries[key] and len(entries[key]) > 1:
-					sysExit("%s specifies both 'source' and other architectures"
-							% (filename))
+					sysExit("%s specifies both 'source' and other architectures" %
+					        (filename))
 			elif attrType == YesNo:
 				valueString = valueString.lower()
 				if valueString not in YesNo.getAllowedValues():
-					sysExit("Value for %s should be 'yes' or 'no' in %s"
-							% (key, filename))
+					sysExit("Value for %s should be 'yes' or 'no' in %s" %
+					        (key, filename))
 				entries[key] = YesNo.toBool(valueString)
 			else:
-				sysExit('type of key %s in file %s is unsupported'
-						% (key, filename))
+				sysExit('type of key %s in file %s is unsupported' % (key, filename))
 				# for entries in self.entriesByExtension.values():
 				# for key in entries:
 				#		print key + " = " + str(entries[key])
@@ -240,7 +240,6 @@ class ConfigParser(object):
 	@property
 	def extensions(self):
 		return self.entriesByExtension.keys()
-
 
 	## REFACTOR - consider using simple functions for this
 	@staticmethod
@@ -280,7 +279,7 @@ class ConfigParser(object):
 		unquotedComponents = []
 		for component in components:
 			if component and component[0] == '"' and component[-1] == '"':
-					# use a regex if this called a lot
+				# use a regex if this called a lot
 				component = component[1:-1]
 			unquotedComponents.append(component)
 		return unquotedComponents
@@ -293,8 +292,7 @@ class ConfigParser(object):
 
 			if isinstance(config[key], list):
 				configurationString += functools.reduce(
-					lambda result, item: result + ' ' + item, config[key],
-					'').strip()
+				    lambda result, item: result + ' ' + item, config[key], '').strip()
 			elif type(config[key]) is bool:
 				configurationString += 'yes' if config[key] else 'no'
 			else:

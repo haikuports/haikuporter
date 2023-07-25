@@ -13,7 +13,9 @@ try:
 except ImportError:
 	MongoClient = None
 
+
 class ReporterMongo(object):
+
 	def __init__(self, uri, branch, architecture):
 		self.uri = uri
 		self.branch = branch
@@ -40,8 +42,9 @@ class ReporterMongo(object):
 		buildrunCollection = db.buildruns
 		mdbStatus = status.copy()
 		mdbStatus["_id"] = buildNumber
-		buildrunCollection.update_one({'_id': buildNumber}, {"$set": mdbStatus}, upsert=True)
-		self._updateBuilders(status);
+		buildrunCollection.update_one({'_id': buildNumber}, {"$set": mdbStatus},
+		                              upsert=True)
+		self._updateBuilders(status)
 		return
 
 	def _updateBuilders(self, status):
@@ -52,4 +55,6 @@ class ReporterMongo(object):
 				bldStatus = builder.copy()
 				bldStatus["_id"] = builder["name"]
 				bldStatus["status"] = state
-				builderCollection.update_one({'_id': builder["name"]}, {"$set": bldStatus}, upsert=True)
+				builderCollection.update_one({'_id': builder["name"]},
+				                             {"$set": bldStatus},
+				                             upsert=True)

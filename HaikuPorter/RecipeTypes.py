@@ -7,6 +7,7 @@ import re
 
 # -- MachineArchitecture ------------------------------------------------------
 
+
 # Defines the set of real machines architectures that are supported.
 class MachineArchitecture(str):
 	## REFACTOR collections.namedtuple might make more sense
@@ -25,15 +26,15 @@ class MachineArchitecture(str):
 	def getAll():
 		# TODO: fetch this from PackageKit?
 		return [
-			Architectures.ARM,
-			Architectures.ARM64,
-			Architectures.M68K,
-			Architectures.PPC,
-			Architectures.RISCV64,
-			Architectures.SPARC,
-			Architectures.X86,
-			Architectures.X86_64,
-			Architectures.X86_GCC2,
+		    Architectures.ARM,
+		    Architectures.ARM64,
+		    Architectures.M68K,
+		    Architectures.PPC,
+		    Architectures.RISCV64,
+		    Architectures.SPARC,
+		    Architectures.X86,
+		    Architectures.X86_64,
+		    Architectures.X86_GCC2,
 		]
 
 	## REFACTOR make this a module constant as it will otherwise create an
@@ -41,18 +42,18 @@ class MachineArchitecture(str):
 	@staticmethod
 	def getTripleFor(architecture):
 		archMap = {
-			Architectures.ARM: 'arm-unknown-haiku',
-			Architectures.ARM64: 'aarch64-unknown-haiku',
-			Architectures.M68K: 'm68k-unknown-haiku',
-			Architectures.PPC: 'powerpc-apple-haiku',
-			Architectures.RISCV64: 'riscv64-unknown-haiku',
-			Architectures.SPARC: 'sparc64-unknown-haiku',
-			Architectures.X86: 'i586-pc-haiku',
-			Architectures.X86_64: 'x86_64-unknown-haiku',
-			Architectures.X86_GCC2: 'i586-pc-haiku',
-				# Note: In theory it would make sense to use a different triple
-				# for x86_gcc2. Unfortunately that would cause us a lot of work
-				# to adjust the GNU autotools and autotools based build systems.
+		    Architectures.ARM: 'arm-unknown-haiku',
+		    Architectures.ARM64: 'aarch64-unknown-haiku',
+		    Architectures.M68K: 'm68k-unknown-haiku',
+		    Architectures.PPC: 'powerpc-apple-haiku',
+		    Architectures.RISCV64: 'riscv64-unknown-haiku',
+		    Architectures.SPARC: 'sparc64-unknown-haiku',
+		    Architectures.X86: 'i586-pc-haiku',
+		    Architectures.X86_64: 'x86_64-unknown-haiku',
+		    Architectures.X86_GCC2: 'i586-pc-haiku',
+		    # Note: In theory it would make sense to use a different triple
+		    # for x86_gcc2. Unfortunately that would cause us a lot of work
+		    # to adjust the GNU autotools and autotools based build systems.
 		}
 		if architecture in archMap:
 			return archMap[architecture]
@@ -76,6 +77,7 @@ class MachineArchitecture(str):
 
 # -- Architectures ------------------------------------------------------------
 
+
 # The ARCHITECTURES key in a recipe describes the port's status on each
 # of the supported architectures.
 # Within the string, support for an architecture can be specified like this:
@@ -92,12 +94,13 @@ class Architectures(MachineArchitecture):
 	@staticmethod
 	def getAll():
 		return MachineArchitecture.getAll() + [
-			Architectures.ANY,
-			Architectures.SOURCE,
+		    Architectures.ANY,
+		    Architectures.SOURCE,
 		]
 
 
 # -- Status -------------------------------------------------------------------
+
 
 # Allowed status for a port on a specific architecure
 class Status(str):
@@ -108,6 +111,7 @@ class Status(str):
 
 
 # -- Phase --------------------------------------------------------------------
+
 
 # Identifies a phase of building a port.
 class Phase(str):
@@ -123,12 +127,14 @@ class Phase(str):
 
 # -- LinesOfText --------------------------------------------------------------
 
+
 # Create new type 'LinesOfText', used to handle the description in a recipe
 class LinesOfText(list):
 	pass
 
 
 # -- ProvidesList -------------------------------------------------------------
+
 
 # Create new type 'ProvidesList', used to handle a list of provides
 # specifications
@@ -138,6 +144,7 @@ class ProvidesList(list):
 
 # -- RequiresList -------------------------------------------------------------
 
+
 # Create new type 'RequiresList', used to handle a list of requires
 # specifications
 class RequiresList(list):
@@ -145,6 +152,7 @@ class RequiresList(list):
 
 
 # -- YesNo --------------------------------------------------------------------
+
 
 # A string representing a boolean value.
 class YesNo(str):
@@ -157,7 +165,9 @@ class YesNo(str):
 	def toBool(value):
 		return value.lower() == 'yes' or value.lower() == 'true'
 
+
 # -- Extendable ---------------------------------------------------------------
+
 
 # Defines the possible values for the 'extendable' attribute of recipe
 # attributes:
@@ -171,4 +181,3 @@ class Extendable(str):
 	NO = 'no',
 	INHERITED = 'inherited',
 	DEFAULT = 'default'
-
