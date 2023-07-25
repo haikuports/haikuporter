@@ -6,8 +6,6 @@
 # Authors:
 #   Alexander von Gluck IV <kallisti5@unixzen.com>
 
-from .Utils import sysExit, warn, info
-
 try:
 	from pymongo import MongoClient
 except ImportError:
