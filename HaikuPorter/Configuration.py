@@ -13,7 +13,6 @@ from .Utils import sysExit
 
 import os
 import re
-import types
 
 
 def which(program):

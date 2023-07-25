@@ -7,7 +7,6 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
 from .Port import Port
@@ -19,12 +18,9 @@ from .Builders.Builder import _BuilderState
 from .Builders.LocalBuilder import LocalBuilder
 from .Builders.RemoteBuilderSSH import RemoteBuilderSSH
 
-import errno
 import json
 import logging
 import os
-import socket
-import stat
 import subprocess
 import threading
 import time

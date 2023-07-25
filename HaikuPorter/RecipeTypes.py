@@ -3,8 +3,6 @@
 # Copyright 2013 Oliver Tappe
 # Distributed under the terms of the MIT License.
 
-import re
-
 # -- MachineArchitecture ------------------------------------------------------
 
 

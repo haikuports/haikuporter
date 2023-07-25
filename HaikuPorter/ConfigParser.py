@@ -7,7 +7,7 @@ from __future__ import absolute_import
 # -- Modules ------------------------------------------------------------------
 
 from subprocess import CalledProcessError, check_output
-import types, functools
+import functools
 
 from .RecipeTypes import (
     Architectures,
