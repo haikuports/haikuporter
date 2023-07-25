@@ -7,23 +7,23 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .Options import getOption
-from .Port import Port
-from .ReporterMongo import ReporterMongo
-from .ReporterJson import ReporterJson
-from .Utils import ensureCommandIsAvailable, sysExit, warn, info
-
-from .Builders.Builder import _BuilderState
-from .Builders.LocalBuilder import LocalBuilder
-from .Builders.RemoteBuilderSSH import RemoteBuilderSSH
-
 import json
 import logging
 import os
 import subprocess
 import threading
 import time
+
+from .Builders.Builder import _BuilderState
+from .Builders.LocalBuilder import LocalBuilder
+from .Builders.RemoteBuilderSSH import RemoteBuilderSSH
+from .Configuration import Configuration
+from .Options import getOption
+from .Port import Port
+from .ReporterJson import ReporterJson
+from .ReporterMongo import ReporterMongo
+from .Utils import ensureCommandIsAvailable, info, sysExit, warn
+
 
 class ThreadFilter(object):
 	def __init__(self):

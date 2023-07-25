@@ -6,17 +6,17 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .BuildPlatform import buildPlatform
-from .Options import getOption
-from .PackageInfo import (PackageInfo, ResolvableExpression)
-from .ProvidesManager import ProvidesManager
-from .ShellScriptlets import getScriptletPrerequirements
-from .Utils import sysExit
-
 import copy
 import os
 import shutil
 from subprocess import CalledProcessError
+
+from .BuildPlatform import buildPlatform
+from .Options import getOption
+from .PackageInfo import PackageInfo, ResolvableExpression
+from .ProvidesManager import ProvidesManager
+from .ShellScriptlets import getScriptletPrerequirements
+from .Utils import sysExit
 
 # -----------------------------------------------------------------------------
 

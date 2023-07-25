@@ -5,17 +5,16 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .DependencyResolver import DependencyResolver
-from .PackageInfo import PackageInfo
-from .Options import getOption
-from .Utils import info, prefixLines, sysExit, versionCompare, warn
-
 import glob
 import hashlib
 import os
 import subprocess
 
+from .Configuration import Configuration
+from .DependencyResolver import DependencyResolver
+from .Options import getOption
+from .PackageInfo import PackageInfo
+from .Utils import info, prefixLines, sysExit, versionCompare, warn
 
 # -- PackageRepository class --------------------------------------------------
 

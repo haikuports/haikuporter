@@ -12,6 +12,14 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import codecs
+import datetime
+import json
+import os
+import shutil
+from functools import cmp_to_key
+from subprocess import STDOUT, CalledProcessError, check_call, check_output
+
 from .BuildPlatform import buildPlatform
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
@@ -19,17 +27,8 @@ from .Options import getOption
 from .RecipeTypes import Architectures, Status
 from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import (ensureCommandIsAvailable, escapeForPackageInfo,
-					haikuporterRepoUrl, haikuportsRepoUrl, info, naturalCompare,
-					sysExit, touchFile, warn)
-
-import codecs
-from functools import cmp_to_key
-import datetime
-import json
-import os
-import shutil
-from subprocess import check_call, check_output, CalledProcessError, STDOUT
-
+                    haikuporterRepoUrl, haikuportsRepoUrl, info,
+                    naturalCompare, sysExit, touchFile, warn)
 
 # -- The supported package types ----------------------------------------------
 

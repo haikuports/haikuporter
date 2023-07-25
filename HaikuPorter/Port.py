@@ -13,51 +13,30 @@
 # -- Modules ------------------------------------------------------------------
 
 import codecs
-from functools import cmp_to_key
 import json
 import os
 import re
 import shutil
 import signal
-from subprocess import check_call, check_output, CalledProcessError, Popen, \
-	PIPE, STDOUT
 import traceback
+from functools import cmp_to_key
+from subprocess import (PIPE, STDOUT, CalledProcessError, Popen, check_call,
+                        check_output)
 
 from .BuildPlatform import buildPlatform
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
-from .Package import (
-	PackageType,
-	sourcePackageFactory,
-	packageFactory,
-)
+from .Package import PackageType, packageFactory, sourcePackageFactory
 from .RecipeAttributes import getRecipeAttributes
-from .RecipeTypes import (
-	Extendable,
-	MachineArchitecture,
-	Phase,
-	Status)
+from .RecipeTypes import Extendable, MachineArchitecture, Phase, Status
 from .ReleaseChecker import createReleaseChecker
 from .RequiresUpdater import RequiresUpdater
-from .ShellScriptlets import (
-	cleanupChrootScript,
-	getShellVariableSetters,
-	recipeActionScript,
-	setupChrootScript,
-)
+from .ShellScriptlets import (cleanupChrootScript, getShellVariableSetters,
+                              recipeActionScript, setupChrootScript)
 from .Source import Source
-from .Utils import (
-	filteredEnvironment,
-	info,
-	naturalCompare,
-	storeStringInFile,
-	symlinkGlob,
-	sysExit,
-	touchFile,
-	warn,
-)
-
+from .Utils import (filteredEnvironment, info, naturalCompare,
+                    storeStringInFile, symlinkGlob, sysExit, touchFile, warn)
 
 # -- Modules preloaded for chroot ---------------------------------------------
 # These modules need to be preloaded in order to avoid problems with python

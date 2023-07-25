@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # -*- coding: utf-8 -*-
 #
 # Copyright 2013 Oliver Tappe
@@ -6,30 +5,14 @@ from __future__ import absolute_import
 
 # -- Modules ------------------------------------------------------------------
 
-from subprocess import CalledProcessError, check_output
 import functools
+from subprocess import CalledProcessError, check_output
 
-from .RecipeTypes import (
-	Architectures,
-	Extendable,
-	LinesOfText,
-	MachineArchitecture,
-	Phase,
-	ProvidesList,
-	RequiresList,
-	Status,
-	YesNo,
-)
-from .ShellScriptlets import (
-	configFileEvaluatorScript,
-	getShellVariableSetters,
-)
-from .Utils import (
-	filteredEnvironment,
-	sysExit,
-	warn,
-)
-
+from .RecipeTypes import (Architectures, Extendable, LinesOfText,
+                          MachineArchitecture, Phase, ProvidesList,
+                          RequiresList, Status, YesNo)
+from .ShellScriptlets import configFileEvaluatorScript, getShellVariableSetters
+from .Utils import filteredEnvironment, sysExit, warn
 
 # -- haikuports.conf and *.recipe parser --------------------------------
 

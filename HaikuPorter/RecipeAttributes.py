@@ -12,11 +12,11 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Package import PackageType
-from .RecipeTypes import (Architectures, Extendable, LinesOfText,
-						  Phase, ProvidesList, RequiresList, YesNo)
 import copy
 
+from .Package import PackageType
+from .RecipeTypes import (Architectures, Extendable, LinesOfText, Phase,
+                          ProvidesList, RequiresList, YesNo)
 
 # -- recipe keys and their attributes -----------------------------------------
 

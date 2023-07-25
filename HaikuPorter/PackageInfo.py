@@ -5,17 +5,16 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .Utils import sysExit
-
-from copy import deepcopy
-from subprocess import check_output
 import codecs
 import json
 import os
 import pickle
 import re
+from copy import deepcopy
+from subprocess import check_output
 
+from .Configuration import Configuration
+from .Utils import sysExit
 
 # -- Resolvable class ---------------------------------------------------------
 

@@ -12,15 +12,14 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .Utils import ensureCommandIsAvailable, info, sysExit, unpackArchive, warn
-
 import os
 import re
 import shutil
-from subprocess import CalledProcessError, check_output, PIPE, Popen, STDOUT
 import time
+from subprocess import PIPE, STDOUT, CalledProcessError, Popen, check_output
 
+from .Configuration import Configuration
+from .Utils import ensureCommandIsAvailable, info, sysExit, unpackArchive, warn
 
 # -----------------------------------------------------------------------------
 

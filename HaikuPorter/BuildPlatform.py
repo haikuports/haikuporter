@@ -5,13 +5,6 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .DependencyResolver import DependencyResolver
-from .Options import getOption
-from .PackageInfo import PackageInfo
-from .RecipeTypes import Architectures, MachineArchitecture
-from .Utils import sysExit, info
-
 import os
 import platform
 import shutil
@@ -19,6 +12,12 @@ import sys
 import time
 from subprocess import check_output
 
+from .Configuration import Configuration
+from .DependencyResolver import DependencyResolver
+from .Options import getOption
+from .PackageInfo import PackageInfo
+from .RecipeTypes import Architectures, MachineArchitecture
+from .Utils import info, sysExit
 
 buildPlatform = None
 
