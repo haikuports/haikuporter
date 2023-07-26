@@ -5,7 +5,7 @@
 
 function _hp_options
 {
-local options="$(haikuporter.py -h | grep -- -- | cut -f3,4 -d' ' | sed -e 's/, / /')"
+local options="$(haikuporter -h | grep -- -- | cut -f3,4 -d' ' | sed -e 's/, / /')"
 COMPREPLY=(${COMPREPLY[@]:-} $(compgen -W '$options' -- "$cur"))
 }
 
@@ -13,7 +13,7 @@ function _hp_beps
 {
 	local packages
 
-	for i in "$(haikuporter.py -t)"/*/*/*.bep; do
+	for i in "$(haikuporter -t)"/*/*/*.bep; do
 		i="${i##*/}"
 		packages="${i%.bep} ${packages}"
 	done
@@ -41,4 +41,4 @@ function _haikuporter()
 
 	return 0
 }
-complete -F _haikuporter.py -o filenames haikuporter
+complete -F _haikuporter -o filenames haikuporter

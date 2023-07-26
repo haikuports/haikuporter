@@ -69,7 +69,7 @@ config = {
       "path": args.workdir
     },
     "haikuporter": {
-      "path": "haikuporter.py",
+      "path": "haikuporter",
       "args": ""
     }
   }
