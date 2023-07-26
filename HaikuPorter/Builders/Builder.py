@@ -4,6 +4,7 @@
 # Copyright 2016 Jerome Duval
 # Distributed under the terms of the MIT License.
 
+
 class _BuilderState(object):
 	AVAILABLE = 'Available'
 	LOST = 'Lost'

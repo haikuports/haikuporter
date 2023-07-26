@@ -14,28 +14,15 @@ import os
 import re
 import glob
 
-allowedWritableTopLevelDirectories = [
-	'cache',
-	'non-packaged',
-	'settings',
-	'var'
-]
+allowedWritableTopLevelDirectories = ['cache', 'non-packaged', 'settings', 'var']
 
 allowedTopLevelEntries = [
-	'.PackageInfo',
-	'add-ons',
-	'apps',
-	'bin',
-	'boot',
-	'data',
-	'develop',
-	'documentation',
-	'lib',
-	'preferences',
-	'servers'
+    '.PackageInfo', 'add-ons', 'apps', 'bin', 'boot', 'data', 'develop',
+    'documentation', 'lib', 'preferences', 'servers'
 ] + allowedWritableTopLevelDirectories
 
 # -- Policy checker class -----------------------------------------------------
+
 
 class Policy(object):
 
@@ -49,17 +36,16 @@ class Policy(object):
 		self.port = port
 		self.secondaryArchitecture = port.secondaryArchitecture
 		self.secondaryArchSuffix = '_' + self.secondaryArchitecture \
-			if self.secondaryArchitecture else ''
+               if self.secondaryArchitecture else ''
 		self.secondaryArchSubDir = '/' + self.secondaryArchitecture \
-			if self.secondaryArchitecture else ''
+               if self.secondaryArchitecture else ''
 
 		# Get the provides of all of the port's packages. We need them to find
 		# dependencies between packages of the port.
 		self.portPackagesProvides = {}
 		for package in port.packages:
 			self.portPackagesProvides[package.name] = (
-				self._parseResolvableExpressionList(
-					package.recipeKeys['PROVIDES']))
+			    self._parseResolvableExpressionList(package.recipeKeys['PROVIDES']))
 
 		# Create a map with the packages' provides. We need that later when
 		# checking the created package.
@@ -93,8 +79,7 @@ class Policy(object):
 				self._violation('Invalid top-level package entry "%s"' % entry)
 
 	def _parseResolvableExpressionListForKey(self, keyName):
-		return self._parseResolvableExpressionList(
-			self.package.recipeKeys[keyName])
+		return self._parseResolvableExpressionList(self.package.recipeKeys[keyName])
 
 	def _parseResolvableExpressionList(self, theList):
 		names = set()
@@ -107,8 +92,7 @@ class Policy(object):
 	def _checkProvides(self):
 		# check if the package provides itself
 		if self.package.name not in self.provides:
-			self._violation('no matching self provides for "%s"'
-				% self.package.name)
+			self._violation('no matching self provides for "%s"' % self.package.name)
 
 		# everything in bin/ must be declared as cmd:*
 		binDir = os.path.join(self.package.packagingDir, 'bin')
@@ -119,28 +103,28 @@ class Policy(object):
 					continue
 				name = self._normalizeResolvableName('cmd:' + entry)
 				if name.lower() not in self.provides:
-					self._violation('no matching provides "%s" for "%s"'
-						% (name, 'bin/' + entry))
+					self._violation('no matching provides "%s" for "%s"' %
+					                (name, 'bin/' + entry))
 
 		# library entries in lib[/<arch>] must be declared as lib:*[_<arch>]
 		libDir = os.path.join(self.package.packagingDir,
-			'lib' + self.secondaryArchSubDir)
+		                      'lib' + self.secondaryArchSubDir)
 		if os.path.exists(libDir):
 			for entry in os.listdir(libDir):
 				suffixIndex = entry.find('.so')
 				if suffixIndex < 0:
 					continue
 
-				name = self._normalizeResolvableName(
-					'lib:' + entry[:suffixIndex] + self.secondaryArchSuffix)
+				name = self._normalizeResolvableName('lib:' + entry[:suffixIndex] +
+				                                     self.secondaryArchSuffix)
 				if name.lower() not in self.provides:
-					self._violation('no matching provides "%s" for "%s"'
-						% (name, 'lib/' + entry))
+					self._violation('no matching provides "%s" for "%s"' %
+					                (name, 'lib/' + entry))
 
 		# library entries in develop/lib[<arch>] must be declared as
 		# devel:*[_<arch>]
 		developLibDir = os.path.join(self.package.packagingDir,
-			'develop/lib' + self.secondaryArchSubDir)
+		                             'develop/lib' + self.secondaryArchSubDir)
 		if os.path.exists(developLibDir):
 			for entry in os.listdir(developLibDir):
 				suffixIndex = entry.find('.so')
@@ -149,11 +133,11 @@ class Policy(object):
 					if suffixIndex < 0:
 						continue
 
-				name = self._normalizeResolvableName(
-					'devel:' + entry[:suffixIndex] + self.secondaryArchSuffix)
+				name = self._normalizeResolvableName('devel:' + entry[:suffixIndex] +
+				                                     self.secondaryArchSuffix)
 				if name.lower() not in self.provides:
-					self._violation('no matching provides "%s" for "%s"'
-						% (name, 'develop/lib/' + entry))
+					self._violation('no matching provides "%s" for "%s"' %
+					                (name, 'develop/lib/' + entry))
 
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
@@ -190,7 +174,7 @@ class Policy(object):
 		try:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(['readelf', '--dynamic', path],
-					stderr=devnull).decode('utf-8')
+				                      stderr=devnull).decode('utf-8')
 		except:
 			return
 
@@ -209,13 +193,12 @@ class Policy(object):
 
 		for library in libraries:
 			if self._isMissingLibraryDependency(library, dirPath, rpath):
-				if (library.startswith('libgcc') or
-					library.startswith('libstdc++') or
-					library.startswith('libsupc++')):
+				if (library.startswith('libgcc') or library.startswith('libstdc++')
+				    or library.startswith('libsupc++')):
 					continue
 				self._violation('"%s" needs library "%s", but the '
-					'package doesn\'t seem to declare that as a '
-					'requirement' % (path, library))
+				                'package doesn\'t seem to declare that as a '
+				                'requirement' % (path, library))
 
 	def _isMissingLibraryDependency(self, library, dirPath, rpath):
 		if library.startswith('_APP_'):
@@ -223,7 +206,7 @@ class Policy(object):
 
 		# the library might be provided by the package ($libDir)
 		libDir = os.path.join(self.package.packagingDir,
-			'lib' + self.secondaryArchSubDir + '/' + library)
+		                      'lib' + self.secondaryArchSubDir + '/' + library)
 		if os.path.exists(libDir):
 			return False
 		if len(glob.glob(libDir + '*')) == 1:
@@ -247,13 +230,16 @@ class Policy(object):
 		if rpath is not None:
 			for rpath1 in rpath.split(':'):
 				if rpath1.find('/.self/') != -1:
-					rpathDir = os.path.join(self.package.packagingDir,
-						rpath1[rpath1.find('/.self/') + len('/.self/'):] + '/' + library)
+					rpathDir = os.path.join(
+					    self.package.packagingDir,
+					    rpath1[rpath1.find('/.self/') + len('/.self/'):] + '/' +
+					    library)
 					if os.path.exists(rpathDir):
 						return False
 				elif rpath1.find('$ORIGIN') != -1:
-					rpathDir = os.path.join(dirPath,
-						rpath1[rpath1.find('$ORIGIN/') + len('$ORIGIN/'):] + '/' + library)
+					rpathDir = os.path.join(
+					    dirPath, rpath1[rpath1.find('$ORIGIN/') + len('$ORIGIN/'):] +
+					    '/' + library)
 					if os.path.exists(rpathDir):
 						return False
 
@@ -261,8 +247,9 @@ class Policy(object):
 		suffixIndex = library.find('.so')
 		resolvableName = None
 		if suffixIndex >= 0:
-			resolvableName = self._normalizeResolvableName(
-				'lib:' + library[:suffixIndex] + self.secondaryArchSuffix)
+			resolvableName = self._normalizeResolvableName('lib:' +
+			                                               library[:suffixIndex] +
+			                                               self.secondaryArchSuffix)
 			if resolvableName in self.requires:
 				return False
 
@@ -294,8 +281,8 @@ class Policy(object):
 			# Find out which package the library belongs to.
 			providingPackage = self._getPackageProvidingPath(libraryPath)
 			if not providingPackage:
-				print('Warning: failed to determine the package providing "%s"'
-					% libraryPath)
+				print('Warning: failed to determine the package providing "%s"' %
+				      libraryPath)
 				return False
 
 			# Chop off ".hpkg" and the version part from the file name to get
@@ -305,8 +292,7 @@ class Policy(object):
 			if index >= 0:
 				packageName = packageName[:index]
 
-			packageProvides = self.requiredPackagesProvides.get(
-				providingPackage, [])
+			packageProvides = self.requiredPackagesProvides.get(providingPackage, [])
 
 		# Check whether the package is required.
 		if packageName in self.requires:
@@ -322,8 +308,8 @@ class Policy(object):
 	def _getPackageProvidingPath(self, path):
 		try:
 			with open(os.devnull, "w") as devnull:
-				output = check_output(
-					['catattr', '-d', 'SYS:PACKAGE_FILE', path], stderr=devnull).decode('utf-8')
+				output = check_output(['catattr', '-d', 'SYS:PACKAGE_FILE', path],
+				                      stderr=devnull).decode('utf-8')
 				if output.endswith('\n'):
 					output = output[:-1]
 				return output
@@ -335,8 +321,8 @@ class Policy(object):
 		try:
 			with open(os.devnull, "w") as devnull:
 				output = check_output(
-					[Configuration.getPackageCommand(), 'list', package],
-					stderr=devnull).decode('utf-8')
+				    [Configuration.getPackageCommand(), 'list', package],
+				    stderr=devnull).decode('utf-8')
 		except:
 			return None
 
@@ -352,7 +338,7 @@ class Policy(object):
 
 	def _checkMisplacedDevelopLibraries(self):
 		libDir = os.path.join(self.package.packagingDir,
-			'lib' + self.secondaryArchSubDir)
+		                      'lib' + self.secondaryArchSubDir)
 		if not os.path.exists(libDir):
 			return
 
@@ -362,7 +348,7 @@ class Policy(object):
 
 			path = libDir + '/' + entry
 			self._violation('development library entry "%s" should be placed '
-				'in "develop/lib%s"' % (path, self.secondaryArchSubDir))
+			                'in "develop/lib%s"' % (path, self.secondaryArchSubDir))
 
 	def _checkGlobalWritableFiles(self):
 		# Create a map for the declared global writable files and check them
@@ -397,7 +383,7 @@ class Policy(object):
 
 				if directory not in allowedWritableTopLevelDirectories:
 					self._violation('Package declares invalid global writable '
-						'%s "%s"' % (fileType, components[0]))
+					                '%s "%s"' % (fileType, components[0]))
 
 				globalWritableFiles[components[0]] = updateType
 
@@ -405,37 +391,38 @@ class Policy(object):
 					absPath = os.path.join(self.package.packagingDir, path)
 					if not os.path.exists(absPath):
 						self._violation('Package declares non-existent global '
-							'writable %s "%s" as included' % (fileType, path))
+						                'writable %s "%s" as included' %
+						                (fileType, path))
 					elif os.path.isdir(absPath) != isDirectory:
 						self._violation('Package declares non-existent global '
-							'writable %s "%s", but it\'s a %s'
-							% (fileType, path, types[not isDirectory]))
+						                'writable %s "%s", but it\'s a %s' %
+						                (fileType, path, types[not isDirectory]))
 
 		# iterate through the writable directories in the package
 		for directory in allowedWritableTopLevelDirectories:
 			dir = os.path.join(self.package.packagingDir, directory)
 			if os.path.exists(dir):
 				self._checkGlobalWritableFilesRecursively(globalWritableFiles,
-					fileTypes, directory)
+				                                          fileTypes, directory)
 
-	def _checkGlobalWritableFilesRecursively(self, globalWritableFiles,
-			fileTypes, path):
+	def _checkGlobalWritableFilesRecursively(self, globalWritableFiles, fileTypes,
+	                                         path):
 		if path in globalWritableFiles:
 			if not globalWritableFiles[path]:
 				self._violation('Included "%s" declared as not included global '
-					'writable %s' % (path, fileTypes[path]))
+				                'writable %s' % (path, fileTypes[path]))
 			return
 
 		absPath = os.path.join(self.package.packagingDir, path)
 		if not os.path.isdir(absPath):
 			self._violation('Included file "%s" not declared as global '
-				'writable file' % path)
+			                'writable file' % path)
 			return
 
 		# entry is a directory -- recurse
 		for entry in os.listdir(absPath):
-			self._checkGlobalWritableFilesRecursively(globalWritableFiles,
-				fileTypes, path + '/' + entry)
+			self._checkGlobalWritableFilesRecursively(globalWritableFiles, fileTypes,
+			                                          path + '/' + entry)
 
 	def _checkUserSettingsFiles(self):
 		for item in self.package.recipeKeys['USER_SETTINGS_FILES']:
@@ -448,17 +435,16 @@ class Policy(object):
 
 			if not components[0].startswith('settings/'):
 				self._violation('Package declares invalid user settings '
-					'file "%s"' % components[0])
+				                'file "%s"' % components[0])
 			if len(components) > 1 and components[1] == 'directory':
 				continue
 
 			if len(components) > 2:
-				template = os.path.join(self.package.packagingDir,
-					components[2])
+				template = os.path.join(self.package.packagingDir, components[2])
 				if not os.path.exists(template):
 					self._violation('Package declares non-existent template '
-						'"%s" for user settings file "%s" as included'
-						% (components[2], components[0]))
+					                '"%s" for user settings file "%s" as included' %
+					                (components[2], components[0]))
 
 	def _checkPostInstallScripts(self):
 		# check whether declared scripts exist
@@ -476,7 +462,7 @@ class Policy(object):
 			absScript = os.path.join(self.package.packagingDir, script)
 			if not os.path.exists(absScript):
 				self._violation('Package declares non-existent post-install '
-					'script "%s"' % script)
+				                'script "%s"' % script)
 
 		# check whether existing scripts are declared
 		postInstallDir = 'boot/post-install'
@@ -486,7 +472,7 @@ class Policy(object):
 				path = postInstallDir + '/' + script
 				if path not in declaredFiles:
 					self._violation('script "%s" not declared as post-install '
-						'script' % path)
+					                'script' % path)
 
 	def _violation(self, message):
 		self.violationEncountered = True

@@ -14,14 +14,19 @@ from subprocess import CalledProcessError
 
 # -- ProvidesInfo class -------------------------------------------------------
 
+
 class ProvidesInfo(Resolvable):
+
 	def __init__(self, package, providesString):
 		super(ProvidesInfo, self).__init__(providesString)
 		self.package = package
 
+
 # -- RequiresUpdater class ----------------------------------------------------
 
+
 class RequiresUpdater(object):
+
 	def __init__(self, portPackages, requiredPackages):
 		self._providesManager = ProvidesManager()
 
@@ -76,7 +81,7 @@ class RequiresUpdater(object):
 		if not matchingProvides:
 			if self.getMatchingProvides(ResolvableExpression(name)):
 				sysExit('found provides for "%s", but none matching the '
-					'version requirement' % requires)
+				        'version requirement' % requires)
 			return requires
 
 		if not matchingProvides.version:
@@ -89,7 +94,7 @@ class RequiresUpdater(object):
 		# found.
 		resultOperator = '>=' if operator in [None, '> ', '>='] else '=='
 		result = '%s %s %s' \
-			% (matchingProvides.name, resultOperator, matchingProvides.version)
+               % (matchingProvides.name, resultOperator, matchingProvides.version)
 		if isBase:
 			result += ' base'
 		return result

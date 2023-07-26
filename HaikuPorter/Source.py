@@ -15,21 +15,22 @@
 from .Configuration import Configuration
 from .Options import getOption
 from .SourceFetcher import (createSourceFetcher, foldSubdirIntoSourceDir,
-							parseCheckoutUri)
+                            parseCheckoutUri)
 from .Utils import (ensureCommandIsAvailable, info, readStringFromFile,
-					storeStringInFile, sysExit, warn)
+                    storeStringInFile, sysExit, warn)
 
 import hashlib
 import os
 import shutil
 from subprocess import check_call, check_output, CalledProcessError
 
-
 # -- A source archive (or checkout) -------------------------------------------
 
+
 class Source(object):
-	def __init__(self, port, index, uris, fetchTargetName, checksum,
-				 sourceDir, patches, additionalFiles):
+
+	def __init__(self, port, index, uris, fetchTargetName, checksum, sourceDir, patches,
+	             additionalFiles):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
@@ -62,16 +63,14 @@ class Source(object):
 		# PATCHES refers to patch files relative to the patches directory,
 		# make those absolute paths.
 		if self.patches and port.patchesDir:
-			self.patches = [
-				port.patchesDir + '/' + patch for patch in self.patches
-			]
+			self.patches = [port.patchesDir + '/' + patch for patch in self.patches]
 
 		# ADDITIONAL_FILES refers to the files relative to the additional-files
 		# directory, make those absolute paths.
 		if self.additionalFiles:
 			self.additionalFiles = [
-				port.additionalFilesDir + '/' + additionalFile
-				for additionalFile in self.additionalFiles
+			    port.additionalFilesDir + '/' + additionalFile
+			    for additionalFile in self.additionalFiles
 			]
 
 		# determine filename of first URI
@@ -92,18 +91,18 @@ class Source(object):
 			# add fallback URI using a general source tarball mirror (some
 			# original source sites aren't very reliable)
 			recipeDirName = os.path.basename(port.baseDir)
-			self.uris.append(downloadMirror + '/' + recipeDirName + '/'
-							 + uriFileName + uriExtension)
+			self.uris.append(downloadMirror + '/' + recipeDirName + '/' + uriFileName +
+			                 uriExtension)
 
 		self.sourceFetcher = None
 		self.fetchTarget = port.downloadDir + '/' + self.fetchTargetName
 		self.fetchTargetIsArchive = True
 
 		self.gitEnv = {
-			'GIT_COMMITTER_EMAIL': Configuration.getPackagerEmail(),
-			'GIT_COMMITTER_NAME': Configuration.getPackagerName().encode("utf-8"),
-			'GIT_AUTHOR_EMAIL': Configuration.getPackagerEmail(),
-			'GIT_AUTHOR_NAME': Configuration.getPackagerName().encode("utf-8"),
+		    'GIT_COMMITTER_EMAIL': Configuration.getPackagerEmail(),
+		    'GIT_COMMITTER_NAME': Configuration.getPackagerName().encode("utf-8"),
+		    'GIT_AUTHOR_EMAIL': Configuration.getPackagerEmail(),
+		    'GIT_AUTHOR_NAME': Configuration.getPackagerName().encode("utf-8"),
 		}
 
 	def fetch(self, port):
@@ -125,27 +124,27 @@ class Source(object):
 				# in the uri file and update to a different revision, if needed
 				storedUri = readStringFromFile(uriFile)
 				(unusedType, storedBaseUri, storedRev) \
-					= parseCheckoutUri(storedUri)
+                             = parseCheckoutUri(storedUri)
 
 				for uri in self.uris:
 					(unusedType, baseUri, rev) = parseCheckoutUri(uri)
 					if baseUri == storedBaseUri:
 						self.sourceFetcher \
-							= createSourceFetcher(uri, self.fetchTarget)
+                                           = createSourceFetcher(uri, self.fetchTarget)
 						if rev != storedRev:
 							self.sourceFetcher.updateToRev(rev)
 							storeStringInFile(uri, self.fetchTarget + '.uri')
 							port.unsetFlag('unpack', self.index)
 							port.unsetFlag('patchset', self.index)
 						else:
-							info('Skipping download of source for '
-								   + self.fetchTargetName)
+							info('Skipping download of source for ' +
+							     self.fetchTargetName)
 						break
 				else:
 					warn("Stored SOURCE_URI is no longer in recipe, automatic "
-						 u"repository update won't work")
+					     u"repository update won't work")
 					self.sourceFetcher \
-						= createSourceFetcher(storedUri, self.fetchTarget)
+                                    = createSourceFetcher(storedUri, self.fetchTarget)
 
 				return
 			else:
@@ -172,11 +171,10 @@ class Source(object):
 				if isinstance(e, CalledProcessError):
 					info(e.output)
 				if uri != self.uris[-1]:
-					warn(('Unable to fetch source from %s (error: %s), '
-						  + 'trying next location.') % (uri, e))
+					warn(('Unable to fetch source from %s (error: %s), ' +
+					      'trying next location.') % (uri, e))
 				else:
-					warn(('Unable to fetch source from %s (error: %s)')
-						 % (uri, e))
+					warn(('Unable to fetch source from %s (error: %s)') % (uri, e))
 
 		# failed to fetch source
 		sysExit('Failed to fetch source from all known locations.')
@@ -213,10 +211,11 @@ class Source(object):
 
 		info('Unpacking source of ' + self.fetchTargetName)
 		self.sourceFetcher.unpack(self.sourceBaseDir, self.sourceSubDir,
-			self.sourceExportSubdir)
+		                          self.sourceExportSubdir)
 
 		if not os.path.exists(self.sourceDir):
-			sysExit(self.sourceSubDir + ' doesn\'t exist in sources! Define SOURCE_DIR in recipe?')
+			sysExit(self.sourceSubDir +
+			        ' doesn\'t exist in sources! Define SOURCE_DIR in recipe?')
 
 		port.setFlag('unpack', self.index)
 
@@ -233,9 +232,9 @@ class Source(object):
 
 		for additionalFile in self.additionalFiles:
 			if os.path.isdir(additionalFile):
-				shutil.copytree(additionalFile,
-					os.path.join(additionalFilesDir,
-						os.path.basename(additionalFile)))
+				shutil.copytree(
+				    additionalFile,
+				    os.path.join(additionalFilesDir, os.path.basename(additionalFile)))
 			else:
 				shutil.copy(additionalFile, additionalFilesDir)
 
@@ -262,13 +261,15 @@ class Source(object):
 
 		if self.checksum is not None:
 			if sha256.hexdigest() != self.checksum:
-				sysExit('Expected SHA-256: ' + self.checksum + '\n'
-						+ 'Found SHA-256:	 ' + sha256.hexdigest())
+				sysExit('Expected SHA-256: ' + self.checksum + '\n' +
+				        'Found SHA-256:	 ' + sha256.hexdigest())
 		else:
 			warn('----- CHECKSUM TEMPLATE -----')
-			warn('CHECKSUM_SHA256%(index)s="%(digest)s"' % {
-				"digest": sha256.hexdigest(),
-				"index": ("_" + self.index) if self.index != "1" else ""})
+			warn(
+			    'CHECKSUM_SHA256%(index)s="%(digest)s"' % {
+			        "digest": sha256.hexdigest(),
+			        "index": ("_" + self.index) if self.index != "1" else ""
+			    })
 			warn('-----------------------------')
 
 		if self.checksum is None:
@@ -291,7 +292,7 @@ class Source(object):
 		   that has been rigged (i.e. does have the patches already applied)"""
 
 		return (self.uris[0].lower().startswith('pkg:')
-				and '_source_rigged-' in self.uris[0].lower())
+		        and '_source_rigged-' in self.uris[0].lower())
 
 	def referencesFiles(self, files):
 		if self.patches:
@@ -306,7 +307,7 @@ class Source(object):
 					additionalFile = os.path.join(additionalFile, '')
 					for fileName in files:
 						if os.path.commonprefix([additionalFile, fileName]) \
-								== additionalFile:
+                                            == additionalFile:
 							return True
 				elif additionalFile in files:
 					return True
@@ -343,26 +344,33 @@ class Source(object):
 
 				if getOption('noGitRepo'):
 					info('Applying patch(set) "%s" ...' % patch)
-					output = check_output(['patch', '--ignore-whitespace', '-p1', '-i',
-								patch], cwd=self.sourceDir).decode('utf-8')
+					output = check_output(
+					    ['patch', '--ignore-whitespace', '-p1', '-i', patch],
+					    cwd=self.sourceDir).decode('utf-8')
 					info(output)
 				else:
 					if patch.endswith('.patchset'):
 						info('Applying patchset "%s" ...' % patch)
-						output = check_output(['git', 'am', '--ignore-whitespace', '-3',
-									'--keep-cr', patch], cwd=self.sourceDir,
-								   env=self.gitEnv).decode('utf-8')
+						output = check_output([
+						    'git', 'am', '--ignore-whitespace', '-3', '--keep-cr', patch
+						],
+						                      cwd=self.sourceDir,
+						                      env=self.gitEnv).decode('utf-8')
 						info(output)
 					else:
 						info('Applying patch "%s" ...' % patch)
-						output = check_output(['git', 'apply', '--ignore-whitespace',
-									'-p1', '--index', patch],
-									cwd=self.sourceDir).decode('utf-8')
+						output = check_output([
+						    'git', 'apply', '--ignore-whitespace', '-p1', '--index',
+						    patch
+						],
+						                      cwd=self.sourceDir).decode('utf-8')
 						info(output)
-						output = check_output(['git', 'commit', '-q', '-m',
-									'applying patch %s'
-									% os.path.basename(patch)],
-								   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8')
+						output = check_output([
+						    'git', 'commit', '-q', '-m',
+						    'applying patch %s' % os.path.basename(patch)
+						],
+						                      cwd=self.sourceDir,
+						                      env=self.gitEnv).decode('utf-8')
 						info(output)
 				patched = True
 		except:
@@ -379,9 +387,11 @@ class Source(object):
 	def reset(self):
 		"""Reset source to original state"""
 
-		output = check_output(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir).decode('utf-8')
+		output = check_output(['git', 'reset', '--hard', 'ORIGIN'],
+		                      cwd=self.sourceDir).decode('utf-8')
 		info(output)
-		output = check_output(['git', 'clean', '-f', '-d'], cwd=self.sourceDir).decode('utf-8')
+		output = check_output(['git', 'clean', '-f', '-d'],
+		                      cwd=self.sourceDir).decode('utf-8')
 		info(output)
 
 	def commitPatchPhase(self):
@@ -389,19 +399,18 @@ class Source(object):
 
 		# see if there are any changes at all
 		changes = check_output(['git', 'status', '--porcelain'],
-							   cwd=self.sourceDir).decode('utf-8')
+		                       cwd=self.sourceDir).decode('utf-8')
 		if not changes:
-			info("Patch function hasn't changed anything for "
-				  + self.fetchTargetName)
+			info("Patch function hasn't changed anything for " + self.fetchTargetName)
 			return
 
-		info('Committing changes done in patch function for '
-			  + self.fetchTargetName)
+		info('Committing changes done in patch function for ' + self.fetchTargetName)
 		output = check_output(['git', 'commit', '-a', '-q', '-m', 'patch function'],
-				   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8')
+		                      cwd=self.sourceDir,
+		                      env=self.gitEnv).decode('utf-8')
 		info(output)
 		output = check_output(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'],
-				   cwd=self.sourceDir).decode('utf-8')
+		                      cwd=self.sourceDir).decode('utf-8')
 		info(output)
 
 	def extractPatchset(self, patchSetFilePath, archPatchSetFilePath):
@@ -410,57 +419,63 @@ class Source(object):
 		   during the patch phase"""
 
 		if not os.path.exists(self.sourceDir):
-			sysExit("Can't extract patchset for " + self.sourceDir
-					+ u" as the source directory doesn't exist yet")
+			sysExit("Can't extract patchset for " + self.sourceDir +
+			        u" as the source directory doesn't exist yet")
 
-		print('Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath)
+		print('Extracting patchset for ' + self.fetchTargetName + " to " +
+		      patchSetFilePath)
 		needToRebase = True
 		try:
 			# check if the tag 'PATCH_FUNCTION' exists
 			with open(os.devnull, "w") as devnull:
 				check_call(['git', 'rev-parse', '--verify', 'PATCH_FUNCTION'],
-						   stdout=devnull, stderr=devnull, cwd=self.sourceDir)
+				           stdout=devnull,
+				           stderr=devnull,
+				           cwd=self.sourceDir)
 		except:
 			# no PATCH_FUNCTION tag, so there's nothing to rebase
 			needToRebase = False
 
 		if needToRebase:
 			# the tag exists, so we drop the respective commit
-			check_call(['git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^',
-						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir,
-						env=self.gitEnv)
+			check_call([
+			    'git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^', 'PATCH_FUNCTION',
+			    'haikuport'
+			],
+			           cwd=self.sourceDir,
+			           env=self.gitEnv)
 
 		patchSetDirectory = os.path.dirname(patchSetFilePath)
 		if not os.path.exists(patchSetDirectory):
 			os.mkdir(patchSetDirectory)
 		with open(patchSetFilePath, 'w') as patchSetFile:
 			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'],
-					   stdout=patchSetFile, cwd=self.sourceDir,
-					   env=self.gitEnv)
+			           stdout=patchSetFile,
+			           cwd=self.sourceDir,
+			           env=self.gitEnv)
 
 		if needToRebase:
 			# put PATCH_FUNCTION back in
 			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'haikuport'],
-					   cwd=self.sourceDir, env=self.gitEnv)
+			           cwd=self.sourceDir,
+			           env=self.gitEnv)
 
 		# warn if there's a correpsonding arch-specific patchset file
 		if os.path.exists(archPatchSetFilePath):
-			warn('arch-specific patchset file %s requires manual update'
-				 % os.path.basename(archPatchSetFilePath))
+			warn('arch-specific patchset file %s requires manual update' %
+			     os.path.basename(archPatchSetFilePath))
 
 		# if there's a corresponding patch file, remove it, as we now have
 		# the patchset
 		patchFilePath = patchSetFilePath[:-3]
 		if os.path.exists(patchFilePath):
-			warn('removing obsolete patch file '
-				 + os.path.basename(patchFilePath))
+			warn('removing obsolete patch file ' + os.path.basename(patchFilePath))
 			os.remove(patchFilePath)
 		# if there's a corresponding diff file, remove it, as we now have
 		# the patchset
 		diffFilePath = patchFilePath[:-6] + '.diff'
 		if os.path.exists(diffFilePath):
-			warn('removing obsolete diff file '
-				 + os.path.basename(diffFilePath))
+			warn('removing obsolete diff file ' + os.path.basename(diffFilePath))
 			os.remove(diffFilePath)
 
 	def exportSources(self, targetDir, rigged):
@@ -472,13 +487,14 @@ class Source(object):
 			# export the sources in 'rigged' state, i.e. in directly usable
 			# form, with patches already applied
 			check_call('tar c --exclude=.git . | tar x -C %s' % targetDir,
-					   cwd=self.sourceDir, shell=True)
+			           cwd=self.sourceDir,
+			           shell=True)
 		else:
 			# unpack the archive into the targetDir
 			if self.sourceSubDir:
 				os.mkdir(targetDir + '/' + self.sourceSubDir)
 			self.sourceFetcher.unpack(targetDir, self.sourceSubDir,
-				self.sourceExportSubdir)
+			                          self.sourceExportSubdir)
 			if self.sourceSubDir:
 				foldSubdirIntoSourceDir(self.sourceSubDir, targetDir)
 
@@ -492,31 +508,37 @@ class Source(object):
 		self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
 		self.sourceDir = self.sourceDir[pathLengthToCut:]
 		self.additionalFiles = [
-			additionalFile[pathLengthToCut:]
-			for additionalFile in self.additionalFiles
+		    additionalFile[pathLengthToCut:] for additionalFile in self.additionalFiles
 		]
 
 	def _initImplicitGitRepo(self):
 		"""Import sources into git repository"""
 
 		ensureCommandIsAvailable('git')
-		info(check_output(['git', 'init', '-b', 'main'], cwd=self.sourceDir).decode('utf-8'))
-		info(check_output(['git', 'config', 'gc.auto', '0'], cwd=self.sourceDir).decode('utf-8'))
-			# Disable automatic garbage collection. This works around an issue
-			# with git failing to do that with the haikuwebkit repository.
-		info(check_output(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'],
-				   cwd=self.sourceDir).decode('utf-8'))
-		info(check_output(['git', 'add', '-f', '.'], cwd=self.sourceDir).decode('utf-8'))
-		info(check_output(['git', 'commit', '-m', 'import', '-q'],
-				   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8'))
+		info(
+		    check_output(['git', 'init', '-b', 'main'],
+		                 cwd=self.sourceDir).decode('utf-8'))
+		info(
+		    check_output(['git', 'config', 'gc.auto', '0'],
+		                 cwd=self.sourceDir).decode('utf-8'))
+		# Disable automatic garbage collection. This works around an issue
+		# with git failing to do that with the haikuwebkit repository.
+		info(
+		    check_output(['git', 'symbolic-ref', 'HEAD', 'refs/heads/haikuport'],
+		                 cwd=self.sourceDir).decode('utf-8'))
+		info(
+		    check_output(['git', 'add', '-f', '.'], cwd=self.sourceDir).decode('utf-8'))
+		info(
+		    check_output(['git', 'commit', '-m', 'import', '-q'],
+		                 cwd=self.sourceDir,
+		                 env=self.gitEnv).decode('utf-8'))
 		info(check_output(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir).decode('utf-8'))
 
 	def _isInGitWorkingDirectory(self, path):
 		"""Returns whether the given source directory path is in a git working
 		   directory. path must be under self.sourceBaseDir."""
 
-		while (path == self.sourceBaseDir
-				or path.startswith(self.sourceBaseDir + '/')):
+		while (path == self.sourceBaseDir or path.startswith(self.sourceBaseDir + '/')):
 			if os.path.exists(path + '/.git'):
 				return True
 			if path == self.sourceBaseDir:

@@ -16,14 +16,14 @@ import os
 import pickle
 import re
 
-
 # -- Resolvable class ---------------------------------------------------------
+
 
 class Resolvable(object):
 	# HPKG:		<name> [ <op> <version> [ "(compatible >= " <version> ")" ]]
 	# Recipe: 	<name> [ <op> <version> [ "compat >= " <version> ]]
-	versionPattern = re.compile(r'([^\s=]+)\s*(=\s*([^\s]+)\s*'
-		+ r'((\(compatible|compat)\s*>=\s*([^\s)]+))?)?')
+	versionPattern = re.compile(r'([^\s=]+)\s*(=\s*([^\s]+)\s*' +
+	                            r'((\(compatible|compat)\s*>=\s*([^\s)]+))?)?')
 
 	def __init__(self, string):
 		match = Resolvable.versionPattern.match(string)
@@ -41,6 +41,7 @@ class Resolvable(object):
 
 
 # -- ResolvableExpression class -----------------------------------------------
+
 
 class ResolvableExpression(object):
 	expressionPattern = re.compile(r'([^\s=!<>]+)\s*([=!<>]+)?\s*([^\s]+)?')
@@ -62,6 +63,7 @@ class ResolvableExpression(object):
 
 
 # -- PackageInfo class --------------------------------------------------------
+
 
 class PackageInfo(object):
 	hpkgCache = None
@@ -97,7 +99,7 @@ class PackageInfo(object):
 					entry = pickle.load(cacheFile)
 					path = entry['path']
 					if not os.path.exists(path) \
-						or os.path.getmtime(path) > entry['modifiedTime']:
+                                    or os.path.getmtime(path) > entry['modifiedTime']:
 						prune = True
 						continue
 
@@ -153,8 +155,7 @@ class PackageInfo(object):
 			if line.startswith('provides:'):
 				self.provides.append(Resolvable(line[9:].lstrip()))
 			elif line.startswith('requires:'):
-				self.requires.append(ResolvableExpression(line[9:].lstrip(),
-					True))
+				self.requires.append(ResolvableExpression(line[9:].lstrip(), True))
 
 		if self.path.endswith('.hpkg'):
 			self.modifiedTime = os.path.getmtime(self.path)
@@ -170,20 +171,16 @@ class PackageInfo(object):
 		self.architecture = dependencyInfo['architecture']
 
 		# get provides and requires
-		self.provides = [
-			Resolvable(p) for p in dependencyInfo['provides']
-		]
-		self.requires = [
-			ResolvableExpression(r) for r in dependencyInfo['requires']
-		]
+		self.provides = [Resolvable(p) for p in dependencyInfo['provides']]
+		self.requires = [ResolvableExpression(r) for r in dependencyInfo['requires']]
 		self.buildRequires = [
-			ResolvableExpression(r) for r in dependencyInfo['buildRequires']
+		    ResolvableExpression(r) for r in dependencyInfo['buildRequires']
 		]
 		self.buildPrerequires = [
-			ResolvableExpression(r) for r in dependencyInfo['buildPrerequires']
+		    ResolvableExpression(r) for r in dependencyInfo['buildPrerequires']
 		]
 		self.testRequires = [
-			ResolvableExpression(r) for r in dependencyInfo['testRequires']
+		    ResolvableExpression(r) for r in dependencyInfo['testRequires']
 		]
 
 	def _extractField(self, output, fieldName):

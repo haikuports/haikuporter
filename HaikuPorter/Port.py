@@ -20,7 +20,7 @@ import re
 import shutil
 import signal
 from subprocess import check_call, check_output, CalledProcessError, Popen, \
-	PIPE, STDOUT
+ PIPE, STDOUT
 import traceback
 
 from .BuildPlatform import buildPlatform
@@ -28,36 +28,31 @@ from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Options import getOption
 from .Package import (
-	PackageType,
-	sourcePackageFactory,
-	packageFactory,
+    PackageType,
+    sourcePackageFactory,
+    packageFactory,
 )
 from .RecipeAttributes import getRecipeAttributes
-from .RecipeTypes import (
-	Extendable,
-	MachineArchitecture,
-	Phase,
-	Status)
+from .RecipeTypes import (Extendable, MachineArchitecture, Phase, Status)
 from .ReleaseChecker import createReleaseChecker
 from .RequiresUpdater import RequiresUpdater
 from .ShellScriptlets import (
-	cleanupChrootScript,
-	getShellVariableSetters,
-	recipeActionScript,
-	setupChrootScript,
+    cleanupChrootScript,
+    getShellVariableSetters,
+    recipeActionScript,
+    setupChrootScript,
 )
 from .Source import Source
 from .Utils import (
-	filteredEnvironment,
-	info,
-	naturalCompare,
-	storeStringInFile,
-	symlinkGlob,
-	sysExit,
-	touchFile,
-	warn,
+    filteredEnvironment,
+    info,
+    naturalCompare,
+    storeStringInFile,
+    symlinkGlob,
+    sysExit,
+    touchFile,
+    warn,
 )
-
 
 # -- Modules preloaded for chroot ---------------------------------------------
 # These modules need to be preloaded in order to avoid problems with python
@@ -66,6 +61,7 @@ from .Utils import (
 
 # -- Scoped resource for chroot environments ----------------------------------
 class ChrootSetup(object):
+
 	def __init__(self, chrootPath, envVars):
 		self.path = chrootPath
 		self.buildOk = False
@@ -76,7 +72,7 @@ class ChrootSetup(object):
 		shellEnv = filteredEnvironment()
 		shellEnv.update(self.envVars)
 		check_output(['bash', '-c', setupChrootScript], env=shellEnv,
-			cwd=self.path).decode('utf-8')
+		             cwd=self.path).decode('utf-8')
 		return self
 
 	def __exit__(self, ignoredType, value, traceback):
@@ -85,22 +81,28 @@ class ChrootSetup(object):
 		shellEnv.update(self.envVars)
 		if self.buildOk:
 			shellEnv['buildOk'] = '1'
-		check_call(['bash', '-c', cleanupChrootScript], env=shellEnv,
-			cwd=self.path)
-
+		check_call(['bash', '-c', cleanupChrootScript], env=shellEnv, cwd=self.path)
 
 
 # -- A single port with its recipe, allows to execute actions -----------------
 class Port(object):
-	requiresTypes = ['REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES',
-		'SCRIPTLET_PREREQUIRES']
+	requiresTypes = [
+	    'REQUIRES', 'BUILD_REQUIRES', 'BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES'
+	]
 	testRequiresTypes = requiresTypes + ['TEST_REQUIRES']
 
 	_repositoryDir = None
 	_recipeCacheDirName = 'recipeCache'
 
-	def __init__(self, name, version, category, baseDir, outputDir,
-		globalShellVariables, policy, secondaryArchitecture=None):
+	def __init__(self,
+	             name,
+	             version,
+	             category,
+	             baseDir,
+	             outputDir,
+	             globalShellVariables,
+	             policy,
+	             secondaryArchitecture=None):
 		self.baseName = name
 		self.secondaryArchitecture = secondaryArchitecture
 		self.name = name
@@ -117,8 +119,8 @@ class Port(object):
 		self.filter = None
 
 		if secondaryArchitecture:
-			self.workDir = (outputDir + '/work-' + secondaryArchitecture
-							+ '-' + self.version)
+			self.workDir = (outputDir + '/work-' + secondaryArchitecture + '-' +
+			                self.version)
 			self.effectiveTargetArchitecture = self.secondaryArchitecture
 		else:
 			self.workDir = outputDir + '/work-' + self.version
@@ -127,7 +129,7 @@ class Port(object):
 		self.isMetaPort = self.category == 'meta-ports'
 
 		self.recipeFilePath = self.baseDir + '/' + self.baseName + '-' \
-			+ self.version + '.recipe'
+               + self.version + '.recipe'
 
 		self.packageInfoName = self.versionedName + '.PackageInfo'
 		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
@@ -140,18 +142,17 @@ class Port(object):
 
 		# build dictionary of variables to inherit to shell
 		self.shellVariables = {
-			'portName': self.name,
-			'portVersion': self.version,
-			'portVersionedName': self.versionedName,
-			'portBaseDir': self.baseDir,
+		    'portName': self.name,
+		    'portVersion': self.version,
+		    'portVersionedName': self.versionedName,
+		    'portBaseDir': self.baseDir,
 		}
 		self.shellVariables.update(globalShellVariables)
 		self._updateShellVariables(True)
 
 		self.buildArchitecture = self.shellVariables['buildArchitecture']
 		self.targetArchitecture = self.shellVariables['targetArchitecture']
-		if (Configuration.isCrossBuildRepository()
-			and '_cross_' in self.name):
+		if (Configuration.isCrossBuildRepository() and '_cross_' in self.name):
 			# the cross-tools (binutils and gcc) need to run on the build
 			# architecture, not the target architecture
 			self.hostArchitecture = self.shellVariables['buildArchitecture']
@@ -197,7 +198,9 @@ class Port(object):
 		cls._repositoryDir = repsitoryDir
 
 	def temporaryRepositoryDir(self, repsitoryDir):
+
 		class TemporaryRepositorySetter(object):
+
 			def __enter__(_):
 				self._repositoryDir = repsitoryDir
 
@@ -229,8 +232,7 @@ class Port(object):
 		   it hasn't"""
 		self.parseRecipeFile(False)
 
-	def parseRecipeFile(self, showWarnings, force=False,
-		forceAllowUnstable=False):
+	def parseRecipeFile(self, showWarnings, force=False, forceAllowUnstable=False):
 		"""Parse the recipe-file of the specified port, unless already done.
 		   Any exceptions that are triggered by the recipe are caught."""
 
@@ -273,7 +275,7 @@ class Port(object):
 
 		# parse the recipe file
 		recipeConfig = ConfigParser(self.preparedRecipeFile, recipeAttributes,
-									self.shellVariables)
+		                            self.shellVariables)
 		extensions = recipeConfig.extensions
 
 		if '' not in extensions:
@@ -306,10 +308,9 @@ class Port(object):
 							recipeKeys[baseKey] = attributes['default']
 						else:
 							if ('suffix' in attributes
-								and extension in attributes['suffix']):
-								recipeKeys[baseKey] = (
-									baseEntries[baseKey]
-									+ attributes['suffix'][extension])
+							    and extension in attributes['suffix']):
+								recipeKeys[baseKey] = (baseEntries[baseKey] +
+								                       attributes['suffix'][extension])
 							else:
 								recipeKeys[baseKey] = baseEntries[baseKey]
 							continue
@@ -320,8 +321,7 @@ class Port(object):
 				if key not in entries:
 					# complain about missing required values
 					if recipeAttributes[baseKey]['required']:
-						sysExit("No %s found (in %s)"
-								% (key, self.recipeFilePath))
+						sysExit("No %s found (in %s)" % (key, self.recipeFilePath))
 
 					# set default value, as no other value has been provided
 					entries[key] = recipeAttributes[baseKey]['default']
@@ -352,18 +352,17 @@ class Port(object):
 			for fileExtension in ['diff', 'patch', 'patchset']:
 				suffixes = ['', '-' + self.effectiveTargetArchitecture]
 				if self.effectiveTargetArchitecture \
-						== MachineArchitecture.X86_GCC2:
+                              == MachineArchitecture.X86_GCC2:
 					suffixes.append('-gcc2')
 				else:
 					suffixes.append('-gcc4')
 				for suffix in suffixes:
 					patchFileName = '%s%s.%s' % (versionedBaseName, suffix,
-						fileExtension)
+					                             fileExtension)
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
-						and patchFileName not in allPatches):
+					    and patchFileName not in allPatches):
 						sysExit('Patch file %s is not referenced in '
-							'PATCHES, so it will not be used'
-							% patchFileName)
+						        'PATCHES, so it will not be used' % patchFileName)
 
 		return recipeKeysByExtension, recipeConfig.definedPhases
 
@@ -372,35 +371,30 @@ class Port(object):
 		# The summary must be a single line of text, preferably not
 		# exceeding 70 characters in length
 		if key not in entries or not entries[key]:
-			sysExit('No %s found (in %s)'
-				% (key, self.recipeFilePath))
+			sysExit('No %s found (in %s)' % (key, self.recipeFilePath))
 		if '\n' in entries[key]:
-			sysExit('%s must be a single line of text (%s).'
-					% (key, self.recipeFilePath))
+			sysExit('%s must be a single line of text (%s).' %
+			        (key, self.recipeFilePath))
 		if entries[key].lower().startswith(self.name):
-			sysExit('%s cannot start with the name of the port (%s).'
-					% (key, self.recipeFilePath))
+			sysExit('%s cannot start with the name of the port (%s).' %
+			        (key, self.recipeFilePath))
 		if entries[key][0].islower():
-			sysExit('%s must start with a capital letter (%s).'
-					% (key, self.recipeFilePath))
+			sysExit('%s must start with a capital letter (%s).' %
+			        (key, self.recipeFilePath))
 		if entries[key].endswith('.'):
-			sysExit('%s cannot end in "." (%s).'
-					% (key, self.recipeFilePath))
+			sysExit('%s cannot end in "." (%s).' % (key, self.recipeFilePath))
 		if entries[key].count(' ') < 2:
-			sysExit('%s must have at least 3 words (%s).'
-					% (key, self.recipeFilePath))
+			sysExit('%s must have at least 3 words (%s).' % (key, self.recipeFilePath))
 		if len(entries[key]) > 80:
-			sysExit('%s exceeds 80 chars (in %s)'
-				% (key, self.recipeFilePath))
+			sysExit('%s exceeds 80 chars (in %s)' % (key, self.recipeFilePath))
 
 	def _validateDESCRIPTION(self, key, entries, showWarnings):
 		"""Validates the 'DESCRIPTION' of the port."""
 		if key not in entries or not entries[key]:
-			sysExit('No %s found (in %s)'
-				% (key, self.recipeFilePath))
+			sysExit('No %s found (in %s)' % (key, self.recipeFilePath))
 		if 'SUMMARY' in entries and ''.join(entries[key]) == entries['SUMMARY']:
-			sysExit('%s cannot be the same as SUMMARY (in %s)'
-				% (key, self.recipeFilePath))
+			sysExit('%s cannot be the same as SUMMARY (in %s)' %
+			        (key, self.recipeFilePath))
 
 	def _validateLICENSE(self, key, entries, showWarnings):
 		"""Validates the 'LICENSE' of the port."""
@@ -410,20 +404,19 @@ class Port(object):
 			recipeLicense = entries[key]
 			for item in recipeLicense:
 				haikuLicenseList = fileList = os.listdir(
-					buildPlatform.getLicensesDirectory())
+				    buildPlatform.getLicensesDirectory())
 				if (item not in fileList and self.licensesDir
-					and os.path.exists(self.licensesDir)):
+				    and os.path.exists(self.licensesDir)):
 					fileList = []
 					licenses = os.listdir(self.licensesDir)
 					for filename in licenses:
 						fileList.append(filename)
 				if item not in fileList:
 					haikuLicenseList.sort()
-					sysExit('No match found for license ' + item
-							+ '\nValid license filenames included '
-							+ 'with Haiku are:\n'
-							+ ', '.join(haikuLicenseList)
-							+ '\n(in %s)' % (self.recipeFilePath))
+					sysExit('No match found for license ' + item +
+					        '\nValid license filenames included ' +
+					        'with Haiku are:\n' + ', '.join(haikuLicenseList) +
+					        '\n(in %s)' % (self.recipeFilePath))
 		else:
 			sysExit('No %s found (in %s)' % (key, self.recipeFilePath))
 
@@ -432,27 +425,28 @@ class Port(object):
 		# Collect all referenced patches into a single list
 		fullCopyright = '\n'.join(entries[key])
 		if key not in entries or not entries[key]:
-			sysExit('No %s found (in %s)'
-				% (key, self.recipeFilePath))
+			sysExit('No %s found (in %s)' % (key, self.recipeFilePath))
 		elif "@" in fullCopyright:
-			sysExit('%s must not contain e-mail addresses (in %s)'
-				% (key, self.recipeFilePath))
+			sysExit('%s must not contain e-mail addresses (in %s)' %
+			        (key, self.recipeFilePath))
 		else:
 			lowerc = fullCopyright.lower()
 			if u"copyright" in lowerc or u"(c)" in lowerc or u"©" in lowerc:
-				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)'
-					% (key, self.recipeFilePath))
+				sysExit('%s must not contain "COPYRIGHT", "(C)", or © (in %s)' %
+				        (key, self.recipeFilePath))
 
 	def checkPortReleases(self):
 		"""Check port for newer releases from upstream"""
 
 		self.parseRecipeFileIfNeeded()
 		# we assume first URI of first SOURCE_URI
-		checker = createReleaseChecker(self.recipeKeys['SOURCE_URI']['1'][0], self.version)
+		checker = createReleaseChecker(self.recipeKeys['SOURCE_URI']['1'][0],
+		                               self.version)
 		if checker:
 			newer = checker.check()
 			if newer:
-				print('NEWER RELEASE for %s: %s -> %s' % (self.name, self.version, newer))
+				print('NEWER RELEASE for %s: %s -> %s' %
+				      (self.name, self.version, newer))
 
 	def printDescription(self):
 		"""Show port description"""
@@ -466,8 +460,8 @@ class Port(object):
 			print('-' * 80)
 			print('PACKAGE: %s' % package.versionedName)
 			print('SUMMARY: %s' % package.recipeKeys['SUMMARY'])
-			print('STATUS: %s'
-				% package.getStatusOnArchitecture(self.targetArchitecture))
+			print('STATUS: %s' %
+			      package.getStatusOnArchitecture(self.targetArchitecture))
 			print('ARCHITECTURE: %s' % package.architecture)
 		print('*' * 80)
 
@@ -480,7 +474,7 @@ class Port(object):
 
 			# use the status of the base package as overall status of the port
 			return self.allPackages[0].getStatusOnSecondaryArchitecture(
-				self.targetArchitecture, self.secondaryArchitecture)
+			    self.targetArchitecture, self.secondaryArchitecture)
 		except:
 			return Status.UNSUPPORTED
 
@@ -489,9 +483,8 @@ class Port(object):
 		   architecture"""
 		status = self.statusOnTargetArchitecture
 		allowUntested = Configuration.shallAllowUntested()
-		return (status == Status.STABLE
-				or (status == Status.UNTESTED and allowUntested)
-				or forceAllowUnstable)
+		return (status == Status.STABLE or (status == Status.UNTESTED and allowUntested)
+		        or forceAllowUnstable)
 
 	@property
 	def hasBrokenRecipe(self):
@@ -545,8 +538,10 @@ class Port(object):
 		package = self.sourcePackage
 		return package and os.path.exists(packagesPath + '/' + package.hpkgName)
 
-	def resolveDependencies(self, repositories, forTestPhase,
-		presentDependencyPackages=None):
+	def resolveDependencies(self,
+	                        repositories,
+	                        forTestPhase,
+	                        presentDependencyPackages=None):
 		"""Resolve any other ports (no matter if required or prerequired) that
 		   need to be built before this one.
 		   Any build requirements a port may have that can not be fulfilled from
@@ -557,16 +552,16 @@ class Port(object):
 
 		dependencyInfoFiles = self.getDependencyInfoFiles()
 		requiredPackages = self._resolveDependencies(
-			dependencyInfoFiles,
-			Port.testRequiresTypes if forTestPhase else Port.requiresTypes,
-			repositories + [self._repositoryDir],
-			'required or prerequired ports for {}'.format(
-				'test' if forTestPhase else 'build'),
-			stopAtHpkgs=getOption('updateDependencies') \
-				or presentDependencyPackages is None \
-					and not getOption('missingDependencies'),
-			presentDependencyPackages=presentDependencyPackages,
-			ignoreBase=forTestPhase
+		 dependencyInfoFiles,
+		 Port.testRequiresTypes if forTestPhase else Port.requiresTypes,
+		 repositories + [self._repositoryDir],
+		 'required or prerequired ports for {}'.format(
+		  'test' if forTestPhase else 'build'),
+		 stopAtHpkgs=getOption('updateDependencies') \
+                or presentDependencyPackages is None \
+                 and not getOption('missingDependencies'),
+		 presentDependencyPackages=presentDependencyPackages,
+		 ignoreBase=forTestPhase
 		)
 
 		# return list of unique ports which need to be built before this one
@@ -586,7 +581,7 @@ class Port(object):
 
 		workRepositoryPath = os.path.join(self.workDir, 'repository')
 		symlinkGlob(os.path.join(self._repositoryDir, '*.DependencyInfo'),
-			workRepositoryPath)
+		            workRepositoryPath)
 
 		with requiredPort.temporaryRepositoryDir(workRepositoryPath):
 			# drop dependency-infos for the required port, such that dependency
@@ -597,24 +592,22 @@ class Port(object):
 			dependencyInfoFiles = self.getDependencyInfoFiles()
 
 		try:
-			self._resolveDependencies(
-				dependencyInfoFiles, Port.requiresTypes,
-				[packagesPath, workRepositoryPath],
-				'required or prerequired ports',
-				stopAtHpkgs=True
-			)
+			self._resolveDependencies(dependencyInfoFiles,
+			                          Port.requiresTypes,
+			                          [packagesPath, workRepositoryPath],
+			                          'required or prerequired ports',
+			                          stopAtHpkgs=True)
 		except SystemExit:
 			return
 
-		warn("port %s doesn't seem to be required by %s"
-			% (requiredPort.versionedName, self.versionedName))
+		warn("port %s doesn't seem to be required by %s" %
+		     (requiredPort.versionedName, self.versionedName))
 
 	def getDependencyInfoFiles(self):
 		"""Returns the list of dependency info files for this port."""
 
 		return [
-			package.dependencyInfoFile(self._repositoryDir)
-			for package in self.packages
+		    package.dependencyInfoFile(self._repositoryDir) for package in self.packages
 		]
 
 	def referencesFiles(self, files):
@@ -733,15 +726,14 @@ class Port(object):
 		for s, source in enumerate(self.sources, 1):
 			if s == 1:
 				patchSetFileName = self.name + '-' + self.version + '.patchset'
-				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.targetArchitecture
-										+ '.patchset')
+				archPatchSetFileName = (self.name + '-' + self.version + '-' +
+				                        self.targetArchitecture + '.patchset')
 			else:
-				patchSetFileName = (self.name + '-' + self.version + '-source'
-									+ str(s) + '.patchset')
-				archPatchSetFileName = (self.name + '-' + self.version + '-'
-										+ self.targetArchitecture + '-source'
-										+ str(s) + '.patchset')
+				patchSetFileName = (self.name + '-' + self.version + '-source' +
+				                    str(s) + '.patchset')
+				archPatchSetFileName = (self.name + '-' + self.version + '-' +
+				                        self.targetArchitecture + '-source' + str(s) +
+				                        '.patchset')
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
 			archPatchSetFilePath = self.patchesDir + '/' + archPatchSetFileName
 			source.extractPatchset(patchSetFilePath, archPatchSetFilePath)
@@ -755,8 +747,8 @@ class Port(object):
 
 		# reset build flag if recipe is newer (unless that's prohibited)
 		if (not getOption('preserveFlags') and self.checkFlag('build')
-			and (os.path.getmtime(self.recipeFilePath)
-				> os.path.getmtime(self.workDir + '/flag.build'))):
+		    and (os.path.getmtime(self.recipeFilePath)
+		         > os.path.getmtime(self.workDir + '/flag.build'))):
 			info('unsetting build flag, as recipe is newer')
 			self.unsetFlag('build')
 
@@ -764,7 +756,7 @@ class Port(object):
 
 		# populate all non-source packages
 		if not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages')):
+		        or getOption('createSourcePackages')):
 			for package in self.packages:
 				if package.type == PackageType.SOURCE:
 					continue
@@ -772,39 +764,40 @@ class Port(object):
 				package.populatePackagingDir(self)
 
 		if (getOption('createSourcePackagesForBootstrap')
-			or getOption('createSourcePackages')):
+		    or getOption('createSourcePackages')):
 			requiredPackages = []
 			if buildPlatform.usesChroot():
 				prerequiredPackages \
-					= self._getPackagesNeededForScriptlets(packagesPath)
+                             = self._getPackagesNeededForScriptlets(packagesPath)
 			else:
 				prerequiredPackages = []
 		else:
 			requiredPackages = self._getPackagesRequiredForBuild(packagesPath)
 			prerequiredPackages \
-				= self._getPackagesPrerequiredForBuild(packagesPath)
+                      = self._getPackagesPrerequiredForBuild(packagesPath)
 			self.requiresUpdater \
-				= RequiresUpdater(self.packages, requiredPackages)
+                      = RequiresUpdater(self.packages, requiredPackages)
 			if (not Configuration.isCrossBuildRepository()
-				and not getOption('noSystemPackages')):
+			    and not getOption('noSystemPackages')):
 				self.requiresUpdater.addPackages(
-					buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+				    buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 		self.policy.setPort(self, requiredPackages)
 
 		allPackages = set(requiredPackages + prerequiredPackages)
 		if buildPlatform.usesChroot():
 			# setup chroot and keep it while executing the actions
 			chrootEnvVars = {
-				'packages': '\n'.join(allPackages),
-				'recipeFile': self.preparedRecipeFile,
-				'targetArchitecture': self.targetArchitecture,
-				'portDir': self.baseDir,
+			    'packages': '\n'.join(allPackages),
+			    'recipeFile': self.preparedRecipeFile,
+			    'targetArchitecture': self.targetArchitecture,
+			    'portDir': self.baseDir,
 			}
 			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
-					= self.shellVariables['crossSysrootDir']
+                             = self.shellVariables['crossSysrootDir']
 
 			def makeChrootFunctions():
+
 				def taskFunction():
 					if not getOption('quiet'):
 						info('chroot has these packages active:')
@@ -823,9 +816,9 @@ class Port(object):
 					sysExit('Build has failed - stopping.')
 
 				return {
-					'task': taskFunction,
-					'success': successFunction,
-					'failure': failureFunction
+				    'task': taskFunction,
+				    'success': successFunction,
+				    'failure': failureFunction
 				}
 
 			with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
@@ -837,15 +830,18 @@ class Port(object):
 					info('\t' + package)
 
 			buildPlatform.setupNonChrootBuildEnvironment(self.workDir,
-				self.secondaryArchitecture, allPackages)
+			                                             self.secondaryArchitecture,
+			                                             allPackages)
 			try:
 				self._executeBuild(makePackages)
 			except:
 				buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-					self.secondaryArchitecture, False)
+				                                             self.secondaryArchitecture,
+				                                             False)
 				raise
 			buildPlatform.cleanNonChrootBuildEnvironment(self.workDir,
-				self.secondaryArchitecture, True)
+			                                             self.secondaryArchitecture,
+			                                             True)
 
 		if makePackages and not getOption('enterChroot'):
 			# create source package
@@ -863,22 +859,22 @@ class Port(object):
 			# move all created packages into packages folder
 			for package in self.packages:
 				if ((getOption('createSourcePackagesForBootstrap')
-					or getOption('createSourcePackages'))
-					and package.type != PackageType.SOURCE):
+				     or getOption('createSourcePackages'))
+				    and package.type != PackageType.SOURCE):
 					continue
 				packageFile = self.hpkgDir + '/' + package.hpkgName
 				if os.path.exists(packageFile):
 					if not (buildPlatform.usesChroot()
-							or Configuration.isCrossBuildRepository()
-							or getOption('createSourcePackagesForBootstrap')
-							or getOption('createSourcePackages')):
-						warn('not grabbing ' + package.hpkgName
-							+ ', as it has not been built in a chroot.')
+					        or Configuration.isCrossBuildRepository()
+					        or getOption('createSourcePackagesForBootstrap')
+					        or getOption('createSourcePackages')):
+						warn('not grabbing ' + package.hpkgName +
+						     ', as it has not been built in a chroot.')
 						continue
 					targetPackageFile \
-						= hpkgStoragePath + '/' + package.hpkgName
-					info('grabbing ' + package.hpkgName
-						+ ' and moving it to ' + targetPackageFile)
+                                    = hpkgStoragePath + '/' + package.hpkgName
+					info('grabbing ' + package.hpkgName + ' and moving it to ' +
+					     targetPackageFile)
 					shutil.move(packageFile, targetPackageFile)
 
 		if os.path.exists(self.hpkgDir):
@@ -903,13 +899,14 @@ class Port(object):
 		allPackages = set(requiredPackages + prerequiredPackages)
 		# setup chroot and keep it while executing the actions
 		chrootEnvVars = {
-			'packages': '\n'.join(allPackages),
-			'recipeFile': self.preparedRecipeFile,
-			'targetArchitecture': self.targetArchitecture,
-			'portDir': self.baseDir,
+		    'packages': '\n'.join(allPackages),
+		    'recipeFile': self.preparedRecipeFile,
+		    'targetArchitecture': self.targetArchitecture,
+		    'portDir': self.baseDir,
 		}
 
 		def makeChrootFunctions():
+
 			def taskFunction():
 				if not getOption('quiet'):
 					info('chroot has these packages active:')
@@ -920,10 +917,7 @@ class Port(object):
 			def failureFunction():
 				sysExit('Test has failed - stopping.')
 
-			return {
-				'task': taskFunction,
-				'failure': failureFunction
-			}
+			return {'task': taskFunction, 'failure': failureFunction}
 
 		with ChrootSetup(self.workDir, chrootEnvVars) as chrootSetup:
 			self._executeInChroot(chrootSetup, makeChrootFunctions())
@@ -950,15 +944,14 @@ class Port(object):
 		return os.path.exists('%s/flag.%s-%s' % (self.workDir, name, index))
 
 	def _validateOrLoadFromCache(self, showWarnings):
-		recipeCacheDir = os.path.join(self._repositoryDir,
-			Port._recipeCacheDirName)
-		recipeCacheFile = os.path.join(recipeCacheDir, self.name + '-'
-			+ self.version + '-' + self.effectiveTargetArchitecture)
+		recipeCacheDir = os.path.join(self._repositoryDir, Port._recipeCacheDirName)
+		recipeCacheFile = os.path.join(
+		    recipeCacheDir,
+		    self.name + '-' + self.version + '-' + self.effectiveTargetArchitecture)
 
-		if (os.path.exists(self.preparedRecipeFile)
-			and os.path.exists(recipeCacheFile)
-			and os.path.getmtime(recipeCacheFile)
-				>= os.path.getmtime(self.recipeFilePath)):
+		if (os.path.exists(self.preparedRecipeFile) and os.path.exists(recipeCacheFile)
+		    and os.path.getmtime(recipeCacheFile) >= os.path.getmtime(
+		        self.recipeFilePath)):
 			with codecs.open(recipeCacheFile, 'r', 'utf-8') as cacheFile:
 				cached = json.loads(cacheFile.read())
 				if 'exception' in cached:
@@ -970,7 +963,7 @@ class Port(object):
 
 		try:
 			recipeKeysByExtension, definedPhases \
-				= self.validateRecipeFile(showWarnings)
+                      = self.validateRecipeFile(showWarnings)
 		except SystemExit as exception:
 			with codecs.open(recipeCacheFile, 'w', 'utf-8') as cacheFile:
 				cacheFile.write(json.dumps({'exception': str(exception)}))
@@ -992,7 +985,7 @@ class Port(object):
 		self.shellVariables['SOURCE_DIR'] = self.baseName + '-' + self.version
 
 		self.recipeKeysByExtension, self.definedPhases \
-			= self._validateOrLoadFromCache(showWarnings)
+               = self._validateOrLoadFromCache(showWarnings)
 		self.recipeKeys = {}
 		for entries in self.recipeKeysByExtension.values():
 			self.recipeKeys.update(entries)
@@ -1009,13 +1002,13 @@ class Port(object):
 		## REFACTOR it looks like this method should be setup and dispatch
 
 		for index in sorted(list(keys['SOURCE_URI'].keys()),
-				key=cmp_to_key(naturalCompare)):
+		                    key=cmp_to_key(naturalCompare)):
 			source = Source(self, index, keys['SOURCE_URI'][index],
-							keys['SOURCE_FILENAME'].get(index, None),
-							keys['CHECKSUM_SHA256'].get(index, None),
-							keys['SOURCE_DIR'].get(index, None),
-							keys['PATCHES'].get(index, []),
-							keys['ADDITIONAL_FILES'].get(index, []))
+			                keys['SOURCE_FILENAME'].get(index, None),
+			                keys['CHECKSUM_SHA256'].get(index, None),
+			                keys['SOURCE_DIR'].get(index, None),
+			                keys['PATCHES'].get(index, []),
+			                keys['ADDITIONAL_FILES'].get(index, []))
 			if source.isFromSourcePackage:
 				basedOnSourcePackage = True
 			self.sources.append(source)
@@ -1035,24 +1028,24 @@ class Port(object):
 			self.allPackages.append(package)
 
 			if packageType == PackageType.SOURCE:
-				if (not Configuration.shallCreateSourcePackages() or getOption('noSourcePackages')
-					or basedOnSourcePackage):
+				if (not Configuration.shallCreateSourcePackages()
+				    or getOption('noSourcePackages') or basedOnSourcePackage):
 					# creation of the source package should be avoided, so we
 					# skip adding it to the list of active packages
 					continue
 				haveSourcePackage = True
 
-			if package.isBuildableOnSecondaryArchitecture(
-				self.targetArchitecture, self.secondaryArchitecture,
-				forceAllowUnstable):
+			if package.isBuildableOnSecondaryArchitecture(self.targetArchitecture,
+			                                              self.secondaryArchitecture,
+			                                              forceAllowUnstable):
 				self.packages.append(package)
 
 		if not self.isMetaPort:
 			# create source package if it hasn't been specified or disabled:
 			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
-				and not basedOnSourcePackage
-				and Configuration.shallCreateSourcePackages()
-				and not getOption('noSourcePackages')):
+			    and not basedOnSourcePackage
+			    and Configuration.shallCreateSourcePackages()
+			    and not getOption('noSourcePackages')):
 				package = self._createSourcePackage(self.name, False)
 				self.allPackages.append(package)
 				self.packages.append(package)
@@ -1100,11 +1093,11 @@ class Port(object):
 			revisionedName = self.revisionedName
 
 		self.shellVariables.update({
-			'portRevision': revision,
-			'portFullVersion': fullVersion,
-			'portRevisionedName': revisionedName,
-			'packagerName': Configuration.getPackagerName(),
-			'packagerEmail': Configuration.getPackagerEmail(),
+		    'portRevision': revision,
+		    'portFullVersion': fullVersion,
+		    'portRevisionedName': revisionedName,
+		    'packagerName': Configuration.getPackagerName(),
+		    'packagerEmail': Configuration.getPackagerEmail(),
 		})
 
 		if not forParsing:
@@ -1115,15 +1108,14 @@ class Port(object):
 					sourceDirKey = 'sourceDir' + source.index
 				self.shellVariables[sourceDirKey] = source.sourceDir
 			self.shellVariables.update({
-				'packagingBaseDir': self.packagingBaseDir,
-				'workDir': self.workDir,
+			    'packagingBaseDir': self.packagingBaseDir,
+			    'workDir': self.workDir,
 			})
 
 		if self.secondaryArchitecture:
 			secondaryArchSubDir = '/' + self.secondaryArchitecture
 			# don't use a subdir when building cross-packages
-			if (Configuration.isCrossBuildRepository()
-				and '_cross_' in self.name):
+			if (Configuration.isCrossBuildRepository() and '_cross_' in self.name):
 				secondaryArchSubDir = ''
 			secondaryArchSuffix = '_' + self.secondaryArchitecture
 		else:
@@ -1131,17 +1123,17 @@ class Port(object):
 			secondaryArchSuffix = ''
 
 		effectiveTargetMachineTriple = MachineArchitecture.getTripleFor(
-			self.effectiveTargetArchitecture)
+		    self.effectiveTargetArchitecture)
 
 		self.shellVariables['secondaryArchSubDir'] = secondaryArchSubDir
 		self.shellVariables['secondaryArchSuffix'] = secondaryArchSuffix
 
 		self.shellVariables['effectiveTargetArchitecture'] \
-			= self.effectiveTargetArchitecture
+               = self.effectiveTargetArchitecture
 		self.shellVariables['effectiveTargetMachineTriple'] \
-			= effectiveTargetMachineTriple
+               = effectiveTargetMachineTriple
 		self.shellVariables['effectiveTargetMachineTripleAsName'] \
-			= effectiveTargetMachineTriple.replace('-', '_')
+               = effectiveTargetMachineTriple.replace('-', '_')
 
 		basePrefix = ''
 		if Configuration.isCrossBuildRepository():
@@ -1151,31 +1143,31 @@ class Port(object):
 			# (when we don't use a chroot).
 			if '_cross_' in self.name:
 				basePrefix = \
-					buildPlatform.getCrossToolsBasePrefix(self.workDir)
+                             buildPlatform.getCrossToolsBasePrefix(self.workDir)
 			else:
 				installDestDir = buildPlatform.getInstallDestDir(self.workDir)
 				if installDestDir:
 					self.shellVariables['installDestDir'] = installDestDir
 
 			self.shellVariables['crossSysrootDir'] \
-				= buildPlatform.getCrossSysrootDirectory(self.workDir)
+                      = buildPlatform.getCrossSysrootDirectory(self.workDir)
 
 		relativeConfigureDirs = {
-			'dataDir': 'data',
-			'dataRootDir': 'data',
-			'binDir': 'bin' + secondaryArchSubDir,
-			'sbinDir': 'bin' + secondaryArchSubDir,
-			'libDir': 'lib' + secondaryArchSubDir,
-			'includeDir': 'develop/headers' + secondaryArchSubDir,
-			'oldIncludeDir': 'develop/headers' + secondaryArchSubDir,
-			'docDir': 'documentation/packages/' + self.name,
-			'infoDir': 'documentation/info',
-			'manDir': 'documentation/man',
-			'libExecDir': 'lib',
-			'sharedStateDir': 'var',
-			'localStateDir': 'var',
-			# sysconfdir is only defined in configDirs below, since it is not
-			# necessarily below prefix
+		    'dataDir': 'data',
+		    'dataRootDir': 'data',
+		    'binDir': 'bin' + secondaryArchSubDir,
+		    'sbinDir': 'bin' + secondaryArchSubDir,
+		    'libDir': 'lib' + secondaryArchSubDir,
+		    'includeDir': 'develop/headers' + secondaryArchSubDir,
+		    'oldIncludeDir': 'develop/headers' + secondaryArchSubDir,
+		    'docDir': 'documentation/packages/' + self.name,
+		    'infoDir': 'documentation/info',
+		    'manDir': 'documentation/man',
+		    'libExecDir': 'lib',
+		    'sharedStateDir': 'var',
+		    'localStateDir': 'var',
+		    # sysconfdir is only defined in configDirs below, since it is not
+		    # necessarily below prefix
 		}
 
 		# Note: Newer build systems also support the following options. Their
@@ -1187,15 +1179,15 @@ class Port(object):
 		# --psdir=DIR			ps documentation [DOCDIR]
 
 		portPackageLinksDir = basePrefix \
-			+ buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY') \
-			+ '/' + revisionedName
+               + buildPlatform.findDirectory('B_PACKAGE_LINKS_DIRECTORY') \
+               + '/' + revisionedName
 		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
 		prefix = portPackageLinksDir + '/.self'
 
 		configureDirs = {
-			'prefix': prefix,
-			'sysconfDir': portPackageLinksDir + '/.settings',
+		    'prefix': prefix,
+		    'sysconfDir': portPackageLinksDir + '/.settings',
 		}
 
 		for name, value in relativeConfigureDirs.items():
@@ -1207,39 +1199,39 @@ class Port(object):
 
 		# add one more variable containing all the dir args for configure:
 		self.shellVariables['configureDirArgs'] \
-			= ' '.join('--%s=%s' % (k.lower(), v)
-				for k, v in configureDirs.items())
+               = ' '.join('--%s=%s' % (k.lower(), v)
+		  for k, v in configureDirs.items())
 
 		# add one more variable containing all the dir args for CMake:
 		cmakeDirArgs = {
-			'PREFIX': prefix,
-			'SYSCONFDIR': portPackageLinksDir + '/.settings'
-			}
+		    'PREFIX': prefix,
+		    'SYSCONFDIR': portPackageLinksDir + '/.settings'
+		}
 		for k, v in relativeConfigureDirs.items():
 			cmakeDirArgs[k.upper()] = v
 		self.shellVariables['cmakeDirArgs'] \
-			= ' '.join('-DCMAKE_INSTALL_%s=%s' % (k, v)
-				for k, v in cmakeDirArgs.items())
+               = ' '.join('-DCMAKE_INSTALL_%s=%s' % (k, v)
+		  for k, v in cmakeDirArgs.items())
 
 		# add another one with the list of possible variables
 		self.shellVariables['configureDirVariables'] \
-			= ' '.join(configureDirs.keys())
+               = ' '.join(configureDirs.keys())
 
 		# Add variables for other standard directories. Consequently, we should
 		# use finddir to get them (also for the configure variables above), but
 		# we want relative paths here.
 		relativeOtherDirs = {
-			'addOnsDir': 'add-ons' + secondaryArchSubDir,
-			'appsDir': 'apps',
-			'debugInfoDir': 'develop/debug',
-			'developDir': 'develop',
-			'developDocDir': 'develop/documentation/' + self.name,
-			'developLibDir': 'develop/lib' + secondaryArchSubDir,
-			'documentationDir': 'documentation',
-			'fontsDir': 'data/fonts',
-			'postInstallDir': 'boot/post-install',
-			'preferencesDir': 'preferences',
-			'settingsDir': 'settings',
+		    'addOnsDir': 'add-ons' + secondaryArchSubDir,
+		    'appsDir': 'apps',
+		    'debugInfoDir': 'develop/debug',
+		    'developDir': 'develop',
+		    'developDocDir': 'develop/documentation/' + self.name,
+		    'developLibDir': 'develop/lib' + secondaryArchSubDir,
+		    'documentationDir': 'documentation',
+		    'fontsDir': 'data/fonts',
+		    'postInstallDir': 'boot/post-install',
+		    'preferencesDir': 'preferences',
+		    'settingsDir': 'settings',
 		}
 
 		for name, value in relativeOtherDirs.items():
@@ -1250,12 +1242,11 @@ class Port(object):
 	def _recreatePackageDirectories(self):
 		# Delete and re-create a couple of directories
 		directoriesToCreate = [
-			self.packageInfoDir, self.packagingBaseDir,
-			self.buildPackageDir, self.hpkgDir
+		    self.packageInfoDir, self.packagingBaseDir, self.buildPackageDir,
+		    self.hpkgDir
 		]
 		directoriesToRemove = [
-			directory for directory in directoriesToCreate
-			if os.path.exists(directory)
+		    directory for directory in directoriesToCreate if os.path.exists(directory)
 		]
 		if directoriesToRemove:
 			info('Cleaning up temporary directories ...')
@@ -1305,47 +1296,53 @@ class Port(object):
 				print('*** child stopped')
 				sysExit('Interrupted.')
 
-	def _getNeededPackages(self, packagesPath, requiresTypes, description,
-		forTestPhase=False):
+	def _getNeededPackages(self,
+	                       packagesPath,
+	                       requiresTypes,
+	                       description,
+	                       forTestPhase=False):
 		return self._resolveDependencies(self.getDependencyInfoFiles(),
-			requiresTypes, [packagesPath], description, ignoreBase=forTestPhase)
+		                                 requiresTypes, [packagesPath],
+		                                 description,
+		                                 ignoreBase=forTestPhase)
 
 	def _getPackagesNeededForScriptlets(self, packagesPath):
 		"""Determine the set of packages that must be linked into
 		   the build environment (chroot) for the scriptlets"""
 
 		return self._getNeededPackages(packagesPath, ['SCRIPTLET_PREREQUIRES'],
-			'needed packages for scriptlets')
+		                               'needed packages for scriptlets')
 
 	def _getPackagesPrerequiredForBuild(self, packagesPath):
 		"""Determine the set of prerequired packages that must be linked into
 		   the build environment (chroot) for the build stage"""
 
 		return self._getNeededPackages(packagesPath,
-			['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES'],
-			'prerequired packages for build')
+		                               ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES'],
+		                               'prerequired packages for build')
 
 	def _getPackagesRequiredForBuild(self, packagesPath):
 		"""Determine the set of packages that must be linked into the
 		   build environment (chroot) for the build stage"""
 
 		return self._getNeededPackages(packagesPath, ['BUILD_REQUIRES'],
-			'required packages for build')
+		                               'required packages for build')
 
 	def _getPackagesPrerequiredForTest(self, packagesPath):
 		"""Determine the set of prerequired packages that must be linked into
 		   the environment (chroot) for the test stage"""
 
-		return self._getNeededPackages(packagesPath, ['BUILD_PREREQUIRES',
-				'SCRIPTLET_PREREQUIRES'], 'prerequired packages for test', True)
+		return self._getNeededPackages(packagesPath,
+		                               ['BUILD_PREREQUIRES', 'SCRIPTLET_PREREQUIRES'],
+		                               'prerequired packages for test', True)
 
 	def _getPackagesRequiredForTest(self, packagesPath):
 		"""Determine the set of packages that must be linked into the
 		   environment (chroot) for the test stage"""
 
 		return self._getNeededPackages(packagesPath,
-			['BUILD_REQUIRES', 'TEST_REQUIRES'],
-			'required packages for test', True)
+		                               ['BUILD_REQUIRES', 'TEST_REQUIRES'],
+		                               'required packages for test', True)
 
 	def _executeBuild(self, makePackages):
 		"""Executes the build stage and creates all declared packages"""
@@ -1353,7 +1350,7 @@ class Port(object):
 		self._createBuildPackages()
 
 		if not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages')):
+		        or getOption('createSourcePackages')):
 			try:
 				self._doBuildStage()
 			except BaseException:
@@ -1377,14 +1374,14 @@ class Port(object):
 	def _createBuildPackages(self):
 		# create all build packages (but don't activate them yet)
 		if not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages')):
+		        or getOption('createSourcePackages')):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.createBuildPackage()
 
 	def _removeBuildPackages(self):
 		if not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages')):
+		        or getOption('createSourcePackages')):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.removeBuildPackage()
@@ -1423,13 +1420,12 @@ class Port(object):
 		# update shell variables, too
 		self._updateShellVariablesFromRecipe()
 
-
 	def _doBuildStage(self):
 		"""Run the actual build"""
 		# activate build package if required at this stage
 		if self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.BUILD:
 			if not (getOption('createSourcePackagesForBootstrap')
-					or getOption('createSourcePackages')):
+			        or getOption('createSourcePackages')):
 				for package in self.packages:
 					if package.type != PackageType.SOURCE:
 						package.activateBuildPackage()
@@ -1447,10 +1443,9 @@ class Port(object):
 	def _makePackages(self):
 		"""Create all packages suitable for distribution"""
 
-
 		## REFACTOR into separate methods for each loop
 		if not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages')):
+		        or getOption('createSourcePackages')):
 			# Create the settings directory in the packaging directory, if
 			# needed. We need to do that, since the .settings link would
 			# otherwise point to a non-existing entry and the directory
@@ -1476,16 +1471,18 @@ class Port(object):
 					archBinDir = binDir + '/' + self.secondaryArchitecture
 					if os.path.exists(archBinDir):
 						for entry in os.listdir(archBinDir):
-							os.symlink(self.secondaryArchitecture + '/' + entry,
-								binDir + '/' + entry + '-'
-									+ self.secondaryArchitecture)
+							os.symlink(
+							    self.secondaryArchitecture + '/' + entry,
+							    binDir + '/' + entry + '-' + self.secondaryArchitecture)
 
 			# For the main package remove certain empty directories. Typically
 			# contents is moved from the main package installation directory
 			# tree to the packaging directories of sibling packages, which may
 			# leave empty directories behind.
-			for dirName in ['add-ons', 'apps', 'bin', 'data', 'develop',
-							'documentation', 'lib', 'preferences']:
+			for dirName in [
+			    'add-ons', 'apps', 'bin', 'data', 'develop', 'documentation', 'lib',
+			    'preferences'
+			]:
 				path = self.packagingBaseDir + '/' + self.name + '/' + dirName
 				if os.path.exists(path) and not os.listdir(path):
 					os.rmdir(path)
@@ -1499,7 +1496,7 @@ class Port(object):
 
 		# make each package
 		if not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages')):
+		        or getOption('createSourcePackages')):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.makeHpkg(self.requiresUpdater)
@@ -1510,8 +1507,8 @@ class Port(object):
 
 		# activate build package if required at this stage
 		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.INSTALL
-			and not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages'))):
+		    and not (getOption('createSourcePackagesForBootstrap')
+		             or getOption('createSourcePackages'))):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.activateBuildPackage()
@@ -1524,8 +1521,8 @@ class Port(object):
 
 		# activate build package if required at this stage
 		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.TEST
-			and not (getOption('createSourcePackagesForBootstrap')
-				or getOption('createSourcePackages'))):
+		    and not (getOption('createSourcePackagesForBootstrap')
+		             or getOption('createSourcePackages'))):
 			for package in self.packages:
 				if package.type != PackageType.SOURCE:
 					package.activateBuildPackage()
@@ -1545,8 +1542,8 @@ class Port(object):
 		shellVariables = self.shellVariables.copy()
 		shellVariables['fileToParse'] = self.preparedRecipeFile
 		shellVariables['recipeAction'] = action
-		wrapperScriptContent = (getShellVariableSetters(shellVariables)
-								+ recipeActionScript)
+		wrapperScriptContent = (getShellVariableSetters(shellVariables) +
+		                        recipeActionScript)
 		wrapperScript = self.workDir + '/wrapper-script'
 		storeStringInFile(wrapperScriptContent, wrapperScript)
 		self._openShell(['-c', '. ' + wrapperScript], targetDir, {})
@@ -1564,10 +1561,8 @@ class Port(object):
 			shellEnv['PATH'] = ':'.join(crossToolsPaths + [shellEnv['PATH']])
 		elif self.secondaryArchitecture:
 			# include secondary architecture tools in path
-			secondaryArchPaths = [
-				'/boot/system/bin/' + self.secondaryArchitecture]
-			shellEnv['PATH'] = ':'.join(
-				secondaryArchPaths + [shellEnv['PATH']])
+			secondaryArchPaths = ['/boot/system/bin/' + self.secondaryArchitecture]
+			shellEnv['PATH'] = ':'.join(secondaryArchPaths + [shellEnv['PATH']])
 
 		# Request scripting language (perl, python) modules to be installed
 		# into vendor directories automatically.
@@ -1586,8 +1581,11 @@ class Port(object):
 		if self.logger is None:
 			check_call(args, cwd=targetDir, env=shellEnv)
 		else:
-			process = Popen(args, cwd=targetDir, env=shellEnv, stdout=PIPE,
-				stderr=STDOUT)
+			process = Popen(args,
+			                cwd=targetDir,
+			                env=shellEnv,
+			                stdout=PIPE,
+			                stderr=STDOUT)
 			for line in iter(process.stdout.readline, b''):
 				self.logger.info(line[:-1])
 			process.stdout.close()
@@ -1595,22 +1593,21 @@ class Port(object):
 			if code:
 				raise CalledProcessError(code, args)
 
-	def _resolveDependencies(self, dependencyInfoFiles, requiresTypes,
-		repositories, description, **kwargs):
+	def _resolveDependencies(self, dependencyInfoFiles, requiresTypes, repositories,
+	                         description, **kwargs):
 		"""Resolve dependencies of one or more dependency-infos"""
 
 		try:
-			return buildPlatform.resolveDependencies(dependencyInfoFiles,
-				requiresTypes, repositories, **kwargs)
+			return buildPlatform.resolveDependencies(dependencyInfoFiles, requiresTypes,
+			                                         repositories, **kwargs)
 		except (CalledProcessError, LookupError):
 			if getOption('buildMaster'):
 				raise
 
-			sysExit(('unable to resolve %s for %s\n'
-				+ '\tdependency-infos:\n\t\t%s\n'
-				+ '\trepositories:\n\t\t%s\n')
-				% (description, self.versionedName,
-					'\n\t\t'.join(dependencyInfoFiles), repositories))
+			sysExit(('unable to resolve %s for %s\n' + '\tdependency-infos:\n\t\t%s\n' +
+			         '\trepositories:\n\t\t%s\n') %
+			        (description, self.versionedName,
+			         '\n\t\t'.join(dependencyInfoFiles), repositories))
 
 	def _createSourcePackage(self, name, rigged):
 		# copy all recipe attributes from base package, but set defaults
@@ -1631,14 +1628,14 @@ class Port(object):
 		else:
 			name = self.name + '_source'
 		sourceSuffix \
-			= recipeAttributes['SUMMARY']['suffix'][PackageType.SOURCE]
+               = recipeAttributes['SUMMARY']['suffix'][PackageType.SOURCE]
 		sourceKeys.update({
-			'ARCHITECTURES': baseKeys['ARCHITECTURES'],
-			'COPYRIGHT': baseKeys['COPYRIGHT'],
-			'DESCRIPTION': baseKeys['DESCRIPTION'],
-			'HOMEPAGE': baseKeys['HOMEPAGE'],
-			'LICENSE': baseKeys['LICENSE'],
-			'PROVIDES': [name + ' = ' + self.version],
-			'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
+		    'ARCHITECTURES': baseKeys['ARCHITECTURES'],
+		    'COPYRIGHT': baseKeys['COPYRIGHT'],
+		    'DESCRIPTION': baseKeys['DESCRIPTION'],
+		    'HOMEPAGE': baseKeys['HOMEPAGE'],
+		    'LICENSE': baseKeys['LICENSE'],
+		    'PROVIDES': [name + ' = ' + self.version],
+		    'SUMMARY': (baseKeys['SUMMARY'] + sourceSuffix),
 		})
 		return sourcePackageFactory(name, self, sourceKeys, self.policy, rigged)

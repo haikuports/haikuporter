@@ -21,8 +21,8 @@ import shutil
 from subprocess import CalledProcessError, check_output, PIPE, Popen, STDOUT
 import time
 
-
 # -----------------------------------------------------------------------------
+
 
 def parseCheckoutUri(uri):
 	"""Parse the given checkout URI and return a 3-tuple with type, real URI
@@ -49,16 +49,18 @@ def parseCheckoutUri(uri):
 
 	return (uriType, realUri, rev)
 
+
 # -----------------------------------------------------------------------------
+
 
 def unpackCheckoutWithTar(checkoutDir, sourceBaseDir, sourceSubDir, foldSubDir):
 	"""Use 'tar' to export the sources from the checkout into the source dir"""
 
 	sourceDir = sourceBaseDir + '/' + sourceSubDir \
-		if sourceSubDir else sourceBaseDir
+        if sourceSubDir else sourceBaseDir
 	if foldSubDir:
-		command = ('tar -c -C "%s" --exclude-vcs | tar -x -C "%s"'
-				   % (foldSubDir, sourceDir))
+		command = ('tar -c -C "%s" --exclude-vcs | tar -x -C "%s"' %
+		           (foldSubDir, sourceDir))
 	else:
 		command = 'tar -c --exclude-vcs . | tar -x -C "%s"' % sourceDir
 	output = check_output(command, cwd=checkoutDir, shell=True).decode('utf-8')
@@ -67,13 +69,15 @@ def unpackCheckoutWithTar(checkoutDir, sourceBaseDir, sourceSubDir, foldSubDir):
 	if foldSubDir:
 		foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
+
 # -----------------------------------------------------------------------------
+
 
 def unpackFile(uri, fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir):
 	"""Unpack archive file (or copy non-archive) into sourceDir"""
 
 	sourceDir = sourceBaseDir + '/' + sourceSubDir \
-		if sourceSubDir else sourceBaseDir
+        if sourceSubDir else sourceBaseDir
 	if uri.endswith('#noarchive'):
 		if os.path.isdir(fetchTarget):
 			shutil.copytree(fetchTarget, sourceDir, symlinks=True)
@@ -92,7 +96,9 @@ def unpackFile(uri, fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir):
 		if foldSubDir:
 			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
+
 # -----------------------------------------------------------------------------
+
 
 def foldSubdirIntoSourceDir(subdir, sourceDir):
 	"""Move contents of subdir into sourceDir and remove subdir"""
@@ -106,9 +112,12 @@ def foldSubdirIntoSourceDir(subdir, sourceDir):
 		os.rename(fullSubdirPath + '/' + fileName, sourceDir + '/' + fileName)
 	os.removedirs(fullSubdirPath)
 
+
 # -- Fetches sources via bzr --------------------------------------------------
 
+
 class SourceFetcherForBazaar(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
@@ -118,7 +127,7 @@ class SourceFetcherForBazaar(object):
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			        'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -133,15 +142,17 @@ class SourceFetcherForBazaar(object):
 
 	def updateToRev(self, rev):
 		warn("Updating of a Bazaar repository to a specific revision has "
-			 u"not been implemented yet, sorry")
+		     u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
-			foldSubDir)
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir)
+
 
 # -- Fetches sources via cvs --------------------------------------------------
 
+
 class SourceFetcherForCvs(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
@@ -154,7 +165,7 @@ class SourceFetcherForCvs(object):
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			        'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -172,20 +183,23 @@ class SourceFetcherForCvs(object):
 			else:
 				command += ' -r' + self.rev
 		command += ' "%s"' % self.module
-		output = check_output(command, shell=True, cwd=baseDir, stderr=STDOUT).decode('utf-8')
+		output = check_output(command, shell=True, cwd=baseDir,
+		                      stderr=STDOUT).decode('utf-8')
 		info(output)
 
 	def updateToRev(self, rev):
 		warn("Updating of a CVS repository to a specific revision has "
-			 u"not been implemented yet, sorry")
+		     u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
-			foldSubDir)
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir)
+
 
 # -- Fetches sources via wget -------------------------------------------------
 
+
 class SourceFetcherForDownload(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
@@ -199,8 +213,10 @@ class SourceFetcherForDownload(object):
 			if Configuration.getSourceforgeMirror():
 				mirror = '?use_mirror=' + Configuration.getSourceforgeMirror()
 
-		args = ['wget', '-c', '--tries=1', '--timeout=10', '--progress=dot:mega', '-O',
-			self.fetchTarget, self.uri + mirror]
+		args = [
+		    'wget', '-c', '--tries=1', '--timeout=10', '--progress=dot:mega', '-O',
+		    self.fetchTarget, self.uri + mirror
+		]
 
 		code = 0
 		for tries in range(0, 3):
@@ -225,12 +241,14 @@ class SourceFetcherForDownload(object):
 		pass
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
-		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir,
-			foldSubDir)
+		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir)
+
 
 # -- Fetches sources via fossil -----------------------------------------------
 
+
 class SourceFetcherForFossil(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
@@ -240,7 +258,7 @@ class SourceFetcherForFossil(object):
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			        'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -249,8 +267,8 @@ class SourceFetcherForFossil(object):
 		fossilDir = self.fetchTarget + '.fossil'
 		if os.path.exists(fossilDir):
 			shutil.rmtree(fossilDir)
-		command = ('fossil clone ' + self.uri + ' ' + fossilDir
-				   + ' && fossil open ' + fossilDir)
+		command = ('fossil clone ' + self.uri + ' ' + fossilDir + ' && fossil open ' +
+		           fossilDir)
 		if self.rev:
 			command += ' ' + self.rev
 		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
@@ -258,15 +276,17 @@ class SourceFetcherForFossil(object):
 
 	def updateToRev(self, rev):
 		warn("Updating of a Fossil repository to a specific revision has "
-			 u"not been implemented yet, sorry")
+		     u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
-			foldSubDir)
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir)
+
 
 # -- Fetches sources via git --------------------------------------------------
 
+
 class SourceFetcherForGit(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
@@ -278,7 +298,7 @@ class SourceFetcherForGit(object):
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			        'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -294,40 +314,49 @@ class SourceFetcherForGit(object):
 		self.rev = rev
 		command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
 		try:
-			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
+			output = check_output(command, shell=True,
+			                      cwd=self.fetchTarget).decode('utf-8')
 			info(output)
 		except:
 			print('trying to fetch revision %s from upstream' % self.rev)
 			command = "git branch | cut -c3-"
-			branches = check_output(command, shell=True,
-									cwd=self.fetchTarget, stderr=STDOUT).decode('utf-8').splitlines()
+			branches = check_output(command,
+			                        shell=True,
+			                        cwd=self.fetchTarget,
+			                        stderr=STDOUT).decode('utf-8').splitlines()
 			for branch in branches:
 				command = 'git fetch origin %s:%s' % (branch, branch)
 				print(command)
-				output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
+				output = check_output(command, shell=True,
+				                      cwd=self.fetchTarget).decode('utf-8')
 				info(output)
 			# ensure that the revision really is available now
 			command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
-			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
+			output = check_output(command, shell=True,
+			                      cwd=self.fetchTarget).decode('utf-8')
 			info(output)
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
-			if sourceSubDir else sourceBaseDir
+               if sourceSubDir else sourceBaseDir
 		if foldSubDir:
-			command = ('mkdir -p "%s" && git archive %s "%s" | tar -x -C "%s"'
-					   % (sourceDir, self.rev, foldSubDir, sourceDir))
+			command = ('mkdir -p "%s" && git archive %s "%s" | tar -x -C "%s"' %
+			           (sourceDir, self.rev, foldSubDir, sourceDir))
 		else:
-			command = 'mkdir -p "%s" && git archive %s | tar -x -C "%s"' % (sourceDir, self.rev, sourceDir)
+			command = 'mkdir -p "%s" && git archive %s | tar -x -C "%s"' % (
+			    sourceDir, self.rev, sourceDir)
 		output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 		info(output)
 
 		if foldSubDir:
 			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
+
 # -- Fetches sources from local disk ------------------------------------------
 
+
 class SourceFetcherForLocalFile(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
@@ -345,12 +374,14 @@ class SourceFetcherForLocalFile(object):
 		pass
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
-		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir,
-			foldSubDir)
+		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir)
+
 
 # -- Fetches sources via hg ---------------------------------------------------
 
+
 class SourceFetcherForMercurial(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
@@ -360,7 +391,7 @@ class SourceFetcherForMercurial(object):
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			        'haikuports.conf!')
 
 		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
 		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
@@ -381,10 +412,10 @@ class SourceFetcherForMercurial(object):
 			self.rev = 'tip'
 
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
-			if sourceSubDir else sourceBaseDir
+               if sourceSubDir else sourceBaseDir
 		if foldSubDir:
 			command = 'hg archive -r %s -I "%s" -t files "%s"' \
-				% (self.rev, foldSubDir, sourceDir)
+                      % (self.rev, foldSubDir, sourceDir)
 		else:
 			command = 'hg archive -r %s -t files "%s"' % (self.rev, sourceDir)
 		output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
@@ -393,9 +424,12 @@ class SourceFetcherForMercurial(object):
 		if foldSubDir:
 			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
+
 # -- Fetches sources from source package --------------------------------------
 
+
 class SourceFetcherForSourcePackage(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
@@ -410,7 +444,7 @@ class SourceFetcherForSourcePackage(object):
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		sourceDir = sourceBaseDir + '/' + sourceSubDir \
-			if sourceSubDir else sourceBaseDir
+               if sourceSubDir else sourceBaseDir
 
 		sourcePackageName = os.path.basename(self.sourcePackagePath)
 		(name, version, revision, unused) = sourcePackageName.split('-')
@@ -419,21 +453,26 @@ class SourceFetcherForSourcePackage(object):
 			name = name[:-14]
 		elif name.endswith('_source'):
 			name = name[:-7]
-		relativeSourcePath = ('develop/sources/%s-%s-%s/%s'
-							  % (name, version, revision,
-								 os.path.basename(sourceBaseDir)))
+		relativeSourcePath = (
+		    'develop/sources/%s-%s-%s/%s' %
+		    (name, version, revision, os.path.basename(sourceBaseDir)))
 
 		if not os.path.exists(sourceDir):
 			os.mkdir(sourceDir)
-		output = check_output([Configuration.getPackageCommand(), 'extract',
-					'-C', sourceDir, self.sourcePackagePath,
-					relativeSourcePath], stderr=STDOUT).decode('utf-8')
+		output = check_output([
+		    Configuration.getPackageCommand(), 'extract', '-C', sourceDir,
+		    self.sourcePackagePath, relativeSourcePath
+		],
+		                      stderr=STDOUT).decode('utf-8')
 		info(output)
 		foldSubdirIntoSourceDir(relativeSourcePath, sourceDir)
 
+
 # -- Fetches sources via svn --------------------------------------------------
 
+
 class SourceFetcherForSubversion(object):
+
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
@@ -443,7 +482,7 @@ class SourceFetcherForSubversion(object):
 	def fetch(self):
 		if not Configuration.shallAllowUnsafeSources():
 			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+			        'haikuports.conf!')
 
 		ensureCommandIsAvailable('svn')
 		command = 'svn co --non-interactive --trust-server-cert'
@@ -455,13 +494,14 @@ class SourceFetcherForSubversion(object):
 
 	def updateToRev(self, rev):
 		warn("Updating of a Subversion repository to a specific revision has "
-			 u"not been implemented yet, sorry")
+		     u"not been implemented yet, sorry")
 
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
-		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir,
-			foldSubDir)
+		unpackCheckoutWithTar(self.fetchTarget, sourceBaseDir, sourceSubDir, foldSubDir)
+
 
 # -- source fetcher factory function for given URI ----------------------------
+
 
 def createSourceFetcher(uri, fetchTarget):
 	"""Creates an appropriate source fetcher for the given URI"""

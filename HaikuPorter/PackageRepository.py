@@ -16,8 +16,8 @@ import hashlib
 import os
 import subprocess
 
-
 # -- PackageRepository class --------------------------------------------------
+
 
 class PackageRepository(object):
 
@@ -30,8 +30,7 @@ class PackageRepository(object):
 		if not os.path.exists(self.obsoleteDir):
 			os.mkdir(self.obsoleteDir)
 
-		self.architectures = [Configuration.getTargetArchitecture(),
-			'any', 'source']
+		self.architectures = [Configuration.getTargetArchitecture(), 'any', 'source']
 
 		self.repository = repository
 		self.quiet = quiet
@@ -99,8 +98,8 @@ class PackageRepository(object):
 				continue
 
 			if versionCompare(package.version, activePort.fullVersion) > 0:
-				self.obsoletePackage(package.path,
-					'newer than active {}'.format(activePort.fullVersion))
+				self.obsoletePackage(
+				    package.path, 'newer than active {}'.format(activePort.fullVersion))
 
 	def obsoletePackagesWithNewerVersions(self):
 		"""remove all packages where newer version packages are available"""
@@ -111,12 +110,10 @@ class PackageRepository(object):
 			if package.name in newestPackages:
 				newest = newestPackages[package.name]
 				if versionCompare(newest.version, package.version) > 0:
-					self.obsoletePackage(package.path,
-						reason.format(newest.version))
+					self.obsoletePackage(package.path, reason.format(newest.version))
 					continue
 
-				self.obsoletePackage(newest.path,
-					reason.format(package.version))
+				self.obsoletePackage(newest.path, reason.format(package.version))
 
 			newestPackages[package.name] = package
 
@@ -140,26 +137,28 @@ class PackageRepository(object):
 		packageList = self.packageInfoList()
 		for package in packageList:
 			os.link(package.path,
-				os.path.join(repoPackagesPath, os.path.basename(package.path)))
+			        os.path.join(repoPackagesPath, os.path.basename(package.path)))
 
 		packageListFile = os.path.join(outputPath, 'package.list')
 		with open(packageListFile, 'w') as outputFile:
 			fileList = '\n'.join(
-				[os.path.basename(package.path) for package in packageList])
+			    [os.path.basename(package.path) for package in packageList])
 			outputFile.write(fileList)
 
 		if not os.path.exists(repoFile):
 			if not packageList:
 				sysExit('no repo file exists and no packages to create it')
 
-			output = subprocess.check_output([packageRepoCommand, 'create',
-					'-v', repoInfoFile, packageList[0].path],
-				stderr=subprocess.STDOUT).decode('utf-8')
+			output = subprocess.check_output(
+			    [packageRepoCommand, 'create', '-v', repoInfoFile, packageList[0].path],
+			    stderr=subprocess.STDOUT).decode('utf-8')
 			info(output)
 
-		output = subprocess.check_output([packageRepoCommand, 'update', '-C',
-				repoPackagesPath, '-v', repoFile, repoFile, packageListFile],
-			stderr=subprocess.STDOUT).decode('utf-8')
+		output = subprocess.check_output([
+		    packageRepoCommand, 'update', '-C', repoPackagesPath, '-v', repoFile,
+		    repoFile, packageListFile
+		],
+		                                 stderr=subprocess.STDOUT).decode('utf-8')
 		info(output)
 		self._checksumPackageRepository(repoFile)
 		self._signPackageRepository(repoFile)
@@ -192,12 +191,13 @@ class PackageRepository(object):
 		minisignCommand = Configuration.getMinisignCommand()
 		if not minisignCommand:
 			sysExit('minisign command missing to sign repository!')
-		
+
 		# minisign -s /tmp/minisign.key -Sm ${ARTIFACT}
 		info("signing repository")
-		output = subprocess.check_output([minisignCommand, '-s',
-			privateKeyFile, "-Sm", repoFile], input=privateKeyPass.encode('utf-8'),
-			stderr=subprocess.STDOUT).decode('utf-8')
+		output = subprocess.check_output(
+		    [minisignCommand, '-s', privateKeyFile, "-Sm", repoFile],
+		    input=privateKeyPass.encode('utf-8'),
+		    stderr=subprocess.STDOUT).decode('utf-8')
 		info(output)
 
 	def checkPackageRepositoryConsistency(self):
@@ -209,8 +209,7 @@ class PackageRepository(object):
 		if systemPackagesDirectory:
 			repositories.append(systemPackagesDirectory)
 
-		resolver = DependencyResolver(None, ['REQUIRES'], repositories,
-			quiet=True)
+		resolver = DependencyResolver(None, ['REQUIRES'], repositories, quiet=True)
 
 		for package in self.packageInfoList():
 			if self.verbose:
@@ -219,5 +218,6 @@ class PackageRepository(object):
 			try:
 				resolver.determineRequiredPackagesFor([package.path])
 			except LookupError as error:
-				print('{}:\n{}\n'.format(os.path.relpath(package.path,
-						self.packagesPath), prefixLines('\t', str(error))))
+				print('{}:\n{}\n'.format(
+				    os.path.relpath(package.path, self.packagesPath),
+				    prefixLines('\t', str(error))))

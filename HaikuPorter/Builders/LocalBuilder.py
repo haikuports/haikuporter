@@ -12,7 +12,9 @@ import time
 
 from .Builder import _BuilderState
 
+
 class LocalBuilder(object):
+
 	def __init__(self, name, packagesPath, outputBaseDir, options):
 		self.options = options
 		self.name = name
@@ -30,8 +32,9 @@ class LocalBuilder(object):
 		self.buildLogger.setLevel(logging.DEBUG)
 
 	def setBuild(self, scheduledBuild, buildNumber):
-		logHandler = logging.FileHandler(os.path.join(self.buildOutputDir,
-				str(buildNumber) + '.log'))
+		logHandler = logging.FileHandler(
+		    os.path.join(self.buildOutputDir,
+		                 str(buildNumber) + '.log'))
 		logHandler.setFormatter(logging.Formatter('%(message)s'))
 		self.buildLogger.addHandler(logHandler)
 		filter = ThreadFilter()
@@ -40,22 +43,20 @@ class LocalBuilder(object):
 		logging.getLogger("buildLogger").addHandler(logHandler)
 
 		self.currentBuild = {
-			'build': scheduledBuild,
-			'status': scheduledBuild.status,
-			'number': buildNumber,
-			'logHandler': logHandler,
-			'logFilter': filter,
-			'startTime': None,
-			'phase': 'setup',
-			'lines': 0
+		    'build': scheduledBuild,
+		    'status': scheduledBuild.status,
+		    'number': buildNumber,
+		    'logHandler': logHandler,
+		    'logFilter': filter,
+		    'startTime': None,
+		    'phase': 'setup',
+		    'lines': 0
 		}
 		filter.setBuild(self.currentBuild)
 
-
 	def unsetBuild(self):
 		self.buildLogger.removeHandler(self.currentBuild['logHandler'])
-		logging.getLogger("buildLogger").removeHandler(
-			self.currentBuild['logHandler'])
+		logging.getLogger("buildLogger").removeHandler(self.currentBuild['logHandler'])
 		self.currentBuild = None
 
 	def runBuild(self):

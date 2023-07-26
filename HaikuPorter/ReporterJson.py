@@ -11,7 +11,9 @@
 import json
 import os
 
+
 class ReporterJson(object):
+
 	def __init__(self, filename, branch, architecture):
 		self.filename = filename
 		self.branch = branch

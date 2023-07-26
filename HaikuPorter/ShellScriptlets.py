@@ -23,16 +23,18 @@ scriptletPrerequirements = r'''
 	cmd:xres
 '''
 
+
 def getScriptletPrerequirements(targetMachineTripleAsName=None):
 	"""Returns the list of prerequirements for executing scriptlets.
 	   If targetMachineTriple is given, the prerequirements will be specialized
 	   for cross-building for the given target machine."""
 
 	targetMachinePrefix \
-		= (targetMachineTripleAsName + '_') if targetMachineTripleAsName else ''
+        = (targetMachineTripleAsName + '_') if targetMachineTripleAsName else ''
 
 	prerequirements = Template(scriptletPrerequirements).substitute({
-		'targetMachinePrefix': targetMachinePrefix,
+	    'targetMachinePrefix':
+	    targetMachinePrefix,
 	}).splitlines()
 
 	result = []
@@ -43,6 +45,7 @@ def getScriptletPrerequirements(targetMachineTripleAsName=None):
 
 	return result
 
+
 def getShellVariableSetters(shellVariables):
 	"""Converts a dict {variableName -> value} to a string with shell code to
 	   set the variables to the respective value."""
@@ -50,7 +53,7 @@ def getShellVariableSetters(shellVariables):
 		return ''
 
 	result = '\n'.join("%s='%s'" % (k, v.replace("'", "'\\''"))
-		for k, v in shellVariables.items()) + '\n'
+	                   for k, v in shellVariables.items()) + '\n'
 
 	# Add a variable "revisionVariables" that contains the name of all
 	# variables that need to be reevaluated after the revision is known.
@@ -155,7 +158,6 @@ defineDebugInfoPackage()
 }
 '''
 
-
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that is used to execute a config file and output all the
@@ -202,7 +204,6 @@ for phase in ${recipePhases}; do
 	fi
 done
 '''
-
 
 # -----------------------------------------------------------------------------
 
@@ -829,7 +830,6 @@ fi
 
 '''
 
-
 # -----------------------------------------------------------------------------
 
 # Shell scriptlet that prepares a chroot environment for entering.
@@ -911,7 +911,6 @@ fi
 mount -t bindfs -p "source /dev" dev
 mount -t packagefs -p "type system" boot/system
 '''
-
 
 # -----------------------------------------------------------------------------
 

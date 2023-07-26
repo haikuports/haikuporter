@@ -19,18 +19,18 @@ import sys
 import time
 from subprocess import check_output
 
-
 buildPlatform = None
-
 
 # -- BuildPlatform class ------------------------------------------------------
 
+
 class BuildPlatform(object):
+
 	def __init__(self):
 		pass
 
 	def init(self, treePath, outputDirectory, packagesPath, architecture,
-			machineTriple):
+	         machineTriple):
 		self.architecture = architecture
 		self.machineTriple = machineTriple
 		self.treePath = treePath
@@ -50,15 +50,13 @@ class BuildPlatform(object):
 	def getLicensesDirectory(self):
 		directory = Configuration.getLicensesDirectory()
 		if not directory:
-			directory = (self.findDirectory('B_SYSTEM_DIRECTORY')
-				+ '/data/licenses')
+			directory = (self.findDirectory('B_SYSTEM_DIRECTORY') + '/data/licenses')
 		return directory
 
 	def getSystemMimeDbDirectory(self):
 		directory = Configuration.getSystemMimeDbDirectory()
 		if not directory:
-			directory = (self.findDirectory('B_SYSTEM_DIRECTORY')
-				+ '/data/mime_db')
+			directory = (self.findDirectory('B_SYSTEM_DIRECTORY') + '/data/mime_db')
 		return directory
 
 	def getCrossSysrootDirectory(self, workDir):
@@ -66,26 +64,26 @@ class BuildPlatform(object):
 			return self.crossSysrootDir
 		return workDir + self.crossSysrootDir
 
-	def resolveDependencies(self, dependencyInfoFiles, requiresTypes,
-							repositories, **kwargs):
+	def resolveDependencies(self, dependencyInfoFiles, requiresTypes, repositories,
+	                        **kwargs):
 		if not dependencyInfoFiles:
 			return
-		resolver = DependencyResolver(self, requiresTypes, repositories,
-									  **kwargs)
+		resolver = DependencyResolver(self, requiresTypes, repositories, **kwargs)
 		return resolver.determineRequiredPackagesFor(dependencyInfoFiles)
 
 
 # -- BuildPlatformHaiku class -------------------------------------------------
 
+
 class BuildPlatformHaiku(BuildPlatform):
+
 	def __init__(self):
 		super(BuildPlatformHaiku, self).__init__()
 
-	def init(self, treePath, outputDirectory, packagesPath,
-			shallowInitIsEnough=False):
+	def init(self, treePath, outputDirectory, packagesPath, shallowInitIsEnough=False):
 		if not os.path.exists('/packages'):
 			sysExit('haikuporter needs a version of Haiku with package '
-					'management support')
+			        'management support')
 
 		self.findDirectoryCache = {}
 
@@ -99,22 +97,20 @@ class BuildPlatformHaiku(BuildPlatform):
 
 		for entry in os.listdir(packagesDir):
 			if (entry == 'haiku.hpkg'
-				or (entry.startswith('haiku-') and entry.endswith('.hpkg'))):
+			    or (entry.startswith('haiku-') and entry.endswith('.hpkg'))):
 				systemPackageName = entry
 				break
 		if systemPackageName is None:
 			sysExit('Failed to find Haiku system package')
 
-		haikuPackageInfo = PackageInfo(
-			os.path.join(packagesDir, systemPackageName))
-		machine = MachineArchitecture.getTripleFor(
-			haikuPackageInfo.architecture)
+		haikuPackageInfo = PackageInfo(os.path.join(packagesDir, systemPackageName))
+		machine = MachineArchitecture.getTripleFor(haikuPackageInfo.architecture)
 		if not machine:
-			sysExit('Unsupported Haiku build platform architecture %s'
-					% haikuPackageInfo.architecture)
+			sysExit('Unsupported Haiku build platform architecture %s' %
+			        haikuPackageInfo.architecture)
 
-		super(BuildPlatformHaiku, self).init(treePath, outputDirectory,
-			packagesPath, haikuPackageInfo.architecture, machine)
+		super(BuildPlatformHaiku, self).init(treePath, outputDirectory, packagesPath,
+		                                     haikuPackageInfo.architecture, machine)
 
 	@property
 	def isHaiku(self):
@@ -127,31 +123,30 @@ class BuildPlatformHaiku(BuildPlatform):
 		"""wraps invocation of 'finddir', uses caching"""
 		if which not in self.findDirectoryCache:
 			self.findDirectoryCache[which] \
-				= check_output(['/bin/finddir', which]).decode('utf-8').rstrip()  # drop newline
+                      = check_output(['/bin/finddir', which]).decode('utf-8').rstrip()  # drop newline
 		return self.findDirectoryCache[which]
 
-	def resolveDependencies(self, dependencyInfoFiles, requiresTypes,
-							repositories, **kwargs):
+	def resolveDependencies(self, dependencyInfoFiles, requiresTypes, repositories,
+	                        **kwargs):
 
 		if not getOption('noSystemPackages'):
 			systemPackagesDir \
-				= buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
+                      = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
 			if systemPackagesDir not in repositories:
 				repositories.append(systemPackagesDir)
 
-		return super(BuildPlatformHaiku, self).resolveDependencies(
-			dependencyInfoFiles, requiresTypes, repositories, **kwargs)
+		return super(BuildPlatformHaiku,
+		             self).resolveDependencies(dependencyInfoFiles, requiresTypes,
+		                                       repositories, **kwargs)
 
 	def isSystemPackage(self, packagePath):
-		return packagePath.startswith(
-			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		return packagePath.startswith(self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		# activate the build package
 		packagesDir = buildPlatform.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY')
 		activeBuildPackage = packagesDir + '/' + os.path.basename(packagePath)
-		self.deactivateBuildPackage(workDir, activeBuildPackage,
-									revisionedName)
+		self.deactivateBuildPackage(workDir, activeBuildPackage, revisionedName)
 
 		if not buildPlatform.usesChroot():
 			# may have to cross devices, so better use a symlink
@@ -163,8 +158,7 @@ class BuildPlatformHaiku(BuildPlatform):
 		self._waitForPackageSelfLink(revisionedName, True)
 		return activeBuildPackage
 
-	def deactivateBuildPackage(self, workDir, activeBuildPackage,
-							   revisionedName):
+	def deactivateBuildPackage(self, workDir, activeBuildPackage, revisionedName):
 		if os.path.exists(activeBuildPackage):
 			os.remove(activeBuildPackage)
 		self._waitForPackageSelfLink(revisionedName, False)
@@ -182,39 +176,39 @@ class BuildPlatformHaiku(BuildPlatform):
 		return []
 
 	def setupNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
-			requiredPackages):
+	                                   requiredPackages):
 		sysExit('setupNonChrootBuildEnvironment() not supported on Haiku')
 
-	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
-			buildOK):
+	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture, buildOK):
 		sysExit('cleanNonChrootBuildEnvironment() not supported on Haiku')
 
 	def _waitForPackageSelfLink(self, revisionedName, activated):
 		while True:
 			try:
 				time.sleep(0.5)
-				linkTarget = os.readlink('/packages/%s/.self'
-										 % revisionedName)
+				linkTarget = os.readlink('/packages/%s/.self' % revisionedName)
 				packagingFolder = revisionedName.split('-')[0]
 				linkTargetIsPackagingFolder \
-					= os.path.basename(linkTarget) == packagingFolder
+                             = os.path.basename(linkTarget) == packagingFolder
 				if linkTargetIsPackagingFolder == activated:
 					return
 			except OSError:
 				if not activated:
 					return
-			info('waiting for build package %s to be %s'
-				% (revisionedName, 'activated' if activated else 'deactivated'))
+			info('waiting for build package %s to be %s' %
+			     (revisionedName, 'activated' if activated else 'deactivated'))
 			time.sleep(1)
+
 
 # -- BuildPlatformUnix class --------------------------------------------------
 
+
 class BuildPlatformUnix(BuildPlatform):
+
 	def __init__(self):
 		super(BuildPlatformUnix, self).__init__()
 
-	def init(self, treePath, outputDirectory, packagesPath,
-			shallowInitIsEnough=False):
+	def init(self, treePath, outputDirectory, packagesPath, shallowInitIsEnough=False):
 		# get the machine triple from gcc
 		machine = check_output('gcc -dumpmachine', shell=True).decode('utf-8').strip()
 
@@ -229,140 +223,130 @@ class BuildPlatformUnix(BuildPlatform):
 		if not architecture:
 			architecture = Architectures.ANY
 
-		super(BuildPlatformUnix, self).init(treePath, outputDirectory,
-			packagesPath, architecture, machine)
+		super(BuildPlatformUnix, self).init(treePath, outputDirectory, packagesPath,
+		                                    architecture, machine)
 
 		self.secondaryTargetArchitectures \
-			= Configuration.getSecondaryTargetArchitectures()
+               = Configuration.getSecondaryTargetArchitectures()
 
 		if not shallowInitIsEnough:
 			if Configuration.getPackageCommand() is None:
 				sysExit('--command-package must be specified on this build '
-					'platform!')
+				        'platform!')
 			if Configuration.getMimesetCommand() == 'mimeset':
 				sysExit('--command-mimeset must be specified on this build '
-					'platform!')
+				        'platform!')
 			if not Configuration.getSystemMimeDbDirectory():
 				sysExit('--system-mimedb must be specified on this build '
-					'platform!')
+				        'platform!')
 
 			if not Configuration.getCrossToolsDirectory():
 				sysExit('--cross-tools must be specified on this build '
-					'platform!')
+				        'platform!')
 			self.originalCrossToolsDir = Configuration.getCrossToolsDirectory()
 
 			self.secondaryTargetMachineTriples = {}
 			if self.secondaryTargetArchitectures:
 				if not Configuration.getSecondaryCrossToolsDirectory(
-						self.secondaryTargetArchitectures[0]):
+				    self.secondaryTargetArchitectures[0]):
 					sysExit('The cross-tools directories for all secondary '
-						'architectures must be specified on this build '
-						'platform!')
+					        'architectures must be specified on this build '
+					        'platform!')
 
 				for secondaryArchitecture in self.secondaryTargetArchitectures:
 					self.secondaryTargetMachineTriples[secondaryArchitecture] \
-						= MachineArchitecture.getTripleFor(
-							secondaryArchitecture)
+                                    = MachineArchitecture.getTripleFor(
+					  secondaryArchitecture)
 
 				if not Configuration.getSecondaryCrossDevelPackage(
-						self.secondaryTargetArchitectures[0]):
+				    self.secondaryTargetArchitectures[0]):
 					sysExit('The Haiku cross devel package for all secondary '
-						'architectures must be specified on this build '
-						'platform!')
+					        'architectures must be specified on this build '
+					        'platform!')
 
 		self.findDirectoryMap = {
-			'B_PACKAGE_LINKS_DIRECTORY': '/packages',
-			'B_SYSTEM_DIRECTORY': '/boot/system',
-			'B_SYSTEM_PACKAGES_DIRECTORY': '/boot/system/packages',
-			}
+		    'B_PACKAGE_LINKS_DIRECTORY': '/packages',
+		    'B_SYSTEM_DIRECTORY': '/boot/system',
+		    'B_SYSTEM_PACKAGES_DIRECTORY': '/boot/system/packages',
+		}
 
 		self.crossDevelPackage = Configuration.getCrossDevelPackage()
 		targetArchitecture = Configuration.getTargetArchitecture()
 		if targetArchitecture is None:
 			sysExit('TARGET_ARCHITECTURE must be set in configuration on this '
-				'build platform!')
+			        'build platform!')
 		self.targetMachineTriple \
-			= MachineArchitecture.getTripleFor(targetArchitecture)
+               = MachineArchitecture.getTripleFor(targetArchitecture)
 		targetMachineAsName = self.targetMachineTriple.replace('-', '_')
 
 		self.implicitBuildHostProvides = set([
-			'haiku',
-			'haiku_devel',
-			'binutils_cross_' + targetArchitecture,
-			'gcc_cross_' + targetArchitecture,
-			'coreutils',
-			'diffutils',
-			'cmd:aclocal',
-			'cmd:autoconf',
-			'cmd:autoheader',
-			'cmd:automake',
-			'cmd:autoreconf',
-			'cmd:awk',
-			'cmd:bash',
-			'cmd:cat',
-			'cmd:cmake',
-			'cmd:cmp',
-			'cmd:find',
-			'cmd:flex',
-			'cmd:gcc',
-			'cmd:git',
-			'cmd:grep',
-			'cmd:gunzip',
-			'cmd:ld',
-			'cmd:libtool',
-			'cmd:libtoolize',
-			'cmd:login',
-			'cmd:m4',
-			'cmd:make',
-			'cmd:makeinfo',
-			'cmd:nm',
-			'cmd:objcopy',
-			'cmd:passwd',
-			'cmd:perl',
-			'cmd:ranlib',
-			'cmd:readelf',
-			'cmd:sed',
-			'cmd:strip',
-			'cmd:tar',
-			'cmd:which',
-			'cmd:xargs',
-			'cmd:xres',
-			'cmd:zcat',
-			'cmd:' + targetMachineAsName + '_objcopy',
-			'cmd:' + targetMachineAsName + '_readelf',
-			'cmd:' + targetMachineAsName + '_strip',
-			])
+		    'haiku',
+		    'haiku_devel',
+		    'binutils_cross_' + targetArchitecture,
+		    'gcc_cross_' + targetArchitecture,
+		    'coreutils',
+		    'diffutils',
+		    'cmd:aclocal',
+		    'cmd:autoconf',
+		    'cmd:autoheader',
+		    'cmd:automake',
+		    'cmd:autoreconf',
+		    'cmd:awk',
+		    'cmd:bash',
+		    'cmd:cat',
+		    'cmd:cmake',
+		    'cmd:cmp',
+		    'cmd:find',
+		    'cmd:flex',
+		    'cmd:gcc',
+		    'cmd:git',
+		    'cmd:grep',
+		    'cmd:gunzip',
+		    'cmd:ld',
+		    'cmd:libtool',
+		    'cmd:libtoolize',
+		    'cmd:login',
+		    'cmd:m4',
+		    'cmd:make',
+		    'cmd:makeinfo',
+		    'cmd:nm',
+		    'cmd:objcopy',
+		    'cmd:passwd',
+		    'cmd:perl',
+		    'cmd:ranlib',
+		    'cmd:readelf',
+		    'cmd:sed',
+		    'cmd:strip',
+		    'cmd:tar',
+		    'cmd:which',
+		    'cmd:xargs',
+		    'cmd:xres',
+		    'cmd:zcat',
+		    'cmd:' + targetMachineAsName + '_objcopy',
+		    'cmd:' + targetMachineAsName + '_readelf',
+		    'cmd:' + targetMachineAsName + '_strip',
+		])
 
 		# TODO: We might instead want to support passing the package infos for
 		# the system packages to haikuporter, so we could get the actual
 		# provides.
 		self.implicitBuildTargetProvides = set([
-			'haiku',
-			'haiku_devel',
-			'coreutils',
-			'diffutils',
-			'cmd:awk',
-			'cmd:cat',
-			'cmd:cmp',
-			'cmd:gunzip',
-			'cmd:less',
-			'cmd:login',
-			'cmd:passwd',
-			'cmd:bash',
-			'cmd:zcat'
+		    'haiku', 'haiku_devel', 'coreutils', 'diffutils', 'cmd:awk', 'cmd:cat',
+		    'cmd:cmp', 'cmd:gunzip', 'cmd:less', 'cmd:login', 'cmd:passwd', 'cmd:bash',
+		    'cmd:zcat'
 		])
 
 		for secondaryArchitecture in self.secondaryTargetArchitectures:
 			self.implicitBuildTargetProvides |= set([
-				'haiku_' + secondaryArchitecture,
-				'haiku_' + secondaryArchitecture + '_devel',
-				])
+			    'haiku_' + secondaryArchitecture,
+			    'haiku_' + secondaryArchitecture + '_devel',
+			])
 			self.implicitBuildHostProvides |= set([
-				'haiku_' + secondaryArchitecture,
-				'haiku_' + secondaryArchitecture + '_devel',
-				'binutils_cross_' + secondaryArchitecture,
-				'gcc_cross_' + secondaryArchitecture,
-				])
+			    'haiku_' + secondaryArchitecture,
+			    'haiku_' + secondaryArchitecture + '_devel',
+			    'binutils_cross_' + secondaryArchitecture,
+			    'gcc_cross_' + secondaryArchitecture,
+			])
 
 	@property
 	def isHaiku(self):
@@ -382,15 +366,14 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.findDirectoryMap[which]
 
 	def isSystemPackage(self, packagePath):
-		return packagePath.startswith(
-			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		return packagePath.startswith(self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		return self._activatePackage(packagePath,
-			self._getPackageInstallRoot(workDir, packagePath), None, True)
+		                             self._getPackageInstallRoot(workDir, packagePath),
+		                             None, True)
 
-	def deactivateBuildPackage(self, workDir, activeBuildPackage,
-							   revisionedName):
+	def deactivateBuildPackage(self, workDir, activeBuildPackage, revisionedName):
 		if os.path.exists(activeBuildPackage):
 			shutil.rmtree(activeBuildPackage)
 
@@ -399,9 +382,9 @@ class BuildPlatformUnix(BuildPlatform):
 
 	def getCrossToolsBinPaths(self, workDir):
 		return [
-			self._getCrossToolsPath(workDir) + '/bin',
-			self.getCrossToolsBasePrefix(workDir) + '/boot/system/bin'
-			]
+		    self._getCrossToolsPath(workDir) + '/bin',
+		    self.getCrossToolsBasePrefix(workDir) + '/boot/system/bin'
+		]
 
 	def getInstallDestDir(self, workDir):
 		return self.getCrossSysrootDirectory(workDir)
@@ -412,7 +395,7 @@ class BuildPlatformUnix(BuildPlatform):
 		return self.implicitBuildTargetProvides
 
 	def setupNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
-			requiredPackages):
+	                                   requiredPackages):
 		# init the build platform tree
 		crossToolsInstallPrefix = self.getCrossToolsBasePrefix(workDir)
 		if os.path.exists(crossToolsInstallPrefix):
@@ -441,22 +424,20 @@ class BuildPlatformUnix(BuildPlatform):
 		# extract the required packages
 		for package in requiredPackages:
 			self._activatePackage(package,
-				self._getPackageInstallRoot(workDir, package), '/boot/system')
+			                      self._getPackageInstallRoot(workDir,
+			                                                  package), '/boot/system')
 
-	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
-			buildOK):
+	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture, buildOK):
 		# remove the symlinks we created in the cross tools tree
 		sysrootDir = self.getCrossSysrootDirectory(workDir)
 		targetArchitecture = secondaryArchitecture \
-			if secondaryArchitecture else self.targetArchitecture
-		toolsMachineTriple = self._getTargetMachineTriple(
-			secondaryArchitecture)
+               if secondaryArchitecture else self.targetArchitecture
+		toolsMachineTriple = self._getTargetMachineTriple(secondaryArchitecture)
 
 		if targetArchitecture == 'x86_gcc2':
 			# gcc 2: uses 'sys-include' and 'lib' in the target machine dir
-			toolsMachineDir = (
-				self._getOriginalCrossToolsDir(secondaryArchitecture) + '/'
-				+ toolsMachineTriple)
+			toolsMachineDir = (self._getOriginalCrossToolsDir(secondaryArchitecture) +
+			                   '/' + toolsMachineTriple)
 
 			toolsIncludeDir = toolsMachineDir + '/sys-include'
 			if os.path.lexists(toolsIncludeDir):
@@ -471,9 +452,8 @@ class BuildPlatformUnix(BuildPlatform):
 					os.rename(originalToolsLibDir, toolsLibDir)
 		else:
 			# gcc 4: has a separate sysroot dir -- remove it completely
-			toolsSysrootDir = (
-				self._getOriginalCrossToolsDir(secondaryArchitecture)
-				+ '/sysroot')
+			toolsSysrootDir = (self._getOriginalCrossToolsDir(secondaryArchitecture) +
+			                   '/sysroot')
 			if os.path.exists(toolsSysrootDir):
 				shutil.rmtree(toolsSysrootDir)
 
@@ -490,9 +470,8 @@ class BuildPlatformUnix(BuildPlatform):
 		os.mkdir(crossToolsDir)
 
 		targetArchitecture = secondaryArchitecture \
-			if secondaryArchitecture else self.targetArchitecture
-		toolsMachineTriple = self._getTargetMachineTriple(
-			secondaryArchitecture)
+               if secondaryArchitecture else self.targetArchitecture
+		toolsMachineTriple = self._getTargetMachineTriple(secondaryArchitecture)
 
 		# prepare the system include and library directories
 		includeDir = crossToolsDir + '/include'
@@ -503,8 +482,7 @@ class BuildPlatformUnix(BuildPlatform):
 
 		# Prepare the bin dir -- it will be added to PATH and must contain the
 		# tools with the expected machine triple prefix.
-		toolsBinDir = (self._getOriginalCrossToolsDir(secondaryArchitecture)
-			+ '/bin')
+		toolsBinDir = (self._getOriginalCrossToolsDir(secondaryArchitecture) + '/bin')
 		binDir = crossToolsDir + '/bin'
 		os.symlink(toolsBinDir, binDir)
 
@@ -512,9 +490,8 @@ class BuildPlatformUnix(BuildPlatform):
 		# they match the paths that are built into the tools.
 		if targetArchitecture == 'x86_gcc2':
 			# gcc 2: uses 'sys-include' and 'lib' in the target machine dir
-			toolsMachineDir = (
-				self._getOriginalCrossToolsDir(secondaryArchitecture) + '/'
-				+ toolsMachineTriple)
+			toolsMachineDir = (self._getOriginalCrossToolsDir(secondaryArchitecture) +
+			                   '/' + toolsMachineTriple)
 			toolsIncludeDir = toolsMachineDir + '/sys-include'
 			toolsLibDir = toolsMachineDir + '/lib'
 			# The cross-compiler doesn't have the subdirectory in the search
@@ -523,9 +500,8 @@ class BuildPlatformUnix(BuildPlatform):
 				libDir += '/' + secondaryArchitecture
 		else:
 			# gcc 4: has a separate sysroot dir
-			toolsDevelopDir = (
-				self._getOriginalCrossToolsDir(secondaryArchitecture)
-				+ '/sysroot/boot/system/develop')
+			toolsDevelopDir = (self._getOriginalCrossToolsDir(secondaryArchitecture) +
+			                   '/sysroot/boot/system/develop')
 			if os.path.exists(toolsDevelopDir):
 				shutil.rmtree(toolsDevelopDir)
 			os.makedirs(toolsDevelopDir)
@@ -546,20 +522,17 @@ class BuildPlatformUnix(BuildPlatform):
 
 	def _getTargetMachineTriple(self, secondaryArchitecture):
 		return (self.secondaryTargetMachineTriples[secondaryArchitecture]
-			if secondaryArchitecture
-			else self.targetMachineTriple)
+		        if secondaryArchitecture else self.targetMachineTriple)
 
 	def _getOriginalCrossToolsDir(self, secondaryArchitecture):
 		if not secondaryArchitecture:
 			return self.originalCrossToolsDir
-		return Configuration.getSecondaryCrossToolsDirectory(
-			secondaryArchitecture)
+		return Configuration.getSecondaryCrossToolsDirectory(secondaryArchitecture)
 
 	def _getCrossDevelPackage(self, secondaryArchitecture):
 		if not secondaryArchitecture:
 			return self.crossDevelPackage
-		return Configuration.getSecondaryCrossDevelPackage(
-			secondaryArchitecture)
+		return Configuration.getSecondaryCrossDevelPackage(secondaryArchitecture)
 
 	def _getCrossToolsPath(self, workDir):
 		return self.getCrossToolsBasePrefix(workDir) + '/boot/cross-tools'
@@ -570,28 +543,30 @@ class BuildPlatformUnix(BuildPlatform):
 			return self.getCrossToolsBasePrefix(workDir)
 		return self.getCrossSysrootDirectory(workDir)
 
-	def _activatePackage(self, package, installRoot, installationLocation,
-			isBuildPackage=False):
+	def _activatePackage(self,
+	                     package,
+	                     installRoot,
+	                     installationLocation,
+	                     isBuildPackage=False):
 		# get the package info
 		packageInfo = PackageInfo(package)
 
 		# extract the package, unless it is a build package
 		if not isBuildPackage:
 			installPath = installRoot + '/' + installationLocation
-			args = [Configuration.getPackageCommand(), 'extract', '-C',
-				installPath, package]
+			args = [
+			    Configuration.getPackageCommand(), 'extract', '-C', installPath, package
+			]
 			output = check_output(args).decode('utf-8')
 			info(output)
 		else:
 			installPath = packageInfo.installPath
 			if not installPath:
-				sysExit('Build package "%s" doesn\'t have an install path'
-					% package)
+				sysExit('Build package "%s" doesn\'t have an install path' % package)
 
 		# create the package links directory for the package and the .self
 		# symlink
-		packageLinksDir = (installRoot + '/packages/'
-						   + packageInfo.versionedName)
+		packageLinksDir = (installRoot + '/packages/' + packageInfo.versionedName)
 		if os.path.exists(packageLinksDir):
 			shutil.rmtree(packageLinksDir)
 		os.makedirs(packageLinksDir)
@@ -602,22 +577,23 @@ class BuildPlatformUnix(BuildPlatform):
 
 # -- BuildPlatformBuildMaster class -------------------------------------------
 
+
 class BuildPlatformBuildMaster(BuildPlatform):
+
 	def __init__(self):
 		super(BuildPlatformBuildMaster, self).__init__()
 
-	def init(self, treePath, outputDirectory, packagesPath,
-			shallowInitIsEnough=False):
+	def init(self, treePath, outputDirectory, packagesPath, shallowInitIsEnough=False):
 
 		if Configuration.getTargetArchitecture() is None:
-			sysExit('TARGET_ARCHITECTURE must be set in configuration for '
-				+ 'build master mode!')
+			sysExit('TARGET_ARCHITECTURE must be set in configuration for ' +
+			        'build master mode!')
 		if Configuration.getPackageCommand() is None:
-			sysExit('--command-package must be specified for build master '
-				+ 'mode!')
+			sysExit('--command-package must be specified for build master ' + 'mode!')
 
-		super(BuildPlatformBuildMaster, self).init(treePath, outputDirectory,
-			packagesPath, Architectures.ANY, 'BuildMaster')
+		super(BuildPlatformBuildMaster,
+		      self).init(treePath, outputDirectory, packagesPath, Architectures.ANY,
+		                 'BuildMaster')
 
 	@property
 	def isHaiku(self):
@@ -634,14 +610,12 @@ class BuildPlatformBuildMaster(BuildPlatform):
 		return 'stub'
 
 	def isSystemPackage(self, packagePath):
-		return packagePath.startswith(
-			self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
+		return packagePath.startswith(self.findDirectory('B_SYSTEM_PACKAGES_DIRECTORY'))
 
 	def activateBuildPackage(self, workDir, packagePath, revisionedName):
 		sysExit('activateBuildPackage() unsupported')
 
-	def deactivateBuildPackage(self, workDir, activeBuildPackage,
-			revisionedName):
+	def deactivateBuildPackage(self, workDir, activeBuildPackage, revisionedName):
 		sysExit('deactivateBuildPackage() unsupported')
 
 	def getCrossToolsBasePrefix(self, workDir):
@@ -657,12 +631,12 @@ class BuildPlatformBuildMaster(BuildPlatform):
 		return set()
 
 	def setupNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
-			requiredPackages):
+	                                   requiredPackages):
 		sysExit('setupNonChrootBuildEnvironment() unsupported')
 
-	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture,
-			buildOK):
+	def cleanNonChrootBuildEnvironment(self, workDir, secondaryArchitecture, buildOK):
 		sysExit('cleanNonChrootBuildEnvironment() unsupported')
+
 
 # -----------------------------------------------------------------------------
 

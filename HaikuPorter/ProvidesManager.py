@@ -15,7 +15,9 @@ from .Utils import versionCompare
 
 # -- ProvidesInfo class -------------------------------------------------------
 
+
 class ProvidesInfo(Resolvable):
+
 	def __init__(self, packageInfo, providesString):
 		super(ProvidesInfo, self).__init__(providesString)
 		self.packageInfo = packageInfo
@@ -28,14 +30,18 @@ class ProvidesInfo(Resolvable):
 	def path(self):
 		return self.packageInfo.path
 
+
 # -- ProvidesManager class ----------------------------------------------------
 
+
 class ProvidesManager(object):
+
 	def __init__(self):
 		self._providesMap = {}
 		self._providesSourceMap = {}
-		self.architectures = [BuildPlatform.buildPlatform.targetArchitecture,
-			'any', 'source']
+		self.architectures = [
+		    BuildPlatform.buildPlatform.targetArchitecture, 'any', 'source'
+		]
 
 	def addProvidesFromPackage(self, package):
 		for providesString in package.recipeKeys['PROVIDES']:
@@ -43,15 +49,17 @@ class ProvidesManager(object):
 
 	def addProvidesFromPackageInfo(self, packageInfo):
 		if (packageInfo.architecture not in self.architectures
-			and not (Configuration.isCrossBuildRepository()
-				and '_cross_' in packageInfo.path)):
+		    and not (Configuration.isCrossBuildRepository()
+		             and '_cross_' in packageInfo.path)):
 			return
 
 		for provides in packageInfo.provides:
 			self._addPackageProvidesInfo(packageInfo, str(provides))
 
-	def getMatchingProvides(self, resolvableExpression, anyHpkg=False,
-		ignoreBase=False):
+	def getMatchingProvides(self,
+	                        resolvableExpression,
+	                        anyHpkg=False,
+	                        ignoreBase=False):
 		name = resolvableExpression.name
 		operator = resolvableExpression.operator
 		version = resolvableExpression.version
@@ -68,43 +76,41 @@ class ProvidesManager(object):
 		found = None
 		foundIsHpkg = False
 		for provides in providesList:
-			provideIsHpkg = (provides.packageInfo.path.endswith('.hpkg')
-				if isinstance(provides.packageInfo, PackageInfo) else False)
+			provideIsHpkg = (provides.packageInfo.path.endswith('.hpkg') if isinstance(
+			    provides.packageInfo, PackageInfo) else False)
 			if not ignoreBase and base and provideIsHpkg:
 				continue
 			if not operator:
 				if not updateDependencies and not missingDependencies:
 					return provides
-				if (found is None or
-					(anyHpkg and provideIsHpkg) or
-					(provideIsHpkg and not foundIsHpkg and
-						(missingDependencies or found.version is None
-							or versionCompare(provides.version, found.version) >= 0))):
+				if (found is None or (anyHpkg and provideIsHpkg)
+				    or (provideIsHpkg and not foundIsHpkg and
+				        (missingDependencies or found.version is None
+				         or versionCompare(provides.version, found.version) >= 0))):
 					found = provides
 					foundIsHpkg = provideIsHpkg
 				continue
 			if not provides.version:
 				continue
 			matches = {
-				'<':	lambda compareResult: compareResult < 0,
-				'<=':	lambda compareResult: compareResult <= 0,
-				'==':	lambda compareResult: compareResult == 0,
-				'!=':	lambda compareResult: compareResult != 0,
-				'>=':	lambda compareResult: compareResult >= 0,
-				'>':	lambda compareResult: compareResult > 0,
+			    '<': lambda compareResult: compareResult < 0,
+			    '<=': lambda compareResult: compareResult <= 0,
+			    '==': lambda compareResult: compareResult == 0,
+			    '!=': lambda compareResult: compareResult != 0,
+			    '>=': lambda compareResult: compareResult >= 0,
+			    '>': lambda compareResult: compareResult > 0,
 			}[operator](versionCompare(provides.version, version))
 			if not matches:
 				continue
 			if (provides.compatibleVersion
-				and versionCompare(provides.compatibleVersion, version) > 0):
+			    and versionCompare(provides.compatibleVersion, version) > 0):
 				continue
 			if not updateDependencies and not missingDependencies:
 				return provides
-			if (found is None or
-				(anyHpkg and provideIsHpkg) or
-				(provideIsHpkg and not foundIsHpkg and
-					(missingDependencies or found.version is None
-						or versionCompare(provides.version, found.version) >= 0))):
+			if (found is None or (anyHpkg and provideIsHpkg)
+			    or (provideIsHpkg and not foundIsHpkg and
+			        (missingDependencies or found.version is None
+			         or versionCompare(provides.version, found.version) >= 0))):
 				found = provides
 				foundIsHpkg = provideIsHpkg
 		return found
@@ -112,8 +118,7 @@ class ProvidesManager(object):
 	@staticmethod
 	def _providesSource(packageInfo):
 		return packageInfo.path if isinstance(packageInfo, PackageInfo) \
-			else packageInfo
-
+               else packageInfo
 
 	def _addPackageProvidesInfo(self, packageInfo, providesString):
 		provides = ProvidesInfo(packageInfo, providesString.strip())
