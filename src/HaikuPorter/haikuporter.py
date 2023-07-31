@@ -8,8 +8,14 @@ import logging
 from HaikuPorter.Main import Main
 from HaikuPorter.Options import parseOptions
 
-logger = logging.getLogger("buildLogger")
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
 
-Main(*parseOptions())
+def main():
+    logger = logging.getLogger("buildLogger")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(logging.StreamHandler())
+
+    Main(*parseOptions())
+
+
+if __name__ == "__main__":
+    main()
