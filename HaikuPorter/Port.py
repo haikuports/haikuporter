@@ -1051,8 +1051,8 @@ class Port(object):
 			# create source package if it hasn't been specified or disabled:
 			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
 				and not basedOnSourcePackage
-				and (Configuration.shallCreateSourcePackages()
-					or not getOption('noSourcePackages') or getOption('createSourcePackages'))):
+				and ((Configuration.shallCreateSourcePackages()
+				and not getOption('noSourcePackages')) or getOption('createSourcePackages'))):
 				package = self._createSourcePackage(self.name, False)
 				self.allPackages.append(package)
 				self.packages.append(package)
