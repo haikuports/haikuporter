@@ -1036,7 +1036,7 @@ class Port(object):
 
 			if packageType == PackageType.SOURCE:
 				if (not Configuration.shallCreateSourcePackages() or getOption('noSourcePackages')
-					or basedOnSourcePackage):
+					or basedOnSourcePackage or getOption('createSourcePackages')):
 					# creation of the source package should be avoided, so we
 					# skip adding it to the list of active packages
 					continue
@@ -1051,8 +1051,8 @@ class Port(object):
 			# create source package if it hasn't been specified or disabled:
 			if (not haveSourcePackage and not keys['DISABLE_SOURCE_PACKAGE']
 				and not basedOnSourcePackage
-				and Configuration.shallCreateSourcePackages()
-				and not getOption('noSourcePackages')):
+				and (Configuration.shallCreateSourcePackages()
+					or not getOption('noSourcePackages') or getOption('createSourcePackages'))):
 				package = self._createSourcePackage(self.name, False)
 				self.allPackages.append(package)
 				self.packages.append(package)
