@@ -2,7 +2,7 @@
 name = "HaikuPorter"
 version = "1.2.8"
 description = "HAIKUPORTER"
-authors = ["Haiku Inc. <fhaiku@haiku.com>"]
+authors = ["Haiku Inc. <contact@haiku-inc.org>"]
 repository = "https://github.com/haikuports/haikuporter"
 documentation = "https://haikuports.github.io/haikuporter/"
 readme = "README.md"
