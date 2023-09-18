@@ -6,13 +6,14 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .ConfigParser import ConfigParser
-from .Options import getOption
-from .RecipeTypes import (Extendable, MachineArchitecture, YesNo)
-from .Utils import sysExit
-
 import os
 import re
+
+from .ConfigParser import ConfigParser
+from .Options import getOption
+from .RecipeTypes import Extendable, MachineArchitecture, YesNo
+from .Utils import sysExit
+
 
 def which(program):
 	def isExecutable(path):

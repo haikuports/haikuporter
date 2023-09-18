@@ -13,12 +13,11 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from multiprocessing import cpu_count
+from optparse import OptionGroup, OptionParser
+
 from .__version__ import __version__
 from .Utils import isCommandAvailable, warn
-
-from optparse import OptionParser, OptionGroup
-from multiprocessing import cpu_count
-
 
 # -- global options -----------------------------------------------------------
 

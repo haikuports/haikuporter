@@ -12,6 +12,7 @@ import time
 
 from .Builder import _BuilderState
 
+
 class LocalBuilder(object):
 	def __init__(self, name, packagesPath, outputBaseDir, options):
 		self.options = options

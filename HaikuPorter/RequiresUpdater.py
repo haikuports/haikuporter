@@ -5,12 +5,12 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import os
+from subprocess import CalledProcessError
+
 from .PackageInfo import PackageInfo, Resolvable, ResolvableExpression
 from .ProvidesManager import ProvidesManager
 from .Utils import sysExit
-
-import os
-from subprocess import CalledProcessError
 
 # -- ProvidesInfo class -------------------------------------------------------
 

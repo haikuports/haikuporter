@@ -12,18 +12,17 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .Options import getOption
-from .SourceFetcher import (createSourceFetcher, foldSubdirIntoSourceDir,
-							parseCheckoutUri)
-from .Utils import (ensureCommandIsAvailable, info, readStringFromFile,
-					storeStringInFile, sysExit, warn)
-
 import hashlib
 import os
 import shutil
-from subprocess import check_call, check_output, CalledProcessError
+from subprocess import CalledProcessError, check_call, check_output
 
+from .Configuration import Configuration
+from .Options import getOption
+from .SourceFetcher import (createSourceFetcher, foldSubdirIntoSourceDir,
+                            parseCheckoutUri)
+from .Utils import (ensureCommandIsAvailable, info, readStringFromFile,
+                    storeStringInFile, sysExit, warn)
 
 # -- A source archive (or checkout) -------------------------------------------
 

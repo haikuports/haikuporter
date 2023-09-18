@@ -12,11 +12,11 @@ import logging
 import os
 import re
 import shutil
-from subprocess import PIPE, Popen
 import sys
 import tarfile
 import time
 import zipfile
+from subprocess import PIPE, Popen
 
 if sys.stdout.isatty():
 	colorWarning = '\033[1;36m'

@@ -5,14 +5,14 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import glob
+import os
+import re
+from subprocess import check_output
+
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
 from .Utils import isCommandAvailable, sysExit, warn
-
-from subprocess import check_output
-import os
-import re
-import glob
 
 allowedWritableTopLevelDirectories = [
 	'cache',

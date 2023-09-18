@@ -12,11 +12,10 @@ import socket
 import stat
 import time
 
-from .Builder import _BuilderState
-
 # These usages kinda need refactored
 from ..ConfigParser import ConfigParser
 from ..Configuration import Configuration
+from .Builder import _BuilderState
 
 try:
 	import paramiko

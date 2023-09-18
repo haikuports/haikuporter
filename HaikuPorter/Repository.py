@@ -5,22 +5,21 @@
 
 # -- Modules ------------------------------------------------------------------
 
-from .Configuration import Configuration
-from .DependencyResolver import DependencyResolver
-from .Options import getOption
-from .Port import Port
-from .Utils import prefixLines, sysExit, touchFile, versionCompare, warn
-
 import codecs
-from functools import cmp_to_key
 import glob
 import json
 import os
 import re
 import shutil
+from functools import cmp_to_key
 from subprocess import check_call, check_output
 from textwrap import dedent
 
+from .Configuration import Configuration
+from .DependencyResolver import DependencyResolver
+from .Options import getOption
+from .Port import Port
+from .Utils import prefixLines, sysExit, touchFile, versionCompare, warn
 
 # -- Repository class ---------------------------------------------------------
 

@@ -15,6 +15,7 @@ from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import printError, sysExit, warn
 
+
 class RestartDependencyResolutionException(Exception):
 	def __init__(self, packageNode, message):
 		Exception.__init__(self)

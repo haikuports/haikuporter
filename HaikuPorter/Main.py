@@ -12,22 +12,23 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import os
+import re
+import sys
+import traceback
+from subprocess import check_call
+
 from .BuildPlatform import buildPlatform
 from .Configuration import Configuration
 from .DependencyAnalyzer import DependencyAnalyzer
 from .Options import getOption
-from .Policy import Policy
 from .PackageRepository import PackageRepository
+from .Policy import Policy
 from .RecipeAttributes import getRecipeFormatVersion
 from .RecipeTypes import MachineArchitecture
 from .Repository import Repository
-from .Utils import ensureCommandIsAvailable, haikuportsRepoUrl, sysExit, warn, info
-
-import os
-import re
-from subprocess import check_call
-import sys
-import traceback
+from .Utils import (ensureCommandIsAvailable, haikuportsRepoUrl, info, sysExit,
+                    warn)
 
 # -- Main Class ---------------------------------------------------------------
 

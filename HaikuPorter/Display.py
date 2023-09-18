@@ -9,6 +9,7 @@ import curses
 import datetime
 import time
 
+
 class DisplayContext(object):
 	def __init__(self):
 		self.stdscr = None
