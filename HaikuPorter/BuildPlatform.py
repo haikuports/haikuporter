@@ -319,6 +319,7 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:objcopy',
 			'cmd:passwd',
 			'cmd:perl',
+			'cmd:python3',
 			'cmd:ranlib',
 			'cmd:readelf',
 			'cmd:sed',
