@@ -513,17 +513,21 @@ class Main(object):
 		print('')
 
 		print('packages that need to be built:')
+		output = []
 		for dependency in buildDependencies:
 			packageInfoFileName = os.path.basename(dependency)
 			packageID = packageInfoFileName[:packageInfoFileName.rindex('.')]
 			try:
 				portID = self.repository.getPortIdForPackageId(packageID)
-				print("\t" + packageID + ' -> ' + portID)
+				output.append("\t" + packageID + ' -> ' + portID)
 
 			except KeyError:
 				sysExit('Inconsistency: ' + port.versionedName
 					+ ' requires ' + packageID
 					+ ' but no corresponding port was found!')
+
+		for l in sorted(output):
+			print(l)
 
 	def _validateMainPort(self, port, revision=None):
 		"""Parse the recipe file for the given port and get any required
