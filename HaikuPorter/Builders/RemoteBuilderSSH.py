@@ -15,7 +15,7 @@ import time
 # These usages kinda need refactored
 from ..ConfigParser import ConfigParser
 from ..Configuration import Configuration
-from .Builder import _BuilderState
+from .Builder import BuilderState
 
 try:
 	import paramiko
@@ -43,7 +43,7 @@ class RemoteBuilderSSH(object):
 		if not os.path.isdir(self.buildOutputDir):
 			os.makedirs(self.buildOutputDir)
 
-		self.state = _BuilderState.NOT_AVAILABLE
+		self.state = BuilderState.NOT_AVAILABLE
 		self.connectionErrors = 0
 		self.maxConnectionErrors = 100
 
@@ -141,13 +141,13 @@ class RemoteBuilderSSH(object):
 				+ str(exception))
 
 			self.connectionErrors += 1
-			self.state = _BuilderState.RECONNECT
+			self.state = BuilderState.RECONNECT
 
 			if self.connectionErrors >= self.maxConnectionErrors:
 				self.logger.error('giving up on builder after '
 					+ str(self.connectionErrors)
 					+ ' consecutive connection errors')
-				self.state = _BuilderState.LOST
+				self.state = BuilderState.LOST
 				raise
 
 			# avoid DoSing the remote host, increasing delay as retries increase.
@@ -240,9 +240,9 @@ class RemoteBuilderSSH(object):
 				self.availablePackages.remove(entry)
 
 	def _setupForBuilding(self):
-		if self.state == _BuilderState.AVAILABLE:
+		if self.state == BuilderState.AVAILABLE:
 			return True
-		if self.state == _BuilderState.LOST:
+		if self.state == BuilderState.LOST:
 			return False
 
 		self._connect()
@@ -253,7 +253,7 @@ class RemoteBuilderSSH(object):
 		self._getAvailablePackages()
 		self._removeObsoletePackages()
 
-		self.state = _BuilderState.AVAILABLE
+		self.state = BuilderState.AVAILABLE
 		return True
 
 	def setBuild(self, scheduledBuild, buildNumber):
@@ -318,7 +318,7 @@ class RemoteBuilderSSH(object):
 			self.buildLogger.info('command exit status: ' + str(exitStatus))
 
 			if exitStatus < 0 and not channel.get_transport().is_active():
-				self.state = _BuilderState.NOT_AVAILABLE
+				self.state = BuilderState.NOT_AVAILABLE
 				raise Exception('builder disconnected')
 
 			if exitStatus != 0:
@@ -344,12 +344,12 @@ class RemoteBuilderSSH(object):
 
 		except socket.error as exception:
 			self.buildLogger.error('connection failed: ' + str(exception))
-			if self.state == _BuilderState.AVAILABLE:
-				self.state = _BuilderState.RECONNECT
+			if self.state == BuilderState.AVAILABLE:
+				self.state = BuilderState.RECONNECT
 
 		except (IOError, paramiko.ssh_exception.SSHException) as exception:
 			self.buildLogger.error('builder failed: ' + str(exception))
-			self.state = _BuilderState.LOST
+			self.state = BuilderState.LOST
 
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
