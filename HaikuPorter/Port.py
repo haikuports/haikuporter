@@ -1581,15 +1581,16 @@ class Port(object):
 		try:
 			return buildPlatform.resolveDependencies(dependencyInfoFiles,
 				requiresTypes, repositories, **kwargs)
-		except (CalledProcessError, LookupError):
+		except (CalledProcessError, LookupError) as e:
 			if getOption('buildMaster'):
 				raise
 
 			sysExit(('unable to resolve %s for %s\n'
 				+ '\tdependency-infos:\n\t\t%s\n'
-				+ '\trepositories:\n\t\t%s\n')
+				+ '\trepositories:\n\t\t%s\n'
+				+ '\tReason: %s')
 				% (description, self.versionedName,
-					'\n\t\t'.join(dependencyInfoFiles), repositories))
+					'\n\t\t'.join(dependencyInfoFiles), repositories, e))
 
 	def _createSourcePackage(self, name, rigged):
 		# copy all recipe attributes from base package, but set defaults
