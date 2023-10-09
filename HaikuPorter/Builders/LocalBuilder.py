@@ -10,7 +10,7 @@ import os
 import stat
 import time
 
-from .Builder import _BuilderState
+from .Builder import BuilderState
 
 
 class LocalBuilder(object):
@@ -20,7 +20,7 @@ class LocalBuilder(object):
 		self.buildCount = 0
 		self.failedBuilds = 0
 		self.packagesPath = packagesPath
-		self.state = _BuilderState.AVAILABLE
+		self.state = BuilderState.AVAILABLE
 		self.currentBuild = None
 
 		self.buildOutputDir = os.path.join(outputBaseDir, 'builds')

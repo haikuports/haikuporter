@@ -14,7 +14,7 @@ import subprocess
 import threading
 import time
 
-from .Builders.Builder import _BuilderState
+from .Builders.Builder import BuilderState
 from .Builders.LocalBuilder import LocalBuilder
 from .Builders.RemoteBuilderSSH import RemoteBuilderSSH
 from .Configuration import Configuration
@@ -514,11 +514,11 @@ class BuildMaster(object):
 				self.completeBuilds if buildSuccess else self.failedBuilds)
 
 		with self.builderCondition:
-			if builder.state == _BuilderState.LOST:
+			if builder.state == BuilderState.LOST:
 				self.logger.error('builder ' + builder.name + ' lost')
 				self.activeBuilders.remove(builder)
 				self.lostBuilders.append(builder)
-			elif builder.state == _BuilderState.RECONNECT:
+			elif builder.state == BuilderState.RECONNECT:
 				self.logger.error(
 					'builder ' + builder.name + ' is reconnecting')
 				self.activeBuilders.remove(builder)
