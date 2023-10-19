@@ -7,7 +7,7 @@
 
 import os
 import re
-from subprocess import CalledProcessError, check_output
+import subprocess
 
 from .Options import getOption
 from .PackageInfo import PackageInfo, ResolvableExpression
@@ -238,15 +238,26 @@ class DependencyResolver(object):
 			if getOption('getDependencies'):
 				try:
 					print('Fetching package for ' + str(requires) + ' ...')
-					output = check_output(['pkgman', 'install', '-y', str(requires).replace(' ', '')]).decode('utf-8')
+					output = subprocess.check_output(['pkgman', 'install', '-y',
+						str(requires).replace(' ', '')], stderr=subprocess.PIPE).decode('utf-8')
 					for pkg in re.findall(r'://.*/([^/\n]+\.hpkg)', output):
 						pkginfo = PackageInfo('/boot/system/packages/' + pkg)
 						self._providesManager.addProvidesFromPackageInfo(pkginfo)
 						provides = self._providesManager.getMatchingProvides(requires,
 							isPrerequiresType, self._ignoreBase)
-				except CalledProcessError:
+				except subprocess.CalledProcessError as e:
+					# `pkgman install -y` failed, propagate the why.
+					error = e.stderr.decode('utf-8')
+					output = e.output.decode('utf-8').splitlines()
+					for index, line in enumerate(output):
+						if line.startswith('Encountered problems:'):
+							break
+					else:
+						index = -1
+					lines = ['\t' + line for line in output[index + 1:]]
+					lines = '\n'.join(lines)
 					raise RestartDependencyResolutionException(parent,
-							'failed to install package for {}'.format(requires))
+						'failed to install package for {}.\n{}'.format(requires, error or lines))
 			else:
 				message = '%s "%s" of package "%s" could not be resolved' \
 					% (typeString, str(requires), parent.versionedName)
@@ -283,7 +294,7 @@ class DependencyResolver(object):
 		try:
 			packageInfo = PackageInfo(packageInfoFile)
 			DependencyResolver.packageInfoCache[packageInfoFile] = packageInfo
-		except CalledProcessError:
+		except subprocess.CalledProcessError:
 			message = 'failed to parse "%s"' % packageInfoFile
 			sysExit(message) if fatal else warn(message)
 			return None
