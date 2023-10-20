@@ -695,6 +695,32 @@ addAppletDeskbarSymlink()
 	symlinkRelative -s "$appPath" "$targetDir/$entryName"
 }
 
+addGamesDeskbarSymlink()
+{
+	# Usage: addGamesDeskbarSymlink <appPath> [ <entryName> ]
+	# Creates a Deskbar symlink for a game application.
+	# <appPath> is the absolute path to the application executable.
+	# <entryName> is the name of the application as it shall appear in the
+	# Deskbar. Can be omitted, in which case the name of the application
+	# executable is used.
+	if [ $# -lt 1 ]; then
+		echo >&2 "Usage: addGamesDeskbarSymlink <appPath> [ <entryName> ]"
+		exit 1
+	fi
+
+	appPath="$1"
+	shift 1
+	if [ $# -lt 1 ]; then
+		entryName="$(basename "$appPath")"
+	else
+		entryName=$1
+	fi
+
+	targetDir=$dataDir/deskbar/menu/Games
+	mkdir -p $targetDir
+	symlinkRelative -s "$appPath" "$targetDir/$entryName"
+}
+
 addPreferencesDeskbarSymlink()
 {
 	# Usage: addPreferencesDeskbarSymlink <appPath> [ <entryName> ]
