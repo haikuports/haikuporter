@@ -1,10 +1,11 @@
 #
 # CAREFUL HERE! The build context is the top level directory of git!
 #
-VERSION=1.2.8-1
+REPO=ghcr.io/haikuports
+VERSION=1.2.8-2
 default:
-	docker build --no-cache --tag docker.io/haikuporter/buildmaster:${VERSION} -f Dockerfile ../..
+	docker build --no-cache --tag ${REPO}/haikuporter/buildmaster:${VERSION} -f Dockerfile ../..
 push:
-	docker push docker.io/haikuporter/buildmaster:${VERSION}
+	docker push ${REPO}/haikuporter/buildmaster:${VERSION}
 enter:
-	docker run -it docker.io/haikuporter/buildmaster:${VERSION} /bin/bash -l
+	docker run -it ${REPO}/haikuporter/buildmaster:${VERSION} /bin/bash -l

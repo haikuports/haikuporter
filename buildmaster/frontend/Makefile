@@ -1,6 +1,8 @@
+REPO=ghcr.io/haikuports
+VERSION=1.2.8-2
 default:
-	docker build --no-cache --tag docker.io/haikuporter/buildmaster-frontend:1.2.8-1 .
+	docker build --no-cache --tag ${REPO}/haikuporter/frontend:${VERSION} .
 push:
-	docker push docker.io/haikuporter/buildmaster-frontend:1.2.8-1
+	docker push ${REPO}/haikuporter/frontend:${VERSION}
 enter:
-	docker run -it docker.io/haikuporter/buildmaster-frontend:1.2.8-1 /bin/sh -l
+	docker run -it ${REPO}/haikuporter/frontend:${VERSION} /bin/sh -l
