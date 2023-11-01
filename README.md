@@ -34,16 +34,16 @@ A multi-node cluster is for mass building large numbers of packages.
 
 ### Running buildmaster in a container with docker
 
- - `docker pull haikuporter/buildmaster`
+ - `docker pull ghcr.io/haikuports/haikuporter/buildmaster`
  - `mkdir ~/buildmaster.x86`
- - `docker run -v ~/buildmaster.x86:/data -it -e ARCH=x86 haikuporter/buildmaster`
+ - `docker run -v ~/buildmaster.x86:/data -it -e ARCH=x86 ghcr.io/haikuports/haikuporter/buildmaster`
  - Provision builders
    - `createbuilder -n test01 -H 127.0.0.1`
    - copy generated public key to builder
    - `builderctl health`
  - exit
  - Copy the packages from a nightly to ports/packages on the buildmaster
- - `docker run -v ~/buildmaster.x86:/data -it -e ARCH=x86 haikuporter/buildmaster`
+ - `docker run -v ~/buildmaster.x86:/data -it -e ARCH=x86 ghcr.io/haikuports/haikuporter/buildmaster`
  - buildmaster everything
 
 buildmaster.x86 will persist between build runs. Feel free to exit, update, or

@@ -30,6 +30,7 @@ RUN apt-get update \
 	&& wget https://github.com/jedisct1/minisign/releases/download/0.10/minisign-0.10-linux.tar.gz -O /tmp/minisign.tar.gz \
 	&& cd /tmp && tar -xvz --strip=2 -f /tmp/minisign.tar.gz && mv minisign /usr/local/bin \
 	&& pip3 install /tmp/haikuporter \
+	&& echo "Bug #277 Fix" && cp /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bin/* /usr/local/bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/loop /bin/ \
