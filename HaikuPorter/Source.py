@@ -433,9 +433,9 @@ class Source(object):
 		if not os.path.exists(patchSetDirectory):
 			os.mkdir(patchSetDirectory)
 		with open(patchSetFilePath, 'w') as patchSetFile:
-			check_call(['git', 'format-patch', '-kp', '--stdout', 'ORIGIN'],
-					   stdout=patchSetFile, cwd=self.sourceDir,
-					   env=self.gitEnv)
+			check_call(['git', '-c', 'core.abbrev=auto', 'format-patch', '-kp',
+					   '--stdout', 'ORIGIN'], stdout=patchSetFile,
+					   cwd=self.sourceDir, env=self.gitEnv)
 
 		if needToRebase:
 			# put PATCH_FUNCTION back in
