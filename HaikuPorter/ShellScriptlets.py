@@ -351,7 +351,11 @@ meson()
 		MESON=$(which meson)
 	fi
 
-	$MESON --wrap-mode=nodownload "$@"
+	if [[ "$1" == setup && "$*" != *wrap-mode* ]]; then
+		$MESON "$@" --wrap-mode=nodownload
+	else
+		$MESON "$@"
+	fi
 }
 
 fixDevelopLibDirReferences()
