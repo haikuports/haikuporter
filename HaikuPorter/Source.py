@@ -399,7 +399,7 @@ class Source(object):
 		output = check_output(['git', 'commit', '-a', '-q', '-m', 'patch function'],
 				   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8')
 		info(output)
-		output = check_output(['git', 'tag', '-f', 'PATCH_FUNCTION', 'HEAD'],
+		output = check_output(['git', 'tag', '--no-sign', '-f', 'PATCH_FUNCTION', 'HEAD'],
 				   cwd=self.sourceDir).decode('utf-8')
 		info(output)
 
@@ -508,7 +508,8 @@ class Source(object):
 		info(check_output(['git', 'add', '-f', '.'], cwd=self.sourceDir).decode('utf-8'))
 		info(check_output(['git', 'commit', '-m', 'import', '-q'],
 				   cwd=self.sourceDir, env=self.gitEnv).decode('utf-8'))
-		info(check_output(['git', 'tag', 'ORIGIN'], cwd=self.sourceDir).decode('utf-8'))
+		info(check_output(['git', 'tag', '--no-sign', 'ORIGIN'],
+				   cwd=self.sourceDir).decode('utf-8'))
 
 	def _isInGitWorkingDirectory(self, path):
 		"""Returns whether the given source directory path is in a git working
