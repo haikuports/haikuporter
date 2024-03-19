@@ -14,6 +14,7 @@ from string import Template
 scriptletPrerequirements = r'''
 	coreutils
 	cmd:bash
+	cmd:find
 	cmd:grep
 	cmd:${targetMachinePrefix}objcopy
 	cmd:${targetMachinePrefix}readelf
