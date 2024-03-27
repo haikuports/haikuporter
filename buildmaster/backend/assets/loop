@@ -96,7 +96,7 @@ do
 	if [ -f $REPO_SIGNING_SECRETS/privatekey ] && [ -f $REPO_SIGNING_SECRETS/privatekeypass ]
 	then
 		echo "Info: Found package repository signature information."
-		touch /tmp/haiku-secret.key && chown 600 /tmp/haiku-secret.key
+		touch /tmp/haiku-secret.key && chmod 600 /tmp/haiku-secret.key
 		echo "untrusted comment: minisign encrypted secret key" > /tmp/haiku-secret.key
 		cat $REPO_SIGNING_SECRETS/privatekey >> /tmp/haiku-secret.key
 		SIGFLAGS="--sign-package-repository-privkey-file /tmp/haiku-secret.key"
