@@ -711,14 +711,14 @@ class Port(object):
 		## use enumerate to avoid your own couters
 		for s, source in enumerate(self.sources, 1):
 			if s == 1:
-				patchSetFileName = self.name + '-' + self.version + '.patchset'
-				archPatchSetFileName = (self.name + '-' + self.version + '-'
+				patchSetFileName = self.baseName + '-' + self.version + '.patchset'
+				archPatchSetFileName = (self.baseName + '-' + self.version + '-'
 										+ self.targetArchitecture
 										+ '.patchset')
 			else:
-				patchSetFileName = (self.name + '-' + self.version + '-source'
+				patchSetFileName = (self.baseName + '-' + self.version + '-source'
 									+ str(s) + '.patchset')
-				archPatchSetFileName = (self.name + '-' + self.version + '-'
+				archPatchSetFileName = (self.baseName + '-' + self.version + '-'
 										+ self.targetArchitecture + '-source'
 										+ str(s) + '.patchset')
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
