@@ -510,7 +510,7 @@ fixCMake()
 			continue
 		fi
 
-		sed -e 's,${libDir},${developLibDir},' \
+		sed -e "s,${libDir},${developLibDir}," \
 			$path > $targetCMakeDir/$name
 	done
 
