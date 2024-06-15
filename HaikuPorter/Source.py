@@ -62,7 +62,8 @@ class Source(object):
 		# make those absolute paths.
 		if self.patches and port.patchesDir:
 			self.patches = [
-				port.patchesDir + '/' + patch for patch in self.patches
+				port.patchesDir + '/'
+				+ patch for patch in self.patches if not patch.strip(' \t').startswith('#')
 			]
 
 		# ADDITIONAL_FILES refers to the files relative to the additional-files

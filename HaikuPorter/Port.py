@@ -317,7 +317,9 @@ class Port(object):
 					# collect all referenced patches into a single list
 					if key in entries and entries[key]:
 						for index in entries[key].keys():
-							allPatches += entries[key][index]
+							allPatches += [
+								e for e in entries[key][index] if not e.strip(' \t').startswith('#')
+							]
 
 				# store extension-specific value under base key
 				recipeKeys[baseKey] = entries[key]
