@@ -36,7 +36,7 @@ BUILD_PREREQUIRES="
 	cmd:gcc
 	"
 
-defineDebugInfoPackage projectx \
+defineDebugInfoPackage projectx$secondaryArchSuffix \
 	"$appsDir"/ProjectX
 
 GLOBAL_WRITABLE_FILES="

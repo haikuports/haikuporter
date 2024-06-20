@@ -19,21 +19,24 @@ DISABLE_SOURCE_PACKAGE=yes
 PROVIDES="
 	generic_font = $portVersion
 	"
-REQUIRES=""
+REQUIRES="
+	"
 
-BUILD_REQUIRES=""
-BUILD_PREREQUIRES=""
+BUILD_REQUIRES="
+	"
+BUILD_PREREQUIRES="
+	"
 
 BUILD()
 {
-	true
+	: # means nothing.
 }
 
 INSTALL()
 {
 	FONTDIR=$fontsDir/ttfonts
-	mkdir -p ${FONTDIR}
-	cp generic-font1.ttf ${FONTDIR}
-	cp generic-font2.ttf ${FONTDIR}
-	cp generic-font-bold.ttf ${FONTDIR}
+	install -d ${FONTDIR}
+	install -t ${FONTDIR} generic-font1.ttf
+	install -t ${FONTDIR} generic-font2.ttf
+	install -t ${FONTDIR} generic-font-bold.ttf
 }
