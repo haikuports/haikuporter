@@ -1,8 +1,8 @@
 """Unit tests for RecipeTypes.py"""
-from HaikuPorter.RecipeTypes import (Architectures, MachineArchitecture, Phase,
-                                     YesNo)
+from HaikuPorter.RecipeTypes import Architectures, MachineArchitecture, Phase, YesNo
 from pytest import mark
 
+# Constant test assets necessary for testing
 _ARCHITECTURE_LIST = [
     "arm",
     "arm64",
@@ -60,7 +60,9 @@ _TRIPLETS_LIST = [
 ]
 
 
+# MachineArchitecture tests
 def test_machinearchitecture_getall_positive():
+    """UT for getAll() - positive test case."""
     assert MachineArchitecture.getAll() == [
         "arm",
         "arm64",
@@ -75,18 +77,22 @@ def test_machinearchitecture_getall_positive():
 
 
 def test_machinearchitecture_gettriplefor_positive():
+    """UT for getTripleFor() - positive test case."""
     for index, value in enumerate(_ARCHITECTURE_LIST):
         assert MachineArchitecture.getTripleFor(value) == _TRIPLETS_LIST[index]
 
 
 def test_machinearchitecture_findmatch_positive():
+    """UT for findMatch() - positive test case."""
     for index, value in enumerate(_ARCHITECTURE_LIST):
         assert (
             MachineArchitecture.findMatch(value) == _EXPECTED_ARCHITECTURE_LIST[index]
         )
 
 
+# YesNo tests
 def test_yesno_getallowedvalues():
+    """UT for getAllowedValues() - positive test case."""
     assert YesNo.getAllowedValues() == ["yes", "no", "true", "false"]
 
 
@@ -95,12 +101,17 @@ def test_yesno_getallowedvalues():
     [["yes", True], ["tRue", True], ["no", False], ["false", False]],
 )
 def test_yesno_tobool(value, expected_response):
+    """UT for toBool() - positive test case."""
     assert YesNo.toBool(value) == expected_response
 
 
+# Phase tests
 def test_phase_getallowedvalues():
+    """UT for getAllowedValues() - positive test case."""
     assert Phase.getAllowedValues() == ["PATCH", "BUILD", "TEST", "INSTALL"]
 
 
+# Architectures tests
 def test_architectures_getall():
+    """UT for getAll() - positive test case."""
     assert Architectures.getAll() == _EXPECTED_ARCHITECTURES_LIST
