@@ -52,7 +52,12 @@ do
 	HEAD_REVISION=$(git rev-parse HEAD)
 	git pull --ff-only
 
-	if [ -f buildmaster/do-everything ]; then
+	if [ -f buildmaster/stop ]; then
+		echo "$(date) buildmaster activity is blocked due to stop file"
+		echo ""
+		sleep $ERROR_WAIT
+		continue
+	elif [ -f buildmaster/do-everything ]; then
 		echo "$(date) buildmaster everything requested, starting"
 		echo ""
 		
