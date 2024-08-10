@@ -20,7 +20,6 @@ scriptletPrerequirements = r'''
 	cmd:${targetMachinePrefix}readelf
 	cmd:sed
 	cmd:${targetMachinePrefix}strip
-	cmd:which
 	cmd:xres
 '''
 
@@ -332,7 +331,7 @@ cmake()
 
 	CMAKE=$portPackageLinksDir/cmd~cmake/bin/cmake
 	if [ ! -f $CMAKE ]; then
-		CMAKE=$(which cmake)
+		CMAKE=$(command -v cmake)
 	fi
 
 	$CMAKE "$@"
@@ -349,7 +348,7 @@ meson()
 
 	MESON=$portPackageLinksDir/cmd~meson/bin/meson
 	if [ ! -f $MESON ]; then
-		MESON=$(which meson)
+		MESON=$(command -v meson)
 	fi
 
 	$MESON --wrap-mode=nodownload "$@"
