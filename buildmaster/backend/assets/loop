@@ -43,7 +43,7 @@ build_prep () {
 while true
 do
 	if [ ! -d $SYSTEM_PACKAGES_DIR ]; then
-		echo "system-packages missing at $SYSTEM_PACKAGES_DIRECTORY"
+		echo "system-packages missing at $SYSTEM_PACKAGES_DIR"
 		sleep $ERROR_WAIT
 		continue
 	fi
