@@ -43,14 +43,14 @@ class ThreadFilter(object):
 
 
 class ScheduledBuild(object):
-	def __init__(self, port, portsTreePath, requiredPackageIDs, packagesPath,
-		presentDependencyPackages):
+	def __init__(self, port, portsTreePath, requiredPackageIDs,
+		packageRepository, presentDependencyPackages):
 		self.port = port
 		self.recipeFilePath \
 			= os.path.relpath(port.recipeFilePath, portsTreePath)
 		self.resultingPackages \
 			= [package.hpkgName for package in self.port.packages]
-		self.packagesPath = packagesPath
+		self.packageRepository = packageRepository
 		self.requiredPackages = presentDependencyPackages
 		self.requiredPackageIDs = [
 			os.path.basename(path) for path in presentDependencyPackages]
@@ -69,7 +69,7 @@ class ScheduledBuild(object):
 				self.missingPackageIDs.remove(packageID)
 				self.requiredPackageIDs.append(package.hpkgName)
 				self.requiredPackages.append(
-					os.path.join(self.packagesPath, package.hpkgName))
+					self.packageRepository.packagePath(package.hpkgName))
 			else:
 				self.lost = True
 
@@ -151,7 +151,7 @@ class BuildRecord(object):
 
 
 class BuildMaster(object):
-	def __init__(self, portsTreePath, packagesPath, options):
+	def __init__(self, portsTreePath, packageRepository, options):
 		self.portsTreePath = portsTreePath
 		self._fillPortsTreeInfo()
 
@@ -159,7 +159,7 @@ class BuildMaster(object):
 		self.reconnectingBuilders = []
 		self.lostBuilders = []
 		self.availableBuilders = []
-		self.packagesPath = packagesPath
+		self.packageRepository = packageRepository
 		self.masterBaseDir = os.path.realpath('buildmaster')
 		self.builderBaseDir = os.path.join(self.masterBaseDir, 'builders')
 		self.buildOutputBaseDir = getOption('buildMasterOutputDir')
@@ -230,9 +230,9 @@ class BuildMaster(object):
 
 				builder = None
 				try:
-					builder = RemoteBuilderSSH(configFilePath, packagesPath,
-						self.buildOutputBaseDir, self.portsTreeOriginURL,
-						self.portsTreeHead)
+					builder = RemoteBuilderSSH(configFilePath,
+						packageRepository, self.buildOutputBaseDir,
+						self.portsTreeOriginURL, self.portsTreeHead)
 				except Exception as exception:
 					self.logger.error('failed to add builder from config '
 						+ configFilePath + ':' + str(exception))
@@ -247,7 +247,7 @@ class BuildMaster(object):
 			for i in range(0, self.localBuilders):
 				builder = None
 				try:
-					builder = LocalBuilder(str(i), packagesPath,
+					builder = LocalBuilder(str(i), packageRepository,
 						self.buildOutputBaseDir, options)
 				except Exception as exception:
 					self.logger.error('failed to add local builder: '
@@ -295,17 +295,17 @@ class BuildMaster(object):
 	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
 		# Skip builds that would overwrite existing packages.
 		for package in port.packages:
-			packagePath = os.path.join(self.packagesPath, package.hpkgName)
-			if not os.path.exists(packagePath):
+			if not self.packageRepository.hasPackage(package.hpkgName):
 				continue
 
-			self.addSkipped(port, 'some packages already exist at '
-				+ self.packagesPath + ', revision bump required')
+			self.addSkipped(port, 'some packages already exist in package'
+				+ ' repository, revision bump required')
 			return
 
 		self.logger.info('scheduling build of ' + port.versionedName)
 		scheduledBuild = ScheduledBuild(port, self.portsTreePath,
-			requiredPackageIDs, self.packagesPath, presentDependencyPackages)
+			requiredPackageIDs, self.packageRepository,
+			presentDependencyPackages)
 
 		if scheduledBuild.buildable:
 			self.scheduledBuilds.append(scheduledBuild)

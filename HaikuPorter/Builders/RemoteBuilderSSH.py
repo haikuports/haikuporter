@@ -24,14 +24,14 @@ except ImportError:
 	paramiko = None
 
 class RemoteBuilderSSH(object):
-	def __init__(self, configFilePath, packagesPath, outputBaseDir,
+	def __init__(self, configFilePath, packageRepository, outputBaseDir,
 			portsTreeOriginURL, portsTreeHead):
 		self._loadConfig(configFilePath)
 		self.availablePackages = []
 		self.visiblePackages = []
 		self.portsTreeOriginURL = portsTreeOriginURL
 		self.portsTreeHead = portsTreeHead
-		self.packagesPath = packagesPath
+		self.packageRepository = packageRepository
 
 		if not paramiko:
 			raise Exception('paramiko unavailable')
@@ -235,7 +235,7 @@ class RemoteBuilderSSH(object):
 		systemPackagesDirectory = getOption('systemPackagesDirectory')
 
 		for entry in list(self.availablePackages):
-			if os.path.exists(os.path.join(self.packagesPath, entry)):
+			if self.packageRepository.hasPackage(entry):
 				continue
 
 			if os.path.exists(os.path.join(systemPackagesDirectory, entry)):
@@ -339,11 +339,11 @@ class RemoteBuilderSSH(object):
 				self.buildLogger.info('download package ' + package.hpkgName
 					+ ' from builder')
 
-				packageFile = os.path.join(self.packagesPath, package.hpkgName)
-				downloadFile = packageFile + '.download'
-				self._getFile(self.config['portstree']['packagesPath'] + '/'
-						+ package.hpkgName, downloadFile)
-				os.rename(downloadFile, packageFile)
+				remotePath = self.config['portstree']['packagesPath'] + '/' \
+					+ package.hpkgName
+				with self.sftpClient.file(remotePath, 'r') as remoteFile:
+					self.packageRepository.writePackage(package.hpkgName,
+						remoteFile)
 
 			self._purgePort(scheduledBuild)
 			self._clearVisiblePackages()
@@ -433,7 +433,9 @@ class RemoteBuilderSSH(object):
 			= self.config['portstree']['packagesCachePath'] + '/' + packageName
 		uploadPath = entryPath + '.upload'
 
-		self._putFile(packagePath, uploadPath)
+		with self.sftpClient.file(uploadPath, 'w') as remoteFile:
+			self.packageRepository.readPackage(packagePath, remoteFile)
+
 		self._move(uploadPath, entryPath)
 
 		self.availablePackages.append(packageName)

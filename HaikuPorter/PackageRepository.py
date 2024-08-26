@@ -8,6 +8,7 @@
 import glob
 import hashlib
 import os
+import shutil
 import subprocess
 
 from .Configuration import Configuration
@@ -41,6 +42,12 @@ class PackageRepository(object):
 		self.obsoletePackagesNewerThanActiveVersion()
 		self.obsoletePackagesWithNewerVersions()
 
+	def packagePath(self, packageName):
+		return os.path.join(self.packagesPath, packageName)
+
+	def hasPackage(self, packageName):
+		return os.path.exists(self.packagePath(packageName))
+
 	def packageList(self, packageSpec=None):
 		if packageSpec is None:
 			packageSpec = ''
@@ -49,6 +56,18 @@ class PackageRepository(object):
 
 		packageSpec += '*.hpkg'
 		return glob.glob(os.path.join(self.packagesPath, packageSpec))
+
+	def readPackage(self, packagePath, file):
+		with open(packagePath, 'rb') as packageFile:
+			shutil.copyfileobj(packageFile, file)
+
+	def writePackage(self, packageName, file):
+		packagePath = self.packagePath(packageName)
+		temporaryPath = packagePath + '.temp'
+		with open(temporaryPath, 'wb') as packageFile:
+			shutil.copyfileobj(file, packageFile)
+
+		os.rename(temporaryPath, packagePath)
 
 	def packageInfoList(self, packageSpec=None):
 		result = []

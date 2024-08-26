@@ -109,7 +109,11 @@ class Main(object):
 
 		if self.options.buildMaster:
 			from .BuildMaster import BuildMaster
-			self.buildMaster = BuildMaster(self.treePath, self.packagesPath,
+
+			packageRepository = PackageRepository(self.packagesPath,
+				None, self.options.quiet, self.options.verbose)
+
+			self.buildMaster = BuildMaster(self.treePath, packageRepository,
 				self.options)
 
 			self.options.allDependencies = True
