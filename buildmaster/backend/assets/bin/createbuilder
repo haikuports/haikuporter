@@ -31,10 +31,10 @@ if not os.path.isdir(args.confdir):
 	sys.exit()
 
 if not os.path.isdir(args.confdir):
-	os.mkdir(args.confdir, 0755)
+	os.mkdir(args.confdir, 0o755)
 
 if not os.path.isdir(args.confdir + "/keys"):
-	os.mkdir(args.confdir + "/keys", 0700)
+	os.mkdir(args.confdir + "/keys", 0o700)
 
 builder_json_path = args.confdir + "/" + args.name + ".json"
 private_key_path = args.confdir + "/keys/" + args.name
