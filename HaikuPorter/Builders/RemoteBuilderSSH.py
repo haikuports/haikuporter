@@ -382,12 +382,7 @@ class RemoteBuilderSSH(object):
 		self.sftpClient.symlink(sourcePath, destPath)
 
 	def _move(self, sourcePath, destPath):
-		# Unfortunately we can't use SFTPClient.rename as that uses the rename
-		# command (vs. posix-rename) which uses hardlinks which fail on BFS
-		(output, channel) = self._remoteCommand('mv "' + sourcePath + '" "'
-			+ destPath + '"')
-		if channel.recv_exit_status() != 0:
-			raise IOError('failed moving {} to {}'.format(sourcePath, destPath))
+		self.sftpClient.posix_rename(sourcePath, destPath)
 
 	def _openRemoteFile(self, path, mode):
 		return self.sftpClient.open(path, mode)
