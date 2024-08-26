@@ -43,7 +43,7 @@ class ThreadFilter(object):
 
 
 class ScheduledBuild(object):
-	def __init__(self, port, portsTreePath, requiredPackageIDs,
+	def __init__(self, port, portsTreePath, missingPackageIDs,
 		packageRepository, presentDependencyPackages):
 		self.port = port
 		self.recipeFilePath \
@@ -54,7 +54,7 @@ class ScheduledBuild(object):
 		self.requiredPackages = presentDependencyPackages
 		self.requiredPackageIDs = [
 			os.path.basename(path) for path in presentDependencyPackages]
-		self.missingPackageIDs = set(requiredPackageIDs)
+		self.missingPackageIDs = set(missingPackageIDs)
 		self.buildNumbers = []
 		self.lost = False
 
@@ -292,7 +292,7 @@ class BuildMaster(object):
 		self.skippedBuilds.append(skippedBuild)
 		self._reportStatus()
 
-	def schedule(self, port, requiredPackageIDs, presentDependencyPackages):
+	def schedule(self, port, missingPackageIDs, presentDependencyPackages):
 		# Skip builds that would overwrite existing packages.
 		for package in port.packages:
 			if not self.packageRepository.hasPackage(package.hpkgName):
@@ -304,7 +304,7 @@ class BuildMaster(object):
 
 		self.logger.info('scheduling build of ' + port.versionedName)
 		scheduledBuild = ScheduledBuild(port, self.portsTreePath,
-			requiredPackageIDs, self.packageRepository,
+			missingPackageIDs, self.packageRepository,
 			presentDependencyPackages)
 
 		if scheduledBuild.buildable:
