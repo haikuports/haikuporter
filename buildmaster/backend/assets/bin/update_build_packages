@@ -14,7 +14,7 @@ if [ $# -ne 1 ]; then
 	echo "  1. Please ensure latest build-packages have been placed in $BASE_DIR"
 	echo "  2. Note that the [jam RemotePackageRepository file] will be modified."
 	echo "     After this tool modifies it, you must check it into git as-is without"
-        echo "     modification of any kind. (the repo is based on the sha256 of it)"
+	echo "     modification of any kind. (the repo is based on the sha256 of it)"
 	echo ""
 	exit 1
 fi

@@ -191,7 +191,7 @@ class PackageRepository(object):
 		minisignCommand = Configuration.getMinisignCommand()
 		if not minisignCommand:
 			sysExit('minisign command missing to sign repository!')
-		
+
 		# minisign -s /tmp/minisign.key -Sm ${ARTIFACT}
 		info("signing repository")
 		output = subprocess.check_output([minisignCommand, '-s',

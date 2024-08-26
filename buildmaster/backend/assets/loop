@@ -60,7 +60,7 @@ do
 	elif [ -f buildmaster/do-everything ]; then
 		echo "$(date) buildmaster everything requested, starting"
 		echo ""
-		
+
 		rm buildmaster/do-everything
 
 		build_prep
@@ -81,7 +81,7 @@ do
 	else
 		echo "$(date) starting buildmaster update"
 		echo ""
-		
+
 		build_prep
 		buildmaster update
 	fi
