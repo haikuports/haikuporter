@@ -35,12 +35,13 @@ RUN apt-get update \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/loop /bin/ \
 	&& rm -rf /tmp/* \
-	&& mkdir /var/sources /var/packages /var/buildmaster \
+	&& mkdir /var/licenses /var/packages /var/buildmaster \
 	&& chmod 755 /usr/local/bin/*
 
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/x86_64/release/tools/package/package /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/x86_64/release/tools/package_repo/package_repo /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/lib/* /usr/local/lib/
+COPY --from=host-tools /tmp/haiku/data/system/data/licenses /var/licenses
 
-VOLUME ["/var/sources", "/var/packages", "/var/buildmaster"]
+VOLUME ["/var/packages", "/var/buildmaster"]
 WORKDIR /var/buildmaster

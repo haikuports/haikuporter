@@ -17,8 +17,6 @@ One buildmaster container per architecture
 
 ## Volumes
 
-  * /var/sources (shared between all architectures)
-    * Storage for various required sources like haiku
   * /var/packages (shared between all architectures)
     * Storage for packages and repositories
     * repository
