@@ -497,13 +497,6 @@ class Port(object):
 		for package in self.packages:
 			package.removeDependencyInfoFromRepository(self._repositoryDir)
 
-	def obsoletePackages(self, packagesPath):
-		"""Moves all package-files into the 'obsolete' sub-directory"""
-
-		self.parseRecipeFileIfNeeded()
-		for package in self.packages:
-			package.obsoletePackage(packagesPath)
-
 	@property
 	def mainPackage(self):
 		self.parseRecipeFileIfNeeded()
