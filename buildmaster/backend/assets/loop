@@ -120,14 +120,16 @@ do
 		$SIGFLAGS \
 		> "$REPO_DIR/report.txt" 2>&1
 
-	echo ""
 	if [ $? -ne 0 ]
 	then
+		echo ""
 		echo "$(date) create repo failed, waiting $ERROR_WAIT"
 		sleep $ERROR_WAIT
 		rm -f /tmp/haiku-secret.key;
 		continue
 	fi
+
+	echo ""
 	rm -f /tmp/haiku-secret.key;
 
 	if [ ! -z "$REPOSITORY_TRIGGER_URL" ]
