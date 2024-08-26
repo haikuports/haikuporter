@@ -42,6 +42,9 @@ class PackageRepository(object):
 		self.obsoletePackagesNewerThanActiveVersion()
 		self.obsoletePackagesWithNewerVersions()
 
+	def packageName(self, packagePath):
+		return os.path.basename(packagePath)
+
 	def packagePath(self, packageName):
 		return os.path.join(self.packagesPath, packageName)
 
@@ -86,7 +89,7 @@ class PackageRepository(object):
 		return result
 
 	def obsoletePackage(self, path, reason=None):
-		packageFileName = os.path.basename(path)
+		packageFileName = self.packageName(path)
 		if not self.quiet:
 			print('\tobsoleting package {}: {}'.format(packageFileName, reason))
 
@@ -158,13 +161,13 @@ class PackageRepository(object):
 		packageList = self.packageInfoList()
 		for package in packageList:
 			os.link(package.path,
-				os.path.join(repoPackagesPath, os.path.basename(package.path)))
+				os.path.join(repoPackagesPath, self.packageName(package.path)))
 
 		packageListFile = os.path.join(outputPath, 'package.list')
 		with open(packageListFile, 'w') as outputFile:
-			fileList = '\n'.join(
-				[os.path.basename(package.path) for package in packageList])
-			outputFile.write(fileList)
+			packageNameList \
+				= [self.packageName(package.path) for package in packageList]
+			outputFile.write('\n'.join(packageNameList))
 
 		if not os.path.exists(repoFile):
 			if not packageList:
