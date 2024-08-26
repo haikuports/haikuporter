@@ -117,6 +117,7 @@ do
 		--system-packages-directory $SYSTEM_PACKAGES_DIR \
 		--check-package-repository-consistency \
 		--create-package-repository "$REPO_DIR" \
+		--storage-backend-config "$STORAGE_BACKEND_CONFIG" \
 		$SIGFLAGS \
 		> "$REPO_DIR/report.txt" 2>&1
 

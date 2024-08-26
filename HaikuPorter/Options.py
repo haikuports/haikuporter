@@ -305,6 +305,9 @@ def parseOptions():
 	advanced_flags.add_option('--sign-package-repository-privkey-pass', action='store',
 		type='string', dest='packageRepositorySignPrivateKeyPass', default=None,
 		help='sign the package repository with the given minisign password')
+	advanced_flags.add_option('--storage-backend-config', action='store',
+		dest='storageBackendConfig', default=None, type='string',
+		help='use the given file as the storage backend config'),
 	advanced_flags.add_option('--check-package-repository-consistency',
 		action='store_true', dest='checkPackageRepositoryConsistency',
 		default=False, help='check consistency of package repository by'

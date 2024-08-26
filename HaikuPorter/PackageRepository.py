@@ -7,6 +7,7 @@
 
 import glob
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -37,6 +38,9 @@ class PackageRepository(object):
 		self.quiet = quiet
 		self.verbose = verbose
 
+		self._storageBackendInitialized = False
+		self._storageBackend = None
+
 	def prune(self):
 		self.obsoletePackagesWithoutPort()
 		self.obsoletePackagesNewerThanActiveVersion()
@@ -51,6 +55,33 @@ class PackageRepository(object):
 	def hasPackage(self, packageName):
 		return os.path.exists(self.packagePath(packageName))
 
+	def isPackageLocal(self, packagePath):
+		if not os.path.exists(packagePath):
+			return False
+
+		packageStat = os.stat(packagePath)
+		return packageStat.st_size != 0
+
+	@property
+	def storageBackend(self):
+		if not self._storageBackendInitialized:
+			configFilePath = getOption('storageBackendConfig')
+			if configFilePath:
+				with open(configFilePath, 'r') as configFile:
+					config = json.loads(configFile.read())
+
+				backendType = config.get('backend_type')
+				if backendType == 's3':
+					from .StorageBackendS3 import StorageBackendS3
+					self._storageBackend = StorageBackendS3(self.packagesPath,
+						config)
+				else:
+					raise Exception(f'unknown backend type {backendType}')
+
+			self._storageBackendInitialized = True
+
+		return self._storageBackend
+
 	def packageList(self, packageSpec=None):
 		if packageSpec is None:
 			packageSpec = ''
@@ -61,8 +92,17 @@ class PackageRepository(object):
 		return glob.glob(os.path.join(self.packagesPath, packageSpec))
 
 	def readPackage(self, packagePath, file):
-		with open(packagePath, 'rb') as packageFile:
-			shutil.copyfileobj(packageFile, file)
+		if self.isPackageLocal(packagePath):
+			with open(packagePath, 'rb') as packageFile:
+				shutil.copyfileobj(packageFile, file)
+			return
+
+		packageName = self.packageName(packagePath)
+		if self.storageBackend is not None:
+			self.storageBackend.readPackage(packageName, file)
+			return
+
+		raise Exception(f'package {packageName} unavailable')
 
 	def writePackage(self, packageName, file):
 		packagePath = self.packagePath(packageName)
@@ -158,15 +198,21 @@ class PackageRepository(object):
 			for package in glob.glob(os.path.join(repoPackagesPath, '*.hpkg')):
 				os.unlink(package)
 
+		localPackages = []
 		packageList = self.packageInfoList()
 		for package in packageList:
+			if not self.isPackageLocal(package.path):
+				continue
+
 			os.link(package.path,
 				os.path.join(repoPackagesPath, self.packageName(package.path)))
 
+			localPackages.append(package.path)
+
 		packageListFile = os.path.join(outputPath, 'package.list')
+		packageNameList \
+			= [self.packageName(package.path) for package in packageList]
 		with open(packageListFile, 'w') as outputFile:
-			packageNameList \
-				= [self.packageName(package.path) for package in packageList]
 			outputFile.write('\n'.join(packageNameList))
 
 		if not os.path.exists(repoFile):
@@ -178,14 +224,25 @@ class PackageRepository(object):
 				stderr=subprocess.STDOUT).decode('utf-8')
 			info(output)
 
+		if self.storageBackend is not None:
+			self._populateStorageBackendPackages(localPackages)
+
 		output = subprocess.check_output([packageRepoCommand, 'update', '-C',
-				repoPackagesPath, '-v', repoFile, repoFile, packageListFile],
-			stderr=subprocess.STDOUT).decode('utf-8')
+				repoPackagesPath, '-v', '-t', repoFile, repoFile,
+				packageListFile], stderr=subprocess.STDOUT).decode('utf-8')
 		info(output)
-		self._checksumPackageRepository(repoFile)
+
+		repoChecksumFile = repoFile + '.sha256'
+		self._checksumPackageRepository(repoFile, repoChecksumFile)
 		self._signPackageRepository(repoFile)
 
-	def _checksumPackageRepository(self, repoFile):
+		if self.storageBackend is not None:
+			self._stubLocalPackages(localPackages)
+			self._populateStorageBackendFiles(
+				[repoInfoFile, repoFile, repoChecksumFile, packageListFile])
+			self._pruneStorageBackend(packageNameList)
+
+	def _checksumPackageRepository(self, repoFile, repoChecksumFile):
 		"""Create a checksum of the package repository"""
 		checksum = hashlib.sha256()
 		with open(repoFile, 'rb') as inputFile:
@@ -194,7 +251,8 @@ class PackageRepository(object):
 				if not data:
 					break
 				checksum.update(data)
-		with open(repoFile + '.sha256', 'w') as outputFile:
+
+		with open(repoChecksumFile, 'w') as outputFile:
 			outputFile.write(checksum.hexdigest())
 
 	def _signPackageRepository(self, repoFile):
@@ -242,3 +300,31 @@ class PackageRepository(object):
 			except LookupError as error:
 				print('{}:\n{}\n'.format(os.path.relpath(package.path,
 						self.packagesPath), prefixLines('\t', str(error))))
+
+	def _populateStorageBackendPackages(self, localPackages):
+		for packagePath in localPackages:
+			packageName = self.packageName(packagePath)
+			info(f'uploading package {packageName} to storage backend')
+
+			with open(packagePath, 'rb') as packageFile:
+				self.storageBackend.writePackage(packageName, packageFile)
+
+	def _populateStorageBackendFiles(self, files):
+		for filePath in files:
+			fileName = os.path.basename(filePath)
+			info(f'uploading {fileName} to storage backend')
+
+			with open(filePath, 'rb') as inputFile:
+				self.storageBackend.writeFile(fileName, inputFile)
+
+	def _stubLocalPackages(self, localPackages):
+		for packagePath in localPackages:
+			os.truncate(packagePath, 0)
+
+	def _pruneStorageBackend(self, packageNameList):
+		for remotePackage in self.storageBackend.listPackages():
+			if remotePackage in packageNameList:
+				continue
+
+			info(f'delete package {remotePackage} from storage backend')
+			self.storageBackend.deletePackage(remotePackage)

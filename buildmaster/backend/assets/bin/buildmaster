@@ -123,6 +123,7 @@ ln -rs "$BUILDRUN_OUTPUT_DIR" "$BUILDRUN_BASE/current"
 
 haikuporter --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
 	--system-packages-directory="$SYSTEM_PACKAGES_DIR" \
+	--storage-backend-config="$STORAGE_BACKEND_CONFIG" \
 	--build-master $PORTS_TO_BUILD
 
 BUILDMASTER_RESULT=$?
