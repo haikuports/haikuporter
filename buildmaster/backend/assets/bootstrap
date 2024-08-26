@@ -43,7 +43,8 @@ done
 
 PORTS_DIR=$BASE_DIR/haikuports
 OUTPUT_DIR=$BASE_DIR/output
-BUILDERS_DIR=$PORTS_DIR/buildmaster/builders
+STATE_DIR=$PORTS_DIR/buildmaster
+BUILDERS_DIR=$STATE_DIR/builders
 
 if [ -z "$ARCH" ]
 then
@@ -91,7 +92,11 @@ fi
 
 # Create some buildmaster paths
 mkdir -p $OUTPUT_DIR
+mkdir -p $STATE_DIR
 mkdir -p $BUILDERS_DIR
+
+# Record initial processed revision
+git rev-parse HEAD > $STATE_DIR/processed_rev
 
 # Done.
 
