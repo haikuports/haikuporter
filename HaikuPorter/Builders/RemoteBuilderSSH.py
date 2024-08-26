@@ -15,6 +15,7 @@ import time
 # These usages kinda need refactored
 from ..ConfigParser import ConfigParser
 from ..Configuration import Configuration
+from ..Options import getOption
 from .Builder import BuilderState
 
 try:
@@ -231,13 +232,20 @@ class RemoteBuilderSSH(object):
 
 	def _removeObsoletePackages(self):
 		cachePath = self.config['portstree']['packagesCachePath']
+		systemPackagesDirectory = getOption('systemPackagesDirectory')
+
 		for entry in list(self.availablePackages):
-			if not os.path.exists(os.path.join(self.packagesPath, entry)):
-				self.logger.info(
-					'removing obsolete package {} from cache'.format(entry))
-				entryPath = cachePath + '/' + entry
-				self.sftpClient.remove(entryPath)
-				self.availablePackages.remove(entry)
+			if os.path.exists(os.path.join(self.packagesPath, entry)):
+				continue
+
+			if os.path.exists(os.path.join(systemPackagesDirectory, entry)):
+				continue
+
+			self.logger.info(
+				'removing obsolete package {} from cache'.format(entry))
+			entryPath = cachePath + '/' + entry
+			self.sftpClient.remove(entryPath)
+			self.availablePackages.remove(entry)
 
 	def _setupForBuilding(self):
 		if self.state == BuilderState.AVAILABLE:
