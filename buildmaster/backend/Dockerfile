@@ -37,7 +37,7 @@ RUN pip3 install /tmp/haikuporter \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/loop /bin/ \
 	&& rm -rf /tmp/* \
-	&& mkdir /var/licenses /var/packages /var/buildmaster \
+	&& mkdir /var/licenses /var/buildmaster \
 	&& chmod 755 /usr/local/bin/*
 
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/x86_64/release/tools/package/package /usr/local/bin/
@@ -45,5 +45,5 @@ COPY --from=host-tools /tmp/haiku/generated/objects/linux/x86_64/release/tools/p
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/lib/* /usr/local/lib/
 COPY --from=host-tools /tmp/haiku/data/system/data/licenses /var/licenses
 
-VOLUME ["/var/packages", "/var/buildmaster"]
+VOLUME ["/var/buildmaster"]
 WORKDIR /var/buildmaster

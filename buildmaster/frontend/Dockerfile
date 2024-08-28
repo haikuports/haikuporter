@@ -1,8 +1,8 @@
 FROM docker.io/nginx:alpine
 
-RUN mkdir /var/instances /var/lib/buildmaster-frontend
+RUN mkdir /var/buildmaster /var/lib/buildmaster-frontend
 
-VOLUME ["/var/instances"]
+VOLUME ["/var/buildmaster"]
 
 COPY configs/buildmaster-frontend.conf /etc/nginx/conf.d/default.conf
 COPY www/. /var/lib/buildmaster-frontend/
