@@ -73,3 +73,12 @@ erase the container without losing your work.
  - useradd sshd ; ssh-keygen -A
  - Enable PermitRootLogin in /system/settings/ssh/sshd\_config and make sure the path to the sftp server is correct
  - install xz\_utils\_x86, lzip\_x86 (required for extracting packages), patch, dos2unix (required for PATCH() function in some packages)
+
+### Making a release of haikuporter
+
+ - Be sure __version__.py , pyproject.toml is set to the next version of haikuporter and changes are pushed
+ - Draft a new release version matching what's in __version__.py, pyproject.toml
+ - Once a new release is made in github, bump the versions in __version__.py , pyproject.toml to the *NEXT* version
+ - The buildmaster containers are generally updated out-of-band as they receive updates less often
+   - Version numbers in buildmaster/*/Makefile *should* follow the same process as above ideally
+   - Ideally, we would rebuild the buildmaster containers every release, but not a requirement

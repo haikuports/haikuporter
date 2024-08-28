@@ -1,5 +1,5 @@
 REPO=ghcr.io/haikuports
-VERSION=1.2.8-4
+VERSION=1.3.0-1
 default:
 	docker build --no-cache --tag ${REPO}/haikuporter/frontend:${VERSION} .
 push:
