@@ -96,7 +96,8 @@ class PackageInfo(object):
 					entry = pickle.load(cacheFile)
 					path = entry['path']
 					if not os.path.exists(path) \
-						or os.path.getmtime(path) > entry['modifiedTime']:
+						or (os.path.getsize(path) != 0 \
+							and os.path.getmtime(path) > entry['modifiedTime']):
 						prune = True
 						continue
 

@@ -14,12 +14,12 @@ from .Builder import BuilderState
 
 
 class LocalBuilder(object):
-	def __init__(self, name, packagesPath, outputBaseDir, options):
+	def __init__(self, name, packageRepository, outputBaseDir, options):
 		self.options = options
 		self.name = name
 		self.buildCount = 0
 		self.failedBuilds = 0
-		self.packagesPath = packagesPath
+		self.packageRepository = packageRepository
 		self.state = BuilderState.AVAILABLE
 		self.currentBuild = None
 

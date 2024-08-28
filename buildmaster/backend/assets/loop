@@ -2,6 +2,7 @@
 
 BASE_DIR="/var/buildmaster"
 WORKDIR="$BASE_DIR/haikuports"
+OUTPUT_DIR="$BASE_DIR/output"
 
 if [ ! -d "$WORKDIR" ]
 then
@@ -22,14 +23,14 @@ ERROR_WAIT=60
 
 export PYTHONUNBUFFERED=1
 export BUILD_TARGET_ARCH="$BUILD_TARGET_ARCH"
-export REPO_DIR="/var/packages/repository/master/$BUILD_TARGET_ARCH/current"
+export REPO_DIR="$BASE_DIR/repository"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 export SYSTEM_PACKAGES_DIR="$BASE_DIR/system-packages/$SYSTEM_PACKAGE_BRANCH"
 
 exec 2>&1
 
 build_prep () {
-	CONSISTENCY_REPORT_FILE="$REPO_DIR/repo_consistency.txt"
+	CONSISTENCY_REPORT_FILE="$OUTPUT_DIR/repo_consistency.txt"
 	echo "repo consistency report at $(git rev-parse HEAD)" \
 		> "$CONSISTENCY_REPORT_FILE"
 	haikuporter --debug --check-repository-consistency \
@@ -43,7 +44,7 @@ build_prep () {
 while true
 do
 	if [ ! -d $SYSTEM_PACKAGES_DIR ]; then
-		echo "system-packages missing at $SYSTEM_PACKAGES_DIRECTORY"
+		echo "system-packages missing at $SYSTEM_PACKAGES_DIR"
 		sleep $ERROR_WAIT
 		continue
 	fi
@@ -60,7 +61,7 @@ do
 	elif [ -f buildmaster/do-everything ]; then
 		echo "$(date) buildmaster everything requested, starting"
 		echo ""
-		
+
 		rm buildmaster/do-everything
 
 		build_prep
@@ -81,7 +82,7 @@ do
 	else
 		echo "$(date) starting buildmaster update"
 		echo ""
-		
+
 		build_prep
 		buildmaster update
 	fi
@@ -117,17 +118,20 @@ do
 		--system-packages-directory $SYSTEM_PACKAGES_DIR \
 		--check-package-repository-consistency \
 		--create-package-repository "$REPO_DIR" \
+		--storage-backend-config "$STORAGE_BACKEND_CONFIG" \
 		$SIGFLAGS \
-		> "$REPO_DIR/report.txt" 2>&1
+		> "$OUTPUT_DIR/report.txt" 2>&1
 
-	echo ""
 	if [ $? -ne 0 ]
 	then
+		echo ""
 		echo "$(date) create repo failed, waiting $ERROR_WAIT"
 		sleep $ERROR_WAIT
 		rm -f /tmp/haiku-secret.key;
 		continue
 	fi
+
+	echo ""
 	rm -f /tmp/haiku-secret.key;
 
 	if [ ! -z "$REPOSITORY_TRIGGER_URL" ]

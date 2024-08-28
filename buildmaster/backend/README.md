@@ -12,13 +12,15 @@ One buildmaster container per architecture
 ## Environmental
 
   * ```BUILD_TARGET_ARCH``` - Target architecture for buildmaster
+  * ```SYSTEM_PACKAGE_BRANCH``` - The branch of the system packages
+    * system-packages are expected at /var/buildmaster/system-packages/$SYSTEM_PACKAGE_BRANCH
+  * ```STORAGE_BACKEND_CONFIG``` - The path of an external storage backend config file (optional)
+    * This would normally be pointed at a secret
   * ```REPOSITORY_TRIGGER_URL``` - Target URL to hit when build complete (optional)
     * example: https://depot.haiku-os.org/__repository/haikuports/source/haikuports_x86_64/import
 
 ## Volumes
 
-  * /var/sources (shared between all architectures)
-    * Storage for various required sources like haiku
   * /var/packages (shared between all architectures)
     * Storage for packages and repositories
     * repository

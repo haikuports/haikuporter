@@ -15,6 +15,7 @@ import time
 # These usages kinda need refactored
 from ..ConfigParser import ConfigParser
 from ..Configuration import Configuration
+from ..Options import getOption
 from .Builder import BuilderState
 
 try:
@@ -23,14 +24,14 @@ except ImportError:
 	paramiko = None
 
 class RemoteBuilderSSH(object):
-	def __init__(self, configFilePath, packagesPath, outputBaseDir,
+	def __init__(self, configFilePath, packageRepository, outputBaseDir,
 			portsTreeOriginURL, portsTreeHead):
 		self._loadConfig(configFilePath)
 		self.availablePackages = []
 		self.visiblePackages = []
 		self.portsTreeOriginURL = portsTreeOriginURL
 		self.portsTreeHead = portsTreeHead
-		self.packagesPath = packagesPath
+		self.packageRepository = packageRepository
 
 		if not paramiko:
 			raise Exception('paramiko unavailable')
@@ -231,13 +232,20 @@ class RemoteBuilderSSH(object):
 
 	def _removeObsoletePackages(self):
 		cachePath = self.config['portstree']['packagesCachePath']
+		systemPackagesDirectory = getOption('systemPackagesDirectory')
+
 		for entry in list(self.availablePackages):
-			if not os.path.exists(os.path.join(self.packagesPath, entry)):
-				self.logger.info(
-					'removing obsolete package {} from cache'.format(entry))
-				entryPath = cachePath + '/' + entry
-				self.sftpClient.remove(entryPath)
-				self.availablePackages.remove(entry)
+			if self.packageRepository.hasPackage(entry):
+				continue
+
+			if os.path.exists(os.path.join(systemPackagesDirectory, entry)):
+				continue
+
+			self.logger.info(
+				'removing obsolete package {} from cache'.format(entry))
+			entryPath = cachePath + '/' + entry
+			self.sftpClient.remove(entryPath)
+			self.availablePackages.remove(entry)
 
 	def _setupForBuilding(self):
 		if self.state == BuilderState.AVAILABLE:
@@ -331,11 +339,11 @@ class RemoteBuilderSSH(object):
 				self.buildLogger.info('download package ' + package.hpkgName
 					+ ' from builder')
 
-				packageFile = os.path.join(self.packagesPath, package.hpkgName)
-				downloadFile = packageFile + '.download'
-				self._getFile(self.config['portstree']['packagesPath'] + '/'
-						+ package.hpkgName, downloadFile)
-				os.rename(downloadFile, packageFile)
+				remotePath = self.config['portstree']['packagesPath'] + '/' \
+					+ package.hpkgName
+				with self.sftpClient.file(remotePath, 'r') as remoteFile:
+					self.packageRepository.writePackage(package.hpkgName,
+						remoteFile)
 
 			self._purgePort(scheduledBuild)
 			self._clearVisiblePackages()
@@ -374,12 +382,7 @@ class RemoteBuilderSSH(object):
 		self.sftpClient.symlink(sourcePath, destPath)
 
 	def _move(self, sourcePath, destPath):
-		# Unfortunately we can't use SFTPClient.rename as that uses the rename
-		# command (vs. posix-rename) which uses hardlinks which fail on BFS
-		(output, channel) = self._remoteCommand('mv "' + sourcePath + '" "'
-			+ destPath + '"')
-		if channel.recv_exit_status() != 0:
-			raise IOError('failed moving {} to {}'.format(sourcePath, destPath))
+		self.sftpClient.posix_rename(sourcePath, destPath)
 
 	def _openRemoteFile(self, path, mode):
 		return self.sftpClient.open(path, mode)
@@ -430,7 +433,9 @@ class RemoteBuilderSSH(object):
 			= self.config['portstree']['packagesCachePath'] + '/' + packageName
 		uploadPath = entryPath + '.upload'
 
-		self._putFile(packagePath, uploadPath)
+		with self.sftpClient.file(uploadPath, 'w') as remoteFile:
+			self.packageRepository.readPackage(packagePath, remoteFile)
+
 		self._move(uploadPath, entryPath)
 
 		self.availablePackages.append(packageName)

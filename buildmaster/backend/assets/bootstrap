@@ -1,7 +1,7 @@
 #!/bin/sh
 
 BASE_DIR="/var/buildmaster"
-SOURCE_DIR="/var/sources"
+LICENSES_DIR="/var/licenses"
 
 if [ -z "$1" ]
 then
@@ -41,12 +41,10 @@ do
 	shift
 done
 
-BUILDTOOLS_DIR=$SOURCE_DIR/buildtools
-HAIKU_DIR=$SOURCE_DIR/haiku
-GENERATED_DIR=$BASE_DIR/generated
 PORTS_DIR=$BASE_DIR/haikuports
 OUTPUT_DIR=$BASE_DIR/output
-BUILDERS_DIR=$PORTS_DIR/buildmaster/builders
+STATE_DIR=$PORTS_DIR/buildmaster
+BUILDERS_DIR=$STATE_DIR/builders
 
 if [ -z "$ARCH" ]
 then
@@ -73,22 +71,13 @@ else
 	echo "Using existing HaikuPorts repository at $PORTS_DIR"
 fi
 
-### Get Haiku
-
-if [ ! -d "$HAIKU_DIR" ]; then
-	echo "Cloning Haiku repository to $HAIKU_DIR"
-	git clone --depth=1 https://review.haiku-os.org/haiku "$HAIKU_DIR"
-else
-	echo "Using existing Haiku repository at $HAIKU_DIR"
-fi
-
 # Configure the ports tree.
 
 cd "$PORTS_DIR"
 echo "Configuring ports tree"
 
 echo "TREE_PATH=\"$PORTS_DIR\"" > haikuports.conf
-echo "LICENSES_DIRECTORY=\"$HAIKU_DIR/data/system/data/licenses\"" \
+echo "LICENSES_DIRECTORY=\"$LICENSES_DIR\"" \
 	>> haikuports.conf
 echo "PACKAGE_COMMAND=\"package\"" >> haikuports.conf
 echo "PACKAGE_REPO_COMMAND=\"package_repo\"" >> haikuports.conf
@@ -103,7 +92,11 @@ fi
 
 # Create some buildmaster paths
 mkdir -p $OUTPUT_DIR
+mkdir -p $STATE_DIR
 mkdir -p $BUILDERS_DIR
+
+# Record initial processed revision
+git rev-parse HEAD > $STATE_DIR/processed_rev
 
 # Done.
 
