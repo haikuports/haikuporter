@@ -14,8 +14,15 @@ One buildmaster container per architecture
   * ```BUILD_TARGET_ARCH``` - Target architecture for buildmaster
   * ```SYSTEM_PACKAGE_BRANCH``` - The branch of the system packages
     * system-packages are expected at /var/buildmaster/system-packages/$SYSTEM_PACKAGE_BRANCH
-  * ```STORAGE_BACKEND_CONFIG``` - The path of an external storage backend config file (optional)
-    * This would normally be pointed at a secret
+  * ```STORAGE_BACKEND_CONFIG``` - The path of an external storage backend json config file (optional)
+    * example: ```{"backend_type": "s3", "endpoint_url": "", "access_key_id": "", "secret_access_key": "", "bucket_name": ""}```
+    * Fields:
+      * backend_type - s3 for now (required)
+      * prefix - prefix path of repository (optional)
+      * endpoint_url - s3 endpoint url
+      * access_key_id - s3 access key id
+      * secret_access_key - s3 secret access key
+      * bucket_name - s3 bucket name
   * ```REPOSITORY_TRIGGER_URL``` - Target URL to hit when build complete (optional)
     * example: https://depot.haiku-os.org/__repository/haikuports/source/haikuports_x86_64/import
 
@@ -41,8 +48,6 @@ One buildmaster container per architecture
         * haikuports.conf
 
 ## Repository generation
-
-> aka our Rube Goldberg machine
 
 * haikuporter buildmaster builds packages into /var/buildmaster/haikuports/packages which quietly goes to /var/packages/instances/master/(arch) via a symlink
   * This follows the basic haikuporter behaviour

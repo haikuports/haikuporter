@@ -1,8 +1,0 @@
-{
-	"backend_type": "s3",
-	"endpoint_url": "https://storage.example.org",
-	"access_key_id": "example_key",
-	"secret_access_key": "example_secret",
-	"bucket_name": "haikuports",
-	"prefix": "master/x86_64/current"
-}
