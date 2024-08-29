@@ -712,13 +712,13 @@ class Port(object):
 		for s, source in enumerate(self.sources, 1):
 			if s == 1:
 				patchSetFileName = self.baseName + '-' + self.version + '.patchset'
-				archPatchSetFileName = (self.baseName + '-' + self.version + '-'
+				archPatchSetFileName = (self.name + '-' + self.version + '-'
 										+ self.targetArchitecture
 										+ '.patchset')
 			else:
 				patchSetFileName = (self.baseName + '-' + self.version + '-source'
 									+ str(s) + '.patchset')
-				archPatchSetFileName = (self.baseName + '-' + self.version + '-'
+				archPatchSetFileName = (self.name + '-' + self.version + '-'
 										+ self.targetArchitecture + '-source'
 										+ str(s) + '.patchset')
 			patchSetFilePath = self.patchesDir + '/' + patchSetFileName
