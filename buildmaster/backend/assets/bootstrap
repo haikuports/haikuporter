@@ -45,6 +45,7 @@ PORTS_DIR=$BASE_DIR/haikuports
 OUTPUT_DIR=$BASE_DIR/output
 STATE_DIR=$PORTS_DIR/buildmaster
 BUILDERS_DIR=$STATE_DIR/builders
+REPO_DIR=$BASE_DIR/repository
 
 if [ -z "$ARCH" ]
 then
@@ -94,9 +95,23 @@ fi
 mkdir -p $OUTPUT_DIR
 mkdir -p $STATE_DIR
 mkdir -p $BUILDERS_DIR
+mkdir -p $REPO_DIR
 
 # Record initial processed revision
 git rev-parse HEAD > $STATE_DIR/processed_rev
+
+# Create repo.info if it doesn't already exist
+REPO_INFO="$REPO_DIR/repo.info"
+if [ ! -e $REPO_INFO ]
+then
+	echo "name HaikuPorts" > $REPO_INFO
+	echo "vendor \"Haiku Project\"" >> $REPO_INFO
+	echo "summary \"The HaikuPorts repository\"" >> $REPO_INFO
+	echo "priority 1" >> $REPO_INFO
+	echo "baseurl https://eu.hpkg.haiku-os.org/haikuports/master/$ARCH/current" >> $REPO_INFO
+	echo "identifier tag:haikuports.org,2013:repositories/haikuports/master/$ARCH" >> $REPO_INFO
+	echo "architecture $ARCH" >> $REPO_INFO
+fi
 
 # Done.
 
