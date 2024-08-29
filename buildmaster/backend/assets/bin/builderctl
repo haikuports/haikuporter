@@ -112,10 +112,6 @@ def cluster_provision(arguments):
 		command = "sed -i '/^#bluescreen false/s/^#//' " + os.path.join(kernel_settings, "kernel")
 		stdin, stdout, stderr = ssh.exec_command(command)
 
-		# XXX: Fix SSHD tftp
-		command = "sed -i 's/^Subsystem\s*sftp.*/Subsystem sftp \/boot\/system\/lib\/openssh\/sftp-server/' /boot/system/settings/ssh/sshd_config"
-		stdin, stdout, stderr = ssh.exec_command(command)
-
 		print(color.OKBLUE + "Complete" + color.ENDC)
 		ssh.close()
 	print("It may be necessary to reboot the buildslaves to pick up the changes.")
