@@ -95,15 +95,17 @@ def cluster_provision(arguments):
 			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
 			continue
 
+		sftp = ssh.open_sftp()
+
 		# All highly prone to messing up. yay.
 		stdin, stdout, stderr = ssh.exec_command("finddir B_USER_SETTINGS_DIRECTORY")
 		settings_dir = stdout.readlines()[-1].strip()
 
 		### Make sure debug_server doesn't halt crashes
 		debug_server = os.path.join(settings_dir, "system", "debug_server")
-		stdin, stdout, stderr = ssh.exec_command("mkdir -p " + debug_server)
-		command = "echo 'executable_actions { DumpRenderTree log }' > " + os.path.join(debug_server, "config")
-		stdin, stdout, stderr = ssh.exec_command(command)
+		sftp.mkdir(debug_server)
+		with sftp.open(os.path.join(debug_server, "settings"), "wb") as output_file:
+			output_file.write("default_action report".encode())
 
 		### Tune kernel settings
 		kernel_settings = os.path.join(settings_dir, "kernel", "drivers")
