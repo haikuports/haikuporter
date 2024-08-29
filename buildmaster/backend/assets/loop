@@ -75,6 +75,11 @@ do
 
 		build_prep
 		buildmaster build $LIST
+	elif [ -f buildmaster/do-repository ]; then
+		echo "$(date) package repository update requested"
+		echo ""
+		rm buildmaster/do-repository
+
 	elif [ $(git rev-parse HEAD) = $HEAD_REVISION ]; then
 		echo "$(date) no new revision"
 		sleep $SUCCESS_WAIT
