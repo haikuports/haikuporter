@@ -234,12 +234,19 @@ class PackageRepository(object):
 
 		repoChecksumFile = repoFile + '.sha256'
 		self._checksumPackageRepository(repoFile, repoChecksumFile)
-		self._signPackageRepository(repoFile)
+
+		repoSignatureFile = repoFile + '.minisig'
+		wasSigned = self._signPackageRepository(repoFile, repoSignatureFile)
 
 		if self.storageBackend is not None:
+			extraFiles = [repoInfoFile, repoFile, repoChecksumFile]
+			if wasSigned:
+				extraFiles.append(repoSignatureFile)
+
+			extraFiles.append(packageListFile)
+
 			self._stubLocalPackages(localPackages)
-			self._populateStorageBackendFiles(
-				[repoInfoFile, repoFile, repoChecksumFile, packageListFile])
+			self._populateStorageBackendFiles(extraFiles)
 			self._pruneStorageBackend(packageNameList)
 
 	def _checksumPackageRepository(self, repoFile, repoChecksumFile):
@@ -255,13 +262,14 @@ class PackageRepository(object):
 		with open(repoChecksumFile, 'w') as outputFile:
 			outputFile.write(checksum.hexdigest())
 
-	def _signPackageRepository(self, repoFile):
+	def _signPackageRepository(self, repoFile, repoSignatureFile):
 		"""Sign the package repository if a private key was provided"""
 		privateKeyFile = getOption('packageRepositorySignPrivateKeyFile')
 		privateKeyPass = getOption('packageRepositorySignPrivateKeyPass')
 		if not privateKeyFile and not privateKeyPass:
 			info("Warning: unsigned package repository")
-			return
+			return False
+
 		if not os.path.exists(privateKeyFile):
 			sysExit('specified package repo private key file missing!')
 
@@ -274,10 +282,12 @@ class PackageRepository(object):
 
 		# minisign -s /tmp/minisign.key -Sm ${ARTIFACT}
 		info("signing repository")
-		output = subprocess.check_output([minisignCommand, '-s',
-			privateKeyFile, "-Sm", repoFile], input=privateKeyPass.encode('utf-8'),
+		output = subprocess.check_output([minisignCommand,
+			'-x', repoSignatureFile, '-s', privateKeyFile, "-Sm", repoFile],
+			input=privateKeyPass.encode('utf-8'),
 			stderr=subprocess.STDOUT).decode('utf-8')
 		info(output)
+		return True
 
 	def checkPackageRepositoryConsistency(self):
 		"""Check consistency of package repository by dependency solving all
