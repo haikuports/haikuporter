@@ -256,6 +256,10 @@ class BuildMaster(object):
 
 				self.activeBuilders.append(builder)
 
+		print('Active builder count: ' + str(len(self.activeBuilders)))
+		for i in self.activeBuilders:
+			print('  builder: ' + str(i.name) + ' (' + str(i.type) + ')')
+
 		if len(self.activeBuilders) == 0:
 			sysExit('no builders available')
 

@@ -27,6 +27,7 @@ class RemoteBuilderSSH(object):
 	def __init__(self, configFilePath, packageRepository, outputBaseDir,
 			portsTreeOriginURL, portsTreeHead):
 		self._loadConfig(configFilePath)
+		self.type = "RemoteBuilderSSH"
 		self.availablePackages = []
 		self.visiblePackages = []
 		self.portsTreeOriginURL = portsTreeOriginURL
