@@ -92,6 +92,12 @@ class RemoteBuilderSSH(object):
 				os.path.dirname(configFilePath),
 				self.config['ssh']['privateKeyFile'])
 
+		if 'jumpPrivateKeyFile' in self.config['ssh']:
+			if not os.path.isabs(self.config['ssh']['jumpPrivateKeyFile']):
+				self.config['ssh']['jumpPrivateKeyFile'] = os.path.join(
+					os.path.dirname(configFilePath),
+					self.config['ssh']['jumpPrivateKeyFile'])
+
 		if 'hostKeyFile' not in self.config['ssh']:
 			raise Exception('missing ssh hostKeyFile config for builder' + self.name)
 		if not os.path.isabs(self.config['ssh']['hostKeyFile']):
@@ -123,15 +129,39 @@ class RemoteBuilderSSH(object):
 
 	def _connect(self):
 		try:
+			transport = None
+			if 'jumpHost' in self.config['ssh']:
+				jumphost=paramiko.SSHClient()
+				jumphost.load_host_keys(self.config['ssh']['hostKeyFile'])
+				self.logger.info('trying to connect to jumphost for builder ' + self.name)
+				jumphost.connect(self.config['ssh']['jumpHost'],
+					 port=int(self.config['ssh']['jumpPort']),
+					 username=self.config['ssh']['jumpUser'],
+					 key_filename=self.config['ssh']['jumpPrivateKeyFile'],
+					 compress=True, allow_agent=False, look_for_keys=False,
+					 timeout=10)
+				transport=jumphost.get_transport().open_channel(
+					'direct-tcpip', (self.config['ssh']['host'],
+						int(self.config['ssh']['port'])), ('', 0)
+				)
+
 			self.sshClient = paramiko.SSHClient()
 			self.sshClient.load_host_keys(self.config['ssh']['hostKeyFile'])
 			self.logger.info('trying to connect to builder ' + self.name)
-			self.sshClient.connect(hostname=self.config['ssh']['host'],
-				port=int(self.config['ssh']['port']),
-				username=self.config['ssh']['user'],
-				key_filename=self.config['ssh']['privateKeyFile'],
-				compress=True, allow_agent=False, look_for_keys=False,
-				timeout=10)
+			if transport:
+				self.sshClient.connect(hostname=self.config['ssh']['host'],
+					port=int(self.config['ssh']['port']),
+					username=self.config['ssh']['user'],
+					key_filename=self.config['ssh']['privateKeyFile'],
+					compress=True, allow_agent=False, look_for_keys=False,
+					timeout=10, sock=transport)
+			else:
+				self.sshClient.connect(hostname=self.config['ssh']['host'],
+					port=int(self.config['ssh']['port']),
+					username=self.config['ssh']['user'],
+					key_filename=self.config['ssh']['privateKeyFile'],
+					compress=True, allow_agent=False, look_for_keys=False,
+					timeout=10)
 
 			self.sshClient.get_transport().set_keepalive(15)
 			self.sftpClient = self.sshClient.open_sftp()
