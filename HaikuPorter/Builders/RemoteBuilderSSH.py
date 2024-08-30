@@ -34,6 +34,9 @@ class RemoteBuilderSSH(object):
 		self.portsTreeHead = portsTreeHead
 		self.packageRepository = packageRepository
 
+		self.sshClient = None
+		self.jumpClient = None
+
 		if not paramiko:
 			raise Exception('paramiko unavailable')
 
@@ -129,26 +132,24 @@ class RemoteBuilderSSH(object):
 
 	def _connect(self):
 		try:
-			transport = None
 			if 'jumpHost' in self.config['ssh']:
-				jumphost=paramiko.SSHClient()
-				jumphost.load_host_keys(self.config['ssh']['hostKeyFile'])
+				self.jumpClient=paramiko.SSHClient()
+				self.jumpClient.load_host_keys(self.config['ssh']['hostKeyFile'])
 				self.logger.info('trying to connect to jumphost for builder ' + self.name)
-				jumphost.connect(self.config['ssh']['jumpHost'],
+				self.jumpClient.connect(self.config['ssh']['jumpHost'],
 					 port=int(self.config['ssh']['jumpPort']),
 					 username=self.config['ssh']['jumpUser'],
 					 key_filename=self.config['ssh']['jumpPrivateKeyFile'],
 					 compress=True, allow_agent=False, look_for_keys=False,
 					 timeout=10)
-				transport=jumphost.get_transport().open_channel(
-					'direct-tcpip', (self.config['ssh']['host'],
-						int(self.config['ssh']['port'])), ('', 0)
-				)
 
 			self.sshClient = paramiko.SSHClient()
 			self.sshClient.load_host_keys(self.config['ssh']['hostKeyFile'])
 			self.logger.info('trying to connect to builder ' + self.name)
-			if transport:
+			if self.jumpClient != None:
+				transport=self.jumpClient.get_transport().open_channel(
+					'direct-tcpip', (self.config['ssh']['host'],
+						int(self.config['ssh']['port'])), ('', 0))
 				self.sshClient.connect(hostname=self.config['ssh']['host'],
 					port=int(self.config['ssh']['port']),
 					username=self.config['ssh']['user'],
@@ -392,6 +393,13 @@ class RemoteBuilderSSH(object):
 
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
+
+		if buildSuccess == False and reschedule:
+			# If we are going to try again, close out any open ssh connections
+			if self.sshClient != None:
+				self.sshClient.close()
+			if self.jumpClient != None:
+				self.jumpClient.close()
 
 		return (buildSuccess, reschedule)
 
