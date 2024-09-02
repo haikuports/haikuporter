@@ -331,7 +331,8 @@ cmake()
 
 	CMAKE=$portPackageLinksDir/cmd~cmake/bin/cmake
 	if [ ! -f $CMAKE ]; then
-		CMAKE=$(command -v cmake)
+		CMAKE=$(type -Pp cmake)
+        echo "CMAKE = $CMAKE"
 	fi
 
 	$CMAKE "$@"
@@ -348,7 +349,7 @@ meson()
 
 	MESON=$portPackageLinksDir/cmd~meson/bin/meson
 	if [ ! -f $MESON ]; then
-		MESON=$(command -v meson)
+		MESON=$(type -Pp meson)
 	fi
 
 	$MESON --wrap-mode=nodownload "$@"
