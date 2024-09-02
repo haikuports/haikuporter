@@ -332,7 +332,6 @@ cmake()
 	CMAKE=$portPackageLinksDir/cmd~cmake/bin/cmake
 	if [ ! -f $CMAKE ]; then
 		CMAKE=$(type -Pp cmake)
-        echo "CMAKE = $CMAKE"
 	fi
 
 	$CMAKE "$@"
