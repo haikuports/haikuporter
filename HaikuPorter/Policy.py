@@ -210,12 +210,17 @@ class Policy(object):
 		for library in libraries:
 			if self._isMissingLibraryDependency(library, dirPath, rpath):
 				if (library.startswith('libgcc') or
-					library.startswith('libstdc++') or
 					library.startswith('libsupc++')):
 					continue
-				self._violation('"%s" needs library "%s", but the '
-					'package doesn\'t seem to declare that as a '
-					'requirement' % (path, library))
+				if (library.startswith('libstdc++')):
+					suffixIndex = library.find('.so')
+					resolvableName = self._normalizeResolvableName(
+						'lib:' + library[:suffixIndex] + self.secondaryArchSuffix)
+					self.package.recipeKeys['REQUIRES'] += [ resolvableName ]
+				else:
+					self._violation('"%s" needs library "%s", but the '
+						'package doesn\'t seem to declare that as a '
+						'requirement' % (path, library))
 
 	def _isMissingLibraryDependency(self, library, dirPath, rpath):
 		if library.startswith('_APP_'):

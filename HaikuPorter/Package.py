@@ -213,6 +213,13 @@ class Package(object):
 	def makeHpkg(self, requiresUpdater):
 		"""Create a package suitable for distribution"""
 
+		packageFile = self.hpkgDir + '/' + self.hpkgName
+		if os.path.exists(packageFile):
+			os.remove(packageFile)
+
+		# policy check, add some requires
+		self.policy.checkPackage(self, packageFile)
+
 		if (requiresUpdater and self.type != PackageType.SOURCE):
 			requiresList = self.recipeKeys['REQUIRES']
 			self.recipeKeys['UPDATED_REQUIRES'] \
@@ -223,10 +230,6 @@ class Package(object):
 
 		self._generatePackageInfo(self.packagingDir + '/.PackageInfo',
 			[requiresName], getOption('quiet'), False, True, self.architecture)
-
-		packageFile = self.hpkgDir + '/' + self.hpkgName
-		if os.path.exists(packageFile):
-			os.remove(packageFile)
 
 		# mimeset the files that shall go into the package
 		info('mimesetting files for package ' + self.hpkgName + ' ...')
@@ -252,8 +255,6 @@ class Package(object):
 		output = check_output([Configuration.getPackageCommand(), 'create', packageFile],
 			cwd=self.packagingDir).decode('utf-8')
 		info(output)
-		# policy check
-		self.policy.checkPackage(self, packageFile)
 
 		# Clean up after ourselves
 		shutil.rmtree(self.packagingDir)
