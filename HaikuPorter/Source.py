@@ -12,7 +12,6 @@
 
 # -- Modules ------------------------------------------------------------------
 
-import hashlib
 import os
 import shutil
 from subprocess import CalledProcessError, check_call, check_output
@@ -251,23 +250,16 @@ class Source(object):
 			return
 
 		info('Validating checksum of ' + self.fetchTargetName)
-		sha256 = hashlib.sha256()
-
-		with open(self.fetchTarget, 'rb') as f:
-			while True:
-				data = f.read(16384)
-				if not data:
-					break
-				sha256.update(data)
+		hexdigest = calcChecksum = self.sourceFetcher.calcChecksum()
 
 		if self.checksum is not None:
-			if sha256.hexdigest() != self.checksum:
+			if hexdigest != self.checksum:
 				sysExit('Expected SHA-256: ' + self.checksum + '\n'
-						+ 'Found SHA-256:	 ' + sha256.hexdigest())
+						+ 'Found SHA-256:	 ' + hexdigest)
 		else:
 			warn('----- CHECKSUM TEMPLATE -----')
 			warn('CHECKSUM_SHA256%(index)s="%(digest)s"' % {
-				"digest": sha256.hexdigest(),
+				"digest": hexdigest,
 				"index": ("_" + self.index) if self.index != "1" else ""})
 			warn('-----------------------------')
 
