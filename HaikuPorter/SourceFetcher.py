@@ -12,6 +12,7 @@
 
 # -- Modules ------------------------------------------------------------------
 
+import hashlib
 import os
 import re
 import shutil
@@ -104,6 +105,19 @@ def foldSubdirIntoSourceDir(subdir, sourceDir):
 	for fileName in os.listdir(fullSubdirPath):
 		os.rename(fullSubdirPath + '/' + fileName, sourceDir + '/' + fileName)
 	os.removedirs(fullSubdirPath)
+
+# -----------------------------------------------------------------------------
+
+def calcChecksumFile(file):
+	sha256 = hashlib.sha256()
+
+	with open(file, 'rb') as f:
+		while True:
+			data = f.read(16384)
+			if not data:
+				break
+			sha256.update(data)
+	return sha256.hexdigest()
 
 # -- Fetches sources via bzr --------------------------------------------------
 
@@ -227,6 +241,9 @@ class SourceFetcherForDownload(object):
 		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir,
 			foldSubDir)
 
+	def calcChecksum(self):
+		return calcChecksumFile(self.fetchTarget)
+
 # -- Fetches sources via fossil -----------------------------------------------
 
 class SourceFetcherForFossil(object):
@@ -273,19 +290,28 @@ class SourceFetcherForGit(object):
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 		if not self.rev:
 			self.rev = 'HEAD'
+		if self.rev.startswith('tag=') or self.rev.startswith('commit='):
+			self.rev=self.rev[self.rev.find('=') + 1:]
+			self.sourceShouldBeValidated = True
 
 	def fetch(self):
-		if not Configuration.shallAllowUnsafeSources():
-			sysExit('Downloading from unsafe sources is disabled in ' +
-					'haikuports.conf!')
+		if not self.sourceShouldBeValidated:
+			if not Configuration.shallAllowUnsafeSources():
+				sysExit('Downloading from unsafe sources is disabled in ' +
+						'haikuports.conf!')
 
-		warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
-		warn("PLEASE MOVE TO A STATIC ARCHIVE DOWNLOAD WITH CHECKSUM ASAP!")
+			warn("UNSAFE SOURCES ARE BAD AND SHOULD NOT BE USED IN PRODUCTION")
+			warn("PLEASE MOVE TO A TAG OR COMMIT WITH CHECKSUM ASAP!")
 
 		ensureCommandIsAvailable('git')
 		command = 'git clone --bare %s %s' % (self.uri, self.fetchTarget)
 		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 		info(output)
+
+		# sanitize the cloned repository, attributes could affect the export
+		command = 'mkdir -p "%s"/info && echo "* -export-subst -export-ignore" > "%s"/info/attributes' \
+			% (self.fetchTarget, self.fetchTarget)
+		output = check_output(command, shell=True, stderr=STDOUT).decode('utf-8')
 
 	def updateToRev(self, rev):
 		ensureCommandIsAvailable('git')
@@ -324,6 +350,14 @@ class SourceFetcherForGit(object):
 		if foldSubDir:
 			foldSubdirIntoSourceDir(foldSubDir, sourceDir)
 
+	def calcChecksum(self):
+		ensureCommandIsAvailable('git')
+		command = 'GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null '
+		command += 'git -c core.abbrev=no archive --format tar "%s" | sha256sum 2>&1' % (self.rev)
+		output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
+		checksum = output[:output.find(' ')]
+		return checksum
+
 # -- Fetches sources from local disk ------------------------------------------
 
 class SourceFetcherForLocalFile(object):
@@ -346,6 +380,9 @@ class SourceFetcherForLocalFile(object):
 	def unpack(self, sourceBaseDir, sourceSubDir, foldSubDir):
 		unpackFile(self.uri, self.fetchTarget, sourceBaseDir, sourceSubDir,
 			foldSubDir)
+
+	def calcChecksum(self):
+		return calcChecksumFile(self.fetchTarget)
 
 # -- Fetches sources via hg ---------------------------------------------------
 
