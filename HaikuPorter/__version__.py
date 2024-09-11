@@ -3,4 +3,4 @@
 # Copyright 2013 Oliver Tappe
 # Distributed under the terms of the MIT License.
 
-__version__ = '1.3.0'
+__version__ = '1.3.1'
