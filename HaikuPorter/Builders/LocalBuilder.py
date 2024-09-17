@@ -15,6 +15,7 @@ from .Builder import BuilderState
 
 class LocalBuilder(object):
 	def __init__(self, name, packageRepository, outputBaseDir, options):
+		self.type = "LocalBuilder"
 		self.options = options
 		self.name = name
 		self.buildCount = 0
@@ -52,6 +53,16 @@ class LocalBuilder(object):
 		}
 		filter.setBuild(self.currentBuild)
 
+	@property
+	def status(self):
+		return {
+			'name': self.name,
+			'state': self.state,
+			'currentBuild': {
+				'build': self.currentBuild['status'],
+				'number': self.currentBuild['number']
+			} if self.currentBuild else None
+		}
 
 	def unsetBuild(self):
 		self.buildLogger.removeHandler(self.currentBuild['logHandler'])

@@ -41,6 +41,7 @@ A multi-node cluster is for mass building large numbers of packages.
    - `createbuilder -n test01 -H 127.0.0.1`
    - copy generated public key to builder
    - `builderctl health`
+ - (builders can also use a jumphost by adding jumpHost, jumpUser, jumpPort, jumpPrivateKeyFile to the builder config)
  - exit
  - Copy the packages from a nightly to ports/packages on the buildmaster
  - `docker run -v ~/buildmaster.x86:/data -it -e ARCH=x86 ghcr.io/haikuports/haikuporter/buildmaster`

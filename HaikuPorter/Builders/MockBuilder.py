@@ -10,6 +10,7 @@ import time
 
 class MockBuilder(object):
 	def __init__(self, name, buildFailInterval, builderFailInterval, lostAfter):
+		self.type = "MockBuilder"
 		self.name = name
 		self.buildCount = 0
 		self.failedBuilds = 0
