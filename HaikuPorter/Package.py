@@ -280,7 +280,9 @@ class Package(object):
 			output = check_output(cmdlineArgs, stderr=STDOUT).decode('utf-8')
 		except CalledProcessError as exception:
 			raise Exception('failure creating the build package: '
-				+ exception.output[:-1].decode('utf-8'))
+				+ "\n\tcommand: '%s'" % ' '.join(exception.cmd)
+				+ "\n\treturn code: '%s'" % exception.returncode
+				+ "\n\toutput: '%s'" % exception.output[:-1].decode('utf-8'))
 		info(output)
 		self.buildPackage = buildPackage
 		os.remove(buildPackageInfo)
