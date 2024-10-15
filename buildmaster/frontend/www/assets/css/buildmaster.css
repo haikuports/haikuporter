@@ -1,3 +1,7 @@
+:root {
+	color-scheme: dark light;
+}
+
 body {
 	background-color: white;
 	font-family: sans-serif;
@@ -159,4 +163,48 @@ a, a:visited {
 
 .compact .buildNumbersContainer {
 	flex-grow: 1;
+}
+
+@media(prefers-color-scheme: dark) {
+	body, #topLink, .inlineLogViewer {
+		background-color: #222;
+	}
+
+	body, a, a:visited {
+		color: #ddd;
+	}
+
+	.requiredPackages, #completeBuilds .resultingPackages {
+		background-color: #003300;
+	}
+
+	.missingPackages, #scheduledBuilds .resultingPackages,
+		#blockedBuilds .resultingPackages {
+		background-color: #444400;
+	}
+
+	#failedBuilds .resultingPackages, #lostBuilds .resultingPackages,
+		#skippedBuilds .resultingPackages {
+		background-color: #990000;
+	}
+
+	#blockedBuilds {
+		background-color: #222211;
+	}
+
+	#completeBuilds, #activeBuilders {
+		background-color: #002f00;
+	}
+
+	#activeBuilds, #reconnectingBuilders {
+		background-color: #222233;
+	}
+
+	#failedBuilds, #skippedBuilds, #lostBuilders {
+		background-color: #221111;
+	}
+
+	#lostBuilds {
+		background-color: #221000;
+	}
 }

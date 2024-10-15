@@ -1,3 +1,7 @@
+:root {
+	color-scheme: dark light;
+}
+
 body {
 	font-family: monospace;
 }
@@ -92,4 +96,11 @@ body {
 
 .bg-white, .fg-white.reverse {
 	background-color: white;
+}
+
+@media(prefers-color-scheme: dark) {
+	body {
+		color: #ddd;
+		background-color: #222;
+	}
 }
