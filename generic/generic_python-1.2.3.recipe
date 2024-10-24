@@ -30,7 +30,7 @@ BUILD_REQUIRES="
 	haiku_devel
 	"
 
-# add python versions if needed: eg (3.10 3.11)
+# add python versions if needed: eg (3.10 3.13)
 PYTHON_VERSIONS=(3.10)
 
 for i in "${!PYTHON_VERSIONS[@]}"; do
