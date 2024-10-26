@@ -1,0 +1,63 @@
+SUMMARY="Short description of ProjectX"
+DESCRIPTION="Long ProjectX description.
+Spanning several paragraphs, maybe
+ - containing
+ - bullet points etc.
+You can also have really long lines that do not fit in 100 characters and use a backslash to \
+wrap the line."
+HOMEPAGE="https://metacpan.org/pod/Project::X"
+COPYRIGHT="2014 Developer name
+	2016 Another developer's name"
+LICENSE="MIT
+	GNU GPL v2"
+REVISION="1"
+SOURCE_URI="https://cpan.metacpan.org/authors/id/A/AU/AUTHOR/Project-X-$portVersion.tar.gz"
+CHECKSUM_SHA256="000000000000000000000000000000000"
+SOURCE_DIR="Project-X-$portVersion"
+PATCHES="project_x-$portVersion.patchset"
+ADDITIONAL_FILES="projectx.rdef"
+
+ARCHITECTURES="any"
+
+PROVIDES="
+	project_x = $portVersion
+	"
+REQUIRES="
+	haiku
+	some_other_perl_package
+	vendor_perl
+	"
+
+BUILD_REQUIRES="
+	haiku_devel
+	module_build
+	"
+BUILD_PREREQUIRES="
+	cmd:perl
+	"
+
+TEST_REQUIRES="
+	some_other_perl_package
+	some_test_requirement
+	"
+
+BUILD()
+{
+	perl Build.PL --installdirs vendor --prefix $prefix
+	./Build
+}
+
+INSTALL()
+{
+	./Build pure_install
+
+	# remove architecture-specific files
+	cd $prefix
+	rm -r $(perl -V:vendorarch | cut -d\' -f2 | cut -d/ -f5-)
+		# cut extracts the quoted string and strips the prefix (which is perl's and not ours)
+}
+
+TEST()
+{
+	./Build test
+}
