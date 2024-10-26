@@ -3,8 +3,8 @@ DESCRIPTION="Long FontX description.
 Spanning several paragraphs, maybe
  - containing
  - bullet points etc.
-You can also have really long lines that do not fit in 80 characters and use \
-a backslash to wrap the line."
+You can also have really long lines that do not fit in 100 characters and use a backslash to \
+wrap the line."
 HOMEPAGE="https://homepage/of/fontx.org"
 COPYRIGHT="2015 Haikutype"
 LICENSE="SIL Open Font License v1.1"
@@ -24,16 +24,9 @@ REQUIRES=""
 BUILD_REQUIRES=""
 BUILD_PREREQUIRES=""
 
-BUILD()
-{
-	true
-}
-
 INSTALL()
 {
 	FONTDIR=$fontsDir/ttfonts
 	mkdir -p ${FONTDIR}
-	cp generic-font1.ttf ${FONTDIR}
-	cp generic-font2.ttf ${FONTDIR}
-	cp generic-font-bold.ttf ${FONTDIR}
+	cp -a *.ttf ${FONTDIR}
 }
