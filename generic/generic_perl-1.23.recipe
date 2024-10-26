@@ -17,7 +17,7 @@ SOURCE_DIR="Project-X-$portVersion"
 PATCHES="project_x-$portVersion.patchset"
 ADDITIONAL_FILES="projectx.rdef"
 
-ARCHITECTURES="any"
+ARCHITECTURES="?any"
 
 PROVIDES="
 	project_x = $portVersion
