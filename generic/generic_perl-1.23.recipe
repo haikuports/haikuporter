@@ -1,0 +1,73 @@
+SUMMARY="Short description of ProjectX"
+DESCRIPTION="Long ProjectX description.
+Spanning several paragraphs, maybe
+ - containing
+ - bullet points etc.
+You can also have really long lines that do not fit in 100 characters and use a backslash to \
+wrap the line."
+HOMEPAGE="https://metacpan.org/pod/Project::X"
+COPYRIGHT="2014 Developer name
+	2016 Another developer's name"
+LICENSE="MIT
+	GNU GPL v2"
+REVISION="1"
+SOURCE_URI="https://cpan.metacpan.org/authors/id/A/AU/AUTHOR/Project-X-$portVersion.tar.gz"
+CHECKSUM_SHA256="000000000000000000000000000000000"
+SOURCE_DIR="Project-X-$portVersion"
+PATCHES="project_x-$portVersion.patchset"
+ADDITIONAL_FILES="projectx.rdef"
+
+ARCHITECTURES="?any"
+
+PROVIDES="
+	project_x = $portVersion
+	cmd:projectx = $portVersion # only some packages provide commands
+	"
+REQUIRES="
+	haiku
+	some_other_perl_package
+	vendor_perl
+	"
+
+BUILD_REQUIRES="
+	haiku_devel
+	# Guideline: Don't add requirements other than configure and build requirements here.
+	# Makefile.PL may print warnings about missing runtime dependencies, but they aren't required
+	# at build time. Runtime requirements should be added to REQUIRES and TEST_REQUIRES instead.
+	"
+BUILD_PREREQUIRES="
+	cmd:make
+	cmd:perl
+	"
+
+TEST_REQUIRES="
+	some_other_perl_package
+	some_test_requirement
+	"
+
+BUILD()
+{
+	perl Makefile.PL PREFIX=$prefix
+	make
+}
+
+INSTALL()
+{
+	# Explanation: "make install" would create a "perllocal.pod" file which isn't wanted for
+	# packages. Using "make pure_install" avoids that.
+	make pure_install
+
+	# remove architecture-specific files
+	# Explanation: Otherwise, this wouldn't be a valid "any" package. Only .packlist and other
+	# unneeded files should be removed. If there is anything else in the vendorarch directory
+	# (i.e. lib/perl5/vendor_perl/$perlVersion/$perlArch), make the package architecture-dependent
+	# instead (see generic_perl_xs.recipe).
+	cd $prefix
+	rm -r $(perl -V:vendorarch | cut -d\' -f2 | cut -d/ -f5-)
+		# cut extracts the quoted string and strips the prefix (which is perl's and not ours)
+}
+
+TEST()
+{
+	make test
+}
