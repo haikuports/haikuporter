@@ -66,7 +66,7 @@ recipeAttributes = {
 		'required': False,
 		'default': {},
 		'extendable': Extendable.NO,
-		'indexable': True,
+		'indexable': False,
 	},
 
 	# indexable, i.e. per-source attributes
