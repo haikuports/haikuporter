@@ -639,6 +639,7 @@ class Port(object):
 		for source in self.sources:
 			source.fetch(self)
 			source.validateChecksum(self)
+			source.validateFingerprint(self)
 
 	def unpackSource(self):
 		"""Unpack the source archive(s)"""
@@ -982,11 +983,17 @@ class Port(object):
 		basedOnSourcePackage = False
 		## REFACTOR it looks like this method should be setup and dispatch
 
+		pgpkeys = keys['PGPKEYS'] if 'PGPKEYS' in keys else None
+		if not 'SOURCE_SIG_URI' in keys:
+			keys['SOURCE_SIG_URI'] = []
+
 		for index in sorted(list(keys['SOURCE_URI'].keys()),
 				key=cmp_to_key(naturalCompare)):
 			source = Source(self, index, keys['SOURCE_URI'][index],
 							keys['SOURCE_FILENAME'].get(index, None),
 							keys['CHECKSUM_SHA256'].get(index, None),
+							keys['SOURCE_SIG_URI'].get(index, None),
+							pgpkeys,
 							keys['SOURCE_DIR'].get(index, None),
 							keys['PATCHES'].get(index, []),
 							keys['ADDITIONAL_FILES'].get(index, []))
