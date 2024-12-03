@@ -289,9 +289,9 @@ class Source(object):
 		if hexdigest is None:
 			sysExit('Found no fingerprint or no public key to match')
 
-		if self.pgpkeys is not None and len(self.pgpkeys.keys()) > 0:
-			for index in self.pgpkeys.keys():
-				if hexdigest == self.pgpkeys.get(index)[0]:
+		if self.pgpkeys is not None and len(self.pgpkeys) > 0:
+			for pgpkey in self.pgpkeys:
+				if hexdigest == pgpkey:
 					port.setFlag('verified', self.index)
 					return
 			sysExit('Found unexpected fingerprint:	 ' + hexdigest)

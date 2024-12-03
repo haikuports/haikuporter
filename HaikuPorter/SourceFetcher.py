@@ -426,6 +426,10 @@ class SourceFetcherForGit(object):
 			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
 		except CalledProcessError as e:
 			warn("COULDN'T FIND PUBLIC KEY")
+			for line in e.output.decode().split('\n'):
+				if "ERRSIG" in line:
+					key = line.split(' ')[8]
+					warn("IMPORT WITH: gpg --search-keys %s" % key)
 			return None
 		for line in output.split('\n'):
 			if 'VALIDSIG' in line:

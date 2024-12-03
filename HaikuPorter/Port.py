@@ -984,6 +984,8 @@ class Port(object):
 		## REFACTOR it looks like this method should be setup and dispatch
 
 		pgpkeys = keys['PGPKEYS'] if 'PGPKEYS' in keys else None
+		if not 'SOURCE_SIG_URI' in keys:
+			keys['SOURCE_SIG_URI'] = []
 
 		for index in sorted(list(keys['SOURCE_URI'].keys()),
 				key=cmp_to_key(naturalCompare)):
