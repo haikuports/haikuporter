@@ -1547,13 +1547,6 @@ class Port(object):
 		# into vendor directories automatically.
 		shellEnv['HAIKU_USE_VENDOR_DIRECTORIES'] = '1'
 
-		# force POSIX locale, as otherwise strange things may happen for some
-		# build (e.g. gcc)
-		shellEnv['LC_ALL'] = 'POSIX'
-
-		# define a terminal
-		shellEnv['TERM'] = 'xterm'
-
 		# execute the requested action via a shell ...
 		args = ['bash']
 		args += params

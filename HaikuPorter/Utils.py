@@ -144,7 +144,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 							member.uid = 0
 						yield member
 			tarFile.extractall(members=filterByDir(tarFile), path=targetBaseDir)
-			
+
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
 		zipFile = zipfile.ZipFile(archiveFile, 'r')
@@ -298,9 +298,12 @@ def filteredEnvironment():
 	   variables that we export for one port leak into the shell environment
 	   of another"""
 
-	env = {}
+	env = {
+		'LC_ALL': 'POSIX',
+		'TERM': 'xterm',
+	}
 
-	for key in ['LANG', 'LIBRARY_PATH', 'PATH']:
+	for key in ['LIBRARY_PATH', 'PATH']:
 		if key in os.environ:
 			env[key] = os.environ[key]
 
