@@ -322,11 +322,19 @@ runConfigure()
 # helper function to validate CMake invocations (and use the correct one)
 cmake()
 {
-	if [[ "$*" != *CMAKE_BUILD_TYPE* ]] && [[ "$*" != *--build* ]] \
-			&& [[ "$*" != *--install* ]]; then
-		echo "error: invoking cmake without CMAKE_BUILD_TYPE specified!"
-		echo "note: you probably want -DCMAKE_BUILD_TYPE=Release or -DCMAKE_BUILD_TYPE=RelWithDebInfo"
-		exit 1
+	if [[ "$*" != *--install* ]] && [[ "$*" != *--build* ]]; then
+		if [[ "$*" != *CMAKE_BUILD_TYPE* ]]; then
+			echo "error: invoking cmake without CMAKE_BUILD_TYPE specified!"
+			echo "note: you probably want -DCMAKE_BUILD_TYPE=Release or -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+			exit 1
+		elif [[ "$*" = *CMAKE_BUILD_TYPE=Release* ]] && [ -n "$DEBUG_INFO_PACKAGES" ]; then
+			echo "error: invoking cmake with -DCMAKE_BUILD_TYPE=Release with debug info packages specified"
+			exit 1
+		elif [[ "$*" = *CMAKE_BUILD_TYPE=RelWithDebInfo* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
+			echo -n "error: invoking cmake with -DCMAKE_BUILD_TYPE=RelWithDebInfo without debug info "
+			echo "packages specified"
+			exit 1
+		fi
 	fi
 
 	CMAKE=$portPackageLinksDir/cmd~cmake/bin/cmake
@@ -343,6 +351,12 @@ meson()
 	if [[ "$*" != *buildtype* ]]; then
 		echo "error: invoking meson without --buildtype argument"
 		echo "note: you probably want --buildtype=release or --buildtype=debugoptimized"
+		exit 1
+	elif [[ "$*" = *buildtype=release* ]] && [ -n $DEBUG_INFO_PACKAGES ]; then
+		echo "error: invoking meson with --buildtype=release with debug info packages specified"
+		exit 1
+	elif [[ "$*" = *buildtype=debugoptimized* ]] && [ -z $DEBUG_INFO_PACKAGES ]; then
+		echo "error: invoking meson with --buildtype=debugoptimized without debug info packages specified"
 		exit 1
 	fi
 
