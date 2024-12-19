@@ -340,7 +340,8 @@ cmake()
 # helper function to validate Meson invocations (and use the correct one)
 meson()
 {
-	if [[ "$*" != *buildtype* ]]; then
+	if [[ "$*" != *buildtype* ]] && [[ "$*" != compile* ]] \
+			&& [[ "$*" != install* ]] && [[ "$*" != test* ]]; then
 		echo "error: invoking meson without --buildtype argument"
 		echo "note: you probably want --buildtype=release or --buildtype=debugoptimized"
 		exit 1
@@ -351,7 +352,17 @@ meson()
 		MESON=$(type -Pp meson)
 	fi
 
-	$MESON --wrap-mode=nodownload "$@"
+	if [[ "$*" != compile* ]] && [[ "$*" != install* ]] \
+		&& [[ "$*" != test* ]]; then
+		local PATTERN='^setup (.*)'
+		if [[ "$*" =~ $PATTERN ]]; then
+			$MESON setup --wrap-mode=nodownload ${BASH_REMATCH[1]}
+		else
+			$MESON --wrap-mode=nodownload "$@"
+		fi
+	else
+		$MESON "$@"
+	fi
 }
 
 fixDevelopLibDirReferences()
