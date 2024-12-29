@@ -400,6 +400,9 @@ class Package(object):
 				self._writePackageInfoListQuotePaths(infoFile,
 					self.recipeKeys['POST_INSTALL_SCRIPTS'],
 					'post-install-scripts')
+				self._writePackageInfoListQuotePaths(infoFile,
+					self.recipeKeys['PRE_UNINSTALL_SCRIPTS'],
+					'pre-uninstall-scripts')
 
 			# Generate SourceURL lines for all ports, regardless of license.
 			# Re-use the download URLs, as specified in the recipe.

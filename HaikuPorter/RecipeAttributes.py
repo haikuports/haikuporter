@@ -205,6 +205,13 @@ recipeAttributes = {
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
+	'PRE_UNINSTALL_SCRIPTS': {
+		'type': list,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.DEFAULT,
+		'indexable': False,
+	},
 	'PROVIDES': {
 		'type': ProvidesList,
 		'required': True,

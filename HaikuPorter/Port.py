@@ -1212,6 +1212,7 @@ class Port(object):
 			'documentationDir': 'documentation',
 			'fontsDir': 'data/fonts',
 			'postInstallDir': 'boot/post-install',
+			'preUninstallDir': 'boot/pre-uninstall',
 			'preferencesDir': 'preferences',
 			'settingsDir': 'settings',
 		}

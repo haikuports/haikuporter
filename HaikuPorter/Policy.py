@@ -82,7 +82,8 @@ class Policy(object):
 		self._checkMisplacedDevelopLibraries()
 		self._checkGlobalWritableFiles()
 		self._checkUserSettingsFiles()
-		self._checkPostInstallScripts()
+		self._checkPostInstallAndPreUninstallScripts('POST_INSTALL_SCRIPTS', 'post-install')
+		self._checkPostInstallAndPreUninstallScripts('PRE_UNINSTALL_SCRIPTS', 'pre-uninstall')
 
 		if self.strict and self.violationEncountered:
 			sysExit("packaging policy violation(s) in strict mode")
@@ -465,10 +466,10 @@ class Policy(object):
 						'"%s" for user settings file "%s" as included'
 						% (components[2], components[0]))
 
-	def _checkPostInstallScripts(self):
+	def _checkPostInstallAndPreUninstallScripts(self, recipeKey, scriptType):
 		# check whether declared scripts exist
 		declaredFiles = set()
-		for script in self.package.recipeKeys['POST_INSTALL_SCRIPTS']:
+		for script in self.package.recipeKeys[recipeKey]:
 			if script.lstrip().startswith('#'):
 				continue
 
@@ -480,18 +481,18 @@ class Policy(object):
 
 			absScript = os.path.join(self.package.packagingDir, script)
 			if not os.path.exists(absScript):
-				self._violation('Package declares non-existent post-install '
-					'script "%s"' % script)
+				self._violation('Package declares non-existent %s '
+					'script "%s"' % (scriptType, script))
 
 		# check whether existing scripts are declared
-		postInstallDir = 'boot/post-install'
-		dir = os.path.join(self.package.packagingDir, postInstallDir)
+		relativeDir = 'boot/' + scriptType
+		dir = os.path.join(self.package.packagingDir, relativeDir)
 		if os.path.exists(dir):
 			for script in os.listdir(dir):
-				path = postInstallDir + '/' + script
+				path = relativeDir + '/' + script
 				if path not in declaredFiles:
-					self._violation('script "%s" not declared as post-install '
-						'script' % path)
+					self._violation('script "%s" not declared as %s '
+						'script' % (path, scriptType))
 
 	def _violation(self, message):
 		self.violationEncountered = True
