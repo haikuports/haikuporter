@@ -205,6 +205,13 @@ recipeAttributes = {
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
+	'POST_INSTALL_SCRIPTS': {
+		'type': list,
+		'required': False,
+		'default': [],
+		'extendable': Extendable.DEFAULT,
+		'indexable': False,
+	},
 	'PRE_UNINSTALL_SCRIPTS': {
 		'type': list,
 		'required': False,
@@ -216,13 +223,6 @@ recipeAttributes = {
 		'type': ProvidesList,
 		'required': True,
 		'default': None,
-		'extendable': Extendable.DEFAULT,
-		'indexable': False,
-	},
-	'POST_INSTALL_SCRIPTS': {
-		'type': list,
-		'required': False,
-		'default': [],
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},
