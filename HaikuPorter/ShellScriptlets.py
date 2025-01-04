@@ -353,10 +353,10 @@ meson()
 		echo "error: invoking meson without --buildtype argument"
 		echo "note: you probably want --buildtype=release or --buildtype=debugoptimized"
 		exit 1
-	elif [[ "$*" = *buildtype=release* ]] && [ -n $DEBUG_INFO_PACKAGES ]; then
+	elif [[ "$*" = *buildtype=release* ]] && [ -n "$DEBUG_INFO_PACKAGES" ]; then
 		echo "error: invoking meson with --buildtype=release with debug info packages specified"
 		exit 1
-	elif [[ "$*" = *buildtype=debugoptimized* ]] && [ -z $DEBUG_INFO_PACKAGES ]; then
+	elif [[ "$*" = *buildtype=debugoptimized* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
 		echo "error: invoking meson with --buildtype=debugoptimized without debug info packages specified"
 		exit 1
 	fi
