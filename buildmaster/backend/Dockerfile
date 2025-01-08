@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim AS host-tools
+FROM debian:bookworm-slim AS host-tools
 
 RUN apt-get update \
 	&& apt-get -y install git bc nasm texinfo flex bison gawk build-essential \
@@ -12,7 +12,7 @@ RUN git clone --depth 1 https://review.haiku-os.org/buildtools /tmp/buildtools \
 	&& jam -j2 -q \<build\>package \<build\>package_repo
 
 #############################################################
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # hardlink for build-packages
 ADD https://cgit.haiku-os.org/haiku/plain/src/tools/hardlink_packages.py /usr/local/bin/
@@ -25,13 +25,13 @@ RUN apt-get update \
 	&& apt-get clean
 
 RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> /etc/bash.bashrc \
-	&& wget https://github.com/jedisct1/minisign/releases/download/0.10/minisign-0.10-linux.tar.gz -O /tmp/minisign.tar.gz \
+	&& wget https://github.com/jedisct1/minisign/releases/download/0.11/minisign-0.11-linux.tar.gz -O /tmp/minisign.tar.gz \
 	&& cd /tmp && tar -xvz --strip=2 -f /tmp/minisign.tar.gz && mv minisign /usr/local/bin
 
 # Haikuporter from local context root (this is where the weird context requirement comes from)
 ADD . /tmp/haikuporter
 
-RUN pip3 install /tmp/haikuporter \
+RUN pip3 install /tmp/haikuporter --break-system-packages \
 	&& echo "Bug #277 Fix" && cp /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bin/* /usr/local/bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
