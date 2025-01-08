@@ -102,11 +102,7 @@ then
 fi
 
 echo "ports to be built: $PORTS_TO_BUILD"
-
-if [ ! -e "$BUILDRUN_BASE" ]
-then
-	mkdir -p "$BUILDRUN_BASE"
-fi
+mkdir -p "$BUILDRUN_BASE"
 
 BUILDRUN_FILE="$BUILDRUN_BASE/last_buildrun"
 BUILDRUN_ID=$(expr $(cat "$BUILDRUN_FILE" 2> /dev/null) + 1)
@@ -124,25 +120,16 @@ haikuporter --debug --build-master-output-dir="$BUILDRUN_OUTPUT_DIR" \
 	--system-packages-directory="$SYSTEM_PACKAGES_DIR" \
 	--storage-backend-config="$STORAGE_BACKEND_CONFIG" \
 	--build-master $PORTS_TO_BUILD
-
 BUILDMASTER_RESULT=$?
 
-# Link build logs and records into global dirs.
+# Link build logs and json records into global dirs.
 ALL_BUILDS_DIR="$OUTPUT_DIR/builds"
-if [ ! -e "$ALL_BUILDS_DIR" ]
-then
-	mkdir -p "$ALL_BUILDS_DIR"
-fi
-
-ln -rst "$ALL_BUILDS_DIR" "$BUILDRUN_OUTPUT_DIR"/builds/*
+mkdir -p "$ALL_BUILDS_DIR"
+find "$BUILDRUN_OUTPUT_DIR"/builds/*.log -type f -exec ln -sr {} "$ALL_BUILDS_DIR" \;
 
 ALL_RECORDS_DIR="$OUTPUT_DIR/records"
-if [ ! -e "$ALL_RECORDS_DIR" ]
-then
-	mkdir -p "$ALL_RECORDS_DIR"
-fi
-
-ln -rst "$ALL_RECORDS_DIR" "$BUILDRUN_OUTPUT_DIR"/records/*
+mkdir -p "$ALL_RECORDS_DIR"
+find "$BUILDRUN_OUTPUT_DIR"/records/*.json -type f -exec ln -sr {} "$ALL_RECORDS_DIR" \;
 
 if [ $BUILDMASTER_RESULT -ne 0 ]
 then
