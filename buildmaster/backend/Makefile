@@ -4,8 +4,8 @@
 REPO=ghcr.io/haikuports
 VERSION=1.3.0-2
 default:
-	docker build --no-cache --tag ${REPO}/buildmaster:${VERSION} -f Dockerfile ../..
+	docker build --no-cache --tag ${REPO}/haikuporter/buildmaster:${VERSION} -f Dockerfile ../..
 push:
-	docker push ${REPO}/buildmaster:${VERSION}
+	docker push ${REPO}/haikuporter/buildmaster:${VERSION}
 enter:
-	docker run -it ${REPO}/buildmaster:${VERSION} /bin/bash -l
+	docker run -it ${REPO}/haikuporter/buildmaster:${VERSION} /bin/bash -l
