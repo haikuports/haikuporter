@@ -223,13 +223,17 @@ class BuildMaster(object):
 				sysExit('unable to connect to reporting engine @ ' + reportURI)
 
 		if self.localBuilders == 0:
+			info('loading builders from ' + self.builderBaseDir)
 			for fileName in os.listdir(self.builderBaseDir):
 				configFilePath = os.path.join(self.builderBaseDir, fileName)
+				if not configFilePath.endswith(".json"):
+					continue
 				if not os.path.isfile(configFilePath):
 					continue
 
 				builder = None
 				try:
+					info('loading builder ' + configFilePath)
 					builder = RemoteBuilderSSH(configFilePath,
 						packageRepository, self.buildOutputBaseDir,
 						self.portsTreeOriginURL, self.portsTreeHead)

@@ -67,7 +67,7 @@ erase the container without losing your work.
    - `../haikuporter/buildmaster/bin/builderctl provision`
  - `../haikuporter/buildmaster/bin/buildmaster everything`
 
-### Deploy buildslave (Haiku)
+### Deploy builder (Haiku)
 
  - Checkout Haikuporter and Haikuports, matching the paths specified in createbuilder on buildmaster side
  - Add the public key from the buildmaster to authorized\_keys

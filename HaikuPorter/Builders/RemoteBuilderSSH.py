@@ -4,6 +4,7 @@
 # Copyright 2016 Jerome Duval
 # Distributed under the terms of the MIT License.
 
+import base64
 import errno
 import json
 import logging
@@ -11,6 +12,9 @@ import os
 import socket
 import stat
 import time
+import io
+
+from io import StringIO
 
 # These usages kinda need refactored
 from ..ConfigParser import ConfigParser
@@ -57,9 +61,6 @@ class RemoteBuilderSSH(object):
 		self.logger = logging.getLogger('builders.' + self.name)
 		self.logger.setLevel(logging.DEBUG)
 
-		if 'hostKeyFile' not in self.config['ssh']:
-			self.logger.warning('Missing hostKeyFile for builder ' + self.name)
-
 		formatter = logging.Formatter('%(asctime)s: %(message)s')
 		logHandler = logging.FileHandler(
 			os.path.join(self.builderOutputDir, self.name + '.log'),
@@ -76,37 +77,31 @@ class RemoteBuilderSSH(object):
 
 		if 'name' not in self.config:
 			raise Exception('missing name in ' + configFilePath)
-
 		self.name = self.config['name']
 
+		# Validate required SSH configuration for builder
 		if 'ssh' not in self.config:
 			raise Exception('missing ssh config for builder ' + self.name)
+		for x in ['host', 'user', 'privateKey']:
+			if x not in self.config['ssh']:
+				raise Exception('missing ssh ' + x + ' for builder ' + self.name)
 		if 'port' not in self.config['ssh']:
 			self.config['ssh']['port'] = 22
-		if 'user' not in self.config['ssh']:
-			raise Exception('missing ssh user config for builder ' + self.name)
-		if 'host' not in self.config['ssh']:
-			raise Exception('missing ssh host config for builder ' + self.name)
-		if 'privateKeyFile' not in self.config['ssh']:
-			raise Exception('missing ssh privateKeyFile config for builder '
-				+ self.name)
-		if not os.path.isabs(self.config['ssh']['privateKeyFile']):
-			self.config['ssh']['privateKeyFile'] = os.path.join(
-				os.path.dirname(configFilePath),
-				self.config['ssh']['privateKeyFile'])
 
-		if 'jumpPrivateKeyFile' in self.config['ssh']:
-			if not os.path.isabs(self.config['ssh']['jumpPrivateKeyFile']):
-				self.config['ssh']['jumpPrivateKeyFile'] = os.path.join(
-					os.path.dirname(configFilePath),
-					self.config['ssh']['jumpPrivateKeyFile'])
+		# Set path to our trusted known hosts
+		self.config['ssh']['knownHostsFile'] = os.path.join(os.path.dirname(configFilePath),
+			'known_hosts')
 
-		if 'hostKeyFile' not in self.config['ssh']:
-			raise Exception('missing ssh hostKeyFile config for builder' + self.name)
-		if not os.path.isabs(self.config['ssh']['hostKeyFile']):
-			self.config['ssh']['hostKeyFile'] = os.path.join(
-				os.path.dirname(configFilePath),
-				self.config['ssh']['hostKeyFile'])
+		if not os.path.exists(self.config['ssh']['knownHostsFile']):
+			raise Exception('known hosts file missing from ' + self.config['ssh']['knownHostsFile'])
+
+		# If we were provided a jump host, validate it and decode private key
+		if 'jump' in self.config['ssh']:
+			for x in ['host', 'user', 'privateKey']:
+				if x not in self.config['ssh']['jump']:
+					raise Exception('missing ' + x + 'config for jump host ' + self.name)
+			if 'port' not in self.config['ssh']['jump']:
+			    self.config['ssh']['jump']['port'] = 22
 
 		if 'portstree' not in self.config:
 			raise Exception('missing portstree config for builder ' + self.name)
@@ -132,20 +127,25 @@ class RemoteBuilderSSH(object):
 
 	def _connect(self):
 		try:
-			if 'jumpHost' in self.config['ssh']:
+			if 'jump' in self.config['ssh']:
 				self.jumpClient=paramiko.SSHClient()
-				self.jumpClient.load_host_keys(self.config['ssh']['hostKeyFile'])
+				self.jumpClient.load_host_keys(self.config['ssh']['knownHostsFile'])
+				jPrivateKeyIO = StringIO(base64.b64decode(self.config['ssh']['jump']['privateKey']).decode("ascii"))
+				jPrivateKey = paramiko.ed25519key.Ed25519Key.from_private_key(jPrivateKeyIO)
 				self.logger.info('trying to connect to jumphost for builder ' + self.name)
-				self.jumpClient.connect(self.config['ssh']['jumpHost'],
-					 port=int(self.config['ssh']['jumpPort']),
-					 username=self.config['ssh']['jumpUser'],
-					 key_filename=self.config['ssh']['jumpPrivateKeyFile'],
-					 compress=True, allow_agent=False, look_for_keys=False,
-					 timeout=10)
+				self.jumpClient.connect(self.config['ssh']['jump']['host'],
+					port=int(self.config['ssh']['jump']['port']),
+					username=self.config['ssh']['jump']['user'],
+					pkey=jPrivateKey,
+					compress=True, allow_agent=False, look_for_keys=False,
+					timeout=10)
 
-			self.sshClient = paramiko.SSHClient()
-			self.sshClient.load_host_keys(self.config['ssh']['hostKeyFile'])
 			self.logger.info('trying to connect to builder ' + self.name)
+			self.sshClient = paramiko.SSHClient()
+			self.sshClient.load_host_keys(self.config['ssh']['knownHostsFile'])
+			privateKeyIO = StringIO(base64.b64decode(self.config['ssh']['privateKey']).decode("ascii"))
+			privateKey = paramiko.ed25519key.Ed25519Key.from_private_key(privateKeyIO)
+
 			if self.jumpClient != None:
 				transport=self.jumpClient.get_transport().open_channel(
 					'direct-tcpip', (self.config['ssh']['host'],
@@ -153,14 +153,14 @@ class RemoteBuilderSSH(object):
 				self.sshClient.connect(hostname=self.config['ssh']['host'],
 					port=int(self.config['ssh']['port']),
 					username=self.config['ssh']['user'],
-					key_filename=self.config['ssh']['privateKeyFile'],
+					pkey=privateKey,
 					compress=True, allow_agent=False, look_for_keys=False,
 					timeout=10, sock=transport)
 			else:
 				self.sshClient.connect(hostname=self.config['ssh']['host'],
 					port=int(self.config['ssh']['port']),
 					username=self.config['ssh']['user'],
-					key_filename=self.config['ssh']['privateKeyFile'],
+					pkey=privateKey,
 					compress=True, allow_agent=False, look_for_keys=False,
 					timeout=10)
 

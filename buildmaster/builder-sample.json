@@ -1,0 +1,22 @@
+{
+	"name": "builder_riscv64",
+	"portstree": {
+		"path": "/boot/home/haikuports"
+	},
+	"haikuporter": {
+		"path": "/boot/home/haikuporter/haikuporter",
+		"args": "-j1"
+	},
+	"ssh": {
+		"jump": {
+			"host": "optional jumphost",
+			"port": "22",
+			"user": "username",
+			"privateKey": "private key base64"
+		},
+		"privateKey": "private key base64",
+		"host": "haikuhost",
+		"port": "22",
+		"user": "user"
+	}
+}
