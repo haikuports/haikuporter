@@ -282,7 +282,6 @@ class BuildMaster(object):
 		self.endTime = None
 		self.impulseData = [None] * 500
 		self.impulseIndex = -1
-		self.display = None
 
 		self.buildableCondition = threading.Condition()
 			# protectes the scheduled builds lists
@@ -322,23 +321,17 @@ class BuildMaster(object):
 
 		self._setBuildStatus('scheduling')
 
-	def runBuilds(self, stdscr=None):
+	def runBuilds(self):
 		# Move anything to the lost state that depends on skipped builds.
 		for skippedBuild in self.skippedBuilds:
 			if skippedBuild.port:
 				self._packagesCompleted(skippedBuild.port.packages, False)
 
 		try:
-			if stdscr:
-				from .Display import Display
-				self.display = Display(stdscr, len(self.activeBuilders))
-
 			self._ensureConsistentSchedule()
 			self.totalBuildCount = len(self.scheduledBuilds) + len(self.blockedBuilds)
 			self.startTime = time.time()
 			self._setBuildStatus('starting builds')
-			if self.display:
-				self.display.updateSummary(self.summary)
 			while True:
 				self._runBuilds()
 				self._waitForBuildsToComplete()
@@ -382,9 +375,6 @@ class BuildMaster(object):
 					if self.buildStatus != 'waiting for packages':
 						self.logger.info('nothing buildable, waiting for packages')
 					self._setBuildStatus('waiting for packages')
-					if self.display:
-						self.display.updateSummary(self.summary)
-						self.display.updateBuilders(self.status)
 					self.buildableCondition.wait(1)
 					continue
 				else:
@@ -397,11 +387,6 @@ class BuildMaster(object):
 			with self.builderCondition:
 				if len(self.availableBuilders) == len(self.activeBuilders):
 					break
-
-				if self.display:
-					self.display.updateSummary(self.summary)
-					self.display.updateBuilders(self.status)
-
 				self._setBuildStatus('waiting for all builds to complete')
 				self.builderCondition.wait(1)
 
@@ -422,9 +407,6 @@ class BuildMaster(object):
 
 				if len(self.availableBuilders) == 0:
 					self._setBuildStatus('waiting for available builders')
-					if self.display:
-						self.display.updateSummary(self.summary)
-						self.display.updateBuilders(self.status)
 					self.builderCondition.wait(1)
 					continue
 
@@ -515,9 +497,6 @@ class BuildMaster(object):
 				outputFile.write(json.dumps(record.status))
 
 			self.buildHistory.append(record)
-			if self.display:
-				self.display.updateHistory(self.buildHistory)
-
 			self._buildComplete(scheduledBuild, buildSuccess,
 				self.completeBuilds if buildSuccess else self.failedBuilds)
 

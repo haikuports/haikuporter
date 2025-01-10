@@ -489,12 +489,7 @@ class Main(object):
 					print('\t' + violation)
 
 		if self.options.buildMaster:
-			if self.options.display:
-				from .Display import DisplayContext
-				with DisplayContext() as ctxt:
-					self.buildMaster.runBuilds(ctxt.stdscr)
-			else:
-				self.buildMaster.runBuilds()
+			self.buildMaster.runBuilds()
 
 	def _listDependencies(self, port):
 		print('-' * 70)
