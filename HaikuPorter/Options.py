@@ -341,9 +341,6 @@ def parseOptions():
 		help='specifies an optional remote reporting server (ex: mongodb://)')
 	buildmaster_flags.add_option('--local-builders', action='store', type='int',
 		dest='localBuilders', default=0, help='number of local builders (native Haiku only)')
-	buildmaster_flags.add_option('--console', action='store_true', dest='display',
-		default=False,
-		help='display a build master curses console')
 
 	parser.add_option_group(basic_actions)
 	parser.add_option_group(basic_flags)
