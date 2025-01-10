@@ -1,0 +1,8 @@
+{
+  "backend_type": "s3",
+  "endpoint_url": "https://blah.com",
+  "access_key_id": "1234key",
+  "secret_access_key": "1234secrets",
+  "bucket_name": "haikuports",
+  "prefix": "master/riscv64/current"
+}

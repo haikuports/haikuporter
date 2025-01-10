@@ -1,6 +1,6 @@
 # HaikuPorter in Buildmaster mode
 
-One buildmaster container per architecture
+One buildmaster container per architecture per branch
 
 # Requirements
 
@@ -28,7 +28,7 @@ One buildmaster container per architecture
 
 ## Volumes
 
-  * /var/packages (shared between all architectures)
+  * /var/packages (shared between all architectures for branch)
     * Storage for packages and repositories
     * repository
       * Haikuports repositories
