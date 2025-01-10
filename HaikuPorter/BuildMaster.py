@@ -22,7 +22,7 @@ from .Options import getOption
 from .Port import Port
 from .ReporterJson import ReporterJson
 from .ReporterMongo import ReporterMongo
-from .Utils import ensureCommandIsAvailable, info, sysExit, warn
+from .Utils import ensureCommandIsAvailable, info, sysExit, warn, important
 
 
 class ThreadFilter(object):
@@ -194,8 +194,6 @@ class BuildMaster(object):
 		self.localBuilders = getOption('localBuilders')
 		self.remoteAvailable = False
 
-		print('Local builders count: ' + str(self.localBuilders))
-
 		logHandler = logging.FileHandler(
 			os.path.join(self.buildOutputBaseDir, 'master.log'))
 		logHandler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
@@ -338,7 +336,11 @@ class BuildMaster(object):
 				if len(self.scheduledBuilds) == 0:
 					break
 
-			exitStatus = 'complete'
+			failures = len(self.failedBuilds) + len(self.lostBuilds)
+			if failures > 0:
+				exitStatus = 'complete (with ' + str(failures) + ' failures)'
+			else:
+				exitStatus = 'complete'
 		except KeyboardInterrupt:
 			exitStatus = 'aborted'
 		except Exception as exception:
@@ -387,7 +389,8 @@ class BuildMaster(object):
 			with self.builderCondition:
 				if len(self.availableBuilders) == len(self.activeBuilders):
 					break
-				self._setBuildStatus('waiting for all builds to complete')
+				worker_names = list(map(lambda x: x.name, self.activeBuilders))
+				self._setBuildStatus('waiting for workers ' + ','.join(worker_names) + ' to complete')
 				self.builderCondition.wait(1)
 
 	def _getBuildNumber(self):
@@ -608,7 +611,9 @@ class BuildMaster(object):
 		}
 
 	def _setBuildStatus(self, buildStatus):
-		self.buildStatus = buildStatus
+		if buildStatus != self.buildStatus:
+			important('Update: ' + buildStatus)
+			self.buildStatus = buildStatus
 		self._reportStatus()
 
 	def _reportStatus(self):

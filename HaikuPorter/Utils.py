@@ -19,10 +19,12 @@ import zipfile
 from subprocess import PIPE, Popen
 
 if sys.stdout.isatty():
+	colorStatus = '\033[1;34m'
 	colorWarning = '\033[1;36m'
 	colorError = '\033[1;35m'
 	colorReset = '\033[1;m'
 else:
+	colorStatus = ''
 	colorWarning = ''
 	colorError = ''
 	colorReset = ''
@@ -68,8 +70,13 @@ def sysExit(message):
 
 def warn(message):
 	"""print a warning"""
-
 	message = '\n'.join([colorWarning + 'Warning: ' + line + colorReset
+		for line in message.split('\n')])
+	logging.getLogger("buildLogger").warn(message)
+
+def important(message):
+	"""print an important"""
+	message = '\n'.join([colorStatus + '=== ' + line + colorReset
 		for line in message.split('\n')])
 	logging.getLogger("buildLogger").warn(message)
 
