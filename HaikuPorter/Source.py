@@ -26,12 +26,14 @@ from .Utils import (ensureCommandIsAvailable, info, readStringFromFile,
 # -- A source archive (or checkout) -------------------------------------------
 
 class Source(object):
-	def __init__(self, port, index, uris, fetchTargetName, checksum,
-				 sourceDir, patches, additionalFiles):
+	def __init__(self, port, index, uris, fetchTargetName, checksum, sigUri,
+				 pgpkeys, sourceDir, patches, additionalFiles):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
 		self.checksum = checksum
+		self.sigUri = sigUri
+		self.pgpkeys = pgpkeys
 		self.patches = patches
 		self.additionalFiles = additionalFiles
 
@@ -130,7 +132,7 @@ class Source(object):
 					(unusedType, baseUri, rev) = parseCheckoutUri(uri)
 					if baseUri == storedBaseUri:
 						self.sourceFetcher \
-							= createSourceFetcher(uri, self.fetchTarget)
+							= createSourceFetcher(uri, self.fetchTarget, self.sigUri)
 						if rev != storedRev:
 							self.sourceFetcher.updateToRev(rev)
 							storeStringInFile(uri, self.fetchTarget + '.uri')
@@ -144,7 +146,7 @@ class Source(object):
 					warn("Stored SOURCE_URI is no longer in recipe, automatic "
 						 u"repository update won't work")
 					self.sourceFetcher \
-						= createSourceFetcher(storedUri, self.fetchTarget)
+						= createSourceFetcher(storedUri, self.fetchTarget, self.sigUri)
 
 				return
 			else:
@@ -158,7 +160,7 @@ class Source(object):
 		for uri in self.uris:
 			try:
 				info('\nDownloading: ' + uri + ' ...')
-				sourceFetcher = createSourceFetcher(uri, self.fetchTarget)
+				sourceFetcher = createSourceFetcher(uri, self.fetchTarget, self.sigUri)
 				sourceFetcher.fetch()
 
 				# ok, fetching the source was successful, we keep the source
@@ -270,6 +272,36 @@ class Source(object):
 				warn('No checksum found in recipe!')
 
 		port.setFlag('validate', self.index)
+
+	def validateFingerprint(self, port):
+		"""Make sure that the fingerprint matches the expectations"""
+
+		if not self.sourceFetcher.sourceShouldBeVerified:
+			return
+
+		# Check to see if the source was already verified.
+		if port.checkFlag('verified', self.index) and not getOption('force'):
+			info('Skipping fingerprint validation of ' + self.fetchTargetName)
+			return
+
+		info('Validating fingerprint of ' + self.fetchTargetName)
+		hexdigest = fingerprint = self.sourceFetcher.findSignature()
+		if hexdigest is None:
+			sysExit('Found no fingerprint or no public key to match')
+
+		if self.pgpkeys is not None and len(self.pgpkeys) > 0:
+			for pgpkey in self.pgpkeys:
+				if hexdigest == pgpkey:
+					port.setFlag('verified', self.index)
+					return
+			sysExit('Found unexpected fingerprint:	 ' + hexdigest)
+		else:
+			warn('----- PGPKEYS TEMPLATE -----')
+			warn('PGPKEYS=(%(digest)s)' % {
+				"digest": hexdigest})
+			warn('-----------------------------')
+
+		port.setFlag('verified', self.index)
 
 	@property
 	def isFromSourcePackage(self):
