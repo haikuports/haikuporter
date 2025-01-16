@@ -405,6 +405,10 @@ class Source(object):
 			sysExit("Can't extract patchset for " + self.sourceDir
 					+ u" as the source directory doesn't exist yet")
 
+		if not os.path.exists(self.sourceDir + '/.git'):
+			sysExit("Can't extract patchset as there is no .git repo for the the source directory "
+					+ self.sourceDir)
+
 		print('Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath)
 		needToRebase = True
 		try:
