@@ -299,9 +299,9 @@ runConfigure()
 		exit 1
 	fi
 
-	if ( [ ! -z "$CCFLAGS" ] && [[ $CCFLAGS != *"-O"* ]] ) \
+	if ( [ ! -z "$CFLAGS" ] && [[ $CFLAGS != *"-O"* ]] ) \
 			|| ( [ ! -z "$CXXFLAGS" ] && [[ $CXXFLAGS != *"-O"* ]] ); then
-		echo "runConfigure: Must specify optimization flags when overriding CCFLAGS/CXXFLAGS."
+		echo "runConfigure: Must specify optimization flags when overriding CFLAGS/CXXFLAGS."
 		echo "	(autotools configure will not use the default ones in that case.)"
 		exit 1
 	fi
