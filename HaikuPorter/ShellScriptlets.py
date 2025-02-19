@@ -511,7 +511,7 @@ fixPkgconfig()
 	for file in $sourcePkgconfigDir/*; do
 		name=$(basename $file)
 		if [ "$1" == "strict" ] ; then
-			sed -e 's,^libdir=${prefix}/lib/x86,libdir=${prefix}/'${relativeDevelopLibDir}',' \
+			sed -e 's,^libdir=${prefix}/'${relativeLibDir}',libdir=${prefix}/'${relativeDevelopLibDir}',' \
 				$file > $targetPkgconfigDir/$name
 		else
 			sed -e 's,^libdir=\(.*\),libdir=${prefix}/'${relativeDevelopLibDir}',' \
