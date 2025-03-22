@@ -43,7 +43,7 @@ TEST_REQUIRES="
 
 BUILD()
 {
-	perl Build.PL --installdirs vendor --prefix $prefix
+	perl Build.PL --prefix $prefix
 	./Build
 }
 
