@@ -94,8 +94,14 @@ getPackagePrefix()
 		local linksDir="$packageLinksDir/$packageName-$portFullVersion"
 		local packagePrefix="$linksDir/.self"
 		if [ ! -e "$packagePrefix" ]; then
-			echo >&2 "packageEntries: warning: \"$packageSuffix\" doesn't seem to be a valid package suffix."
-			exit 1
+			# try again with the base name
+			local packageName="${portName/%$secondaryArchSuffix}_$packageSuffix"
+			local linksDir="$packageLinksDir/$packageName-$portFullVersion"
+			local packagePrefix="$linksDir/.self"
+			if [ ! -e "$packagePrefix" ]; then
+				echo >&2 "packageEntries: warning: \"$packageSuffix\" doesn't seem to be a valid package suffix."
+				exit 1
+			fi
 		fi
 	fi
 
