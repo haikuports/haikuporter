@@ -96,6 +96,8 @@ class Package(object):
 				self.architecture = port.targetArchitecture
 			else:
 				self.architecture = Architectures.SOURCE
+		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
+			self.architecture = Architectures.ANY
 		elif ((port.secondaryArchitecture is not None and
 			  port.secondaryArchitecture in self.recipeKeys['SECONDARY_ARCHITECTURES']) or
 			  port.targetArchitecture in self.recipeKeys['ARCHITECTURES']):
@@ -104,8 +106,6 @@ class Package(object):
 			# is the same as the target architecture, except for "_cross_"
 			# packages, which are built for the host on which the build runs.)
 			self.architecture = port.hostArchitecture
-		elif Architectures.ANY in self.recipeKeys['ARCHITECTURES']:
-			self.architecture = Architectures.ANY
 		else:
 			sysExit('package %s cannot be built for architecture %s'
 					% (self.versionedName, port.targetArchitecture))
@@ -142,8 +142,9 @@ class Package(object):
 
 	def getStatusOnSecondaryArchitecture(self, architecture,
 			secondaryArchitecture):
-		# check the secondary architecture
-		if secondaryArchitecture:
+		# check the secondary architecture (but ANY takes precedence)
+		if (secondaryArchitecture
+			and not Architectures.ANY in self.recipeKeys['ARCHITECTURES']):
 			secondaryStatus = Status.UNSUPPORTED
 			secondaryArchitectures = self.recipeKeys['SECONDARY_ARCHITECTURES']
 			if secondaryArchitecture in secondaryArchitectures:
