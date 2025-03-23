@@ -29,7 +29,7 @@ from .Configuration import Configuration
 from .Options import getOption
 from .Package import PackageType, packageFactory, sourcePackageFactory
 from .RecipeAttributes import getRecipeAttributes
-from .RecipeTypes import Extendable, MachineArchitecture, Phase, Status
+from .RecipeTypes import Architectures, Extendable, MachineArchitecture, Phase, Status
 from .ReleaseChecker import createReleaseChecker
 from .RequiresUpdater import RequiresUpdater
 from .ShellScriptlets import (cleanupChrootScript, getShellVariableSetters,
@@ -1000,10 +1000,12 @@ class Port(object):
 		haveSourcePackage = False
 		for extension in sorted(self.recipeKeysByExtension.keys()):
 			keys = self.recipeKeysByExtension[extension]
-			if extension:
-				name = self.name + '_' + extension
+			if Architectures.ANY in keys['ARCHITECTURES']:
+				name = self.baseName
 			else:
 				name = self.name
+			if extension:
+				name += '_' + extension
 			packageType = PackageType.byName(extension)
 			package = packageFactory(packageType, name, self, keys, self.policy)
 			self.allPackages.append(package)
