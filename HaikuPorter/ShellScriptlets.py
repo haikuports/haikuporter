@@ -90,8 +90,15 @@ getPackagePrefix()
 		fi
 	else
 		local packageSuffix="$1"
-		local packageName="${portName}_$packageSuffix"
-		local linksDir="$packageLinksDir/$packageName-$portFullVersion"
+		eval "local packageName=\"\$PACKAGE_NAME_$packageSuffix\""
+		if [ -z "$packageName" ]; then
+			local packageName="${portName}_$packageSuffix"
+		fi
+		eval "local packageVersion=\"\$PACKAGE_VERSION_$packageSuffix\""
+		if [ -z "$packageVersion" ]; then
+			local packageVersion="$portVersion"
+		fi
+		local linksDir="$packageLinksDir/$packageName-$packageVersion-$REVISION"
 		local packagePrefix="$linksDir/.self"
 		if [ ! -e "$packagePrefix" ]; then
 			echo >&2 "packageEntries: warning: \"$packageSuffix\" doesn't seem to be a valid package suffix."
