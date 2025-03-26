@@ -76,34 +76,23 @@ set -e
 
 getPackagePrefix()
 {
-	# Usage: getPackagePrefix <packageSuffix>|<packageFullVersionedName>
+	# Usage: getPackagePrefix <packageSuffix>
 
+	local packageSuffix="$1"
 	local packageLinksDir="$(dirname $installDestDir$portPackageLinksDir)"
-	if [[ $1 == *-* ]]; then
-		local packageFullVersionedName="$1"
-		local linksDir="$packageLinksDir/$packageFullVersionedName"
-		local packagePrefix="$linksDir/.self"
-		if [ ! -e "$packagePrefix" ]; then
-			echo >&2 "packageEntries: error: \"$packageFullVersionName\" doesn't"
-			echo >&2 "seem to be a valid full package versioned name."
-			exit 1
-		fi
-	else
-		local packageSuffix="$1"
-		eval "local packageName=\"\$PACKAGE_NAME_$packageSuffix\""
-		if [ -z "$packageName" ]; then
-			local packageName="${portName}_$packageSuffix"
-		fi
-		eval "local packageVersion=\"\$PACKAGE_VERSION_$packageSuffix\""
-		if [ -z "$packageVersion" ]; then
-			local packageVersion="$portVersion"
-		fi
-		local linksDir="$packageLinksDir/$packageName-$packageVersion-$REVISION"
-		local packagePrefix="$linksDir/.self"
-		if [ ! -e "$packagePrefix" ]; then
-			echo >&2 "packageEntries: warning: \"$packageSuffix\" doesn't seem to be a valid package suffix."
-			exit 1
-		fi
+	eval "local packageName=\"\$PACKAGE_NAME_$packageSuffix\""
+	if [ -z "$packageName" ]; then
+		local packageName="${portName}_$packageSuffix"
+	fi
+	eval "local packageVersion=\"\$PACKAGE_VERSION_$packageSuffix\""
+	if [ -z "$packageVersion" ]; then
+		local packageVersion="$portVersion"
+	fi
+	local linksDir="$packageLinksDir/$packageName-$packageVersion-$REVISION"
+	local packagePrefix="$linksDir/.self"
+	if [ ! -e "$packagePrefix" ]; then
+		echo >&2 "packageEntries: warning: \"$packageSuffix\" doesn't seem to be a valid package suffix."
+		exit 1
 	fi
 
 	echo $packagePrefix
@@ -762,13 +751,10 @@ addPreferencesDeskbarSymlink()
 
 packageEntries()
 {
-	# Usage: packageEntries <packageSuffix>|<packageFullVersionedName> <entry> ...
+	# Usage: packageEntries <packageSuffix> <entry> ...
 	# Moves the given entries to the packaging directory for the package
 	# specified by package name suffix (e.g. "devel").
 	# Entry paths can be absolute or relative to $prefix.
-	# Instead of a package suffix, the full versioned name of a package can be
-	# given, which is useful for packages that have a name that's independent
-	# from the port name.
 
 	if [ $# -lt 2 ]; then
 		echo >&2 "Usage: packageEntries <packageSuffix> <entry> ..."
