@@ -120,6 +120,7 @@ class Port(object):
 		# build dictionary of variables to inherit to shell
 		self.shellVariables = {
 			'portName': self.name,
+			'portBaseName': self.baseName,
 			'portVersion': self.version,
 			'portVersionedName': self.versionedName,
 			'portBaseDir': self.baseDir,

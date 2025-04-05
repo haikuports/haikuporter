@@ -92,7 +92,7 @@ getPackagePrefix()
 	local packagePrefix="$linksDir/.self"
 	if [ ! -e "$packagePrefix" ]; then
 		# try again with the base name
-		local packageName="${portName/%$secondaryArchSuffix}_$packageSuffix"
+		local packageName="${portBaseName}_$packageSuffix"
 		local linksDir="$packageLinksDir/$packageName-$packageVersion-$REVISION"
 		local packagePrefix="$linksDir/.self"
 		if [ ! -e "$packagePrefix" ]; then
