@@ -264,6 +264,14 @@ class Port(object):
 		# do some checks for each extension (i.e. package), starting with the
 		# base entries (extension '')
 		baseEntries = recipeConfig.getEntriesForExtension('')
+
+		if 'PACKAGE_NAME' in baseEntries:
+			sysExit('setting a custom name for the main package isn\'t supported, '
+				'please rename the recipe instead.')
+		if 'PACKAGE_VERSION' in baseEntries:
+			sysExit('setting a custom version for the main package isn\'t supported, '
+				'please rename the recipe instead.')
+
 		allPatches = []
 
 		## REFACTOR this loop and its children look unrelated
