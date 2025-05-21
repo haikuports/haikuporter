@@ -20,8 +20,9 @@ ADD https://cgit.haiku-os.org/haiku/plain/src/tools/hardlink_packages.py /usr/lo
 # Pre-requirements
 RUN apt-get update \
 	&& apt-get -y install attr autoconf automake bison coreutils curl flex \
-		gawk gcc gcc-multilib g++ git libcurl4-openssl-dev make nasm python3 \
-		python3-paramiko python3-pip tar texinfo vim wget zlib1g-dev \
+		gawk gcc gcc-multilib g++ git libcurl4-openssl-dev make nasm \
+		python3 python3-isort python3-boto3 python3-pymongo python3-paramiko \
+		tar texinfo vim wget zlib1g-dev \
 	&& apt-get clean
 
 RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> /etc/bash.bashrc \
@@ -31,8 +32,9 @@ RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> /etc/bash.b
 # Haikuporter from local context root (this is where the weird context requirement comes from)
 ADD . /tmp/haikuporter
 
-RUN pip3 install /tmp/haikuporter --break-system-packages \
-	&& echo "Bug #277 Fix" && cp /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
+RUN mkdir -p /usr/local/lib/python3.11/dist-packages \
+	&& mv /tmp/haikuporter/HaikuPorter /usr/local/lib/python3.11/dist-packages/ \
+	&& mv /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bin/* /usr/local/bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/loop /bin/ \
