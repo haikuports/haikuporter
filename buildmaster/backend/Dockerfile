@@ -25,8 +25,8 @@ RUN apt-get update \
 	&& apt-get clean
 
 RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> /etc/bash.bashrc \
-	&& wget https://github.com/jedisct1/minisign/releases/download/0.11/minisign-0.11-linux.tar.gz -O /tmp/minisign.tar.gz \
-	&& cd /tmp && tar -xvz --strip=2 -f /tmp/minisign.tar.gz && mv minisign /usr/local/bin
+	&& wget https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz -O /tmp/minisign.tar.gz \
+	&& cd /tmp && tar -xvzf /tmp/minisign.tar.gz && mv minisign-linux/$(uname -m)/minisign /usr/local/bin/
 
 # Haikuporter from local context root (this is where the weird context requirement comes from)
 ADD . /tmp/haikuporter
