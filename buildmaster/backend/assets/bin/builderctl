@@ -8,11 +8,14 @@
 #   Alexander von Gluck IV <kallisti5@unixzen.com>
 #
 
+import base64
 import os
 import sys
 import json
 import argparse
 import paramiko
+
+from io import StringIO
 
 class color:
 	HEADER = '\033[95m'
@@ -23,6 +26,54 @@ class color:
 	ENDC = '\033[0m'
 	BOLD = '\033[1m'
 	UNDERLINE = '\033[4m'
+
+def ssh_connect(args, data):
+	ssh = paramiko.SSHClient()
+	try:
+		ssh.load_system_host_keys(os.path.join(args.confdir, "known_hosts"))
+	except:
+		print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
+		return None
+
+	jumpClient = None
+	sshClient = None
+
+	if 'jump' in data['ssh']:
+		jumpClient=paramiko.SSHClient()
+		jumpClient.load_host_keys(os.path.join(args.confdir, "known_hosts"))
+		jPrivateKeyIO = StringIO(base64.b64decode(data['ssh']['jump']['privateKey']).decode("ascii"))
+		jPrivateKey = paramiko.ed25519key.Ed25519Key.from_private_key(jPrivateKeyIO)
+		jumpClient.connect(data['ssh']['jump']['host'],
+			port=int(data['ssh']['jump']['port']),
+			username=data['ssh']['jump']['user'],
+			pkey=jPrivateKey,
+			compress=True, allow_agent=False, look_for_keys=False,
+			timeout=10)
+	sshClient = paramiko.SSHClient()
+	sshClient.load_host_keys(os.path.join(args.confdir, "known_hosts"))
+	privateKeyIO = StringIO(base64.b64decode(data['ssh']['privateKey']).decode("ascii"))
+	privateKey = paramiko.ed25519key.Ed25519Key.from_private_key(privateKeyIO)
+
+	if jumpClient != None:
+		transport=jumpClient.get_transport().open_channel(
+			'direct-tcpip', (data['ssh']['host'],
+				int(data['ssh']['port'])), ('', 0))
+		sshClient.connect(hostname=data['ssh']['host'],
+			port=int(data['ssh']['port']),
+			username=data['ssh']['user'],
+			pkey=privateKey,
+			compress=True, allow_agent=False, look_for_keys=False,
+			timeout=10, sock=transport)
+	else:
+		sshClient.connect(hostname=data['ssh']['host'],
+			port=int(data['ssh']['port']),
+			username=data['ssh']['user'],
+			pkey=privateKey,
+			compress=True, allow_agent=False, look_for_keys=False,
+			timeout=10)
+
+	sshClient.get_transport().set_keepalive(15)
+	return sshClient
 
 # Get state of cluster
 def cluster_health(arguments):
@@ -40,20 +91,8 @@ def cluster_health(arguments):
 		sys.stdout.write(data["ssh"]["host"].ljust(28))
 		sys.stdout.write("| ")
 
-		ssh = paramiko.SSHClient()
-		try:
-			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
-		except:
-			print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
-			continue
-
-		try:
-			ssh.connect(data["ssh"]["host"],
-				port=int(data["ssh"]["port"]),
-				username=data["ssh"]["user"],
-				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
-		except:
-			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
+		ssh = ssh_connect(args, data)
+		if ssh is None:
 			continue
 
 		# All highly prone to messing up. yay.
@@ -79,22 +118,9 @@ def cluster_provision(arguments):
 		sys.stdout.write(extension[0].ljust(18))
 		sys.stdout.write("| ")
 
-		ssh = paramiko.SSHClient()
-		try:
-			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
-		except:
-			print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
+		ssh = ssh_connect(args, data)
+		if ssh is None:
 			continue
-
-		try:
-			ssh.connect(data["ssh"]["host"],
-				port=int(data["ssh"]["port"]),
-				username=data["ssh"]["user"],
-				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
-		except:
-			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
-			continue
-
 		sftp = ssh.open_sftp()
 
 		# All highly prone to messing up. yay.
@@ -132,22 +158,9 @@ def cluster_reboot(arguments):
 		sys.stdout.write(extension[0].ljust(18))
 		sys.stdout.write("| ")
 
-		ssh = paramiko.SSHClient()
-		try:
-			ssh.load_system_host_keys(os.path.join(args.confdir, data["ssh"]["hostKeyFile"]))
-		except:
-			print(color.FAIL + "FAIL: Invalid host key" + color.ENDC)
+		ssh = ssh_connect(args, data)
+		if ssh is None:
 			continue
-
-		try:
-			ssh.connect(data["ssh"]["host"],
-				port=int(data["ssh"]["port"]),
-				username=data["ssh"]["user"],
-				key_filename=os.path.join(args.confdir, data["ssh"]["privateKeyFile"]))
-		except:
-			print(color.FAIL + "FAIL: Error connecting to host!" + color.ENDC)
-			continue
-
 		stdin, stdout, stderr = ssh.exec_command("shutdown -r && exit")
 		print(color.FAIL + "Issued" + color.ENDC)
 		ssh.close()
