@@ -1,6 +1,7 @@
 {
   "backend_type": "s3",
   "endpoint_url": "https://blah.com",
+  "region_name": "us-east-1",
   "access_key_id": "1234key",
   "secret_access_key": "1234secrets",
   "bucket_name": "haikuports",

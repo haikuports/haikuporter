@@ -15,6 +15,8 @@ class StorageBackendS3():
 	def __init__(self, packagesPath, config):
 		if 'endpoint_url' not in config:
 			raise Exception('missing endpoint_url in s3 config')
+		if 'region_name' not in config:
+			raise Exception('region_name not in s3 config')
 		if 'access_key_id' not in config:
 			raise Exception('missing access_key_id in s3 config')
 		if 'secret_access_key' not in config:
@@ -29,7 +31,8 @@ class StorageBackendS3():
 		self.client = boto3.client('s3',
 			endpoint_url=config['endpoint_url'],
 			aws_access_key_id=config['access_key_id'],
-			aws_secret_access_key=config['secret_access_key'])
+			aws_secret_access_key=config['secret_access_key'],
+			region_name=config['region_name'])
 
 	def readPackage(self, packageName, file):
 		self.client.download_fileobj(self.bucketName,
