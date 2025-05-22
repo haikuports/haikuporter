@@ -70,8 +70,6 @@ class DependencyResolver(object):
 		self._presentDependencyPackages = kwargs.get(
 			'presentDependencyPackages', None)
 		self._quiet = kwargs.get('quiet', False)
-		self._updateDependencies = getOption('updateDependencies') \
-			and len(repositories) > 2
 		self._satisfiedPackagesCache = []
 
 		self._populateProvidesManager()
