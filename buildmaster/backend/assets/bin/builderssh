@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Copyright 2016-2021 Haiku, Inc. All rights reserved.
+# Copyright 2016-2025 Haiku, Inc. All rights reserved.
 # Distributed under the terms of the MIT License.
 #
 # Authors:
 #   Alexander von Gluck IV <kallisti5@unixzen.com>
 #
 
+import base64
 import os
 import sys
+import tempfile
 import json
 import argparse
 from subprocess import call
@@ -30,19 +32,51 @@ def launch_ssh(arguments):
 	try:
 		json_data = open(config_file)
 		data = json.load(json_data)
-		
-		privateKey = os.path.join(args.confdir, data["ssh"]["privateKeyFile"])
-		hostKey = os.path.join(args.confdir, data["ssh"]["hostKeyFile"])
-		user = data["ssh"]["user"]
-		host = data["ssh"]["host"]
-		port = data["ssh"]["port"]
-		cmd = ["ssh","-i",privateKey,"-o","UserKnownHostsFile="+hostKey,"-p",port,user+"@"+host]
-		
+
+		hostKeysFile = os.path.join(args.confdir, "known_hosts")
+
+		jumpKeyFile = None
+		keyFile = None
+
+		cmd = []
+		if 'jump' in data['ssh']:
+			# TODO: Can't easily specify a jumphost identity via the CLI to ssh,
+			#       implement this later
+			print(color.WARNING + "Jumphosts not yet supported!" + color.ENDC)
+			sys.exit()
+			jumpKeyFile = tempfile.NamedTemporaryFile(delete_on_close=False)
+			jumpKeyFile.write(base64.b64decode(data['ssh']['jump']['privateKey']).decode("ascii"))
+			jumpKeyFile.close()
+			jumpUser = data['ssh']['jump']['user']
+			jumpHost = data['ssh']['jump']['host']
+			jumpPort = data['ssh']['jump']['port']
+			keyFile = tempfile.NamedTemporaryFile(delete_on_close=False)
+			keyFile.write(base64.b64decode(data['ssh']['privateKey']))
+			keyFile.close()
+			user = data["ssh"]["user"]
+			host = data["ssh"]["host"]
+			port = data["ssh"]["port"]
+			cmd = ["ssh","-i",keyFile.name,"-o","UserKnownHostsFile="+hostKeysFile,"-p",port,user+"@"+host]
+		else:
+			keyFile = tempfile.NamedTemporaryFile(delete_on_close=False)
+			keyFile.write(base64.b64decode(data['ssh']['privateKey']))
+			keyFile.close()
+			user = data["ssh"]["user"]
+			host = data["ssh"]["host"]
+			port = data["ssh"]["port"]
+			cmd = ["ssh","-i",keyFile.name,"-o","UserKnownHostsFile="+hostKeysFile,"-p",port,user+"@"+host]
+
 		print(color.OKGREEN + "Connecting to builder " + user + "@" + host + ":" + port + color.ENDC)
+		#print(' '.join(cmd))
 		call(cmd)
+
+		if keyFile != None:
+			os.remove(keyFile.name)
+		if jumpKeyFile != None:
+			os.remove(jumpKeyFile.name)
 		
 	except Exception as e:
-		print(color.FAIL + "Error connecting to " + arguments.buildername + ":" + str(e))
+		print(color.FAIL + "Error connecting to " + arguments.buildername + ":" + str(e) + color.ENDC)
 		parser.print_help()
 
 parser = argparse.ArgumentParser(description='Open SSH connection to builder')
