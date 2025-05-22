@@ -1,8 +1,8 @@
 REPO=ghcr.io/haikuports
-VERSION=1.3.0-2
+VERSION=1.3.0-4
 default:
-	docker build --no-cache --tag ${REPO}/haikuporter/frontend:${VERSION} .
+	podman build --no-cache --tag ${REPO}/haikuporter/frontend:${VERSION} .
 push:
-	docker push ${REPO}/haikuporter/frontend:${VERSION}
+	podman push ${REPO}/haikuporter/frontend:${VERSION}
 enter:
-	docker run -it ${REPO}/haikuporter/frontend:${VERSION} /bin/sh -l
+	podman run -it ${REPO}/haikuporter/frontend:${VERSION} /bin/sh -l
