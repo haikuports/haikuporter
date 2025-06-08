@@ -311,7 +311,7 @@ class Source(object):
 		# Check to see if the source has already been patched.
 		if port.checkFlag('patchset', self.index) and not getOption('force'):
 			info('Skipping patchset for ' + self.fetchTargetName)
-			return True
+			return
 
 		if not getOption('noGitRepo'):
 			# use an implicit git repository for improved patch handling.
@@ -366,12 +366,11 @@ class Source(object):
 		if patched:
 			port.setFlag('patchset', self.index)
 
-		return patched
-
-	def reset(self):
+	def reset(self, resetTarget='ORIGIN'):
 		"""Reset source to original state"""
 
-		output = check_output(['git', 'reset', '--hard', 'ORIGIN'], cwd=self.sourceDir).decode('utf-8')
+		output = check_output(['git', 'reset', '--hard', resetTarget], cwd=self.sourceDir) \
+			.decode('utf-8')
 		info(output)
 		output = check_output(['git', 'clean', '-f', '-d'], cwd=self.sourceDir).decode('utf-8')
 		info(output)
