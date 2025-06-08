@@ -667,10 +667,8 @@ class Port(object):
 			if source.isFromRiggedSourcePackage:
 				return
 
-		patched = False
 		for source in self.sources:
-			if source.patch(self):
-				patched = True
+			source.patch(self)
 
 		# Run PATCH() function in recipe, if defined.
 		if Phase.PATCH in self.definedPhases:
@@ -691,9 +689,9 @@ class Port(object):
 				self.setFlag('patch')
 			except:
 				# Don't leave behind half-patched sources.
-				if patched and not getOption('noGitRepo'):
+				if not getOption('noGitRepo'):
 					for source in self.sources:
-						source.reset()
+						source.reset('HEAD')
 				raise
 
 	def populateAdditionalFiles(self):
