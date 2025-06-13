@@ -128,7 +128,7 @@ class RemoteBuilderSSH(object):
 	def _connect(self):
 		try:
 			if 'jump' in self.config['ssh']:
-				self.jumpClient=paramiko.SSHClient()
+				self.jumpClient = paramiko.SSHClient()
 				self.jumpClient.load_host_keys(self.config['ssh']['knownHostsFile'])
 				jPrivateKeyIO = StringIO(base64.b64decode(self.config['ssh']['jump']['privateKey']).decode("ascii"))
 				jPrivateKey = paramiko.ed25519key.Ed25519Key.from_private_key(jPrivateKeyIO)
@@ -165,8 +165,6 @@ class RemoteBuilderSSH(object):
 					timeout=10)
 
 			self.sshClient.get_transport().set_keepalive(15)
-			self.sftpClient = self.sshClient.open_sftp()
-
 			self.logger.info('connected to builder')
 			self.connectionErrors = 0
 		except Exception as exception:
@@ -227,11 +225,12 @@ class RemoteBuilderSSH(object):
 				'ALLOW_UNSAFE_SOURCES': Configuration.shallAllowUnsafeSources(),
 				'CREATE_SOURCE_PACKAGES': Configuration.shallCreateSourcePackages()
 			}
-
-			with self._openRemoteFile(self.config['portstree']['builderConfig'],
+			sftp = self._sftpClient()
+			with sftp.open(self.config['portstree']['builderConfig'],
 					'w') as remoteFile:
 				remoteFile.write(
 					ConfigParser.configurationStringFromDict(config))
+			sftp.close()
 		except Exception as exception:
 			self.logger.error('failed to write builder config: '
 				+ str(exception))
@@ -249,14 +248,15 @@ class RemoteBuilderSSH(object):
 	def _getAvailablePackages(self):
 		try:
 			self._clearVisiblePackages()
-
-			for entry in self._listDir(
+			sftp = self._sftpClient()
+			for entry in sftp.listdir(
 					self.config['portstree']['packagesCachePath']):
 				if not entry.endswith('.hpkg'):
 					continue
 
 				if entry not in self.availablePackages:
 					self.availablePackages.append(entry)
+			sftp.close()
 		except Exception as exception:
 			self.logger.error('failed to get available packages: '
 				+ str(exception))
@@ -276,7 +276,9 @@ class RemoteBuilderSSH(object):
 			self.logger.info(
 				'removing obsolete package {} from cache'.format(entry))
 			entryPath = cachePath + '/' + entry
-			self.sftpClient.remove(entryPath)
+			sftp = self._sftpClient()
+			sftp.remove(entryPath)
+			sftp.close()
 			self.availablePackages.remove(entry)
 
 	def _setupForBuilding(self):
@@ -367,16 +369,17 @@ class RemoteBuilderSSH(object):
 				self._clearVisiblePackages()
 				raise Exception('build failure')
 
+			sftp = self._sftpClient()
 			for package in scheduledBuild.port.packages:
 				self.buildLogger.info('download package ' + package.hpkgName
 					+ ' from builder')
 
 				remotePath = self.config['portstree']['packagesPath'] + '/' \
 					+ package.hpkgName
-				with self.sftpClient.file(remotePath, 'r') as remoteFile:
+				with sftp.file(remotePath, 'r') as remoteFile:
 					self.packageRepository.writePackage(package.hpkgName,
 						remoteFile)
-
+			sftp.close()
 			self._purgePort(scheduledBuild)
 			self._clearVisiblePackages()
 			self.buildLogger.info('build completed successfully')
@@ -388,7 +391,7 @@ class RemoteBuilderSSH(object):
 				self.state = BuilderState.RECONNECT
 
 		except Exception as exception:
-			self.buildLogger.info('build failed: ' + str(exception))
+			self.buildLogger.error('build failed: ' + str(exception))
 			if self.state == BuilderState.AVAILABLE:
 				self.state = BuilderState.RECONNECT
 
@@ -405,6 +408,14 @@ class RemoteBuilderSSH(object):
 
 		return (buildSuccess, reschedule)
 
+	def _sftpClient(self):
+		try:
+			transport = self.sshClient.get_transport()
+			return paramiko.SFTPClient.from_transport(transport)
+		except Exception as exception:
+			self.buildLogger.error('transport error getting sftp: ' + str(exception))
+			return None
+
 	def _remoteCommand(self, command):
 		transport = self.sshClient.get_transport()
 		channel = transport.open_session()
@@ -414,33 +425,36 @@ class RemoteBuilderSSH(object):
 		return (output, channel)
 
 	def _getFile(self, localPath, remotePath):
-		self.sftpClient.get(localPath, remotePath)
+		sftp = self._sftpClient()
+		sftp.get(localPath, remotePath)
+		sftp.close()
 
 	def _putFile(self, remotePath, localPath):
-		self.sftpClient.put(remotePath, localPath)
+		sftp = self._sftpClient()
+		sftp.put(remotePath, localPath)
+		sftp.close()
 
 	def _symlink(self, sourcePath, destPath):
-		self.sftpClient.symlink(sourcePath, destPath)
+		sftp = self._sftpClient()
+		sftp.symlink(sourcePath, destPath)
+		sftp.close()
 
 	def _move(self, sourcePath, destPath):
-		self.sftpClient.posix_rename(sourcePath, destPath)
-
-	def _openRemoteFile(self, path, mode):
-		return self.sftpClient.open(path, mode)
+		sftp = self._sftpClient()
+		sftp.posix_rename(sourcePath, destPath)
+		sftp.close()
 
 	def _ensureDirExists(self, path):
+		sftp = self._sftpClient()
 		try:
-			attributes = self.sftpClient.stat(path)
+			attributes = sftp.stat(path)
 			if not stat.S_ISDIR(attributes.st_mode):
 				raise IOError(errno.EEXIST, 'file exists')
 		except IOError as exception:
 			if exception.errno != errno.ENOENT:
 				raise
-
-			self.sftpClient.mkdir(path)
-
-	def _listDir(self, remotePath):
-		return self.sftpClient.listdir(remotePath)
+			sftp.mkdir(path)
+		sftp.close()
 
 	def _purgePort(self, scheduledBuild):
 		command = ('cd "' + self.config['portstree']['path']
@@ -468,45 +482,48 @@ class RemoteBuilderSSH(object):
 		if packageName in self.availablePackages:
 			return
 
-		self.logger.info('upload package ' + packageName + ' to builder')
+		self.logger.info('upload package ' + packageName + ' to builder cache')
 
 		entryPath \
 			= self.config['portstree']['packagesCachePath'] + '/' + packageName
 		uploadPath = entryPath + '.upload'
 
-		with self.sftpClient.file(uploadPath, 'w') as remoteFile:
+		sftp = self._sftpClient()
+		with sftp.file(uploadPath, 'w') as remoteFile:
 			self.packageRepository.readPackage(packagePath, remoteFile)
+		sftp.close()
 
 		self._move(uploadPath, entryPath)
-
 		self.availablePackages.append(packageName)
 
 	def _clearVisiblePackages(self):
 		basePath = self.config['portstree']['packagesPath']
 		cachePath = self.config['portstree']['packagesCachePath']
-		for entry in self._listDir(basePath):
+		sftp = self._sftpClient()
+		for entry in sftp.listdir(basePath):
 			if not entry.endswith('.hpkg'):
 				continue
 
 			entryPath = basePath + '/' + entry
-			attributes = self.sftpClient.lstat(entryPath)
+			attributes = sftp.lstat(entryPath)
 			if stat.S_ISLNK(attributes.st_mode):
-				self.logger.debug('removing symlink to package ' + entry)
-				self.sftpClient.remove(entryPath)
+				self.logger.debug('hiding visible package ' + entry + ' from builder cache')
+				sftp.remove(entryPath)
 			else:
-				self.logger.info('moving package ' + entry + ' to cache')
+				self.logger.info('moving real package ' + entry + ' to builder cache')
 				cacheEntryPath = cachePath + '/' + entry
 				self._move(entryPath, cacheEntryPath)
 				self.availablePackages.append(entry)
 
 		self.visiblePackages = []
+		sftp.close()
 
 	def _makePackageVisible(self, packagePath):
 		packageName = os.path.basename(packagePath)
 		if packageName in self.visiblePackages:
 			return
 
-		self.logger.debug('making package ' + packageName + ' visible')
+		self.logger.info('making package ' + packageName + ' visible from builder cache')
 		self._symlink(
 			self.config['portstree']['packagesCachePath'] + '/' + packageName,
 			self.config['portstree']['packagesPath'] + '/' + packageName)
