@@ -514,6 +514,8 @@ class BuildMaster(object):
 				self.activeBuilders.remove(builder)
 				self.reconnectingBuilders.append(builder)
 			else:
+				if builder in self.reconnectingBuilders:
+					self.reconnectingBuilders.remove(builder)
 				self.availableBuilders.append(builder)
 
 			self.builderCondition.notify()
