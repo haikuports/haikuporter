@@ -390,14 +390,12 @@ class RemoteBuilderSSH(object):
 			if self.state == BuilderState.AVAILABLE:
 				self.state = BuilderState.RECONNECT
 
-		except Exception as exception:
-			self.buildLogger.error('build failed: ' + str(exception))
-			if self.state == BuilderState.AVAILABLE:
-				self.state = BuilderState.RECONNECT
-
 		except (IOError, paramiko.ssh_exception.SSHException) as exception:
 			self.buildLogger.error('builder failed: ' + str(exception))
 			self.state = BuilderState.LOST
+
+		except Exception as exception:
+			self.buildLogger.info('build failed: ' + str(exception))
 
 		if buildSuccess == False and reschedule:
 			# If we are going to try again, close out any open ssh connections
