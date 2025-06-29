@@ -1,38 +1,34 @@
 #!/bin/bash
 # Utility to regenerate and resign repository
-# (haikuporter generally does this, however this tool simplifies doing it manually)
 
-BASE_DIR=/var/packages
-REPO_SIGNING_SECRETS="/run/secrets/repo_signing"
-
-if [ $# -ne 2 ]; then
+if [[ $(find /var/buildmaster/haikuports/packages/ -maxdepth -name "*.hpkg" | wc -l) -lt 20 ]]; then
+	echo "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 	echo ""
-	echo "usage: $0 [branch] [architecture]"
-	exit 1;
-fi
-
-if [[ ! -d $BASE_DIR/repository/$1 ]]; then
-	echo "Invalid branch!"
+	echo "WARNING: The number of local repository packages is suspiciously low."
+	echo ""
+	echo "The remote packages in s3 should mirror what is in your local"
+	echo "/var/buildmaster/haikuports/packages/ repository."
+	echo ""
+	echo "IF A PACKAGE EXISTS IN S3, WITHOUT A MATCHING FULL PACKAGE, OR 0-byte"
+	echo "PACKAGE TOUCH FILE IN THE DIRECTORY BELOW, THE PACKAGE WILL BE"
+	echo "IRREVERSIBLY PRUNED FROM S3!"
+	echo ""
+	echo "    /var/buildmaster/haikuports/packages/"
+	echo ""
+	echo "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+	# DISABLE ME IF THIS IS A NEW REPO OR A REPO WITH < 20 PACKGES
 	exit 1
 fi
 
-if [[ ! -d $BASE_DIR/repository/$1/$2 ]]; then
-	echo "Invalid architecture!"
-	exit 1
-fi
+touch /tmp/haiku-secret.key && chmod 600 /tmp/haiku-secret.key
+echo "untrusted comment: minisign encrypted secret key" > /tmp/haiku-secret.key
+cat /var/run/secrets/repo_signing/privatekey >> /tmp/haiku-secret.key
 
-cd $BASE_DIR/repository/$1/$2/current/
-package_repo create repo.info packages/*
-sha256sum repo | awk '{ print $1 }' > repo.sha256
+haikuporter --debug --prune-package-repository \
+  --system-packages-directory /var/buildmaster/system-packages/$SYSTEM_PACKAGE_BRANCH \
+  --check-package-repository-consistency --create-package-repository /var/buildmaster/repository \
+  --storage-backend-config $STORAGE_BACKEND_CONFIG \
+  --sign-package-repository-privkey-file /tmp/haiku-secret.key \
+  --sign-package-repository-privkey-pass $(cat /var/run/secrets/repo_signing/privatekeypass)
 
-if [ -f $REPO_SIGNING_SECRETS/privatekey ] && [ -f $REPO_SIGNING_SECRETS/privatekeypass ]
-then
-	touch /tmp/haiku-secret.key && chmod 600 /tmp/haiku-secret.key
-	echo "untrusted comment: minisign encrypted secret key" > /tmp/haiku-secret.key
-	cat $REPO_SIGNING_SECRETS/privatekey >> /tmp/haiku-secret.key
-	SIGFLAGS="$SIGFLAGS $(cat $REPO_SIGNING_SECRETS/privatekeypass)"
-	cat $REPO_SIGNING_SECRETS/privatekeypass | minisign -s /tmp/haiku-secret.key -Sm repo
-	rm /tmp/haiku-secret.key
-fi
-
-echo "$BASE_DIR/repository/$1/$2/current repository regenerated!"
+rm /tmp/haiku-secret.key

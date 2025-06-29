@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ $# -ne 1 ]]; then
+	echo "usage: $0 <inventory>"
+	echo ""
+	echo "Given a list of filename:datetime, touch a bunch of empty files"
+	echo ""
+	exit 1
+fi
+
+while read p; do
+	WHO=$(echo "$p" | cut -d: -f1)
+	WHEN=$(echo "$p" | cut -d: -f2)
+	echo "touching $WHO.."
+	touch -d "$WHEN" "/var/buildmaster/haikuports/packages/$WHO"
+done < $1
