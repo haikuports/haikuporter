@@ -67,5 +67,8 @@ class StorageBackendS3():
 		return result
 
 	def deletePackage(self, packageName):
+		self.client.copy_object(Bucket=self.bucketName,
+			CopySource={'Bucket': self.bucketName, 'Key': f'{self.packagesPrefix}{packageName}'},
+			Key=f'{self.packagesPrefix}.obsolete/{packageName}')
 		self.client.delete_object(Bucket=self.bucketName,
 			Key=f'{self.packagesPrefix}{packageName}')
