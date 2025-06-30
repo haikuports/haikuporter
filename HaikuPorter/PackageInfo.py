@@ -9,12 +9,22 @@ import codecs
 import json
 import os
 import pickle
+import shutil
 import re
 from copy import deepcopy
 from subprocess import check_output
 
 from .Configuration import Configuration
 from .Utils import sysExit
+
+def pickleCacheBackup():
+	hpkgCacheDir = Configuration.getRepositoryPath()
+	hpkgCachePath = os.path.join(hpkgCacheDir, 'hpkgInfoCache')
+	hpkgCachePathBackup = os.path.join(hpkgCacheDir, 'hpkgInfoCache.backup')
+	if os.path.exists(hpkgCachePath):
+		if os.path.exists(hpkgCachePathBackup):
+			os.remove(hpkgCachePathBackup)
+		shutil.copy(hpkgCachePath, hpkgCachePathBackup)
 
 # -- Resolvable class ---------------------------------------------------------
 

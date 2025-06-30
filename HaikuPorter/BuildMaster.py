@@ -19,6 +19,7 @@ from .Builders.LocalBuilder import LocalBuilder
 from .Builders.RemoteBuilderSSH import RemoteBuilderSSH
 from .Configuration import Configuration
 from .Options import getOption
+from .PackageInfo import pickleCacheBackup
 from .Port import Port
 from .ReporterJson import ReporterJson
 from .ReporterMongo import ReporterMongo
@@ -152,6 +153,8 @@ class BuildRecord(object):
 
 class BuildMaster(object):
 	def __init__(self, portsTreePath, packageRepository, options):
+		pickleCacheBackup()
+
 		self.portsTreePath = portsTreePath
 		self._fillPortsTreeInfo()
 
