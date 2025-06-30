@@ -1,7 +1,7 @@
 #!/bin/bash
 # Utility to regenerate and resign repository
 
-if [[ $(find /var/buildmaster/haikuports/packages/ -maxdepth -name "*.hpkg" | wc -l) -lt 20 ]]; then
+if [[ $(find /var/buildmaster/haikuports/packages/ -maxdepth 1 -name "*.hpkg" | wc -l) -lt 20 ]]; then
 	echo "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 	echo ""
 	echo "WARNING: The number of local repository packages is suspiciously low."
