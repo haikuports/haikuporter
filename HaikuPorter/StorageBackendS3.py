@@ -57,7 +57,9 @@ class StorageBackendS3():
 			response = self.client.list_objects_v2(**kwargs)
 			contents = response['Contents']
 			for item in contents:
-				result.append(item['Key'].removeprefix(self.packagesPrefix))
+				name = item['Key'].removeprefix(self.packagesPrefix)
+				if not name.startswith(".obsolete/"):
+					result.append(name)
 
 			if not response.get('IsTruncated', False):
 				break
