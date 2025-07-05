@@ -44,37 +44,25 @@ def launch_ssh(arguments):
 			#       implement this later
 			print(color.WARNING + "Jumphosts not yet supported!" + color.ENDC)
 			sys.exit()
-			jumpKeyFile = tempfile.NamedTemporaryFile(delete_on_close=False)
+			jumpKeyFile = tempfile.NamedTemporaryFile()
 			jumpKeyFile.write(base64.b64decode(data['ssh']['jump']['privateKey']).decode("ascii"))
-			jumpKeyFile.close()
+			jumpKeyFile.flush()
 			jumpUser = data['ssh']['jump']['user']
 			jumpHost = data['ssh']['jump']['host']
 			jumpPort = data['ssh']['jump']['port']
-			keyFile = tempfile.NamedTemporaryFile(delete_on_close=False)
-			keyFile.write(base64.b64decode(data['ssh']['privateKey']))
-			keyFile.close()
-			user = data["ssh"]["user"]
-			host = data["ssh"]["host"]
-			port = data["ssh"]["port"]
-			cmd = ["ssh","-i",keyFile.name,"-o","UserKnownHostsFile="+hostKeysFile,"-p",port,user+"@"+host]
-		else:
-			keyFile = tempfile.NamedTemporaryFile(delete_on_close=False)
-			keyFile.write(base64.b64decode(data['ssh']['privateKey']))
-			keyFile.close()
-			user = data["ssh"]["user"]
-			host = data["ssh"]["host"]
-			port = data["ssh"]["port"]
-			cmd = ["ssh","-i",keyFile.name,"-o","UserKnownHostsFile="+hostKeysFile,"-p",port,user+"@"+host]
+
+		keyFile = tempfile.NamedTemporaryFile()
+		keyFile.write(base64.b64decode(data['ssh']['privateKey']))
+		keyFile.flush()
+		user = data["ssh"]["user"]
+		host = data["ssh"]["host"]
+		port = data["ssh"]["port"]
+		cmd = ["ssh","-i",keyFile.name,"-o","UserKnownHostsFile="+hostKeysFile,"-p",port,user+"@"+host]
 
 		print(color.OKGREEN + "Connecting to builder " + user + "@" + host + ":" + port + color.ENDC)
 		#print(' '.join(cmd))
 		call(cmd)
 
-		if keyFile != None:
-			os.remove(keyFile.name)
-		if jumpKeyFile != None:
-			os.remove(jumpKeyFile.name)
-		
 	except Exception as e:
 		print(color.FAIL + "Error connecting to " + arguments.buildername + ":" + str(e) + color.ENDC)
 		parser.print_help()
