@@ -63,7 +63,7 @@ class DependencyResolver(object):
 	def __init__(self, buildPlatform, requiresTypes, repositories, **kwargs):
 		self._providesManager = ProvidesManager()
 		self._platform = buildPlatform
-		self._requiresTypes = requiresTypes
+		self._requiresTypes = requiresTypes.copy()
 		self._repositories = repositories
 		self._stopAtHpkgs = kwargs.get('stopAtHpkgs', False)
 		self._ignoreBase = kwargs.get('ignoreBase', False)
