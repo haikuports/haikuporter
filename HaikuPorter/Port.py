@@ -470,6 +470,12 @@ class Port(object):
 			self.parseRecipeFileIfNeeded()
 
 			# use the status of the base package as overall status of the port
+			if self.allPackages[0].architecture == Architectures.ANY and self.secondaryArchitecture:
+				# if the base package is 'any', the secondary architecture is not supported
+				# TODO: architecture-specific subpackages are not considered, so if a port uses
+				#       secondary architecture for them, it will not work.
+                #       We should check all packages instead, not just the base package.
+				return Status.UNSUPPORTED
 			return self.allPackages[0].getStatusOnSecondaryArchitecture(
 				self.targetArchitecture, self.secondaryArchitecture)
 		except:
