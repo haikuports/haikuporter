@@ -14,7 +14,7 @@ jobs:
       uses: actions/checkout@v4
     - name: Detect version
       id: detect-version
-      run: echo "RELEASE_VERSION=$(git describe --dirty --tags --abbrev=1)" >> "$GITHUB_OUTPUT
+      run: echo "RELEASE_VERSION=$(git describe --dirty --tags --abbrev=1)" >> "$GITHUB_OUTPUT"
     - name: List version
       run: echo "Building ${{ steps.detect-version.outputs.RELEASE_VERSION }}..."
     - name: Set up QEMU
