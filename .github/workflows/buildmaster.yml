@@ -12,8 +12,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      fetch-depth: 20
-      fetch-tags: true
+      with:
+        fetch-depth: 50
+        fetch-tags: true
     - name: Detect version
       id: detect-version
       run: echo "RELEASE_VERSION=$(git describe --dirty --tags --abbrev=1)" >> "$GITHUB_OUTPUT"
