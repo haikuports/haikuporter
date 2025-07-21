@@ -42,8 +42,8 @@ RUN mkdir -p /usr/local/lib/python3.11/dist-packages \
 	&& mkdir /var/licenses /var/buildmaster \
 	&& chmod 755 /usr/local/bin/*
 
-COPY --from=host-tools /tmp/haiku/generated/objects/linux/x86_64/release/tools/package/package /usr/local/bin/
-COPY --from=host-tools /tmp/haiku/generated/objects/linux/x86_64/release/tools/package_repo/package_repo /usr/local/bin/
+COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package/package /usr/local/bin/
+COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/lib/* /usr/local/lib/
 COPY --from=host-tools /tmp/haiku/data/system/data/licenses /var/licenses
 
