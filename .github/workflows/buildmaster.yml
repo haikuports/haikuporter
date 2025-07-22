@@ -6,7 +6,7 @@ on: workflow_dispatch
 jobs:
   build:
     env:
-      REPOSITORY: "ghcr.io/haikuporter"
+      REPOSITORY: "ghcr.io/haikuports"
     name: Build HaikuPorter Buildmaster
     runs-on: ubuntu-latest
     steps:
