@@ -49,8 +49,7 @@ jobs:
     - name: Build and push multi-architecture frontend image
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: buildmaster/frontend/Dockerfile
+        context: buildmaster/frontend
         push: true
         tags: |
           ${{env.REPOSITORY}}/frontend:${{ steps.detect-version.outputs.RELEASE_VERSION }}-amd64
