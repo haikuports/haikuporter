@@ -1,8 +1,7 @@
 name: Release HaikuPorter Buildmaster
-on: workflow_dispatch
-#on:
-#  release:
-#    types: [published]
+on:
+  release:
+    types: [published]
 jobs:
   build:
     env:
