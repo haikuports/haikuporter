@@ -20,10 +20,11 @@ ADD https://cgit.haiku-os.org/haiku/plain/src/tools/hardlink_packages.py /usr/lo
 # Pre-requirements
 RUN apt-get update \
 	&& apt-get -y install attr autoconf automake bison coreutils curl flex \
-		gawk gcc gcc-multilib g++ git libcurl4-openssl-dev make nasm \
+		gawk gcc g++ git libcurl4-openssl-dev make nasm \
 		python3 python3-isort python3-boto3 python3-pymongo python3-paramiko \
-		tar texinfo vim wget zlib1g-dev \
-	&& apt-get clean
+		tar texinfo vim wget zlib1g-dev; \
+	if [ "$(uname -m)" = "x86_64" ]; then apt install -y gcc-multilib; fi; \
+	apt-get clean
 
 RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> /etc/bash.bashrc \
 	&& wget https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz -O /tmp/minisign.tar.gz \
