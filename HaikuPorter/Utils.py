@@ -162,6 +162,12 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 	elif ext == 'lha':
 		ensureCommandIsAvailable('lha')
 		subprocess.run(["lha", "x", f"-w={targetBaseDir}", archiveFile], check=True)
+		# There is no option for lha to not restore uid and gid, so do it manually
+		for dirpath, dirnames, filenames in os.walk(targetBaseDir):
+			for dname in dirnames:
+				os.chown(os.path.join(dirpath, dname), 0, 0)
+			for fname in filenames:
+				os.chown(os.path.join(dirpath, fname), 0, 0)
 	else:
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
