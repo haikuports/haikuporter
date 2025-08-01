@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tarfile
 import time
@@ -158,6 +159,9 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 				sysExit('sub-directory %s not found in archive' % subdir)
 		zipFile.extractall(targetBaseDir, names)
 		zipFile.close()
+	elif ext == 'lha':
+		ensureCommandIsAvailable('lha')
+		subprocess.run(["lha", "x", f"-w={targetBaseDir}", archiveFile], check=True)
 	else:
 		sysExit('Unrecognized archive type in file '
 				+ archiveFile)
