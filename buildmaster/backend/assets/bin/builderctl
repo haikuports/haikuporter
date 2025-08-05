@@ -98,7 +98,7 @@ def cluster_health(arguments):
 		# All highly prone to messing up. yay.
 		stdin, stdout, stderr = ssh.exec_command("uname -a")
 		uname = stdout.readlines()[0].split()
-		stdin, stdout, stderr = ssh.exec_command("sysinfo -cpu | grep 'CPU #' | wc -l")
+		stdin, stdout, stderr = ssh.exec_command("nproc")
 		cpus = stdout.readlines()[0].split()[0]
 
 		print(color.OKGREEN + "Connected: " + uname[0] + " " + uname[3] + ". " + cpus + " " + uname[8] + " cores." + color.ENDC)
