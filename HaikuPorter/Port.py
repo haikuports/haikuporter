@@ -1513,8 +1513,8 @@ class Port(object):
 	def _doTestStage(self):
 		"""Test the build results"""
 
-		# activate build package if required at this stage
-		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.TEST
+		# activate build packages if they were activated in the BUILD stage
+		if (self.recipeKeys['BUILD_PACKAGE_ACTIVATION_PHASE'] == Phase.BUILD
 			and not (getOption('createSourcePackagesForBootstrap')
 				or getOption('createSourcePackages'))):
 			for package in self.packages:
