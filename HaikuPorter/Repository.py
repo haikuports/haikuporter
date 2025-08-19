@@ -502,11 +502,12 @@ class Repository(object):
 		# after the stale port for package mapping removal.
 		self._removeStaleDependencyInfos(activePorts)
 
+		# Finally, remove any stale cached recipe.
+		self._removeStaleCachedRecipes(activePorts)
+
 	def _removeStaleDependencyInfos(self, activePorts):
 		"""check for any dependency-infos that no longer have a corresponding
 		   recipe file"""
-
-		allPorts = self.allPorts
 
 		if not self.quiet:
 			print("Looking for stale dependency-infos ...")
@@ -525,6 +526,24 @@ class Repository(object):
 				if not getOption('noPackageObsoletion'):
 					# obsolete corresponding package, if any
 					self._removePackagesForDependencyInfo(dependencyInfo)
+
+	def _removeStaleCachedRecipes(self, activePorts):
+		"""check for any cached recipe that no longer have a corresponding
+		   recipe file"""
+
+		if not self.quiet:
+			print("Looking for stale cached recipes ...")
+		recipeCacheDir = os.path.join(self.path, Port._recipeCacheDirName)
+		cachedRecipes = glob.glob(recipeCacheDir + '/*-*-*')
+		for cachedRecipe in cachedRecipes:
+			cachedRecipeFileName = os.path.basename(cachedRecipe)
+			packageID = cachedRecipeFileName[:cachedRecipeFileName.rindex('-')]
+			portID = self.getPortIdForPackageId(packageID)
+
+			if not portID or portID not in activePorts:
+				if not self.quiet:
+					print('\tremoving ' + cachedRecipeFileName)
+				os.remove(cachedRecipe)
 
 	def _removePackagesForDependencyInfo(self, dependencyInfo):
 		"""remove all packages for the given dependency-info"""
