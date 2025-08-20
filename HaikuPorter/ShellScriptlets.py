@@ -698,6 +698,11 @@ addAppDeskbarSymlink()
 		entryName=$1
 	fi
 
+	# add attributes for query-based Deskbar menus
+	addattr -t string "APP:category" "application" "$appPath"
+	addattr -t string "META:name" "$entryName" "$appPath"
+
+	# XXX: make a symlink anyway for now...
 	targetDir=$dataDir/deskbar/menu/Applications
 	mkdir -p $targetDir
 	symlinkRelative -s "$appPath" "$targetDir/$entryName"
@@ -749,6 +754,10 @@ addPreferencesDeskbarSymlink()
 	else
 		entryName=$1
 	fi
+
+	# add attributes for query-based Deskbar menus
+	addattr -t string "APP:category" "preference" "$appPath"
+	addattr -t string "META:name" "$entryName" "$appPath"
 
 	targetDir=$dataDir/deskbar/menu/Preferences
 	mkdir -p $targetDir
