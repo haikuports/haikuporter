@@ -133,6 +133,11 @@ def cluster_provision(arguments):
 		with sftp.open(os.path.join(debug_server, "settings"), "wb") as output_file:
 			output_file.write("default_action report".encode())
 
+		### Ensure system uses network time... create an empty file which the update-time
+		### launchd job checks for.
+		with sftp.open(os.path.join(settings_dir, "networktime"), "wb") as output_file:
+			output_file.write("".encode())
+
 		### Tune kernel settings
 		kernel_settings = os.path.join(settings_dir, "kernel", "drivers")
 
