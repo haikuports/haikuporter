@@ -290,6 +290,9 @@ def parseOptions():
 	advanced_flags.add_option('--no-repository-update', action='store_true',
 		dest='noRepositoryUpdate', default=False,
 		help='do not update dependency infos in the repository')
+	advanced_flags.add_option('--purge-stale-ports', action='store_true',
+		dest='purgeStalePorts', default=False,
+		help="delete work dirs and downloads of ports which don't exist any more")
 	advanced_flags.add_option('--no-package-obsoletion', action='store_true',
 		dest='noPackageObsoletion', default=False,
 		help='do not move obsolete packages out of packages dir')

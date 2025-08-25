@@ -92,6 +92,7 @@ class Main(object):
 			or self.options.location
 			or self.options.buildMaster
 			or self.options.repositoryUpdate
+			or self.options.purgeStalePorts
 			or self.options.prunePackageRepository
 			or self.options.createPackageRepository
 			or self.options.why
@@ -126,6 +127,11 @@ class Main(object):
 
 			if self.options.checkRepositoryConsistency:
 				self.repository.checkRepositoryConsistency(self.options.verbose)
+			return
+
+		if self.options.purgeStalePorts:
+			self._createRepositoryIfNeeded(self.options.quiet)
+			self.repository.purgeStalePorts()
 			return
 
 		if self.options.prunePackageRepository \

@@ -666,3 +666,60 @@ class Repository(object):
 				except LookupError as error:
 					print('{}:\n{}\n'.format(package.revisionedName,
 							prefixLines('\t', str(error))))
+
+	def purgeStalePorts(self):
+		"""Purges work dirs and downloads for ports which don't exist any more."""
+
+		allPorts = self._allPorts.values()
+
+		# work dirs:
+		if not self.quiet:
+			print("Looking for stale work directories ...")
+		workDirs = glob.glob(self.outputDirectory + '/*/*/work-*')
+		for workDir in workDirs:
+			stale = True
+			for port in allPorts:
+				if port.workDir == workDir:
+					stale = False
+					break
+			if stale:
+				if not self.quiet:
+					print("\tremoving work dir " + workDir)
+				shutil.rmtree(workDir)
+
+		# download files:
+		if not self.quiet:
+			print("Looking for stale downloaded files ...")
+		if Configuration.shallDownloadInPortDirectory():
+			downloadBaseDir = self.treePath
+		else:
+			downloadBaseDir = self.outputDirectory
+		downloadFiles = glob.glob(downloadBaseDir + '/*/*/download/*')
+		for downloadFile in downloadFiles:
+			if downloadFile.endswith('.uri'): # these are handled below
+				continue
+			stale = True
+			for port in allPorts:
+				# to get the sources, we must parse the recipe
+				try:
+					port.parseRecipeFileIfNeeded()
+				except:
+					continue
+				if port.recipeIsBroken:
+					continue
+				for source in port.sources:
+					if source.fetchTarget == downloadFile:
+						stale = False
+						break
+				if not stale:
+					break
+			if stale:
+				if not self.quiet:
+					print("\tremoving download " + downloadFile)
+				if os.path.isdir(downloadFile):
+					shutil.rmtree(downloadFile)
+				else:
+					os.remove(downloadFile)
+				uriFile = downloadFile + '.uri'
+				if os.path.exists(uriFile):
+					os.remove(uriFile)
