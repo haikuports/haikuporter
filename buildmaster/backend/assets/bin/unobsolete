@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [[ $# -ne 1 ]]; then
+	echo "Manually unobsolete packages from our central package repository"
+	echo "Used to move packages back to buildmaster to be re-processed into an active package repository"
+	echo
+	echo "usage: $0 <package_name>"
+	exit 1
+fi;
+
+if [[ -z "$BUILD_TARGET_ARCH" ]]; then
+	echo "Error: BUILD_TARGET_ARCH is undefined"
+	exit 1
+fi
+if [[ -z "$BUILD_TARGET_BRANCH" ]]; then
+	echo "Warning: BUILD_TARGET_BRANCH is undefined. Assuming master"
+	export BUILD_TARGET_BRANCH=master
+fi
+
+DIRECT_REPOSITORY="https://haikuports-repository.cdn.haiku-os.org/$BUILD_TARGET_BRANCH/$BUILD_TARGET_ARCH/current/packages/.obsolete"
+
+wget $DIRECT_REPOSITORY/$1 -O /var/buildmaster/haikuports/packages/$1
+if [[ $? -ne 0 ]]; then
+	echo "Error obtaining $DIRECT_REPOSITORY/$1"
+	exit 1;
+fi
+
+echo "$1 has been moved back to the buildmaster.  After all packages are unobsoleted, run update_repo"
