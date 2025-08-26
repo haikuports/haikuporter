@@ -338,6 +338,7 @@ cmake()
 			exit 1
 		elif [[ "$*" = *CMAKE_BUILD_TYPE=Release* ]] && [ -n "$DEBUG_INFO_PACKAGES" ]; then
 			echo "error: invoking cmake with -DCMAKE_BUILD_TYPE=Release with debug info packages specified"
+			echo "note: you probably want -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 			exit 1
 		elif [[ "$*" = *CMAKE_BUILD_TYPE=RelWithDebInfo* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
 			echo -n "error: invoking cmake with -DCMAKE_BUILD_TYPE=RelWithDebInfo without debug info "
