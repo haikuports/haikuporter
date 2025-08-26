@@ -343,6 +343,7 @@ cmake()
 		elif [[ "$*" = *CMAKE_BUILD_TYPE=RelWithDebInfo* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
 			echo -n "error: invoking cmake with -DCMAKE_BUILD_TYPE=RelWithDebInfo without debug info "
 			echo "packages specified"
+			echo "note: you probably want -DCMAKE_BUILD_TYPE=Release"
 			exit 1
 		fi
 	fi
@@ -365,9 +366,11 @@ meson()
 		exit 1
 	elif [[ "$*" = *buildtype=release* ]] && [ -n "$DEBUG_INFO_PACKAGES" ]; then
 		echo "error: invoking meson with --buildtype=release with debug info packages specified"
+		echo "note: you probably want --buildtype=debugoptimized"
 		exit 1
 	elif [[ "$*" = *buildtype=debugoptimized* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
 		echo "error: invoking meson with --buildtype=debugoptimized without debug info packages specified"
+		echo "note: you probably want --buildtype=release"
 		exit 1
 	fi
 
