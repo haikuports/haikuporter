@@ -301,11 +301,35 @@ runConfigure()
 		exit 1
 	fi
 
-	if ( [ ! -z "$CFLAGS" ] && [[ $CFLAGS != *"-O"* ]] ) \
-			|| ( [ ! -z "$CXXFLAGS" ] && [[ $CXXFLAGS != *"-O"* ]] ); then
-		echo "runConfigure: Must specify optimization flags when overriding CFLAGS/CXXFLAGS."
-		echo "	(autotools configure will not use the default ones in that case.)"
-		exit 1
+	if [ -n "$CFLAGS" ]; then
+		if [[ $CFLAGS != *"-O"* ]]; then
+			echo "runConfigure: Must specify optimization flags when overriding CFLAGS."
+			echo "	(autotools configure will not use the default ones in that case.)"
+			exit 1
+		elif [[ $CFLAGS != *-g* ]] && [ -n "$DEBUG_INFO_PACKAGES" ]; then
+			echo "runConfigure: overriding CFLAGS without -g with debug info packages specified"
+			echo "note: you probably want to add -g to CFLAGS"
+			exit 1
+		elif [[ $CFLAGS = *-g* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
+			echo "runConfigure: overriding CFLAGS with -g without debug info packages specified"
+			echo "note: you probably want to remove -g from CFLAGS"
+			exit 1
+		fi
+	fi
+	if [ -n "$CXXFLAGS" ]; then
+		if [[ $CXXFLAGS != *"-O"* ]]; then
+			echo "runConfigure: Must specify optimization flags when overriding CXXFLAGS."
+			echo "	(autotools configure will not use the default ones in that case.)"
+			exit 1
+		elif [[ $CXXFLAGS != *-g* ]] && [ -n "$DEBUG_INFO_PACKAGES" ]; then
+			echo "runConfigure: overriding CXXFLAGS without -g with debug info packages specified"
+			echo "note: you probably want to add -g to CXXFLAGS"
+			exit 1
+		elif [[ $CXXFLAGS = *-g* ]] && [ -z "$DEBUG_INFO_PACKAGES" ]; then
+			echo "runConfigure: overriding CXXFLAGS with -g without debug info packages specified"
+			echo "note: you probably want to remove -g from CXXFLAGS"
+			exit 1
+		fi
 	fi
 
 	configure=$1
