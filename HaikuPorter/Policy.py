@@ -156,6 +156,21 @@ class Policy(object):
 					self._violation('no matching provides "%s" for "%s"'
 						% (name, 'develop/lib/' + entry))
 
+		# pkgconfig entries in develop/lib[<arch>]/pkgconfig must be declared as
+		# pc:*[_<arch>]
+		developLibPkgconfigDir = developLibDir + '/pkgconfig'
+		if os.path.exists(developLibPkgconfigDir):
+			for entry in os.listdir(developLibPkgconfigDir):
+				suffixIndex = entry.find('.pc')
+				if suffixIndex < 0:
+					continue
+
+				name = self._normalizeResolvableName(
+					'pc:' + entry[:suffixIndex] + self.secondaryArchSuffix)
+				if name.lower() not in self.provides:
+					self._violation('no matching provides "%s" for "%s"'
+						% (name, 'develop/lib' + self.secondaryArchSuffix + '/pkgconfig/' + entry))
+
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
 		return name.replace('-', '_').lower()
