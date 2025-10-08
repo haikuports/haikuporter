@@ -1211,6 +1211,17 @@ class Port(object):
 			= ' '.join('-DCMAKE_INSTALL_%s=%s' % (k, v)
 				for k, v in cmakeDirArgs.items())
 
+		# add one more variable containing all the dir args for KDEInstallDirs:
+		KDEDirArgs = {
+			'PREFIX': portPackageLinksDir,
+			'SYSCONFDIR': portPackageLinksDir + '/.settings'
+			}
+		for k, v in relativeConfigureDirs.items():
+			KDEDirArgs[k.upper()] = v
+		self.shellVariables['KDEDirArgs'] \
+			= ' '.join('-DKDE_INSTALL_%s=%s' % (k, v)
+				for k, v in KDEDirArgs.items())
+
 		# add another one with the list of possible variables
 		self.shellVariables['configureDirVariables'] \
 			= ' '.join(configureDirs.keys())
