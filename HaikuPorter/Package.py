@@ -253,8 +253,11 @@ class Package(object):
 
 		# Create the package
 		info('creating package ' + self.hpkgName + ' ...')
-		output = check_output([Configuration.getPackageCommand(), 'create', packageFile],
-			cwd=self.packagingDir).decode('utf-8')
+		compLevel = Configuration.getPackageCompressionLevel()
+		args = [Configuration.getPackageCommand(), 'create', packageFile]
+		if compLevel is not None:
+			args.insert(2, '-' + str(compLevel))
+		output = check_output(args, cwd=self.packagingDir).decode('utf-8')
 		info(output)
 
 		# Clean up after ourselves
