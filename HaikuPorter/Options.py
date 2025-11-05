@@ -261,6 +261,11 @@ def parseOptions():
 					  default=None,
 					  help='specifies the "package" command; '
 						   'the default is "package"')
+	advanced_flags.add_option('--package-compression-level',
+					  action='store', type='int', dest='compressionLevel',
+					  default=None,
+					  help='specifies the compression level to use when creating '
+						   'the packages (valid range: 0-9); The default is "9"')
 	advanced_flags.add_option('--command-package-repo',
 					  action='store', type='string', dest='commandPackageRepo',
 					  default=None,

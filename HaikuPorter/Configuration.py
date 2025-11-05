@@ -12,7 +12,7 @@ import re
 from .ConfigParser import ConfigParser
 from .Options import getOption
 from .RecipeTypes import Extendable, MachineArchitecture, YesNo
-from .Utils import sysExit
+from .Utils import sysExit, warn
 
 
 def which(program):
@@ -146,6 +146,15 @@ haikuportsAttributes = {
 		'optionAttribute': 'commandPackage',
 		'setAttribute': 'packageCommand',
 	},
+	'PACKAGE_COMPRESSION_LEVEL': {
+		'type': int,
+		'required': False,
+		'default': None,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'optionAttribute': 'compressionLevel',
+		'setAttribute': 'packageCompressionLevel',
+	},
 	'PACKAGE_REPO_COMMAND': {
 		'type': bytes,
 		'required': False,
@@ -258,6 +267,7 @@ class Configuration(object):
 		self.createSourcePackages = True
 		self.downloadInPortDirectory = False
 		self.packageCommand = None
+		self.packageCompressionLevel = None
 		self.packageRepoCommand = None
 		self.mimesetCommand = None
 		self.reportingURI = None
@@ -335,6 +345,17 @@ class Configuration(object):
 		if Configuration.configuration.packageCommand is None:
 			return which("package")
 		return Configuration.configuration.packageCommand
+
+	@staticmethod
+	def getPackageCompressionLevel():
+		value = Configuration.configuration.packageCompressionLevel
+		if value is None:
+			return None
+		if value < 0 or value > 9:
+			warn('Using default value for compression level'
+				' (value "%d" was out of the [0-9] range).' % value)
+			return None
+		return value
 
 	@staticmethod
 	def getPackageRepoCommand():
