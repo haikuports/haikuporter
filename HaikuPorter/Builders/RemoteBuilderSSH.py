@@ -423,14 +423,28 @@ class RemoteBuilderSSH(object):
 		return (output, channel)
 
 	def _getFile(self, localPath, remotePath):
-		sftp = self._sftpClient()
-		sftp.get(localPath, remotePath)
-		sftp.close()
+		for attempt in range(3):
+			try:
+				sftp = self._sftpClient()
+				sftp.get(localPath, remotePath)
+			except Exception as exception:
+				sftp.close()
+				self.buildLogger.error('sftp error getting ' + remotePath + ' (attempt ' + attempt + '): ' + str(exception))
+				continue
+			sftp.close()
+			break
 
 	def _putFile(self, remotePath, localPath):
-		sftp = self._sftpClient()
-		sftp.put(remotePath, localPath)
-		sftp.close()
+		for attempt in range(3):
+			try:
+				sftp = self._sftpClient()
+				sftp.put(remotePath, localPath)
+			except Exception as exception:
+				sftp.close()
+				self.buildLogger.error('sftp error putting ' + localPath + ' (attempt ' + attempt + '): ' + str(exception))
+				continue
+			sftp.close()
+			break
 
 	def _symlink(self, sourcePath, destPath):
 		sftp = self._sftpClient()
