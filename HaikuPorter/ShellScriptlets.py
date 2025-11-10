@@ -115,7 +115,6 @@ defineDebugInfoPackage()
 	fi
 
 	local destDir=$debugInfoDir
-	local debugInfoSuffix="($portRevisionedName)"
 	if [ "$1" = "--directory" ]; then
 		destDir="$2"
 		shift 2
@@ -127,6 +126,7 @@ defineDebugInfoPackage()
 	if [ -z "$basePackageSuffix" ]; then
 		local basePackageName=$portName
 		local basePackageVersion=$portVersion
+		local debugInfoSuffix="($portRevisionedName)"
 		local packageSuffix=debuginfo
 	else
 		eval "local basePackageName=\"\$PACKAGE_NAME_$basePackageSuffix\""
@@ -137,6 +137,7 @@ defineDebugInfoPackage()
 		if [ -z "$basePackageVersion" ]; then
 			local basePackageVersion=$portVersion
 		fi
+		local debugInfoSuffix="($basePackageName-$basePackageVersion-$REVISION)"
 		local packageSuffix=${basePackageSuffix}_debuginfo
 	fi
 	eval "local packageName=\"\$PACKAGE_NAME_$packageSuffix\""
