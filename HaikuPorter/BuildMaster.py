@@ -489,11 +489,17 @@ class BuildMaster(object):
 			+ ('succeeded' if buildSuccess else 'failed'))
 
 		if not buildSuccess and reschedule:
-			self.logger.info('transient error, rescheduling build')
-			with self.buildableCondition:
-				self.activeBuilds.remove(scheduledBuild)
-				self.scheduledBuilds.append(scheduledBuild)
-				self.buildableCondition.notify()
+			if len(scheduledBuild.buildNumbers) < 10:
+				self.logger.info('transient error, rescheduling build')
+				with self.buildableCondition:
+					self.activeBuilds.remove(scheduledBuild)
+					self.scheduledBuilds.append(scheduledBuild)
+					self.buildableCondition.notify()
+			else:
+				self.logger.error('too many transient reschedules for ' + scheduledBuild.port.versionedName + ', aborting')
+				with self.buildableCondition:
+					self.activeBuilds.remove(scheduledBuild)
+					self.failedBuilds.append(scheduledBuild)
 		else:
 			record = BuildRecord(scheduledBuild, startTime, buildSuccess,
 				builder.name)
