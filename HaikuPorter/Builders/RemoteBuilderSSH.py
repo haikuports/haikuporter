@@ -407,6 +407,9 @@ class RemoteBuilderSSH(object):
 			if self.jumpClient != None:
 				self.jumpClient.close()
 
+			if self.state == BuilderState.AVAILABLE:
+				self.state = BuilderState.NOT_AVAILABLE
+
 			self.transientFailures += 1
 			if self.transientFailures >= self.maxTransientFailures:
 				self.logger.error('marking builder lost after '
