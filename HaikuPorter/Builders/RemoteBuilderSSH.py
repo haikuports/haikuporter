@@ -55,6 +55,8 @@ class RemoteBuilderSSH(object):
 		self.state = BuilderState.NOT_AVAILABLE
 		self.connectionErrors = 0
 		self.maxConnectionErrors = 100
+		self.transientFailures = 0
+		self.maxTransientFailures = 10
 
 		self.currentBuild = None
 
@@ -384,6 +386,7 @@ class RemoteBuilderSSH(object):
 			self._clearVisiblePackages()
 			self.buildLogger.info('build completed successfully')
 			buildSuccess = True
+			reschedule = False
 
 		except socket.error as exception:
 			self.buildLogger.error('connection failed: ' + str(exception))
@@ -397,12 +400,22 @@ class RemoteBuilderSSH(object):
 		except Exception as exception:
 			self.buildLogger.info('build failed: ' + str(exception))
 
-		if buildSuccess == False and reschedule:
+		if reschedule:
 			# If we are going to try again, close out any open ssh connections
 			if self.sshClient != None:
 				self.sshClient.close()
 			if self.jumpClient != None:
 				self.jumpClient.close()
+
+			self.transientFailures += 1
+			if self.transientFailures >= self.maxTransientFailures:
+				self.logger.error('marking builder lost after '
+					+ str(self.transientFailures)
+					+ ' consecutive transient failures')
+				self.state = BuilderState.LOST
+
+		else:
+			self.transientFailures = 0
 
 		return (buildSuccess, reschedule)
 
