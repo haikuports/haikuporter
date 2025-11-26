@@ -159,7 +159,6 @@ class BuildMaster(object):
 		self._fillPortsTreeInfo()
 
 		self.activeBuilders = []
-		self.reconnectingBuilders = []
 		self.lostBuilders = []
 		self.availableBuilders = []
 		self.packageRepository = packageRepository
@@ -511,14 +510,11 @@ class BuildMaster(object):
 				self.logger.error('builder ' + builder.name + ' lost')
 				self.activeBuilders.remove(builder)
 				self.lostBuilders.append(builder)
-			elif builder.state == BuilderState.RECONNECT:
-				self.logger.error(
-					'builder ' + builder.name + ' is reconnecting')
-				self.activeBuilders.remove(builder)
-				self.reconnectingBuilders.append(builder)
 			else:
-				if builder in self.reconnectingBuilders:
-					self.reconnectingBuilders.remove(builder)
+				if builder.state == BuilderState.RECONNECT:
+					self.logger.error(
+						'builder ' + builder.name + ' is reconnecting')
+
 				self.availableBuilders.append(builder)
 
 			self.builderCondition.notify()
@@ -564,8 +560,6 @@ class BuildMaster(object):
 			'builders': {
 				'active': [builder.status for builder in self.activeBuilders
 						if builder.currentBuild is not None],
-				'reconnecting':
-					[builder.status for builder in self.reconnectingBuilders],
 				'idle': [builder.status for builder in self.activeBuilders
 						if builder.currentBuild is None],
 				'lost': [builder.status for builder in self.lostBuilders]
