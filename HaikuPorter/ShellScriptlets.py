@@ -384,7 +384,8 @@ cmake()
 meson()
 {
 	if [[ "$*" != *buildtype* ]] && [[ "$*" != compile* ]] \
-			&& [[ "$*" != install* ]] && [[ "$*" != test* ]]; then
+			&& [[ "$*" != install* ]] && [[ "$*" != test* ]] \
+			&& [[ "$*" != submodule* ]]; then
 		echo "error: invoking meson without --buildtype argument"
 		echo "note: you probably want --buildtype=release or --buildtype=debugoptimized"
 		exit 1
