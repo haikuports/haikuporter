@@ -243,10 +243,10 @@ $(
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
 )
 
-ARCHITECTURES="!x86_gcc2 ?x86 ?x86_64"
+ARCHITECTURES="!all x86_64"
 commandBinDir=\$binDir
 if [ "\$targetArchitecture" = x86_gcc2 ]; then
-SECONDARY_ARCHITECTURES="?x86"
+SECONDARY_ARCHITECTURES="!x86"
 commandBinDir=\$prefix/bin
 fi
 
