@@ -7,8 +7,6 @@
 
 import boto3
 
-from contextlib import contextmanager
-
 # -- StorageBackendS3 class ---------------------------------------------------
 
 class StorageBackendS3():

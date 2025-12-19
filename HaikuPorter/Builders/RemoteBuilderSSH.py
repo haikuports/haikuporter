@@ -6,15 +6,13 @@
 
 import base64
 import errno
+import io
 import json
 import logging
 import os
 import socket
 import stat
 import time
-import io
-
-from io import StringIO
 
 # These usages kinda need refactored
 from ..ConfigParser import ConfigParser
@@ -132,7 +130,7 @@ class RemoteBuilderSSH(object):
 			if 'jump' in self.config['ssh']:
 				self.jumpClient = paramiko.SSHClient()
 				self.jumpClient.load_host_keys(self.config['ssh']['knownHostsFile'])
-				jPrivateKeyIO = StringIO(base64.b64decode(self.config['ssh']['jump']['privateKey']).decode("ascii"))
+				jPrivateKeyIO = io.StringIO(base64.b64decode(self.config['ssh']['jump']['privateKey']).decode("ascii"))
 				jPrivateKey = paramiko.ed25519key.Ed25519Key.from_private_key(jPrivateKeyIO)
 				self.logger.info('trying to connect to jumphost for builder ' + self.name)
 				self.jumpClient.connect(self.config['ssh']['jump']['host'],
@@ -145,7 +143,7 @@ class RemoteBuilderSSH(object):
 			self.logger.info('trying to connect to builder ' + self.name)
 			self.sshClient = paramiko.SSHClient()
 			self.sshClient.load_host_keys(self.config['ssh']['knownHostsFile'])
-			privateKeyIO = StringIO(base64.b64decode(self.config['ssh']['privateKey']).decode("ascii"))
+			privateKeyIO = io.StringIO(base64.b64decode(self.config['ssh']['privateKey']).decode("ascii"))
 			privateKey = paramiko.ed25519key.Ed25519Key.from_private_key(privateKeyIO)
 
 			if self.jumpClient != None:
