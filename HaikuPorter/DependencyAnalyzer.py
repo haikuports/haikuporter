@@ -18,26 +18,6 @@ from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
 from .Utils import sysExit
 
-# -----------------------------------------------------------------------------
-
-requiresDummyPackageInfo = r'''
-name			_dummy_
-version			1-1
-architecture	any
-summary			"dummy"
-description		"dummy"
-packager		"dummy <dummy@dummy.dummy>"
-vendor			"Haiku Project"
-licenses		"MIT"
-copyrights		"none"
-provides {
-	_dummy_ = 1-1
-}
-requires {
-	%s
-}
-'''
-
 # -- PortNode class ------------------------------------------------------------
 
 class PortNode(object):

@@ -250,7 +250,7 @@ class Source(object):
 			return
 
 		info('Validating checksum of ' + self.fetchTargetName)
-		hexdigest = calcChecksum = self.sourceFetcher.calcChecksum()
+		hexdigest = self.sourceFetcher.calcChecksum()
 
 		if self.checksum is not None:
 			if hexdigest != self.checksum:
