@@ -38,6 +38,7 @@ class PackageType(str):
 	DOCUMENTATION = 'doc'
 	GENERAL = 'general'
 	SOURCE = 'source'
+	TOOLS = 'tools'
 
 	@staticmethod
 	def byName(name):
