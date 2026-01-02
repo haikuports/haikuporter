@@ -155,12 +155,13 @@ class ConfigParser(object):
 					values.pop()
 				entries[key] = values
 			elif attrType == Phase:
-				if valueString.upper() not in Phase.getAllowedValues():
+				#valueString = valueString.upper()
+				if valueString not in Phase.getAllowedValues():
 					sysExit('evaluating file %s\nproduced illegal value "%s" '
 							'for key %s\nexpected one of: %s'
 							% (filename, valueString, key,
 							   ','.join(Phase.getAllowedValues())))
-				entries[key] = valueString.upper()
+				entries[key] = valueString
 			elif attrType == MachineArchitecture:
 				entries[key] = {}
 				knownArchitectures = MachineArchitecture.getAll()
