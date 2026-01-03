@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS host-tools
+FROM debian:trixie-slim AS host-tools
 
 RUN apt-get update \
 	&& apt-get -y install git bc nasm texinfo flex bison gawk build-essential \
@@ -34,8 +34,9 @@ COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/packag
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/src/tools/hardlink_packages.py /usr/local/bin/
 
-RUN mkdir -p /usr/local/lib/python3.11/dist-packages \
-	&& mv /tmp/haikuporter/HaikuPorter /usr/local/lib/python3.11/dist-packages/ \
+RUN PYVERSION=$(python3 -V | awk '{ print $2 }') \
+	&& mkdir -p /usr/local/lib/python${PYVERSION%.*}/dist-packages \
+	&& mv /tmp/haikuporter/HaikuPorter /usr/local/lib/python${PYVERSION%.*}/dist-packages/ \
 	&& mv /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bin/* /usr/local/bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
