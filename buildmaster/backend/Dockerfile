@@ -12,10 +12,7 @@ RUN git clone --depth 1 https://review.haiku-os.org/buildtools /tmp/buildtools \
 	&& jam -j2 -q \<build\>package \<build\>package_repo
 
 #############################################################
-FROM debian:bookworm-slim
-
-# hardlink for build-packages
-ADD https://cgit.haiku-os.org/haiku/plain/src/tools/hardlink_packages.py /usr/local/bin/
+FROM debian:trixie-slim
 
 # Pre-requirements
 RUN apt-get update \
@@ -33,6 +30,10 @@ RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> /etc/bash.b
 # Haikuporter from local context root (this is where the weird context requirement comes from)
 ADD . /tmp/haikuporter
 
+COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package/package /usr/local/bin/
+COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
+COPY --from=host-tools /tmp/haiku/src/tools/hardlink_packages.py /usr/local/bin/
+
 RUN mkdir -p /usr/local/lib/python3.11/dist-packages \
 	&& mv /tmp/haikuporter/HaikuPorter /usr/local/lib/python3.11/dist-packages/ \
 	&& mv /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
@@ -43,8 +44,6 @@ RUN mkdir -p /usr/local/lib/python3.11/dist-packages \
 	&& mkdir /var/licenses /var/buildmaster \
 	&& chmod 755 /usr/local/bin/*
 
-COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package/package /usr/local/bin/
-COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/lib/* /usr/local/lib/
 COPY --from=host-tools /tmp/haiku/data/system/data/licenses /var/licenses
 
