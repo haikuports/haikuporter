@@ -15,9 +15,11 @@ jobs:
       fail-fast: false
       matrix:
         py:
+          - "3.14"
+          - "3.13"
+          - "3.12"
           - "3.11"
           - "3.10"
-          - "3.9"
         os:
           - ubuntu-latest
     steps:
@@ -28,7 +30,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.py }}
-      - name: Install tox
-        run: python -m pip install -r tests/requirements.txt
+      - name: Install pytest
+        run: python -m pip install pytest
       - name: Run test suite
-        run: tox
+        run: pytest
