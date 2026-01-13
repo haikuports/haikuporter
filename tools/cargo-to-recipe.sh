@@ -31,7 +31,16 @@ usage() {
 
 temp() { rm -rf "$tempdir"; }
 
-. "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
+basedir=`dirname -- $0`
+if [ -f "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf ] ; then
+	. "$(finddir B_USER_SETTINGS_DIRECTORY)"/haikuports.conf
+elif [ -f $basedir/../haikuports.conf ] ; then
+	. $basedir/../haikuports.conf
+else
+	echo "Can't find haikuports.conf"
+	usage=1 die
+fi
+
 (( $# )) || usage=1 die
 while (( $# )); do
 	case $1 in
