@@ -125,6 +125,7 @@ class SourceFetcherForBazaar(object):
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
@@ -158,6 +159,7 @@ class SourceFetcherForCvs(object):
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 
 		(unusedType, uri, self.rev) = parseCheckoutUri(uri)
 
@@ -199,10 +201,12 @@ class SourceFetcherForCvs(object):
 # -- Fetches sources via wget -------------------------------------------------
 
 class SourceFetcherForDownload(object):
-	def __init__(self, uri, fetchTarget):
+	def __init__(self, uri, fetchTarget, sigUri):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
+		self.sigUri = sigUri
 		self.sourceShouldBeValidated = True
+		self.sourceShouldBeVerified = self.sigUri is not None
 
 	def fetch(self):
 		downloadDir = os.path.dirname(self.fetchTarget)
@@ -244,12 +248,52 @@ class SourceFetcherForDownload(object):
 	def calcChecksum(self):
 		return calcChecksumFile(self.fetchTarget)
 
+	def findSignature(self):
+		ensureCommandIsAvailable('wget')
+		ensureCommandIsAvailable('gpg')
+		downloadDir = os.path.dirname(self.fetchTarget)
+		sigFilename = self.sigUri[0]
+		sigFilename = sigFilename[sigFilename.rindex('/') + 1:]
+		filename = self.fetchTarget[self.fetchTarget.rindex('/') + 1:]
+		args = ['wget', '-c', '--tries=1', '--timeout=10', self.sigUri[0]]
+
+		code = 0
+		for tries in range(0, 3):
+			process = Popen(args, cwd=downloadDir, stdout=PIPE, stderr=STDOUT)
+			for line in iter(process.stdout.readline, b''):
+				info(line.decode('utf-8')[:-1])
+			process.stdout.close()
+			code = process.wait()
+			if code in (0, 2, 6, 8):
+				# 0: success
+				# 2: parse error of command line
+				# 6: auth failure
+				# 8: error response from server
+				break
+
+			time.sleep(3)
+
+		if code:
+			raise CalledProcessError(code, args)
+		command = 'gpg --verify --status-fd 1 %s %s 2>/dev/null' % (sigFilename, filename)
+		try:
+			output = check_output(command, shell=True, cwd=downloadDir).decode('utf-8')
+		except CalledProcessError as e:
+			return None
+		for line in output.split('\n'):
+			if 'VALIDSIG' in line:
+				print(line)
+				return line.split(' ')[11]
+		return None
+
+
 # -- Fetches sources via fossil -----------------------------------------------
 
 class SourceFetcherForFossil(object):
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
@@ -286,13 +330,19 @@ class SourceFetcherForGit(object):
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
+		self.isCommit=False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 		if not self.rev:
 			self.rev = 'HEAD'
 		if self.rev.startswith('tag=') or self.rev.startswith('commit='):
+			self.isCommit=self.rev.startswith('commit=')
 			self.rev=self.rev[self.rev.find('=') + 1:]
 			self.sourceShouldBeValidated = True
+			if self.uri.endswith('?signed'):
+				self.sourceShouldBeVerified = True
+				self.uri=self.uri[:-len('?signed')]
 
 	def fetch(self):
 		if not self.sourceShouldBeValidated:
@@ -317,6 +367,11 @@ class SourceFetcherForGit(object):
 		ensureCommandIsAvailable('git')
 
 		self.rev = rev
+		if self.rev.startswith('tag=') or self.rev.startswith('commit='):
+			self.isCommit=self.rev.startswith('commit=')
+			self.rev=self.rev[self.rev.find('=') + 1:]
+			self.sourceShouldBeValidated = True
+
 		command = 'git rev-list --max-count=1 %s &>/dev/null' % self.rev
 		try:
 			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
@@ -358,6 +413,29 @@ class SourceFetcherForGit(object):
 		checksum = output[:output.find(' ')]
 		return checksum
 
+	def findSignature(self):
+		ensureCommandIsAvailable('git')
+		ensureCommandIsAvailable('gpg')
+		command = 'GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git '
+		if self.isCommit:
+			command += 'verify-commit'
+		else:
+			command += 'verify-tag'
+		command += ' --raw "%s" 2>&1' % (self.rev)
+		try:
+			output = check_output(command, shell=True, cwd=self.fetchTarget).decode('utf-8')
+		except CalledProcessError as e:
+			warn("COULDN'T FIND PUBLIC KEY")
+			for line in e.output.decode().split('\n'):
+				if "ERRSIG" in line:
+					key = line.split(' ')[8]
+					warn("IMPORT WITH: gpg --search-keys %s" % key)
+			return None
+		for line in output.split('\n'):
+			if 'VALIDSIG' in line:
+				return line.split(' ')[11]
+		return None
+
 # -- Fetches sources from local disk ------------------------------------------
 
 class SourceFetcherForLocalFile(object):
@@ -365,6 +443,7 @@ class SourceFetcherForLocalFile(object):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 
 	def fetch(self):
 		# just symlink the local file to fetchTarget (if it exists)
@@ -390,6 +469,7 @@ class SourceFetcherForMercurial(object):
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
@@ -436,6 +516,7 @@ class SourceFetcherForSourcePackage(object):
 		self.fetchTarget = fetchTarget
 		self.uri = uri
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 		self.sourcePackagePath = self.uri[4:]
 
 	def fetch(self):
@@ -473,6 +554,7 @@ class SourceFetcherForSubversion(object):
 	def __init__(self, uri, fetchTarget):
 		self.fetchTarget = fetchTarget
 		self.sourceShouldBeValidated = False
+		self.sourceShouldBeVerified = False
 
 		(unusedType, self.uri, self.rev) = parseCheckoutUri(uri)
 
@@ -499,7 +581,7 @@ class SourceFetcherForSubversion(object):
 
 # -- source fetcher factory function for given URI ----------------------------
 
-def createSourceFetcher(uri, fetchTarget):
+def createSourceFetcher(uri, fetchTarget, sigUri):
 	"""Creates an appropriate source fetcher for the given URI"""
 
 	lowerUri = uri.lower()
@@ -514,7 +596,7 @@ def createSourceFetcher(uri, fetchTarget):
 	elif lowerUri.startswith('hg'):
 		return SourceFetcherForMercurial(uri, fetchTarget)
 	elif lowerUri.startswith('http') or lowerUri.startswith('ftp'):
-		return SourceFetcherForDownload(uri, fetchTarget)
+		return SourceFetcherForDownload(uri, fetchTarget, sigUri)
 	elif lowerUri.startswith('pkg:'):
 		return SourceFetcherForSourcePackage(uri, fetchTarget)
 	elif lowerUri.startswith('svn'):

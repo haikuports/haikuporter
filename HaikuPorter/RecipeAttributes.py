@@ -61,6 +61,13 @@ recipeAttributes = {
 		'extendable': Extendable.NO,
 		'indexable': False,
 	},
+	'PGPKEYS': {
+		'type': list,
+		'required': False,
+		'default': {},
+		'extendable': Extendable.NO,
+		'indexable': False,
+	},
 
 	# indexable, i.e. per-source attributes
 	'ADDITIONAL_FILES': {
@@ -101,6 +108,13 @@ recipeAttributes = {
 	'SOURCE_URI': {
 		'type': list,
 		'required': True,
+		'default': {},
+		'extendable': Extendable.NO,
+		'indexable': True,
+	},
+	'SOURCE_SIG_URI': {
+		'type': list,
+		'required': False,
 		'default': {},
 		'extendable': Extendable.NO,
 		'indexable': True,
