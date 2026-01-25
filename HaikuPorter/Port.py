@@ -167,6 +167,7 @@ class Port(object):
 		self.buildPackageDir = self.workDir + '/build-packages'
 		self.packagingBaseDir = self.workDir + '/packaging'
 		self.hpkgDir = self.workDir + '/hpkgs'
+		self.dummyPrefixDir = self.workDir + '/dummy-prefix'
 
 		self.preparedRecipeFile = self.workDir + '/port.recipe'
 
@@ -282,6 +283,10 @@ class Port(object):
 		for extension in sorted(extensions):
 			entries = recipeConfig.getEntriesForExtension(extension)
 			recipeKeys = {}
+
+			# make PROVIDES required for subpackages
+			if extension:
+				recipeAttributes['PROVIDES']['required'] = True
 
 			# check whether all required values are present
 			for baseKey in recipeAttributes.keys():
@@ -847,6 +852,8 @@ class Port(object):
 			# cleanup packaging directory
 			if os.path.exists(self.packagingBaseDir):
 				shutil.rmtree(self.packagingBaseDir)
+			if os.path.exists(self.dummyPrefixDir):
+				shutil.rmtree(self.dummyPrefixDir)
 
 			# move all created packages into packages folder
 			for package in self.packages:
@@ -1014,6 +1021,8 @@ class Port(object):
 		haveSourcePackage = False
 		for extension in sorted(self.recipeKeysByExtension.keys()):
 			keys = self.recipeKeysByExtension[extension]
+			if 'PROVIDES' not in keys or len(keys['PROVIDES']) == 0:
+				continue # don't create a package if nothing is provided
 			if Architectures.ANY in keys['ARCHITECTURES']:
 				name = self.baseName
 			else:
@@ -1036,6 +1045,10 @@ class Port(object):
 				self.targetArchitecture, self.secondaryArchitecture,
 				forceAllowUnstable):
 				self.packages.append(package)
+
+		# check that we have any actual package
+		if len(self.allPackages) == 0:
+			sysExit("recipe '%s' doesn't define any package" % self.recipeFilePath)
 
 		if not self.isMetaPort:
 			# create source package if it hasn't been specified or disabled:
@@ -1181,11 +1194,19 @@ class Port(object):
 			+ '/' + revisionedName
 		self.shellVariables['portPackageLinksDir'] = portPackageLinksDir
 
-		prefix = portPackageLinksDir + '/.self'
+		if not forParsing and ('PROVIDES' not in self.recipeKeysByExtension['']
+			or len(self.recipeKeysByExtension['']['PROVIDES']) == 0):
+			# the main package isn't defined, use a dummy directory in this case
+			# because there is no build package for it
+			prefix = self.dummyPrefixDir
+			sysconfDir = prefix + '/.settings'
+		else:
+			prefix = portPackageLinksDir + '/.self'
+			sysconfDir = portPackageLinksDir + '/.settings'
 
 		configureDirs = {
 			'prefix': prefix,
-			'sysconfDir': portPackageLinksDir + '/.settings',
+			'sysconfDir': sysconfDir,
 		}
 
 		for name, value in relativeConfigureDirs.items():
@@ -1203,8 +1224,8 @@ class Port(object):
 		# add one more variable containing all the dir args for CMake:
 		cmakeDirArgs = {
 			'PREFIX': prefix,
-			'SYSCONFDIR': portPackageLinksDir + '/.settings'
-			}
+			'SYSCONFDIR': sysconfDir,
+		}
 		for k, v in relativeConfigureDirs.items():
 			cmakeDirArgs[k.upper()] = v
 		self.shellVariables['cmakeDirArgs'] \
@@ -1405,6 +1426,7 @@ class Port(object):
 		self.packagingBaseDir = self.packagingBaseDir[pathLengthToCut:]
 		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
+		self.dummyPrefixDir = self.dummyPrefixDir[pathLengthToCut:]
 		self.workDir = ''
 
 		if not self.isMetaPort:
@@ -1480,9 +1502,15 @@ class Port(object):
 				path = self.packagingBaseDir + '/' + self.name + '/' + dirName
 				if os.path.exists(path) and not os.listdir(path):
 					os.rmdir(path)
+				path = self.dummyPrefixDir + '/' + dirName
+				if os.path.exists(path) and not os.listdir(path):
+					os.rmdir(path)
 
 		if getOption('enterChroot'):
 			return
+
+		# check the dummy prefix if it exists
+		self.policy.checkDummyPrefixIsEmpty()
 
 		# create hpkg-directory if needed
 		if not os.path.exists(self.hpkgDir):
