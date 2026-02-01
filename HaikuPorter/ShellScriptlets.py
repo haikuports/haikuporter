@@ -82,7 +82,12 @@ getPackagePrefix()
 	local packageLinksDir="$(dirname $installDestDir$portPackageLinksDir)"
 	eval "local packageName=\"\$PACKAGE_NAME_$packageSuffix\""
 	if [ -z "$packageName" ]; then
-		local packageName="${portName}_$packageSuffix"
+		eval "local packageArchitectures=\"\$ARCHITECTURES_$packageSuffix\""
+		if [[ "$packageArchitectures" == *any* ]]; then
+			local packageName="${portBaseName}_$packageSuffix"
+		else
+			local packageName="${portName}_$packageSuffix"
+		fi
 	fi
 	eval "local packageVersion=\"\$PACKAGE_VERSION_$packageSuffix\""
 	if [ -z "$packageVersion" ]; then
@@ -90,16 +95,6 @@ getPackagePrefix()
 	fi
 	local linksDir="$packageLinksDir/$packageName-$packageVersion-$REVISION"
 	local packagePrefix="$linksDir/.self"
-	if [ ! -e "$packagePrefix" ]; then
-		# try again with the base name
-		local packageName="${portBaseName}_$packageSuffix"
-		local linksDir="$packageLinksDir/$packageName-$packageVersion-$REVISION"
-		local packagePrefix="$linksDir/.self"
-		if [ ! -e "$packagePrefix" ]; then
-			echo >&2 "packageEntries: warning: \"$packageSuffix\" doesn't seem to be a valid package suffix."
-			exit 1
-		fi
-	fi
 
 	echo $packagePrefix
 }
