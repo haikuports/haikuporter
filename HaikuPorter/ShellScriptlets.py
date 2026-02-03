@@ -102,30 +102,52 @@ getPackagePrefix()
 defineDebugInfoPackage()
 {
 	# Usage: defineDebugInfoPackage [ --directory <toDirectory> ]
-	#	<basePackageName> <path> ...
+	#	<basePackageSuffix> <path> ...
 	if [ $# -lt 2 -o "$1" = "--directory" -a $# -lt 4 ]; then
-		echo >&2 "Usage: defineDebugInfoPackage [ --directory <toDirectory> ]"
-			"<packageSuffix> <path> ..."
+		echo >&2 "Usage: defineDebugInfoPackage [ --directory <toDirectory> ]" \
+			"<basePackageSuffix> <path> ..."
 		exit 1
 	fi
 
 	local destDir=$debugInfoDir
-	local debugInfoSuffix="($portRevisionedName)"
 	if [ "$1" = "--directory" ]; then
 		destDir="$2"
 		shift 2
 	fi
 
-	local basePackageName=$1
+	local basePackageSuffix=$1
 	shift 1
 
-	local packageName=${basePackageName}_debuginfo
-	local packageSuffix=debuginfo
+	if [ -z "$basePackageSuffix" ]; then
+		local basePackageName=$portName
+		local basePackageVersion=$portVersion
+		local debugInfoSuffix="($portRevisionedName)"
+		local packageSuffix=debuginfo
+	else
+		eval "local basePackageName=\"\$PACKAGE_NAME_$basePackageSuffix\""
+		if [ -z "$basePackageName" ]; then
+			local basePackageName=${portName}_$basePackageSuffix
+		fi
+		eval "local basePackageVersion=\"\$PACKAGE_VERSION_$basePackageSuffix\""
+		if [ -z "$basePackageVersion" ]; then
+			local basePackageVersion=$portVersion
+		fi
+		local debugInfoSuffix="($basePackageName-$basePackageVersion-$REVISION)"
+		local packageSuffix=${basePackageSuffix}_debuginfo
+	fi
+	eval "local packageName=\"\$PACKAGE_NAME_$packageSuffix\""
+	if [ -z "$packageName" ]; then
+		local packageName=${basePackageName}_debuginfo
+	fi
+	eval "local packageVersion=\"\$PACKAGE_VERSION_$packageSuffix\""
+	if [ -z "$packageVersion" ]; then
+		local packageVersion=$portVersion
+	fi
 
 	local provides=PROVIDES_$packageSuffix
 	local requires=REQUIRES_$packageSuffix
-	printf -v $provides "%s" "${packageName} = $portVersion"
-	printf -v $requires "%s" "${basePackageName} == $portVersion base"
+	printf -v $provides "%s" "${packageName} = $packageVersion"
+	printf -v $requires "%s" "${basePackageName} == $basePackageVersion base"
 
 	# Use two array variables for a path->debugInfo map. An associative array
 	# would be nicer, but we can't declare that to be global before bash 4.2
@@ -142,7 +164,7 @@ defineDebugInfoPackage()
 		local entityName=$(basename $path)
 		local providesEntity="debuginfo:${entityName//-/_}($basePackageName)"
 		printf -v $provides "%s\n%s" "${!provides}" \
-			"\"$providesEntity\" = $portVersion"
+			"\"$providesEntity\" = $packageVersion"
 
 		local debugInfo="$destDir/$(basename $path)$debugInfoSuffix.debuginfo"
 		eval "local count=\${#$paths[*]}"
