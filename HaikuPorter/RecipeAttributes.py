@@ -221,8 +221,8 @@ recipeAttributes = {
 	},
 	'PROVIDES': {
 		'type': ProvidesList,
-		'required': True,
-		'default': None,
+		'required': False,
+		'default': [],
 		'extendable': Extendable.DEFAULT,
 		'indexable': False,
 	},

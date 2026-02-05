@@ -88,6 +88,17 @@ class Policy(object):
 		if self.strict and self.violationEncountered:
 			sysExit("packaging policy violation(s) in strict mode")
 
+	def checkDummyPrefixIsEmpty(self):
+		self.violationEncountered = False
+
+		dummyPrefixDir = self.port.dummyPrefixDir
+		if os.path.exists(dummyPrefixDir) and os.listdir(dummyPrefixDir):
+			self._violation("main package isn't defined but not all files have "
+				"been moved to other packages")
+
+		if self.strict and self.violationEncountered:
+			sysExit("packaging policy violation(s) in strict mode")
+
 	def _checkTopLevelEntries(self):
 		for entry in os.listdir(self.package.packagingDir):
 			if entry not in allowedTopLevelEntries:
