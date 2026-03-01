@@ -452,6 +452,8 @@ class Main(object):
 				whySpec['version'] \
 					= self.repository.getActiveVersionOf(whySpec['name'],
 														 False)
+			if not whySpec['version']:
+				sysExit(whySpec['name'] + ' not found in tree.')
 			whyID = whySpec['name'] + '-' + whySpec['version']
 			if whyID not in allPorts:
 				sysExit(whyID + ' not found in tree.')
