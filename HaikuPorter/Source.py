@@ -74,13 +74,18 @@ class Source(object):
 			]
 
 		# determine filename of first URI
+		if len(self.uris) == 0:
+			if self.index == '1':
+				sysExit('SOURCE_URI is empty')
+			else:
+				sysExit('SOURCE_URI_%s is empty' % self.index)
 		uriFileName = self.uris[0]
 		uriExtension = ''
 		hashPos = uriFileName.find('#')
 		if hashPos >= 0:
 			uriExtension = uriFileName[hashPos:]
 			uriFileName = uriFileName[:hashPos]
-		uriFileName = uriFileName[uriFileName.rindex('/') + 1:]
+		uriFileName = uriFileName[uriFileName.rfind('/') + 1:]
 
 		# set local filename from URI, unless specified explicitly
 		if not self.fetchTargetName:
