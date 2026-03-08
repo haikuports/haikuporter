@@ -26,6 +26,13 @@ def getRecipeFormatVersion():
 
 recipeAttributes = {
 	# non-extendable and non-indexable, i.e. per-port attributes
+	'ADDITIONAL_FILES': {
+		'type': list,
+		'required': False,
+		'default': {},
+		'extendable': Extendable.NO,
+		'indexable': False,
+	},
 	'BUILD_PACKAGE_ACTIVATION_PHASE': {
 		'type': Phase,
 		'required': False,
@@ -63,13 +70,6 @@ recipeAttributes = {
 	},
 
 	# indexable, i.e. per-source attributes
-	'ADDITIONAL_FILES': {
-		'type': list,
-		'required': False,
-		'default': {},
-		'extendable': Extendable.NO,
-		'indexable': True,
-	},
 	'CHECKSUM_SHA256': {
 		'type': bytes,
 		'required': False,

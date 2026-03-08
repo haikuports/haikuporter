@@ -27,13 +27,12 @@ from .Utils import (ensureCommandIsAvailable, info, readStringFromFile,
 
 class Source(object):
 	def __init__(self, port, index, uris, fetchTargetName, checksum,
-				 sourceDir, patches, additionalFiles):
+				 sourceDir, patches):
 		self.index = index
 		self.uris = uris
 		self.fetchTargetName = fetchTargetName
 		self.checksum = checksum
 		self.patches = patches
-		self.additionalFiles = additionalFiles
 
 		## REFACTOR use property setters to handle branching based on instance
 		## variables
@@ -63,14 +62,6 @@ class Source(object):
 			self.patches = [
 				port.patchesDir + '/'
 				+ patch for patch in self.patches if not patch.strip(' \t').startswith('#')
-			]
-
-		# ADDITIONAL_FILES refers to the files relative to the additional-files
-		# directory, make those absolute paths.
-		if self.additionalFiles:
-			self.additionalFiles = [
-				port.additionalFilesDir + '/' + additionalFile
-				for additionalFile in self.additionalFiles
 			]
 
 		# determine filename of first URI
@@ -224,25 +215,6 @@ class Source(object):
 
 		port.setFlag('unpack', self.index)
 
-	def populateAdditionalFiles(self, baseDir):
-		if not self.additionalFiles:
-			return
-
-		additionalFilesDir = os.path.join(baseDir, 'additional-files')
-		if self.index != '1':
-			additionalFilesDir += '-' + self.index
-
-		if not os.path.exists(additionalFilesDir):
-			os.mkdir(additionalFilesDir)
-
-		for additionalFile in self.additionalFiles:
-			if os.path.isdir(additionalFile):
-				shutil.copytree(additionalFile,
-					os.path.join(additionalFilesDir,
-						os.path.basename(additionalFile)))
-			else:
-				shutil.copy(additionalFile, additionalFilesDir)
-
 	def validateChecksum(self, port):
 		"""Make sure that the SHA256-checksum matches the expectations"""
 
@@ -294,18 +266,6 @@ class Source(object):
 		if self.patches:
 			for patch in self.patches:
 				if patch in files:
-					return True
-
-		if self.additionalFiles:
-			for additionalFile in self.additionalFiles:
-				if os.path.isdir(additionalFile):
-					# ensure there is a path separator at the end
-					additionalFile = os.path.join(additionalFile, '')
-					for fileName in files:
-						if os.path.commonprefix([additionalFile, fileName]) \
-								== additionalFile:
-							return True
-				elif additionalFile in files:
 					return True
 
 		return False
@@ -491,10 +451,6 @@ class Source(object):
 		pathLengthToCut = len(port.workDir)
 		self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
 		self.sourceDir = self.sourceDir[pathLengthToCut:]
-		self.additionalFiles = [
-			additionalFile[pathLengthToCut:]
-			for additionalFile in self.additionalFiles
-		]
 
 	def _initImplicitGitRepo(self):
 		"""Import sources into git repository"""
