@@ -623,6 +623,18 @@ class Port(object):
 			if source.referencesFiles(files):
 				return True
 
+		if self.additionalFiles:
+			for additionalFile in self.additionalFiles:
+				if os.path.isdir(additionalFile):
+					# ensure there is a path separator at the end
+					additionalFile = os.path.join(additionalFile, '')
+					for fileName in files:
+						if os.path.commonprefix([additionalFile, fileName]) \
+								== additionalFile:
+							return True
+				elif additionalFile in files:
+					return True
+
 		if 'LICENSE' in self.recipeKeys:
 			for license in self.recipeKeys['LICENSE']:
 				if os.path.join(self.licensesDir, license) in files:
@@ -705,8 +717,21 @@ class Port(object):
 		"""Populates the work dir with referenced additional files"""
 
 		self.parseRecipeFileIfNeeded()
-		for source in self.sources:
-			source.populateAdditionalFiles(self.workDir)
+		if not self.additionalFiles:
+			return
+
+		additionalFilesDir = os.path.join(self.workDir, 'additional-files')
+
+		if not os.path.exists(additionalFilesDir):
+			os.mkdir(additionalFilesDir)
+
+		for additionalFile in self.additionalFiles:
+			if os.path.isdir(additionalFile):
+				shutil.copytree(additionalFile,
+					os.path.join(additionalFilesDir,
+						os.path.basename(additionalFile)))
+			else:
+				shutil.copy(additionalFile, additionalFilesDir)
 
 	def extractPatchset(self):
 		"""Extract patchsets from all sources"""
@@ -1002,11 +1027,18 @@ class Port(object):
 							keys['SOURCE_FILENAME'].get(index, None),
 							keys['CHECKSUM_SHA256'].get(index, None),
 							keys['SOURCE_DIR'].get(index, None),
-							keys['PATCHES'].get(index, []),
-							keys['ADDITIONAL_FILES'].get(index, []))
+							keys['PATCHES'].get(index, []))
 			if source.isFromSourcePackage:
 				basedOnSourcePackage = True
 			self.sources.append(source)
+
+		# ADDITIONAL_FILES refers to the files relative to the additional-files
+		# directory, make those absolute paths.
+		if 'ADDITIONAL_FILES' in keys:
+			self.additionalFiles = [
+				self.additionalFilesDir + '/' + additionalFile
+				for additionalFile in keys['ADDITIONAL_FILES']
+			]
 
 		# create packages
 		self.allPackages = []
@@ -1405,6 +1437,10 @@ class Port(object):
 		self.packagingBaseDir = self.packagingBaseDir[pathLengthToCut:]
 		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
+		self.additionalFiles = [
+			additionalFile[pathLengthToCut:]
+			for additionalFile in self.additionalFiles
+		]
 		self.workDir = ''
 
 		if not self.isMetaPort:
