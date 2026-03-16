@@ -164,7 +164,7 @@ class ConfigParser(object):
 			elif attrType == MachineArchitecture:
 				entries[key] = {}
 				knownArchitectures = MachineArchitecture.getAll()
-				valueString = valueString.lower()
+				#valueString = valueString.lower()
 				if valueString not in knownArchitectures:
 					architectures = ','.join(knownArchitectures)
 					sysExit('%s refers to unknown machine-architecture %s\n'
@@ -173,7 +173,7 @@ class ConfigParser(object):
 				entries[key] = valueString
 			elif attrType == Architectures:
 				entries[key] = {}
-				for value in [v.lower() for v in valueString.split()]:
+				for value in valueString.split():
 					architecture = ''
 					if value.startswith('?'):
 						status = Status.UNTESTED
@@ -185,13 +185,14 @@ class ConfigParser(object):
 						status = Status.STABLE
 						architecture = value
 					knownArchitectures = Architectures.getAll()
-					if architecture == 'all':
+					if architecture == 'ALL':
 						if len(entries[key]) > 0:
-							sysExit("%s specifies 'all' after other architectures"
+							sysExit("%s specifies 'ALL' after other architectures"
 									% (filename))
 						for machineArch in MachineArchitecture.getAll():
 							entries[key][machineArch] = status
 					else:
+						#architecture = architecture.lower()
 						if architecture not in knownArchitectures:
 							architectures = ','.join(knownArchitectures)
 							sysExit('%s refers to unknown architecture %s\n'
