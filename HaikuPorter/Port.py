@@ -1421,10 +1421,6 @@ class Port(object):
 		for package in self.allPackages:
 			package.adjustToChroot()
 
-		# unset directories which can't be reached from inside the chroot
-		self.baseDir = None
-		self.downloadDir = None
-
 		# the recipe file has a fixed same name in the chroot
 		self.preparedRecipeFile = '/port.recipe'
 		self.recipeFilePath = '/port.recipe'
@@ -1437,11 +1433,16 @@ class Port(object):
 		self.packagingBaseDir = self.packagingBaseDir[pathLengthToCut:]
 		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
+		self.workDir = ''
+		pathLengthToCut = len(self.baseDir)
 		self.additionalFiles = [
 			additionalFile[pathLengthToCut:]
 			for additionalFile in self.additionalFiles
 		]
-		self.workDir = ''
+
+		# unset directories which can't be reached from inside the chroot
+		self.baseDir = None
+		self.downloadDir = None
 
 		if not self.isMetaPort:
 			self.patchesDir = '/patches'
