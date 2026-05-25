@@ -77,9 +77,8 @@ erase the container without losing your work.
 
 ### Making a release of haikuporter
 
- - Be sure __version__.py , pyproject.toml is set to the next version of haikuporter and changes are pushed
- - Draft a new release version matching what's in __version__.py, pyproject.toml
- - Once a new release is made in github, bump the versions in __version__.py , pyproject.toml to the *NEXT* version
- - The buildmaster containers are generally updated out-of-band as they receive updates less often
-   - Version numbers in buildmaster/*/Makefile *should* follow the same process as above ideally
-   - Ideally, we would rebuild the buildmaster containers every release, but not a requirement
+ - Be sure `__version__.py` is set to the next version of haikuporter and changes are pushed
+ - Draft a new release version matching what's in `__version__.py`
+ - Once a new release is made in github, bump the versions in `__version__.py` to the *NEXT* version
+ - The buildmaster containers are automatically rebuilt by a GitHub action when a new release is made
+   - Out-of-band releases are also possible if needed by running the GitHub action manually
