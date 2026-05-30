@@ -125,6 +125,8 @@ class Policy(object):
 			self._violation('no matching self provides for "%s"'
 				% self.package.name)
 
+		foundEntries = set()
+
 		# everything in bin/ must be declared as cmd:*
 		binDir = os.path.join(self.package.packagingDir, 'bin')
 		if os.path.exists(binDir):
@@ -133,9 +135,11 @@ class Policy(object):
 				if entry == self.package.secondaryArchitecture:
 					continue
 				name = self._normalizeResolvableName('cmd:' + entry)
-				if name.lower() not in self.provides:
-					self._violation('no matching provides "%s" for "%s"'
-						% (name, 'bin/' + entry))
+				if name not in self.provides:
+					self._violation('no matching provides "%s" for "bin/%s"'
+						% (name, entry))
+				else:
+					foundEntries.add(name)
 
 		# library entries in lib[/<arch>] must be declared as lib:*[_<arch>]
 		libDir = os.path.join(self.package.packagingDir,
@@ -148,9 +152,11 @@ class Policy(object):
 
 				name = self._normalizeResolvableName(
 					'lib:' + entry[:suffixIndex] + self.secondaryArchSuffix)
-				if name.lower() not in self.provides:
-					self._violation('no matching provides "%s" for "%s"'
-						% (name, 'lib/' + entry))
+				if name not in self.provides:
+					self._violation('no matching provides "%s" for "lib%s/%s"'
+						% (name, self.secondaryArchSubDir, entry))
+				else:
+					foundEntries.add(name)
 
 		# library entries in develop/lib[<arch>] must be declared as
 		# devel:*[_<arch>]
@@ -166,9 +172,22 @@ class Policy(object):
 
 				name = self._normalizeResolvableName(
 					'devel:' + entry[:suffixIndex] + self.secondaryArchSuffix)
-				if name.lower() not in self.provides:
-					self._violation('no matching provides "%s" for "%s"'
-						% (name, 'develop/lib/' + entry))
+				if name not in self.provides:
+					self._violation('no matching provides "%s" for "develop/lib%s/%s"'
+						% (name, self.secondaryArchSubDir, entry))
+				else:
+					foundEntries.add(name)
+
+		# all cmd:, lib: and devel: entries must exist
+		for entry in self.provides:
+			if entry.startswith('cmd:') and entry not in foundEntries:
+				self._violation('provides "%s" doesn\'t exist in "bin"' % entry)
+			if entry.startswith('lib:') and entry not in foundEntries:
+				self._violation('provides "%s" doesn\'t exist in "lib%s"'
+					% (entry, self.secondaryArchSubDir))
+			if entry.startswith('devel:') and entry not in foundEntries:
+				self._violation('provides "%s" doesn\'t exist in "develop/lib%s"'
+					% (entry, self.secondaryArchSubDir))
 
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
