@@ -32,7 +32,6 @@ ADD . /tmp/haikuporter
 
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package/package /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
-COPY --from=host-tools /tmp/haiku/src/tools/hardlink_packages.py /usr/local/bin/
 
 RUN PYVERSION=$(python3 -V | awk '{ print $2 }') \
 	&& mkdir -p /usr/local/lib/python${PYVERSION%.*}/dist-packages \
