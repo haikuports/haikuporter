@@ -112,12 +112,14 @@ class Policy(object):
 			self.package.recipeKeys[keyName])
 
 	def _parseResolvableExpressionList(self, theList):
-		names = set()
+		entries = {}
 		for item in theList:
-			match = re.match(r'[^-/=!<>\s]+', item)
-			if match:
-				names.add(match.group(0))
-		return names
+			matches = re.findall(r'[^-/=!<>\s]+', item)
+			if matches:
+				if len(matches) > 2 and matches[2] == 'compat':
+					del matches[2]
+				entries[matches[0]] = matches[1:]
+		return entries
 
 	def _checkProvides(self):
 		# check if the package provides itself
@@ -158,6 +160,12 @@ class Policy(object):
 				else:
 					foundEntries.add(name)
 
+					# if the library has a version suffix, it must match the provides
+					if (len(entry) > suffixIndex + 3
+						and entry[suffixIndex + 4:] not in self.provides[name]):
+						self._violation('version of provides "%s" doesn\'t match library '
+							'(expected "%s")' % (name, entry[suffixIndex + 4:]))
+
 		# library entries in develop/lib[<arch>] must be declared as
 		# devel:*[_<arch>]
 		developLibDir = os.path.join(self.package.packagingDir,
@@ -178,8 +186,14 @@ class Policy(object):
 				else:
 					foundEntries.add(name)
 
+					# if the library has a version suffix, it must match the provides
+					if (len(entry) > suffixIndex + 3
+						and entry[suffixIndex + 4:] not in self.provides[name]):
+						self._violation('version of provides "%s" doesn\'t match library '
+							'(expected "%s")' % (name, entry[suffixIndex + 4:]))
+
 		# all cmd:, lib: and devel: entries must exist
-		for entry in self.provides:
+		for entry in self.provides.keys():
 			if entry.startswith('cmd:') and entry not in foundEntries:
 				self._violation('provides "%s" doesn\'t exist in "bin"' % entry)
 			if entry.startswith('lib:lib') and entry not in foundEntries:
