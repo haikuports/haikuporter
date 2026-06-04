@@ -112,12 +112,14 @@ class Policy(object):
 			self.package.recipeKeys[keyName])
 
 	def _parseResolvableExpressionList(self, theList):
-		names = set()
+		entries = {}
 		for item in theList:
-			match = re.match(r'[^-/=!<>\s]+', item)
-			if match:
-				names.add(match.group(0))
-		return names
+			matches = re.findall(r'[^-/=!<>\s]+', item)
+			if matches:
+				if len(matches) > 2 and matches[2] == 'compat':
+					del matches[2]
+				entries[matches[0]] = matches[1:]
+		return entries
 
 	def _checkProvides(self):
 		# check if the package provides itself
@@ -125,7 +127,7 @@ class Policy(object):
 			self._violation('no matching self provides for "%s"'
 				% self.package.name)
 
-		foundEntries = set()
+		cmdEntries = set()
 
 		# everything in bin/ must be declared as cmd:*
 		binDir = os.path.join(self.package.packagingDir, 'bin')
@@ -139,7 +141,9 @@ class Policy(object):
 					self._violation('no matching provides "%s" for "bin/%s"'
 						% (name, entry))
 				else:
-					foundEntries.add(name)
+					cmdEntries.add(name)
+
+		libEntries = {}
 
 		# library entries in lib[/<arch>] must be declared as lib:*[_<arch>]
 		libDir = os.path.join(self.package.packagingDir,
@@ -156,7 +160,14 @@ class Policy(object):
 					self._violation('no matching provides "%s" for "lib%s/%s"'
 						% (name, self.secondaryArchSubDir, entry))
 				else:
-					foundEntries.add(name)
+					if name not in libEntries:
+						libEntries[name] = []
+
+					# if the library has a version suffix, store it for checking
+					if len(entry) > suffixIndex + 3:
+						libEntries[name].append(entry[suffixIndex + 4:])
+
+		develEntries = {}
 
 		# library entries in develop/lib[<arch>] must be declared as
 		# devel:*[_<arch>]
@@ -176,18 +187,41 @@ class Policy(object):
 					self._violation('no matching provides "%s" for "develop/lib%s/%s"'
 						% (name, self.secondaryArchSubDir, entry))
 				else:
-					foundEntries.add(name)
+					if name not in develEntries:
+						develEntries[name] = []
+
+					# if the library has a version suffix, store it for checking
+					if len(entry) > suffixIndex + 3:
+						develEntries[name].append(entry[suffixIndex + 4:])
 
 		# all cmd:, lib: and devel: entries must exist
-		for entry in self.provides:
-			if entry.startswith('cmd:') and entry not in foundEntries:
+		for (entry, versions) in self.provides.items():
+			if entry.startswith('cmd:') and entry not in cmdEntries:
 				self._violation('provides "%s" doesn\'t exist in "bin"' % entry)
-			if entry.startswith('lib:lib') and entry not in foundEntries:
-				self._violation('provides "%s" doesn\'t exist in "lib%s"'
-					% (entry, self.secondaryArchSubDir))
-			if entry.startswith('devel:lib') and entry not in foundEntries:
-				self._violation('provides "%s" doesn\'t exist in "develop/lib%s"'
-					% (entry, self.secondaryArchSubDir))
+			if entry.startswith('lib:lib'):
+				if entry not in libEntries:
+					self._violation('provides "%s" doesn\'t exist in "lib%s"'
+						% (entry, self.secondaryArchSubDir))
+				else:
+					libEntries[entry].sort(reverse=True)
+					if libEntries[entry] != versions:
+						expected = libEntries[entry][0]
+						if len(libEntries[entry]) > 1:
+							expected += ' compat >= ' + libEntries[entry][1]
+						self._violation('version of provides "%s" doesn\'t match '
+							'(expected "%s")' % (entry, expected))
+			if entry.startswith('devel:lib'):
+				if entry not in develEntries:
+					self._violation('provides "%s" doesn\'t exist in "develop/lib%s"'
+						% (entry, self.secondaryArchSubDir))
+				else:
+					develEntries[entry].sort(reverse=True)
+					if develEntries[entry] != versions:
+						expected = develEntries[entry][0]
+						if len(develEntries[entry]) > 1:
+							expected += ' compat >= ' + develEntries[entry][1]
+						self._violation('version of provides "%s" doesn\'t match '
+							'(expected "%s")' % (entry, expected))
 
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
