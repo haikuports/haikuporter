@@ -922,10 +922,6 @@ if ! [ -e boot/system/settings/etc/profile ]; then
 	echo 'export PS1="\w> "' >boot/system/settings/etc/profile
 	chmod +x boot/system/settings/etc/profile
 fi
-# copy network settings
-if ! [ -e boot/system/settings/network ]; then
-	cp -r /system/settings/network boot/system/settings/
-fi
 # copy font settings
 if ! [ -e boot/system/settings/fonts ]; then
 	cp -r /system/settings/fonts boot/system/settings/
