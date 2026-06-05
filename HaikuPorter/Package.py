@@ -556,7 +556,7 @@ class SourcePackage(Package):
 						 + os.path.basename(source.sourceBaseDir))
 			# export sources and additional files (if any)
 			source.exportSources(targetDir, self.isRiggedSourcePackage)
-			#source.populateAdditionalFiles(targetBaseDir)
+			source.populateAdditionalFiles(targetBaseDir)
 
 		# copy patches, if there are any
 		if port.patchesDir and os.path.exists(port.patchesDir):
