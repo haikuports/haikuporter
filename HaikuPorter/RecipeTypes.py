@@ -13,6 +13,7 @@ class MachineArchitecture(str):
 	ARM64 = 'arm64'
 	M68K = 'm68k'
 	PPC = 'ppc'
+	PPC64 = 'ppc64'
 	RISCV64 = 'riscv64'
 	SPARC = 'sparc'
 	X86 = 'x86'
@@ -27,6 +28,7 @@ class MachineArchitecture(str):
 			Architectures.ARM64,
 			Architectures.M68K,
 			Architectures.PPC,
+			Architectures.PPC64,
 			Architectures.RISCV64,
 			Architectures.SPARC,
 			Architectures.X86,
@@ -43,6 +45,7 @@ class MachineArchitecture(str):
 			Architectures.ARM64: 'aarch64-unknown-haiku',
 			Architectures.M68K: 'm68k-unknown-haiku',
 			Architectures.PPC: 'powerpc-apple-haiku',
+			Architectures.PPC64: 'powerpc64-unknown-haiku',
 			Architectures.RISCV64: 'riscv64-unknown-haiku',
 			Architectures.SPARC: 'sparc64-unknown-haiku',
 			Architectures.X86: 'i586-pc-haiku',
