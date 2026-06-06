@@ -718,14 +718,14 @@ class Port(object):
 						source.reset('HEAD')
 				raise
 
-	def populateAdditionalFiles(self):
+	def populateAdditionalFiles(self, baseDir=None):
 		"""Populates the work dir with referenced additional files"""
 
 		self.parseRecipeFileIfNeeded()
 		if not self.additionalFiles:
 			return
 
-		additionalFilesDir = os.path.join(self.workDir, 'additional-files')
+		additionalFilesDir = os.path.join(baseDir or self.workDir, 'additional-files')
 
 		if not os.path.exists(additionalFilesDir):
 			os.mkdir(additionalFilesDir)
