@@ -163,7 +163,6 @@ class Port(object):
 			self.additionalFilesDir = self.baseDir + '/additional-files'
 
 		self.sourceBaseDir = self.workDir + '/sources'
-		self.packageInfoDir = self.workDir + '/package-infos'
 		self.buildPackageDir = self.workDir + '/build-packages'
 		self.packagingBaseDir = self.workDir + '/packaging'
 		self.hpkgDir = self.workDir + '/hpkgs'
@@ -1294,7 +1293,7 @@ class Port(object):
 	def _recreatePackageDirectories(self):
 		# Delete and re-create a couple of directories
 		directoriesToCreate = [
-			self.packageInfoDir, self.packagingBaseDir, self.dummyPrefixDir,
+			self.packagingBaseDir, self.dummyPrefixDir,
 			self.buildPackageDir, self.hpkgDir
 		]
 		directoriesToRemove = [
@@ -1452,7 +1451,6 @@ class Port(object):
 		self.sourceBaseDir = self.sourceBaseDir[pathLengthToCut:]
 		self.buildPackageDir = self.buildPackageDir[pathLengthToCut:]
 		self.packagingBaseDir = self.packagingBaseDir[pathLengthToCut:]
-		self.packageInfoDir = self.packageInfoDir[pathLengthToCut:]
 		self.hpkgDir = self.hpkgDir[pathLengthToCut:]
 		self.dummyPrefixDir = self.dummyPrefixDir[pathLengthToCut:]
 		self.workDir = ''

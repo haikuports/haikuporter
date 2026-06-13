@@ -1046,10 +1046,8 @@ if [[ $buildOk ]]; then
 		build-packages \
 		dev \
 		dummy-prefix \
-		package-infos \
 		packages \
 		packaging \
-		prereq-repository \
 		repository
 	rm -f \
 		.PackageInfo \
