@@ -1045,6 +1045,7 @@ if [[ $buildOk ]]; then
 		boot \
 		build-packages \
 		dev \
+		dummy-prefix \
 		package-infos \
 		packages \
 		packaging \

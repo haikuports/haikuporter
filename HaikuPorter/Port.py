@@ -1294,7 +1294,7 @@ class Port(object):
 	def _recreatePackageDirectories(self):
 		# Delete and re-create a couple of directories
 		directoriesToCreate = [
-			self.packageInfoDir, self.packagingBaseDir,
+			self.packageInfoDir, self.packagingBaseDir, self.dummyPrefixDir,
 			self.buildPackageDir, self.hpkgDir
 		]
 		directoriesToRemove = [
