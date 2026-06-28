@@ -195,9 +195,18 @@ for (( i = 0; j = i+2, i < ${#crates[@]}; i++ )); do
 done
 
 if (( bump )); then
+	# Replace SOURCE_URI_number lines with the new ones:
+	# The range to replace goes from SOURCE_URI_2 to ARCHITECTURES,
+	# or ADDITONAL_FILES, if that exists.
+	# This assumes recipe ordering according to haikuports guidelines.
+	if grep -q '^ADDITIONAL_FILES=' "$recipe"; then
+		rangeEnd="ADDITIONAL_FILES"
+	else
+		rangeEnd="ARCHITECTURES"
+	fi
 	sed -i \
-		-e '/SOURCE_URI_2/,/ARCHITECTURES/ { /^A/!d }' \
-		-e "/^ARCHITECTURES/i $(printf '%s\n' "${merged[@]}" |
+		-e "/SOURCE_URI_2/,/$rangeEnd/ { /^A/!d }" \
+		-e "/^$rangeEnd/i $(printf '%s\n' "${merged[@]}" |
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
 		-e "s/{2\.\.[0-9]\+}/{2..$(( "${#crates[@]}" + 1 ))}/" \
