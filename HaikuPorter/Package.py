@@ -83,7 +83,6 @@ class Package(object):
 		self.fullVersion = self.version + '-' + self.revision
 		self.revisionedName = self.name + '-' + self.fullVersion
 
-		self.packageInfoName = self.versionedName + '.PackageInfo'
 		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
 
 		self.isRiggedSourcePackage = isRiggedSourcePackage

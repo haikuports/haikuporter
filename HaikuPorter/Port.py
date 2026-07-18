@@ -109,7 +109,6 @@ class Port(object):
 		self.recipeFilePath = self.baseDir + '/' + self.baseName + '-' \
 			+ self.version + '.recipe'
 
-		self.packageInfoName = self.versionedName + '.PackageInfo'
 		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
 
 		self.revision = None
