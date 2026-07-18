@@ -155,7 +155,6 @@ info=$(
 		sed -e '0,/\[metadata\]/d
 			s/checksum //
 			s/(.*)//
-			s/ /-/
 			s/ = //
 			s/"//g' "$tempdir"/Cargo.lock
 	else
@@ -172,24 +171,25 @@ info=$(
 				if (length(f[4]) == 64)
 					print f[2] " " f[3] " " f[4]
 			}
-		}' "$tempdir"/Cargo.lock | sort | sed 's/ /-/'
+		}' "$tempdir"/Cargo.lock | sort
 	fi
 )
 
-mapfile -t crates < <(awk '{ print $1".crate" }' <<< "$info")
-mapfile -t checksums < <(awk '{ print $2 }' <<< "$info")
+mapfile -t names < <(awk '{ print $1 }' <<< "$info")
+mapfile -t versions < <(awk '{ print $2 }' <<< "$info")
+mapfile -t checksums < <(awk '{ print $3 }' <<< "$info")
 echo "$info"
-for crate in "${crates[@]}"; do
-	uris+=("https://static.crates.io/crates/${crate%%-[0-9]*.[0-9]*.[0-9]*}/$crate")
-	(( psd == 3 )) && dirs+=("${crate%.crate}")
-done
 
-for (( i = 0; j = i+2, i < ${#crates[@]}; i++ )); do
-	source_uris+=("SOURCE_URI_$j=\"${uris[i]}\"")
+for (( i = 0; j = i+2, i < ${#names[@]}; i++ )); do
+	name="${names[i]}"
+	version="${versions[i]}"
+	uri="https://static.crates.io/crates/$name/$name-$version.crate"
+	source_uris+=("SOURCE_URI_$j=\"$uri\"")
 	checksums_sha256+=("CHECKSUM_SHA256_$j=\"${checksums[i]}\"")
 	merged+=("${source_uris[i]}" "${checksums_sha256[i]}")
 	(( psd == 3 )) && {
-		source_dirs+=("SOURCE_DIR_$j=\"${dirs[i]}\"")
+		dir="$name-$version"
+		source_dirs+=("SOURCE_DIR_$j=\"$dir\"")
 		merged+=("${source_dirs[i]}")
 	}
 done
