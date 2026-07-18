@@ -204,24 +204,36 @@ class Policy(object):
 						% (entry, self.secondaryArchSubDir))
 				else:
 					libEntries[entry].sort(reverse=True)
-					if libEntries[entry] != versions:
+					if libEntries[entry] != versions: # missing or wrong
 						expected = libEntries[entry][0]
 						if len(libEntries[entry]) > 1:
 							expected += ' compat >= ' + libEntries[entry][1]
-						self._violation('version of provides "%s" doesn\'t match '
-							'(expected "%s")' % (entry, expected))
+						if versions: # if a version is specified, it is wrong
+							self._violation('version of provides "%s" doesn\'t match '
+								'(expected "%s")' % (entry, expected))
+						else: # otherwise add it
+							self._addProvidesVersion(entry, expected)
+
 			if entry.startswith('devel:lib'):
 				if entry not in develEntries:
 					self._violation('provides "%s" doesn\'t exist in "develop/lib%s"'
 						% (entry, self.secondaryArchSubDir))
 				else:
 					develEntries[entry].sort(reverse=True)
-					if develEntries[entry] != versions:
+					if develEntries[entry] != versions: # missing or wrong
 						expected = develEntries[entry][0]
 						if len(develEntries[entry]) > 1:
 							expected += ' compat >= ' + develEntries[entry][1]
-						self._violation('version of provides "%s" doesn\'t match '
-							'(expected "%s")' % (entry, expected))
+						if versions: # if a version is specified, it is wrong
+							self._violation('version of provides "%s" doesn\'t match '
+								'(expected "%s")' % (entry, expected))
+						else: # otherwise add it
+							self._addProvidesVersion(entry, expected)
+
+	def _addProvidesVersion(self, name, version):
+		for i, entry in enumerate(self.package.recipeKeys['PROVIDES']):
+			if entry == name:
+				self.package.recipeKeys['PROVIDES'][i] += ' = %s' % version
 
 	def _normalizeResolvableName(self, name):
 		# make name a valid resolvable name by replacing '-' with '_'
