@@ -277,11 +277,9 @@ $(
 	printf '%s\n' "${merged[@]}" | sed '0~'"$psd"' a\\'
 )
 
-ARCHITECTURES="!all x86_64"
-commandBinDir=\$binDir
+ARCHITECTURES="x86_64"
 if [ "\$targetArchitecture" = x86_gcc2 ]; then
-SECONDARY_ARCHITECTURES="!x86"
-commandBinDir=\$prefix/bin
+SECONDARY_ARCHITECTURES="x86"
 fi
 
 PROVIDES="
@@ -301,7 +299,7 @@ BUILD_PREREQUIRES="
 	"
 
 defineDebugInfoPackage $portName\$secondaryArchSuffix \\
-	"\$commandBinDir"/$cmd
+	\$prefix/bin/$cmd
 
 BUILD()
 {
@@ -323,7 +321,7 @@ BUILD()
 		EOF
 	done
 
-	cat <<-EOF >"\$CARGO_HOME"/config
+	cat <<-EOF >"\$CARGO_HOME"/config.toml
 	[source.haiku]
 	directory = "\$vendor"
 
@@ -336,9 +334,10 @@ BUILD()
 
 INSTALL()
 {
-	install -m 755 -d "\$commandBinDir" "\$docDir"
-	install -m 755 target/release/$cmd "\$commandBinDir"
-	install -m 644 README.md "\$docDir"
+	export CARGO_HOME=\$sourceDir/../cargo
+	cargo install --frozen --root \$prefix --path .
+
+	rm -f \$prefix/{.crates.toml,.crates2.json}
 }
 
 TEST()
