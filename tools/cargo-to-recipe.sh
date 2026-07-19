@@ -26,6 +26,8 @@ usage() {
 	 		versioned recipe instead (overrides --no-clobber)
 	  -c CMD, --cmd=CMD
 	 		specify the command runtime
+	  -l LOCK-URI, --lock=LOCK-URI
+	 		specify the URI to download the Cargo.lock file
 	EOF
 }
 
@@ -68,6 +70,12 @@ while (( $# )); do
 			;&
 		--cmd=*)
 			cmd=${1#*=}
+			;;
+		-l)
+			shift
+			;&
+		--lock=*)
+			lock_uri=${1#*=}
 			;;
 		*://*)
 			SOURCE_URI=$1
@@ -149,6 +157,14 @@ trap temp 0
 tar --transform "s|$SOURCE_DIR|${tempdir##*/}|" -C /tmp \
 	-xf download/"$SOURCE_FILENAME" --wildcards "$SOURCE_DIR/Cargo.*" ||
 	die "Failed to extract the necessary files."
+
+if [ -n "$lock_uri" ]; then
+	wget -O "$tempdir"/Cargo.lock $lock_uri ||
+		die "Failed to download Cargo.lock."
+	buildMode="--offline"
+else
+	buildMode="--frozen"
+fi
 
 info=$(
 	if grep -q '\[metadata\]' "$tempdir"/Cargo.lock; then
@@ -315,7 +331,7 @@ BUILD()
 	replace-with = "haiku"
 	EOF
 
-	cargo build --release --frozen
+	cargo build --release $buildMode
 }
 
 INSTALL()
