@@ -209,7 +209,7 @@ if (( bump )); then
 		-e "/^$rangeEnd/i $(printf '%s\n' "${merged[@]}" |
 			sed '0~'"$psd"' a\\' | head -n -1 |
 			sed -z 's/\n/\\n/g')" \
-		-e "s/{2\.\.[0-9]\+}/{2..$(( "${#crates[@]}" + 1 ))}/" \
+		-e "s/\$(seq 2 [0-9]\+)/\$(seq 2 $(( "${#names[@]}" + 1 )))/" \
 		"$recipe"
 	exit
 fi
@@ -292,7 +292,7 @@ BUILD()
 	export CARGO_HOME=\$sourceDir/../cargo
 	vendor=\$CARGO_HOME/haiku
 	mkdir -p "\$vendor"
-	for i in \$(seq 2 $(( ${#crates[@]} + 1 ))); do
+	for i in \$(seq 2 $(( ${#names[@]} + 1 ))); do
 		eval "srcDir=\\\$sourceDir\$i"
 		eval "sha256sum=\\\$CHECKSUM_SHA256_\$i"
 		set -- "\$srcDir"$(
