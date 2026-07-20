@@ -109,7 +109,7 @@ class Port(object):
 		self.recipeFilePath = self.baseDir + '/' + self.baseName + '-' \
 			+ self.version + '.recipe'
 
-		self.dependencyInfoName = self.versionedName + '.DependencyInfo'
+		self.dependencyInfoMarkerName = self.versionedName + '.DependencyInfoMarker'
 
 		self.revision = None
 		self.fullVersion = None
@@ -510,11 +510,18 @@ class Port(object):
 		for package in self.packages:
 			package.writeDependencyInfoIntoRepository(self._repositoryDir)
 
+		dependencyInfoMarkerFile = os.path.join(self._repositoryDir, self.dependencyInfoMarkerName)
+		touchFile(dependencyInfoMarkerFile)
+
 	def removeDependencyInfosFromRepository(self):
 		"""Remove all DependencyInfo-files for this port from the repository"""
 		self.parseRecipeFileIfNeeded()
 		for package in self.packages:
 			package.removeDependencyInfoFromRepository(self._repositoryDir)
+
+		dependencyInfoMarkerFile = os.path.join(self._repositoryDir, self.dependencyInfoMarkerName)
+		if os.path.exists(dependencyInfoMarkerFile):
+			os.remove(dependencyInfoMarkerFile)
 
 	@property
 	def mainPackage(self):

@@ -438,12 +438,12 @@ class Repository(object):
 					continue
 
 				# update all dependency-infos of port if the recipe is newer
-				# than the main dependency-info of that port
-				mainDependencyInfoFile = os.path.join(self.path,
-					port.dependencyInfoName)
-				if (os.path.exists(mainDependencyInfoFile)
+				# than the dependency-info marker of that port
+				dependencyInfoMarkerFile = os.path.join(self.path,
+					port.dependencyInfoMarkerName)
+				if (os.path.exists(dependencyInfoMarkerFile)
 					and (os.path.getmtime(port.recipeFilePath)
-						<= os.path.getmtime(mainDependencyInfoFile))):
+						<= os.path.getmtime(dependencyInfoMarkerFile))):
 					activePorts.append(portID)
 					break
 
@@ -479,7 +479,7 @@ class Repository(object):
 				except SystemExit as e:
 					# take notice of broken recipe file
 					touchFile(skippedFlag)
-					if not os.path.exists(mainDependencyInfoFile):
+					if not os.path.exists(dependencyInfoMarkerFile):
 						if not self.quiet:
 							print('\trecipe for %s is still broken:' % portID)
 							print(prefixLines('\t', e.code))
@@ -526,6 +526,17 @@ class Repository(object):
 				if not getOption('noPackageObsoletion'):
 					# obsolete corresponding package, if any
 					self._removePackagesForDependencyInfo(dependencyInfo)
+
+		dependencyInfoMarkers = glob.glob(self.path + '/*.DependencyInfoMarker')
+		for dependencyInfoMarker in dependencyInfoMarkers:
+			dependencyInfoMarkerFileName = os.path.basename(dependencyInfoMarker)
+			portID \
+				= dependencyInfoMarkerFileName[:dependencyInfoMarkerFileName.rindex('.')]
+
+			if not portID or portID not in activePorts:
+				if not self.quiet:
+					print('\tremoving ' + dependencyInfoMarkerFileName)
+				os.remove(dependencyInfoMarker)
 
 	def _removeStaleCachedRecipes(self, activePorts):
 		"""check for any cached recipe that no longer have a corresponding
