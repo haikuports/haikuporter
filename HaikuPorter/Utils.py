@@ -131,7 +131,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 			tarFile = tarfile.open(archiveFile, 'r', tarinfo=MyTarInfo)
 
 		if subdir is None:
-			tarFile.extractall(path=targetBaseDir)
+			tarFile.extractall(path=targetBaseDir, filter='tar')
 		else:
 			def filterByDir(members):
 				for member in members:
@@ -144,7 +144,7 @@ def unpackArchive(archiveFile, targetBaseDir, subdir):
 							member.gid = 0
 							member.uid = 0
 						yield member
-			tarFile.extractall(members=filterByDir(tarFile), path=targetBaseDir)
+			tarFile.extractall(members=filterByDir(tarFile), path=targetBaseDir, filter='tar')
 
 		tarFile.close()
 	elif zipfile.is_zipfile(archiveFile):
