@@ -7,7 +7,7 @@ name = "HaikuPorter"
 authors = [ { name = "Haiku Inc.", email = "contact@haiku-inc.org" } ]
 dynamic = [ "version" ]
 description = "The tool that builds HaikuPorts recipes."
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
 [project.optional-dependencies]
 test = [ "pytest" ]
