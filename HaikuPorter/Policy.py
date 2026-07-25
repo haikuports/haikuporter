@@ -199,6 +199,8 @@ class Policy(object):
 		if not isCommandAvailable('readelf'):
 			return
 
+		self.foundUsedRequires = set()
+
 		# check all files in bin/, apps/ and lib[/<arch>]
 		for directory in ['bin', 'apps', 'lib' + self.secondaryArchSubDir]:
 			dir = os.path.join(self.package.packagingDir, directory)
@@ -214,6 +216,11 @@ class Policy(object):
 						path2 = os.path.join(path, entry2)
 						if os.path.isfile(path2) and os.access(path2, os.X_OK):
 							self._checkLibraryDependenciesOfFile(path, path2)
+
+		# all library requirements must be actually used
+		for requires in self.requires:
+			if requires.startswith('lib:lib') and requires not in self.foundUsedRequires:
+				self._violation('requires "%s" doesn\'t seem to be used' % requires)
 
 	def _checkLibraryDependenciesOfFile(self, dirPath, path):
 		# skip static libraries outright
@@ -303,6 +310,7 @@ class Policy(object):
 			resolvableName = self._normalizeResolvableName(
 				'lib:' + library[:suffixIndex] + self.secondaryArchSuffix)
 			if resolvableName in self.requires:
+				self.foundUsedRequires.add(resolvableName)
 				return False
 
 		# The library might be provided by a sibling package.
@@ -354,6 +362,7 @@ class Policy(object):
 		# check whether any of the package's provides are required
 		for name in packageProvides:
 			if name in self.requires:
+				self.foundUsedRequires.add(name)
 				return False
 
 		return True
