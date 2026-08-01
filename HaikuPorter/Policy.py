@@ -12,6 +12,7 @@ from subprocess import check_output
 
 from .ConfigParser import ConfigParser
 from .Configuration import Configuration
+from .RecipeTypes import Architectures
 from .Utils import isCommandAvailable, sysExit, warn
 
 allowedWritableTopLevelDirectories = [
@@ -194,28 +195,24 @@ class Policy(object):
 		return name.replace('-', '_').lower()
 
 	def _checkLibraryDependencies(self):
-		# If there's no readelf (i.e. no binutils), there probably aren't any
-		# executables/libraries.
-		if not isCommandAvailable('readelf'):
+		# "any" architecture packages don't contain any executables/libraries.
+		if self.package.architecture == Architectures.ANY:
 			return
 
 		self.foundUsedRequires = set()
 
-		# check all files in bin/, apps/ and lib[/<arch>]
-		for directory in ['bin', 'apps', 'lib' + self.secondaryArchSubDir]:
-			dir = os.path.join(self.package.packagingDir, directory)
-			if not os.path.exists(dir):
-				continue
+		for dir, dirs, files in os.walk(self.package.packagingDir):
+			# don't check some top-level directories
+			if dir == self.package.packagingDir:
+				if 'data' in dirs:
+					dirs.remove('data')
+				if 'documentation' in dirs:
+					dirs.remove('documentation')
 
-			for entry in os.listdir(dir):
+			for entry in files:
 				path = os.path.join(dir, entry)
-				if os.path.isfile(path):
+				if not os.path.islink(path):
 					self._checkLibraryDependenciesOfFile(dir, path)
-				elif directory != "bin" and os.path.isdir(path):
-					for entry2 in os.listdir(path):
-						path2 = os.path.join(path, entry2)
-						if os.path.isfile(path2) and os.access(path2, os.X_OK):
-							self._checkLibraryDependenciesOfFile(path, path2)
 
 		# all library requirements must be actually used
 		for requires in self.requires:
