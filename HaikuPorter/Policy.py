@@ -202,13 +202,6 @@ class Policy(object):
 		self.foundUsedRequires = set()
 
 		for dir, dirs, files in os.walk(self.package.packagingDir):
-			# don't check some top-level directories
-			if dir == self.package.packagingDir:
-				if 'data' in dirs:
-					dirs.remove('data')
-				if 'documentation' in dirs:
-					dirs.remove('documentation')
-
 			for entry in files:
 				path = os.path.join(dir, entry)
 				if not os.path.islink(path):
