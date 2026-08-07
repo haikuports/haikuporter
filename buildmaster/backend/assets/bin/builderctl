@@ -91,8 +91,12 @@ def cluster_health(arguments):
 		sys.stdout.write(data["ssh"]["host"].ljust(28))
 		sys.stdout.write("| ")
 
-		ssh = ssh_connect(args, data)
-		if ssh is None:
+		try:
+			ssh = ssh_connect(args, data)
+			if ssh is None:
+				continue
+		except:
+			print(color.FAIL + "Unavailable." + color.ENDC)
 			continue
 
 		# All highly prone to messing up. yay.
