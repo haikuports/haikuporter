@@ -348,14 +348,12 @@ class Port(object):
 				if self.effectiveTargetArchitecture \
 						== MachineArchitecture.X86_GCC2:
 					suffixes.append('-gcc2')
-				else:
-					suffixes.append('-gcc4')
 				for suffix in suffixes:
 					patchFileName = '%s%s.%s' % (versionedBaseName, suffix,
 						fileExtension)
 					if (os.path.exists(self.patchesDir + '/' + patchFileName)
 						and patchFileName not in allPatches):
-						sysExit('Patch file %s is not referenced in '
+						warn('Patch file %s is not referenced in '
 							'PATCHES, so it will not be used'
 							% patchFileName)
 
