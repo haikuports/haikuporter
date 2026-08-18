@@ -239,7 +239,7 @@ class Policy(object):
 					rpath = match.group(1)
 
 		for library in libraries:
-			if self._isMissingLibraryDependency(library, dirPath, rpath):
+			if self._isMissingLibraryDependency(library, dirPath, path, rpath):
 				if (library.startswith('libgcc') or
 					library.startswith('libsupc++')):
 					continue
@@ -253,7 +253,7 @@ class Policy(object):
 						'package doesn\'t seem to declare that as a '
 						'requirement' % (path, library))
 
-	def _isMissingLibraryDependency(self, library, dirPath, rpath):
+	def _isMissingLibraryDependency(self, library, dirPath, binaryPath, rpath):
 		if library.startswith('_APP_'):
 			return False
 
@@ -325,7 +325,8 @@ class Policy(object):
 			if not libraryPath:
 				# Don't complain if we're running on non-haiku host.
 				if os.path.exists('/boot/system/lib'):
-					self._violation('can\'t find used library "%s"' % library)
+					self._violation('can\'t find used library "%s" for "%s"' %
+						(library, binaryPath))
 				return False
 
 			# Find out which package the library belongs to.
