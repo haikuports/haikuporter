@@ -13,10 +13,10 @@
 
 # -- Modules ------------------------------------------------------------------
 
+from importlib.metadata import version, PackageNotFoundError
 from multiprocessing import cpu_count
 from optparse import OptionGroup, OptionParser
 
-from .__version__ import __version__
 from .Utils import isCommandAvailable, warn
 
 # -- global options -----------------------------------------------------------
@@ -42,6 +42,11 @@ def setCommaSeparatedList(option, opt, value, parser):
 
 def parseOptions():
 	"""Does command line argument parsing"""
+
+	try:
+		__version__ = version("HaikuPorter")
+	except PackageNotFoundError:
+		__version__ = '(not installed)'
 
 	parser = OptionParser(
 						usage='usage: %prog [options] portname[-portversion]',
