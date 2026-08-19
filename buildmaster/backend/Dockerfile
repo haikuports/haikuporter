@@ -19,6 +19,7 @@ RUN apt-get update \
 	&& apt-get -y install attr autoconf automake bison coreutils curl flex \
 		gawk gcc g++ git libcurl4-openssl-dev make nasm \
 		python3 python3-isort python3-boto3 python3-pymongo python3-paramiko \
+		python3-setuptools-scm python3-pip \
 		tar texinfo vim wget zlib1g-dev; \
 	if [ "$(uname -m)" = "x86_64" ]; then apt install -y gcc-multilib; fi; \
 	apt-get clean
@@ -33,10 +34,8 @@ ADD . /tmp/haikuporter
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package/package /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
 
-RUN PYVERSION=$(python3 -V | awk '{ print $2 }') \
-	&& mkdir -p /usr/local/lib/python${PYVERSION%.*}/dist-packages \
-	&& mv /tmp/haikuporter/HaikuPorter /usr/local/lib/python${PYVERSION%.*}/dist-packages/ \
-	&& mv /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
+RUN --mount=source=.git,target=/tmp/haikuporter/.git,type=bind,rw \
+	python3 -m pip install /tmp/haikuporter[buildmaster] --break-system-packages \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bin/* /usr/local/bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/bootstrap /bin/ \
 	&& cp /tmp/haikuporter/buildmaster/backend/assets/loop /bin/ \

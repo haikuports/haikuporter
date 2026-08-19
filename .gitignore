@@ -1,4 +1,6 @@
 *.pyc
 *.pyo
 recipeCache/
+build/
 dist/
+*.egg-info/
