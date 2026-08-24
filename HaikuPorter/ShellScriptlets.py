@@ -889,7 +889,8 @@ fi
 # Shell scriptlet that prepares a chroot environment for entering.
 # Invoked with $packages filled with the list of packages that should
 # be activated (via system/packages) and $recipeFilePath pointing to the
-# recipe file.
+# recipe file. $networkEnabled will be true or false to determine whether
+# to copy the network settings or not.
 # Additionally, $crossSysrootDir will be set to the cross-sysroot directory
 # when the cross-build repository is active and $targetArchitecture will be
 # filled with the target architecture.
@@ -921,6 +922,10 @@ fi
 if ! [ -e boot/system/settings/etc/profile ]; then
 	echo 'export PS1="\w> "' >boot/system/settings/etc/profile
 	chmod +x boot/system/settings/etc/profile
+fi
+# copy network settings, if allowed
+if $networkEnabled && ! [ -e boot/system/settings/network ]; then
+	cp -r /system/settings/network boot/system/settings/
 fi
 # copy font settings, if any
 if [ -d /system/settings/fonts ] && ! [ -e boot/system/settings/fonts ]; then

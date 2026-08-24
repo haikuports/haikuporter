@@ -820,6 +820,9 @@ class Port(object):
 				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
 				'portDir': self.baseDir,
+				'networkEnabled': ('true'
+					if Configuration.shallAllowNetworkInBuildChroot()
+					else 'false'),
 			}
 			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
@@ -930,6 +933,9 @@ class Port(object):
 			'recipeFile': self.preparedRecipeFile,
 			'targetArchitecture': self.targetArchitecture,
 			'portDir': self.baseDir,
+			'networkEnabled': ('true'
+				if Configuration.shallAllowNetworkInTestChroot()
+				else 'false'),
 		}
 
 		def makeChrootFunctions():

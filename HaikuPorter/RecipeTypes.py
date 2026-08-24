@@ -173,3 +173,27 @@ class Extendable(str):
 	INHERITED = 'inherited',
 	DEFAULT = 'default'
 
+# -- AllowNetworkMode ---------------------------------------------------------
+
+# Defines the possible modes whether to allow the network in the build chroot:
+#	NO		   -> Accessing the network is not allowed.
+#	YES		   -> Accessing the network is allowed.
+#	TEST_ONLY  -> Accessing the network is only allowed during TEST, but not in
+#				  BUILD or INSTALL.
+
+class AllowNetworkMode(str):
+	NO = 'no'
+	YES = 'yes'
+	TEST_ONLY = 'test_only'
+
+	@staticmethod
+	def getAllowedValues():
+		return ['yes', 'no', 'true', 'false', 'test_only']
+
+	@staticmethod
+	def parse(value):
+		if value.lower() == 'yes' or value.lower() == 'true':
+			return AllowNetworkMode.YES
+		if value.lower() == 'test_only':
+			return AllowNetworkMode.TEST_ONLY
+		return AllowNetworkMode.NO
