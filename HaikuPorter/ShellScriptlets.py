@@ -922,8 +922,8 @@ if ! [ -e boot/system/settings/etc/profile ]; then
 	echo 'export PS1="\w> "' >boot/system/settings/etc/profile
 	chmod +x boot/system/settings/etc/profile
 fi
-# copy font settings
-if ! [ -e boot/system/settings/fonts ]; then
+# copy font settings, if any
+if [ -d /system/settings/fonts ] && ! [ -e boot/system/settings/fonts ]; then
 	cp -r /system/settings/fonts boot/system/settings/
 fi
 
