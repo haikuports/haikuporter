@@ -8,7 +8,7 @@
 import functools
 from subprocess import CalledProcessError, check_output
 
-from .RecipeTypes import (Architectures, Extendable, LinesOfText,
+from .RecipeTypes import (AllowNetworkMode, Architectures, Extendable, LinesOfText,
                           MachineArchitecture, Phase, ProvidesList,
                           RequiresList, Status, YesNo)
 from .ShellScriptlets import configFileEvaluatorScript, getShellVariableSetters
@@ -210,6 +210,12 @@ class ConfigParser(object):
 					sysExit("Value for %s should be 'yes' or 'no' in %s"
 							% (key, filename))
 				entries[key] = YesNo.toBool(valueString)
+			elif attrType == AllowNetworkMode:
+				valueString = valueString.lower()
+				if valueString not in AllowNetworkMode.getAllowedValues():
+					sysExit("Value for %s should be 'yes', 'no' or 'test_only' in %s"
+							% (key, filename))
+				entries[key] = AllowNetworkMode.parse(valueString)
 			else:
 				sysExit('type of key %s in file %s is unsupported'
 						% (key, filename))

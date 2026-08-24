@@ -11,7 +11,7 @@ import re
 
 from .ConfigParser import ConfigParser
 from .Options import getOption
-from .RecipeTypes import Extendable, MachineArchitecture, YesNo
+from .RecipeTypes import AllowNetworkMode, Extendable, MachineArchitecture, YesNo
 from .Utils import sysExit, warn
 
 
@@ -36,6 +36,14 @@ def which(program):
 
 # allowed types of the configuration file values
 haikuportsAttributes = {
+	'ALLOW_NETWORK_IN_CHROOT': {
+		'type': AllowNetworkMode,
+		'required': False,
+		'default': AllowNetworkMode.NO,
+		'extendable': Extendable.NO,
+		'indexable': False,
+		'setAttribute': 'allowNetworkInChroot',
+	},
 	'ALLOW_UNTESTED': {
 		'type': YesNo,
 		'required': False,
@@ -262,6 +270,7 @@ class Configuration(object):
 		self.packager = None
 		self.packagerName = None
 		self.packagerEmail = None
+		self.allowNetworkInChroot = AllowNetworkMode.NO
 		self.allowUntested = False
 		self.allowUnsafeSources = False
 		self.createSourcePackages = True
@@ -323,6 +332,10 @@ class Configuration(object):
 	@staticmethod
 	def getPackagerEmail():
 		return Configuration.configuration.packagerEmail
+
+	@staticmethod
+	def shallAllowNetworkInChroot():
+		return Configuration.configuration.allowNetworkInChroot
 
 	@staticmethod
 	def shallAllowUntested():
