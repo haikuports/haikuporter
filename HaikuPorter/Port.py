@@ -29,7 +29,8 @@ from .Configuration import Configuration
 from .Options import getOption
 from .Package import PackageType, packageFactory, sourcePackageFactory
 from .RecipeAttributes import getRecipeAttributes
-from .RecipeTypes import Architectures, Extendable, MachineArchitecture, Phase, Status
+from .RecipeTypes import (AllowNetworkMode, Architectures, Extendable,
+                          MachineArchitecture, Phase, Status)
 from .ReleaseChecker import createReleaseChecker
 from .RequiresUpdater import RequiresUpdater
 from .ShellScriptlets import (cleanupChrootScript, getShellVariableSetters,
@@ -820,6 +821,9 @@ class Port(object):
 				'recipeFile': self.preparedRecipeFile,
 				'targetArchitecture': self.targetArchitecture,
 				'portDir': self.baseDir,
+				'networkEnabled': ('true'
+					if Configuration.shallAllowNetworkInChroot() == AllowNetworkMode.YES
+					else 'false'),
 			}
 			if Configuration.isCrossBuildRepository():
 				chrootEnvVars['crossSysrootDir'] \
@@ -930,6 +934,9 @@ class Port(object):
 			'recipeFile': self.preparedRecipeFile,
 			'targetArchitecture': self.targetArchitecture,
 			'portDir': self.baseDir,
+			'networkEnabled': ('true'
+				if Configuration.shallAllowNetworkInChroot() != AllowNetworkMode.NO
+				else 'false'),
 		}
 
 		def makeChrootFunctions():
