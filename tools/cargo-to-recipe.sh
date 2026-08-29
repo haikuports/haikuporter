@@ -298,7 +298,7 @@ BUILD_PREREQUIRES="
 	cmd:gcc\$secondaryArchSuffix
 	"
 
-defineDebugInfoPackage $portName\$secondaryArchSuffix \\
+defineDebugInfoPackage \"\" \\
 	\$prefix/bin/$cmd
 
 BUILD()

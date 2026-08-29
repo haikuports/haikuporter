@@ -41,7 +41,7 @@ BUILD_PREREQUIRES="
 	cmd:make
 	"
 
-defineDebugInfoPackage projectx$secondaryArchSuffix \
+defineDebugInfoPackage "" \
 	$appsDir/ProjectX
 
 BUILD()

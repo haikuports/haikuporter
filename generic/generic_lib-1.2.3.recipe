@@ -49,7 +49,7 @@ BUILD_PREREQUIRES="
 	cmd:make
 	"
 
-defineDebugInfoPackage projectx$secondaryArchSuffix \
+defineDebugInfoPackage "" \
 	"$libDir"/libprojectx.so.$libVersion \
 	"$libDir"/libprojectx_1.so.$libVersion
 

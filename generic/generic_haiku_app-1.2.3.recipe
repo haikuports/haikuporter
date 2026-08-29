@@ -40,7 +40,7 @@ BUILD_PREREQUIRES="
 	cmd:make
 	"
 
-defineDebugInfoPackage projectx \
+defineDebugInfoPackage "" \
 	$appsDir/ProjectX
 
 BUILD()
