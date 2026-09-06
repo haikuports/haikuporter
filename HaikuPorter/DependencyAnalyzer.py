@@ -16,7 +16,8 @@ from .Options import getOption
 from .PackageInfo import PackageInfo, ResolvableExpression
 from .ProvidesManager import ProvidesManager
 from .ShellScriptlets import getScriptletPrerequirements
-from .Utils import sysExit
+from .Utils import sysExit, warn
+
 
 # -- PortNode class ------------------------------------------------------------
 
@@ -138,7 +139,7 @@ class DependencyAnalyzer(object):
 		os.mkdir(doneRepositoryPath)
 
 		done = []
-		nodes = set(self.cyclicNodes)
+		nodes = set(self.allPortNodes)
 		while nodes:
 			lastDoneCount = len(done)
 			for node in sorted(list(nodes), key=lambda node: node.name):
@@ -148,9 +149,10 @@ class DependencyAnalyzer(object):
 					nodes.remove(node)
 					node.markAsBuilt(doneRepositoryPath)
 			if lastDoneCount == len(done):
-				sysExit("None of these cyclic dependencies can be built:\n\t"
-						+ "\n\t".join(sorted([node.name for node in nodes])))
-
+				warn("These ports' dependencies could not be resolved:\n\t"
+					 + "\n\t".join(sorted([node.name for node in nodes])))
+				done.extend(sorted(node.name for node in nodes))
+				break
 		shutil.rmtree(doneRepositoryPath)
 
 		return done
@@ -291,9 +293,11 @@ class DependencyAnalyzer(object):
 					if otherNode.outdegree == 0:
 						outdegreeZeroStack.append(otherNode)
 
+		self.allPortNodes = set(remainingPortNodes)
 		self.cyclicNodes = [
 			node for node in nodes if node.isPort
 		]
+		self.cyclicPortNames = {node.name for node in self.cyclicNodes}
 
 	def _collectDependencyInfos(self, path):
 		for entry in os.listdir(path):
