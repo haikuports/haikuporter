@@ -343,7 +343,7 @@ class RemoteBuilderSSH(object):
 				+ '" && "' + self.config['haikuporter']['path']
 				+ '" --config="' + self.config['portstree']['builderConfig']
 				+ '" --no-system-packages --no-package-obsoletion'
-				+ ' --ignore-messages '
+				+ ' --ignore-messages --yes '
 				+ self.config['haikuporter']['args'] + ' "'
 				+ scheduledBuild.port.versionedName + '"')
 
@@ -452,7 +452,7 @@ class RemoteBuilderSSH(object):
 		command = ('cd "' + self.config['portstree']['path']
 			+ '" && "' + self.config['haikuporter']['path']
 			+ '" --config="' + self.config['portstree']['builderConfig']
-			+ '" --no-package-obsoletion --ignore-messages --purge "'
+			+ '" --no-package-obsoletion --ignore-messages --yes --purge "'
 			+ scheduledBuild.port.versionedName + '"')
 
 		self.buildLogger.info('purging port with command: ' + command)
