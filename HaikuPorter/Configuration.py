@@ -89,7 +89,7 @@ haikuportsAttributes = {
 	'DOWNLOAD_MIRROR': {
 		'type': bytes,
 		'required': False,
-		'default': 'https://ports-mirror.haiku-os.org',
+		'default': 'https://haikuports-mirror.cdn.haiku-os.org',
 		'extendable': Extendable.NO,
 		'indexable': False,
 		'setAttribute': 'downloadMirror',
