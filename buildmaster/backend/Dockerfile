@@ -33,7 +33,10 @@ ADD . /tmp/haikuporter
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package/package /usr/local/bin/
 COPY --from=host-tools /tmp/haiku/generated/objects/linux/*/release/tools/package_repo/package_repo /usr/local/bin/
 
+ARG haikuporter_version=0.0.0
+
 RUN PYVERSION=$(python3 -V | awk '{ print $2 }') \
+	&& echo "__version__ = '${haikuporter_version}'" > /tmp/haikuporter/HaikuPorter/__version__.py \
 	&& mkdir -p /usr/local/lib/python${PYVERSION%.*}/dist-packages \
 	&& mv /tmp/haikuporter/HaikuPorter /usr/local/lib/python${PYVERSION%.*}/dist-packages/ \
 	&& mv /tmp/haikuporter/haikuporter.py /usr/local/bin/haikuporter \
