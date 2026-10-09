@@ -186,11 +186,9 @@ class ConfigParser(object):
 						architecture = value
 					knownArchitectures = Architectures.getAll()
 					if architecture == 'all':
-						if len(entries[key]) > 0:
-							sysExit("%s specifies 'all' after other architectures"
-									% (filename))
 						for machineArch in MachineArchitecture.getAll():
-							entries[key][machineArch] = status
+							if machineArch not in entries[key]:
+								entries[key][machineArch] = status
 					else:
 						if architecture not in knownArchitectures:
 							architectures = ','.join(knownArchitectures)
