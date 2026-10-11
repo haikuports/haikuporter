@@ -4,7 +4,7 @@
 REPO=ghcr.io/haikuports
 VERSION=$(shell git describe --dirty --tags --abbrev=1)
 default:
-	podman build --no-cache --tag ${REPO}/haikuporter/buildmaster:${VERSION} -f Dockerfile ../..
+	podman build --no-cache --tag ${REPO}/haikuporter/buildmaster:${VERSION} -f Dockerfile --build-arg haikuporter_version=${VERSION} ../..
 push:
 	podman push ${REPO}/haikuporter/buildmaster:${VERSION}
 enter:
