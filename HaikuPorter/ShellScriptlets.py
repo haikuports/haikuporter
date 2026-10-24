@@ -810,8 +810,9 @@ packageEntries()
 		fi
 
 		# make sure target containing directory exists and move there
-		targetDir=$(dirname "$packagePrefix/$file")
-		mkdir -p "$targetDir"
+		targetFile="$packagePrefix/$file"
+		targetDir="${targetFile%/*}"
+		[[ -d "$targetDir" ]] || mkdir -p "$targetDir"
 		mv "$installDestDir$prefix/$file" "$targetDir"
 	done
 }
