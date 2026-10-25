@@ -255,7 +255,7 @@ class Policy(object):
 						'requirement' % (path, library))
 
 	def _isMissingLibraryDependency(self, library, dirPath, binaryPath, rpath):
-		if library.startswith('_APP_'):
+		if library.startswith('_APP_') or library == '_KERNEL_':
 			return False
 
 		# the library might be provided by the package ($libDir)
