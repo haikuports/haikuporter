@@ -131,16 +131,17 @@ class Policy(object):
 		# everything in bin/ must be declared as cmd:*
 		binDir = os.path.join(self.package.packagingDir, 'bin')
 		if os.path.exists(binDir):
-			for entry in os.listdir(binDir):
-				# ignore secondary architecture subdir
-				if entry == self.package.secondaryArchitecture:
-					continue
-				name = self._normalizeResolvableName('cmd:' + entry)
-				if name not in self.provides:
-					self._violation('no matching provides "%s" for "bin/%s"'
-						% (name, entry))
-				else:
-					foundEntries.add(name)
+			with os.scandir(binDir) as it:
+				for entry in it:
+					# ignore directories
+					if entry.is_dir():
+						continue
+					name = self._normalizeResolvableName('cmd:' + entry.name)
+					if name not in self.provides:
+						self._violation('no matching provides "%s" for "bin/%s"'
+							% (name, entry))
+					else:
+						foundEntries.add(name)
 
 		# library entries in lib[/<arch>] must be declared as lib:*[_<arch>]
 		libDir = os.path.join(self.package.packagingDir,
