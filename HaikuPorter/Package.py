@@ -217,8 +217,9 @@ class Package(object):
 		if os.path.exists(packageFile):
 			os.remove(packageFile)
 
-		# policy check, add some requires
-		self.policy.checkPackage(self, packageFile)
+		if self.type != PackageType.SOURCE:
+			# policy check, add some requires
+			self.policy.checkPackage(self, packageFile)
 
 		if (requiresUpdater and self.type != PackageType.SOURCE):
 			requiresList = self.recipeKeys['REQUIRES']
