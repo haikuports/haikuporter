@@ -297,7 +297,7 @@ class Main(object):
 				self._checkPortsReleases(args[0])
 			return
 
-		bootstrapPorts = set()
+		cyclicPorts = set()
 
 		# if a ports-file has been given, read port specifications from it
 		# and build them all (as faked requires of a specific meta port, such
@@ -313,13 +313,15 @@ class Main(object):
 			self.portSpecs.append(
 				self._splitPortSpecIntoNameVersionAndRevision(metaPortSpec))
 		elif self.options.doBootstrap:
-			# first untangle and build all ports with circular dependencies
 			dependencyAnalyzer = DependencyAnalyzer(self.repository)
 			portsToBuild = dependencyAnalyzer.getBuildOrderForBootstrap()
-			print('Untangling the ports with circular dependencies gave this:')
-			print("	 " + "\n  ".join(portsToBuild))
-			print('After that, all other available ports will be built, too')
+			cyclicPorts = dependencyAnalyzer.cyclicPortNames
 			portsNotYetBuilt = []
+			print('Untangling the ports dependencies gave this:')
+			print('	 ' + "\n  ".join(
+				f'{port}{" (cyclic)" if port in cyclicPorts else ""}'
+				for port in portsToBuild
+			))
 			for portId in portsToBuild:
 				port = self.repository.allPorts[portId]
 				mainPackage = port.mainPackage
@@ -330,19 +332,6 @@ class Main(object):
 						'exists' % portId)
 					continue
 				portsNotYetBuilt.append(portId)
-				bootstrapPorts.add(portId)
-			# add all other ports, such that all available ports will be built
-			for portId in self.repository.allPorts.keys():
-				if portId not in bootstrapPorts:
-					port = self.repository.allPorts[portId]
-					mainPackage = port.mainPackage
-					if (mainPackage
-						and os.path.exists(
-							self.packagesPath + '/' + mainPackage.hpkgName)):
-						print('skipping port %s, since its main package '
-							'already exists' % portId)
-						continue
-					portsNotYetBuilt.append(portId)
 			# add all ports as if they were given on the cmdline
 			self.portSpecs = [
 				self._splitPortSpecIntoNameVersionAndRevision(port)
@@ -473,7 +462,7 @@ class Main(object):
 				port.cleanWorkDirectory()
 			elif self.options.purge:
 				port.purge()
-			elif ((self.options.build and portSpec['id'] not in bootstrapPorts)
+			elif ((self.options.build and portSpec['id'] not in cyclicPorts)
 					or self.options.test) and self.options.allDependencies:
 				try:
 					self._buildMainPort(port, self.options.test)
