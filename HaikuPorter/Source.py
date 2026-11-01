@@ -373,7 +373,6 @@ class Source(object):
 			sysExit("Can't extract patchset as there is no .git repo for the the source directory "
 					+ self.sourceDir)
 
-		print('Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath)
 		needToRebase = True
 		try:
 			# check if the tag 'PATCH_FUNCTION' exists
@@ -390,13 +389,24 @@ class Source(object):
 						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir,
 						env=self.gitEnv)
 
-		patchSetDirectory = os.path.dirname(patchSetFilePath)
-		if not os.path.exists(patchSetDirectory):
-			os.mkdir(patchSetDirectory)
-		with open(patchSetFilePath, 'w') as patchSetFile:
-			check_call(['git', '-c', 'core.abbrev=auto', 'format-patch', '-kp',
-					   '--stdout', 'ORIGIN'], stdout=patchSetFile,
-					   cwd=self.sourceDir, env=self.gitEnv)
+		commitCount = int(check_output(['git', 'rev-list', '--count', 'ORIGIN..'],
+									   cwd=self.sourceDir, env=self.gitEnv))
+		if commitCount != 0:
+			# only create the patchset if there are any commits
+			print('Extracting patchset for ' + self.fetchTargetName + " to " + patchSetFilePath)
+			patchSetDirectory = os.path.dirname(patchSetFilePath)
+			if not os.path.exists(patchSetDirectory):
+				os.mkdir(patchSetDirectory)
+			with open(patchSetFilePath, 'w') as patchSetFile:
+				check_call(['git', '-c', 'core.abbrev=auto', 'format-patch', '-kp',
+						   '--stdout', 'ORIGIN'], stdout=patchSetFile,
+						   cwd=self.sourceDir, env=self.gitEnv)
+		else:
+			print('No commits to extract for ' + self.fetchTargetName)
+			if os.path.exists(patchSetFilePath):
+				warn('removing obsolete patchset file '
+					 + os.path.basename(patchSetFilePath))
+				os.remove(patchSetFilePath)
 
 		if needToRebase:
 			# put PATCH_FUNCTION back in
