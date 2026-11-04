@@ -139,7 +139,7 @@ class Policy(object):
 					name = self._normalizeResolvableName('cmd:' + entry.name)
 					if name not in self.provides:
 						self._violation('no matching provides "%s" for "bin/%s"'
-							% (name, entry))
+							% (name, entry.name))
 					else:
 						foundEntries.add(name)
 
