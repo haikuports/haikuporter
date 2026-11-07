@@ -373,23 +373,17 @@ class Source(object):
 			sysExit("Can't extract patchset as there is no .git repo for the the source directory "
 					+ self.sourceDir)
 
-		needToRebase = True
+		topCommit = 'PATCH_FUNCTION^'
 		try:
 			# check if the tag 'PATCH_FUNCTION' exists
 			with open(os.devnull, "w") as devnull:
 				check_call(['git', 'rev-parse', '--verify', 'PATCH_FUNCTION'],
 						   stdout=devnull, stderr=devnull, cwd=self.sourceDir)
 		except:
-			# no PATCH_FUNCTION tag, so there's nothing to rebase
-			needToRebase = False
+			# no PATCH_FUNCTION tag, so use HEAD
+			topCommit = 'HEAD'
 
-		if needToRebase:
-			# the tag exists, so we drop the respective commit
-			check_call(['git', 'rebase', '-q', '--onto', 'PATCH_FUNCTION^',
-						'PATCH_FUNCTION', 'haikuport'], cwd=self.sourceDir,
-						env=self.gitEnv)
-
-		commitCount = int(check_output(['git', 'rev-list', '--count', 'ORIGIN..'],
+		commitCount = int(check_output(['git', 'rev-list', '--count', 'ORIGIN..' + topCommit],
 									   cwd=self.sourceDir, env=self.gitEnv))
 		if commitCount != 0:
 			# only create the patchset if there are any commits
@@ -399,7 +393,7 @@ class Source(object):
 				os.mkdir(patchSetDirectory)
 			with open(patchSetFilePath, 'w') as patchSetFile:
 				check_call(['git', '-c', 'core.abbrev=auto', 'format-patch', '-kp',
-						   '--stdout', 'ORIGIN'], stdout=patchSetFile,
+						   '--stdout', 'ORIGIN..' + topCommit], stdout=patchSetFile,
 						   cwd=self.sourceDir, env=self.gitEnv)
 		else:
 			print('No commits to extract for ' + self.fetchTargetName)
@@ -407,11 +401,6 @@ class Source(object):
 				warn('removing obsolete patchset file '
 					 + os.path.basename(patchSetFilePath))
 				os.remove(patchSetFilePath)
-
-		if needToRebase:
-			# put PATCH_FUNCTION back in
-			check_call(['git', 'rebase', '-q', 'PATCH_FUNCTION', 'haikuport'],
-					   cwd=self.sourceDir, env=self.gitEnv)
 
 		# warn if there's a correpsonding arch-specific patchset file
 		if os.path.exists(archPatchSetFilePath):
